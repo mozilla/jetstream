@@ -10,10 +10,10 @@ jobs:
         name: Build
         command: |
           python3.8 -m venv venv/
-          venv/bin/pip install --upgrade -r requirements.txt -r requirements_tests.txt
+          venv/bin/pip install --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest
+        command: venv/bin/pytest  --black --docstyle --flake8
 
 workflows:
   version: 2
