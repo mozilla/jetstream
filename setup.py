@@ -5,6 +5,7 @@ def text_from_file(path):
     with open(path, encoding="utf-8") as f:
         return f.read()
 
+
 test_dependencies = [
     "coverage",
     "pytest",
@@ -23,13 +24,7 @@ setup(
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
     packages=["pensieve", "pensieve.tests"],
-    install_requires=[
-        "attrs",
-        "cattrs",
-        "incremental",
-        "pytz",
-        "requests",
-    ],
+    install_requires=["attrs", "cattrs", "incremental", "pytz", "requests"],
     setup_requires=["incremental"],
     tests_require=test_dependencies,
     extras_require=extras,

@@ -13,7 +13,7 @@ jobs:
           venv/bin/pip install --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest  --black --docstyle --flake8
+        command: venv/bin/pytest  --black --flake8
 
 workflows:
   version: 2
