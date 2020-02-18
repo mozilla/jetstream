@@ -5,6 +5,14 @@ jobs:
     - image: python:3.8
     steps:
     - checkout
+    - restore_cache:
+        keys:
+          # when lock files change, use increasingly general patterns to restore cache
+          - &cache_key
+            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
+          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
+          - python-packages-v1-{{ .Branch }}-
+          - python-packages-v1-
     - &build
       run:
         name: Build
@@ -13,7 +21,11 @@ jobs:
           venv/bin/pip install --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest  --black --flake8
+        command: venv/bin/pytest --black --flake8
+    - save_cache:
+        paths:
+        - venv/
+        key: *cache_key
 
 workflows:
   version: 2
