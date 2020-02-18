@@ -1,17 +1,11 @@
 from setuptools import setup
+import os
 
-test_dependencies = [
-    "coverage",
-    "pytest",
-    "pytest-cov",
-]
 
-extras = {
-    "testing": test_dependencies,
-}
+def text_from_file(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 
-with open("README.md", "rt") as f:
-    long_description = f.read()
 
 setup(
     name="Pensieve",
@@ -21,17 +15,10 @@ setup(
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
     packages=["pensieve", "pensieve.tests"],
-    install_requires=[
-        "attrs",
-        "cattrs",
-        "incremental",
-        "pytz",
-        "requests",
-    ],
+    install_requires=text_from_file("requirements.txt").strip().split("\n"),
     setup_requires=["incremental"],
-    tests_require=test_dependencies,
-    extras_require=extras,
-    long_description=long_description,
+    tests_require=text_from_file("requirements_tests.txt").strip().split("\n"),
+    long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
 )
