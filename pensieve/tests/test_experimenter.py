@@ -150,14 +150,10 @@ def test_from_experimenter(mock_session):
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].variants[0], Variant)
     assert len(collection.experiments[0].variants) == 2
-    assert collection.experiments[0].start_date > dt.datetime(
-        2019, 1, 1, tzinfo=pytz.utc
-    )
+    assert collection.experiments[0].start_date > dt.datetime(2019, 1, 1, tzinfo=pytz.utc)
 
 
 def test_started_since(experiment_collection):
-    recent = experiment_collection.started_since(
-        dt.datetime(2019, 1, 1, tzinfo=pytz.utc)
-    )
+    recent = experiment_collection.started_since(dt.datetime(2019, 1, 1, tzinfo=pytz.utc))
     assert isinstance(recent, ExperimentCollection)
     assert len(recent.experiments) > 0
