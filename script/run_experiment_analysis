@@ -32,7 +32,7 @@ def main():
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
     date = datetime.now(pytz.utc) - timedelta(days=1)
-    active_experiments = collection.end_after(date)
+    active_experiments = collection.end_after(date).with_recipe()
 
     # calculate metrics for experiments and write to BigQuery
     analysis = Analysis(args.project_id, args.dataset_id)
