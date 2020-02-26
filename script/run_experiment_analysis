@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+"""
+Fetches experiments from Experimenter and runs analysis on active experiments.
+"""
+
+from argparse import ArgumentParser
+from datetime import datetime, timedelta
+import os
+import sys
+import pytz
+
+# sys.path needs to be modified to enable package imports from parent
+# and sibling directories. Also see:
+# https://stackoverflow.com/questions/6323860/sibling-package-imports/23542795#23542795
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pensieve.experimenter import ExperimentCollection
+from pensieve.analysis import Analysis
+
+parser = ArgumentParser(description=__doc__)
+parser.add_argument(
+    "--project_id", default="moz-fx-data-experiments", help="Default project",
+)
+parser.add_argument(
+    "--dataset_id", default="mozanalysis", help="Default dataset",
+)
+
+
+def main():
+    args = parser.parse_args()
+
+    # fetch experiments that are still active
+    collection = ExperimentCollection.from_experimenter()
+    date = datetime.now(pytz.utc) - timedelta(days=1)
+    active_experiments = collection.end_after(date)
+
+    # calculate metrics for experiments and write to BigQuery
+    analysis = Analysis(args.project_id, args.dataset_id)
+
+    for experiment in active_experiments.experiments:
+        analysis.run(experiment)
+
+
+if __name__ == "__main__":
+    main()
