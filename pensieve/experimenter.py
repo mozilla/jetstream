@@ -48,3 +48,8 @@ class ExperimentCollection:
         """since should be a tz-aware datetime in UTC."""
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.start_date and ex.start_date >= since])
+
+    def end_after(self, after: dt.datetime) -> "ExperimentCollection":
+        """All experiments that end after the specified date."""
+        cls = type(self)
+        return cls([ex for ex in self.experiments if ex.end_date and ex.end_date >= after])
