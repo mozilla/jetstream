@@ -18,25 +18,25 @@ class Variant:
 # see https://github.com/mozilla/experimenter/issues/2318
 @attr.s(auto_attribs=True)
 class Recipe:
-    slug: Optional[str]   # normandy slug
+    slug: Optional[str]  # normandy slug
 
 
 @attr.s(auto_attribs=True)
 class Experiment:
-    slug: str   # experimenter slug
+    slug: str  # experimenter slug
+    normandy_slug: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     variants: List[Variant]
-    recipe: Optional[Recipe] = attr.ib(default=None)
 
 
 @attr.s(auto_attribs=True)
 class ExperimentCollection:
     experiments: List[Experiment] = attr.Factory(list)
 
-    EXPERIMENTER_API_EXPERIMENTS_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/"
-
-    EXPERIMENTER_API_RECIPE_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/{}/recipe"
+    EXPERIMENTER_API_EXPERIMENTS_URL = (
+        "https://experimenter.services.mozilla.com/api/v1/experiments/"
+    )
 
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> dt.datetime:
@@ -63,22 +63,3 @@ class ExperimentCollection:
         """All experiments that end after the specified date."""
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.end_date and ex.end_date >= after])
-
-    # only temporary, can be removed once normandy slug is part of experiment
-    # see https://github.com/mozilla/experimenter/issues/2318
-    def with_recipe(self, session: requests.Session = None) -> "ExperimentCollection":
-        session = session or requests.Session()
-
-        for experiment in self.experiments:
-            print(self.EXPERIMENTER_API_RECIPE_URL.format(experiment.slug))
-
-            # currently the Experimenter API doesn't allow fetching recipes without authentication
-            try:
-                # some experiments in Experimenter don't have a recipe; those are currently skipped
-                recipe = session.get(self.EXPERIMENTER_API_RECIPE_URL.format(experiment.slug)).json()
-                converter = cattr.Converter()
-                experiment.recipe = converter.structure(recipe, Recipe)
-            except:
-                print("Error fetching recipe for: {}".format(experiment.slug))
-
-        return self
