@@ -38,8 +38,8 @@ workflows:
       - build
       - gcp-gcr/build-and-push-image:
           requires:
-              - build
+            - build
           image: pensieve
           filters:
-              branches:
-                  only: master
+            branches:
+              only: master
