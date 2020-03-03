@@ -33,6 +33,9 @@ EXPERIMENTER_FIXTURE = r"""
     "pref_branch": null,
     "pref_name": null,
     "pref_type": null,
+    "normandy_slug": "addon-activity-stream-search-topsites-release-69-1576277",
+    "normandy_id": null,
+    "other_normandy_ids": null,
     "proposed_start_date": 1568592000000,
     "proposed_enrollment": 14,
     "proposed_duration": 60,
@@ -97,6 +100,9 @@ EXPERIMENTER_FIXTURE = r"""
     "pref_branch": "default",
     "pref_name": "privacy.annotate_channels.strict_list.enabled",
     "pref_type": "boolean",
+    "normandy_slug": "pref-impact-of-level-2-etp-on-a-custom-distribution-release-72-80-bug-1607493",
+    "normandy_id": null,
+    "other_normandy_ids": null,
     "proposed_start_date": 1580169600000,
     "proposed_enrollment": null,
     "proposed_duration": 180,
@@ -157,3 +163,12 @@ def test_started_since(experiment_collection):
     recent = experiment_collection.started_since(dt.datetime(2019, 1, 1, tzinfo=pytz.utc))
     assert isinstance(recent, ExperimentCollection)
     assert len(recent.experiments) > 0
+
+
+def test_normandy_experiment_slug(experiment_collection):
+    normandy_slugs = list(map(lambda e: e.normandy_slug, experiment_collection.experiments))
+    assert (
+        "pref-impact-of-level-2-etp-on-a-custom-distribution-release-72-80-bug-1607493"
+        in normandy_slugs
+    )
+    assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs
