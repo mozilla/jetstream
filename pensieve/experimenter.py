@@ -34,9 +34,7 @@ class Experiment:
 class ExperimentCollection:
     experiments: List[Experiment] = attr.Factory(list)
 
-    EXPERIMENTER_API_EXPERIMENTS_URL = (
-        "https://experimenter.services.mozilla.com/api/v1/experiments/"
-    )
+    EXPERIMENTER_API_URL = "https://dev.experimenter.nonprod.dataops.mozgcp.net/api/v1/experiments/"
 
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> dt.datetime:
@@ -47,7 +45,8 @@ class ExperimentCollection:
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
-        experiments = session.get(cls.EXPERIMENTER_API_EXPERIMENTS_URL).json()
+        experiments = session.get(cls.EXPERIMENTER_API_URL).json()
+
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime, lambda num, _: cls._unix_millis_to_datetime(num),
