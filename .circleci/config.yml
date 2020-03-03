@@ -1,4 +1,9 @@
-version: 2
+version: 2.1
+
+# See https://circleci.com/orbs/registry/orb/circleci/gcp-gcr
+orbs:
+  gcp-gcr: circleci/gcp-gcr@0.6.1
+
 jobs:
   build:
     docker:
@@ -28,7 +33,14 @@ jobs:
         key: *cache_key
 
 workflows:
-  version: 2
-  build:
+  build-and-deploy:
     jobs:
       - build
+      - gcp-gcr/build-and-push-image:
+          requires:
+            - build
+          image: pensieve
+          filters:
+            branches:
+              only:
+                master
