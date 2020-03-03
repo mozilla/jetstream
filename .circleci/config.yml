@@ -33,7 +33,6 @@ jobs:
         key: *cache_key
 
 workflows:
-  version: 2
   build-and-deploy:
     jobs:
       - build
