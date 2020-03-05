@@ -24,6 +24,9 @@ class Analysis:
         self.bq_context = BigQueryContext(project_id=project, dataset_id=dataset)
 
     def run(self, experiment):
+        if experiment.normandy_slug is None:
+            return  # some experiments do not have a normandy slug
+
         # check if experiment should be analysed
         # todo: can UTC be assumed?
         current_date = datetime.combine(datetime.today(), datetime.min.time()).replace(
@@ -44,6 +47,8 @@ class Analysis:
 
             if experiment.end_date < current_date:
                 last_date_full_data = experiment.end_date
+
+            print(experiment.normandy_slug)
 
             # todo additional experiment specific metrics from Experimenter
             # todo output to custom table
