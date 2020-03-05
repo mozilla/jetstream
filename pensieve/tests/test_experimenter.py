@@ -100,9 +100,6 @@ EXPERIMENTER_FIXTURE = r"""
     "pref_branch": "default",
     "pref_name": "privacy.annotate_channels.strict_list.enabled",
     "pref_type": "boolean",
-    "normandy_slug": "pref-impact-of-level-2-etp-on-a-custom-distribution-release-72-80-bug-1607493",
-    "normandy_id": null,
-    "other_normandy_ids": null,
     "proposed_start_date": 1580169600000,
     "proposed_enrollment": null,
     "proposed_duration": 180,
@@ -132,6 +129,36 @@ EXPERIMENTER_FIXTURE = r"""
         "old_status": "Draft"
       }
     ]
+  },
+  {   
+    "experiment_url":"https://experimenter.services.mozilla.com/experiments/doh-us-engagement-study-v2/",
+    "type":"pref",
+    "name":"DoH US Engagement Study V2",
+    "slug":"doh-us-engagement-study-v2",
+    "public_name":"DNS over HTTPS US Rollout",
+    "public_description":"This Firefox experiment will measure the impact on user engagement and retention when DNS over HTTPS is rolled out in the United States. Users who are part of the study will receive a notification before DNS over HTTPS is enabled. Set network.trr.mode to ‘5’ in about:config to permanently disable DoH. This experiment does not collect personally-identifiable information, DNS queries, or answers.",
+    "status":"Complete",
+    "client_matching":"- 69.0.3 or higher (including 70.*)\r\n- Enrollment should be sticky over country\r\n- System addon doh-rollout@mozilla.org is installed\r\n\r\nThe staged rollout will want to avoid this experiment https://experimenter.services.mozilla.com/experiments/doh-us-staged-rollout-to-all-us-desktop-users/edit/",
+    "locales":[],
+    "platform":"All Windows",
+    "start_date":1572393600000.0,
+    "end_date":1576454400000.0,
+    "population":"1% of Release Firefox 69.0 to 71.0",
+    "population_percent":"1.0000",
+    "firefox_channel":"Release",
+    "firefox_min_version":"69.0",
+    "firefox_max_version":"71.0",
+    "addon_experiment_id":"None",
+    "addon_release_url":"None",
+    "normandy_slug": "pref-doh-us-engagement-s…lease-69-71-bug-1590831",
+    "pref_branch":"default",
+    "pref_name":"doh-rollout.enabled",
+    "pref_type":"boolean",
+    "proposed_start_date":1572307200000.0,
+    "proposed_enrollment":7,
+    "proposed_duration":69,
+    "variants":[],
+    "changes":[]
   }
 ]
 """  # noqa
@@ -152,7 +179,7 @@ def experiment_collection(mock_session):
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_called_once_with(ExperimentCollection.EXPERIMENTER_API_URL)
-    assert len(collection.experiments) == 2
+    assert len(collection.experiments) == 3
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].variants[0], Variant)
     assert len(collection.experiments[0].variants) == 2
@@ -165,10 +192,14 @@ def test_started_since(experiment_collection):
     assert len(recent.experiments) > 0
 
 
+def test_end_after(experiment_collection):
+    active_experiments = experiment_collection.end_after(dt.datetime(2019, 12, 1, tzinfo=pytz.utc))
+    assert len(active_experiments.experiments) == 1
+    assert active_experiments.experiments[0].slug == "doh-us-engagement-study-v2"
+
+
 def test_normandy_experiment_slug(experiment_collection):
     normandy_slugs = list(map(lambda e: e.normandy_slug, experiment_collection.experiments))
-    assert (
-        "pref-impact-of-level-2-etp-on-a-custom-distribution-release-72-80-bug-1607493"
-        in normandy_slugs
-    )
     assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs
+    assert None in normandy_slugs
+    assert "pref-doh-us-engagement-s…lease-69-71-bug-1590831" in normandy_slugs
