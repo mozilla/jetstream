@@ -14,27 +14,20 @@ class Variant:
     ratio: int
 
 
-# only temporary, can be removed once normandy slug is part of experiment
-# see https://github.com/mozilla/experimenter/issues/2318
-@attr.s(auto_attribs=True)
-class Recipe:
-    slug: Optional[str]  # normandy slug
-
-
 @attr.s(auto_attribs=True)
 class Experiment:
     slug: str  # experimenter slug
-    normandy_slug: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     variants: List[Variant]
+    normandy_slug: Optional[str] = attr.ib(default=None)
 
 
 @attr.s(auto_attribs=True)
 class ExperimentCollection:
     experiments: List[Experiment] = attr.Factory(list)
 
-    EXPERIMENTER_API_URL = "https://dev.experimenter.nonprod.dataops.mozgcp.net/api/v1/experiments/"
+    EXPERIMENTER_API_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> dt.datetime:
