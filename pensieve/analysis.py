@@ -62,8 +62,6 @@ class Analysis:
         Run analysis using mozanalysis for a specific experiment.
         """
 
-        print(experiment.normandy_slug)
-
         if experiment.normandy_slug is None:
             return  # some experiments do not have a normandy slug
 
