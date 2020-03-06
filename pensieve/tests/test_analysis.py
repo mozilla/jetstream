@@ -38,10 +38,3 @@ def test_should_analyse_experiment(experiments):
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
     assert 2 != analysis.ANALYSIS_PERIOD
     assert analysis._should_analyse_experiment(experiments[0], date) is False
-
-
-def test_sanitize_table_name_for_bq(experiments):
-    analysis = Analysis("test", "test")
-    assert (
-        analysis._sanitize_table_name_for_bq(experiments[0].normandy_slug) == "normandy_test_slug"
-    )
