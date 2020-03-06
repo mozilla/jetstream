@@ -1,9 +1,10 @@
-import mozanalysis.metrics.desktop as mmd
-from mozanalysis.experiment import Experiment, TimeLimits
-from mozanalysis.bq import BigQueryContext
 from datetime import datetime, timedelta
+import mozanalysis
+from mozanalysis.bq import BigQueryContext
+from mozanalysis.bq import sanitize_table_name_for_bq
+from mozanalysis.experiment import TimeLimits
+import mozanalysis.metrics.desktop as mmd
 import pytz
-import re
 
 
 class Analysis:
@@ -25,7 +26,7 @@ class Analysis:
     def __init__(self, project, dataset):
         self.project = project
         self.dataset = dataset
-        self.bq_context = BigQueryContext(project_id=project, dataset_id=dataset)
+        self.bq_context = None
 
     def _current_date(self):
         """Returns the current date with UTC timezone and time set to 00:00:00."""
@@ -41,21 +42,7 @@ class Analysis:
 
         return (
             date_delta.days > 0 and current_date == next_analysis_date
-        ) or experiment.end_date < current_date
-
-    # copied from mozanalyis
-    # https://github.com/mozilla/mozanalysis/blob/579119e2f34a9259d5a79d03d86cea89eda34280/src/mozanalysis/bq.py#L9
-    def _sanitize_table_name_for_bq(self, table_name):
-        of_good_character_but_possibly_verbose = re.sub(r"[^a-zA-Z_0-9]", "_", table_name)
-
-        if len(of_good_character_but_possibly_verbose) <= 1024:
-            return of_good_character_but_possibly_verbose
-
-        return (
-            of_good_character_but_possibly_verbose[:500]
-            + "___"
-            + of_good_character_but_possibly_verbose[-500:]
-        )
+        ) or experiment.end_date <= current_date
 
     def run(self, experiment):
         """
@@ -68,13 +55,15 @@ class Analysis:
         current_date = self._current_date()
 
         if self._should_analyse_experiment(experiment, current_date):
-            exp = Experiment(
+            exp = mozanalysis.experiment.Experiment(
                 experiment_slug=experiment.normandy_slug,
                 start_date=experiment.start_date.strftime("%Y-%m-%d"),
             )
 
             date_delta = current_date - experiment.start_date
-            last_date_full_data = current_date
+
+            # data from the current day aren't available yet, so we use the previous day
+            last_date_full_data = current_date - timedelta(days=1)
 
             if experiment.end_date < current_date:
                 last_date_full_data = experiment.end_date
@@ -82,7 +71,10 @@ class Analysis:
             # build and execute the BigQuery query
             last_date_full_data = last_date_full_data.strftime("%Y-%m-%d")
             analysis_start_days = max(0, date_delta.days - self.ANALYSIS_PERIOD)
-            res_table_name = self._sanitize_table_name_for_bq(experiment.normandy_slug)
+            window = str(int(date_delta.days / self.ANALYSIS_PERIOD))
+            res_table_name = sanitize_table_name_for_bq(
+                "_".join([experiment.normandy_slug, "window", window])
+            )
 
             time_limits = TimeLimits.for_single_analysis_window(
                 exp.start_date,
@@ -94,7 +86,10 @@ class Analysis:
 
             # todo additional experiment specific metrics from Experimenter
             # todo: use build_query once new version of mozanalysis lands
-            sql = exp._build_query(self.STANDARD_METRICS, time_limits, "normandy", None)
+            sql = exp.build_query(self.STANDARD_METRICS, time_limits, "normandy", None)
+
+            if self.bq_context is None:
+                self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
 
             # todo: add option to append to table; right now the table gets reused
             self.bq_context.run_query(sql, res_table_name)

@@ -20,7 +20,7 @@ class Experiment:
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     variants: List[Variant]
-    normandy_slug: Optional[str] = attr.ib(default=None)
+    normandy_slug: Optional[str] = None
 
 
 @attr.s(auto_attribs=True)
@@ -51,7 +51,7 @@ class ExperimentCollection:
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.start_date and ex.start_date >= since])
 
-    def end_after(self, after: dt.datetime) -> "ExperimentCollection":
-        """All experiments that end after the specified date."""
+    def end_on_or_after(self, after: dt.datetime) -> "ExperimentCollection":
+        """All experiments that end on or after the specified date."""
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.end_date and ex.end_date >= after])

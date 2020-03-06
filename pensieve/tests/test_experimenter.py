@@ -150,7 +150,7 @@ EXPERIMENTER_FIXTURE = r"""
     "firefox_max_version":"71.0",
     "addon_experiment_id":"None",
     "addon_release_url":"None",
-    "normandy_slug": "pref-doh-us-engagement-s…lease-69-71-bug-1590831",
+    "normandy_slug": "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831",
     "pref_branch":"default",
     "pref_name":"doh-rollout.enabled",
     "pref_type":"boolean",
@@ -192,8 +192,10 @@ def test_started_since(experiment_collection):
     assert len(recent.experiments) > 0
 
 
-def test_end_after(experiment_collection):
-    active_experiments = experiment_collection.end_after(dt.datetime(2019, 12, 1, tzinfo=pytz.utc))
+def test_end_on_or_after(experiment_collection):
+    active_experiments = experiment_collection.end_on_or_after(
+        dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
+    )
     assert len(active_experiments.experiments) == 1
     assert active_experiments.experiments[0].slug == "doh-us-engagement-study-v2"
 
@@ -202,4 +204,4 @@ def test_normandy_experiment_slug(experiment_collection):
     normandy_slugs = list(map(lambda e: e.normandy_slug, experiment_collection.experiments))
     assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs
     assert None in normandy_slugs
-    assert "pref-doh-us-engagement-s…lease-69-71-bug-1590831" in normandy_slugs
+    assert "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831" in normandy_slugs
