@@ -1,5 +1,5 @@
 #!/bin/bash
 
-set - e
+set -e
 
-exec "./script/run_experiment_analysis"
+exec "./script/run_experiment_analysis" "$@"
