@@ -25,6 +25,16 @@ parser.add_argument(
 parser.add_argument(
     "--dataset_id", default="mozanalysis", help="Default dataset",
 )
+parser.add_argument(
+    "--date",
+    help="Last date for which data should be analysed",
+    type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
+)
+
+
+def format_date(date):
+    """Returns the current date with UTC timezone and time set to 00:00:00."""
+    return datetime.combine(date, datetime.min.time()).replace(tzinfo=pytz.utc)
 
 
 def main():
@@ -32,14 +42,18 @@ def main():
 
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
-    date = datetime.now(pytz.utc) - timedelta(days=1)
+    if args.date is None:
+        date = format_date(datetime.today())
+    else:
+        date = format_date(args.date)
+
     active_experiments = collection.end_on_or_after(date)
 
     # calculate metrics for experiments and write to BigQuery
     analysis = Analysis(args.project_id, args.dataset_id)
 
     for experiment in active_experiments.experiments:
-        analysis.run(experiment)
+        analysis.run(experiment, date)
 
 
 if __name__ == "__main__":

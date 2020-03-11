@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import mozanalysis
 from mozanalysis.bq import BigQueryContext
 from mozanalysis.bq import sanitize_table_name_for_bq
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
-import pytz
 
 
 class Analysis:
@@ -28,10 +27,6 @@ class Analysis:
         self.dataset = dataset
         self.bq_context = None
 
-    def _current_date(self):
-        """Returns the current date with UTC timezone and time set to 00:00:00."""
-        return datetime.combine(datetime.today(), datetime.min.time()).replace(tzinfo=pytz.utc)
-
     def _should_analyse_experiment(self, experiment, current_date):
         """
         Returns True if a passed experiment should be analysed based
@@ -44,15 +39,13 @@ class Analysis:
             date_delta.days > 0 and current_date == next_analysis_date
         ) or experiment.end_date <= current_date
 
-    def run(self, experiment):
+    def run(self, experiment, current_date):
         """
         Run analysis using mozanalysis for a specific experiment.
         """
 
         if experiment.normandy_slug is None:
             return  # some experiments do not have a normandy slug
-
-        current_date = self._current_date()
 
         if self._should_analyse_experiment(experiment, current_date):
             exp = mozanalysis.experiment.Experiment(
@@ -63,7 +56,7 @@ class Analysis:
             date_delta = current_date - experiment.start_date
 
             # data from the current day aren't available yet, so we use the previous day
-            last_date_full_data = current_date - timedelta(days=1)
+            last_date_full_data = current_date
 
             if experiment.end_date < current_date:
                 last_date_full_data = experiment.end_date
@@ -85,11 +78,9 @@ class Analysis:
             )
 
             # todo additional experiment specific metrics from Experimenter
-            # todo: use build_query once new version of mozanalysis lands
             sql = exp.build_query(self.STANDARD_METRICS, time_limits, "normandy", None)
 
             if self.bq_context is None:
                 self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
 
-            # todo: add option to append to table; right now the table gets reused
             self.bq_context.run_query(sql, res_table_name)
