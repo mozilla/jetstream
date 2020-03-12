@@ -23,7 +23,7 @@ jobs:
         name: Build
         command: |
           python3.8 -m venv venv/
-          venv/bin/pip install --upgrade -r requirements.txt -r test_requirements.txt
+          venv/bin/pip install --upgrade -r requirements.txt
     - run:
         name: PyTest
         command: venv/bin/pytest --black --flake8
