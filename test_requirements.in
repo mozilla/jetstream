@@ -1,5 +1,0 @@
-coverage==5.0.3
-pytest==5.3.5
-pytest-black==0.3.8
-pytest-flake8==1.0.4
-pytest-cov==2.8.1
