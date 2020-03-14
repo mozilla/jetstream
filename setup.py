@@ -9,7 +9,9 @@ def text_from_file(path):
 test_dependencies = [
     "coverage",
     "pytest",
+    "pytest-black",
     "pytest-cov",
+    "pytest-flake8",
 ]
 
 extras = {
@@ -24,7 +26,7 @@ setup(
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
     packages=["pensieve", "pensieve.tests"],
-    install_requires=["attrs", "cattrs", "incremental", "pytz", "requests"],
+    install_requires=["attrs", "cattrs", "incremental", "mozanalysis", "pytz", "requests"],
     setup_requires=["incremental"],
     tests_require=test_dependencies,
     extras_require=extras,
