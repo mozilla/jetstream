@@ -47,7 +47,7 @@ def main():
     else:
         date = format_date(args.date)
 
-    active_experiments = collection.end_on_or_after(date)
+    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
     # calculate metrics for experiments and write to BigQuery
     analysis = Analysis(args.project_id, args.dataset_id)
