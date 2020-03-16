@@ -11,18 +11,20 @@ from pensieve.experimenter import Experiment
 def experiments():
     return [
         Experiment(
-            "test_slug",
-            dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
-            dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-            [],
-            "normandy-test-slug",
+            slug="test_slug",
+            type="pref",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            variants=[],
+            normandy_slug="normandy-test-slug",
         ),
         Experiment(
-            "test_slug",
-            dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
-            dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-            [],
-            None,
+            slug="test_slug",
+            type="addon",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            variants=[],
+            normandy_slug=None,
         ),
     ]
 

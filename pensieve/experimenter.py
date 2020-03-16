@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import List, Optional
+from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
@@ -17,6 +17,7 @@ class Variant:
 @attr.s(auto_attribs=True)
 class Experiment:
     slug: str  # experimenter slug
+    type: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     variants: List[Variant]
@@ -45,6 +46,12 @@ class ExperimentCollection:
             dt.datetime, lambda num, _: cls._unix_millis_to_datetime(num),
         )
         return cls([converter.structure(experiment, Experiment) for experiment in experiments])
+
+    def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
+        if isinstance(type_or_types, str):
+            type_or_types = (type_or_types,)
+        cls = type(self)
+        return cls([ex for ex in self.experiments if ex.type in type_or_types])
 
     def started_since(self, since: dt.datetime) -> "ExperimentCollection":
         """since should be a tz-aware datetime in UTC."""
