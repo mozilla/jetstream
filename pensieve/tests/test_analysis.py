@@ -15,6 +15,7 @@ def experiments():
             type="pref",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
             variants=[],
             normandy_slug="normandy-test-slug",
         ),
@@ -23,6 +24,7 @@ def experiments():
             type="addon",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=0,
             variants=[],
             normandy_slug=None,
         ),
@@ -31,12 +33,11 @@ def experiments():
 
 def test_should_analyse_experiment(experiments):
     analysis = Analysis("test", "test")
-    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(analysis.ANALYSIS_PERIOD)
-    assert analysis._should_analyse_experiment(experiments[0], date) is True
+    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
+    assert analysis._should_analyse_experiment(experiments[0], date)
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
-    assert analysis._should_analyse_experiment(experiments[0], date) is False
+    assert analysis._should_analyse_experiment(experiments[0], date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
-    assert 2 != analysis.ANALYSIS_PERIOD
-    assert analysis._should_analyse_experiment(experiments[0], date) is False
+    assert analysis._should_analyse_experiment(experiments[0], date) is None
