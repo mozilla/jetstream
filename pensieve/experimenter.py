@@ -20,6 +20,7 @@ class Experiment:
     type: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
+    proposed_enrollment: Optional[int] = attr.ib(converter=lambda x: 0 if x is None else x)
     variants: List[Variant]
     normandy_slug: Optional[str] = None
 
