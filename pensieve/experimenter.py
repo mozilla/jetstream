@@ -32,7 +32,7 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     @staticmethod
-    def _unix_millis_to_datetime(num: Optional[float]) -> dt.datetime:
+    def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
         if num is None:
             return None
         return dt.datetime.fromtimestamp(num / 1e3, pytz.utc)
