@@ -27,6 +27,9 @@ jobs:
     - run:
         name: PyTest
         command: venv/bin/pytest --black --flake8
+    - run:
+        name: Mypy
+        command: venv/bin/mypy pensieve
     - save_cache:
         paths:
         - venv/
