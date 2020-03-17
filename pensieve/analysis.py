@@ -1,9 +1,12 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+
 import mozanalysis
 from mozanalysis.bq import BigQueryContext
 from mozanalysis.bq import sanitize_table_name_for_bq
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
+
+from . import experimenter
 
 
 class Analysis:
@@ -27,7 +30,9 @@ class Analysis:
         self.dataset = dataset
         self.bq_context = None
 
-    def _should_analyse_experiment(self, experiment, current_date):
+    def _should_analyse_experiment(
+        self, experiment: experimenter.Experiment, current_date: datetime
+    ):
         """
         Returns True if a passed experiment should be analysed based
         on its start date and the last time it got analysed.
@@ -39,7 +44,7 @@ class Analysis:
             date_delta.days > 0 and current_date == next_analysis_date
         ) or experiment.end_date <= current_date
 
-    def run(self, experiment, current_date):
+    def run(self, experiment: experimenter.Experiment, current_date: datetime):
         """
         Run analysis using mozanalysis for a specific experiment.
         """
