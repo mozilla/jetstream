@@ -12,7 +12,7 @@ cattrs==1.0.0             # via pensieve
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
 click==7.1.1              # via black
-coverage==5.0.3           # via pensieve, pytest-cov
+coverage==5.0.4           # via pensieve, pytest-cov
 entrypoints==0.3          # via flake8
 flake8==3.7.9             # via pytest-flake8
 google-api-core==1.16.0   # via google-cloud-bigquery, google-cloud-core
@@ -26,9 +26,11 @@ incremental==17.5.0       # via pensieve
 mccabe==0.6.1             # via flake8
 more-itertools==8.2.0     # via pytest
 mozanalysis==2020.2.1     # via pensieve
-numpy==1.18.1             # via mozanalysis, pandas, scipy
+mypy-extensions==0.4.3    # via mypy
+mypy==0.770               # via pensieve
+numpy==1.18.2             # via mozanalysis, pandas, scipy
 packaging==20.3           # via pytest
-pandas==1.0.1             # via mozanalysis
+pandas==1.0.2             # via mozanalysis
 pathspec==0.7.0           # via black
 pluggy==0.13.1            # via pytest
 protobuf==3.11.3          # via google-api-core, google-cloud-bigquery, googleapis-common-protos
@@ -50,7 +52,8 @@ rsa==4.0                  # via google-auth
 scipy==1.4.1              # via mozanalysis
 six==1.14.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, packaging, protobuf, python-dateutil
 toml==0.10.0              # via black, pytest-black
-typed-ast==1.4.1          # via black
+typed-ast==1.4.1          # via black, mypy
+typing-extensions==3.7.4.1  # via mypy
 urllib3==1.25.8           # via requests
 wcwidth==0.1.8            # via pytest
 
