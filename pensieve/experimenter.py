@@ -14,13 +14,17 @@ class Variant:
     ratio: int
 
 
+def _coerce_none_to_zero(x: Optional[int]) -> int:
+    return 0 if x is None else x
+
+
 @attr.s(auto_attribs=True)
 class Experiment:
     slug: str  # experimenter slug
     type: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
-    proposed_enrollment: Optional[int] = attr.ib(converter=lambda x: 0 if x is None else x)
+    proposed_enrollment: Optional[int] = attr.ib(converter=_coerce_none_to_zero)
     variants: List[Variant]
     normandy_slug: Optional[str] = None
 

@@ -43,6 +43,9 @@ class Analysis:
         if experiment.proposed_enrollment:
             dates_enrollment = experiment.proposed_enrollment + 1
 
+        if experiment.start_date is None:
+            return None
+
         time_limits_args = {
             "first_enrollment_date": experiment.start_date.strftime("%Y-%m-%d"),
             "time_series_period": "weekly",
@@ -81,6 +84,9 @@ class Analysis:
         if experiment.normandy_slug is None:
             return  # some experiments do not have a normandy slug
 
+        if experiment.start_date is None:
+            return
+
         time_limits = self._get_timelimits_if_ready(experiment, current_date)
         if time_limits is None:
             return
@@ -96,7 +102,7 @@ class Analysis:
         last_window_limits = attr.evolve(time_limits, analysis_windows=last_analysis_window,)
 
         res_table_name = sanitize_table_name_for_bq(
-            "_".join([experiment.normandy_slug, "window", window])
+            "_".join([experiment.normandy_slug, "window", str(window)])
         )
 
         # todo additional experiment specific metrics from Experimenter
