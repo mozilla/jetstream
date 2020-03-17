@@ -31,13 +31,13 @@ def experiments():
     ]
 
 
-def test_should_analyse_experiment(experiments):
+def test_get_timelimits_if_ready(experiments):
     analysis = Analysis("test", "test")
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
-    assert analysis._should_analyse_experiment(experiments[0], date)
+    assert analysis._get_timelimits_if_ready(experiments[0], date)
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
-    assert analysis._should_analyse_experiment(experiments[0], date) is None
+    assert analysis._get_timelimits_if_ready(experiments[0], date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
-    assert analysis._should_analyse_experiment(experiments[0], date) is None
+    assert analysis._get_timelimits_if_ready(experiments[0], date) is None

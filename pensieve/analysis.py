@@ -29,7 +29,7 @@ class Analysis:
         self.dataset = dataset
         self.bq_context = None
 
-    def _should_analyse_experiment(
+    def _get_timelimits_if_ready(
         self, experiment: experimenter.Experiment, current_date: datetime
     ) -> Optional[TimeLimits]:
         """
@@ -81,7 +81,7 @@ class Analysis:
         if experiment.normandy_slug is None:
             return  # some experiments do not have a normandy slug
 
-        time_limits = self._should_analyse_experiment(experiment, current_date)
+        time_limits = self._get_timelimits_if_ready(experiment, current_date)
         if time_limits is None:
             return
 
