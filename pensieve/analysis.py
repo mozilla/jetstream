@@ -41,9 +41,11 @@ class Analysis:
         prior_date_str = (current_date - timedelta(days=1)).strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        dates_enrollment = 0
-        if experiment.proposed_enrollment:
-            dates_enrollment = experiment.proposed_enrollment + 1
+        if not experiment.proposed_enrollment:
+            self.logger.info("Skipping %s; no enrollment period", experiment.slug)
+            return None
+
+        dates_enrollment = experiment.proposed_enrollment + 1
 
         if experiment.start_date is None:
             return None
