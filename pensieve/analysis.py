@@ -76,7 +76,7 @@ class Analysis:
 
         return current_time_limits
 
-    def run(self, experiment: experimenter.Experiment, current_date: datetime):
+    def run(self, experiment: experimenter.Experiment, current_date: datetime, dry_run: bool):
         """
         Run analysis using mozanalysis for a specific experiment.
         """
@@ -110,5 +110,8 @@ class Analysis:
 
         if self.bq_context is None:
             self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
+
+        if dry_run:
+            return
 
         self.bq_context.run_query(sql, res_table_name)
