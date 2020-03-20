@@ -80,3 +80,62 @@ def test_regression_20200320():
     analysis.run(
         experiment, current_date=dt.datetime(2020, 3, 19), dry_run=True,
     )
+
+
+def test_regression_20200316():
+    experiment_json = r"""
+    {
+      "experiment_url": "https://blah/experiments/search-tips-aka-nudges/",
+      "type": "addon",
+      "name": "Search Tips aka Nudges",
+      "slug": "search-tips-aka-nudges",
+      "public_name": "Search Tips",
+      "public_description": "Search Tips are designed to increase engagement with the QuantumBar.",
+      "status": "Live",
+      "countries": [],
+      "platform": "All Platforms",
+      "start_date": 1578960000000,
+      "end_date": 1584921600000,
+      "population": "2% of Release Firefox 72.0 to 74.0",
+      "population_percent": "2.0000",
+      "firefox_channel": "Release",
+      "firefox_min_version": "72.0",
+      "firefox_max_version": "74.0",
+      "addon_experiment_id": null,
+      "addon_release_url": "https://bugzilla.mozilla.org/attachment.cgi?id=9120542",
+      "pref_branch": null,
+      "pref_name": null,
+      "pref_type": null,
+      "proposed_start_date": 1578960000000,
+      "proposed_enrollment": 21,
+      "proposed_duration": 69,
+      "normandy_slug": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+      "normandy_id": 902,
+      "other_normandy_ids": [],
+      "variants": [
+        {
+          "description": "Standard address bar experience",
+          "is_control": false,
+          "name": "control",
+          "ratio": 50,
+          "slug": "control",
+          "value": null,
+          "addon_release_url": null,
+          "preferences": []
+        },
+        {
+          "description": "",
+          "is_control": true,
+          "name": "treatment",
+          "ratio": 50,
+          "slug": "treatment",
+          "value": null,
+          "addon_release_url": null,
+          "preferences": []
+        }
+      ]
+    }
+    """
+    experiment = Experiment.from_dict(json.loads(experiment_json))
+    analysis = Analysis("test", "test")
+    analysis.run(experiment, current_date=dt.datetime(2020, 3, 16), dry_run=True)
