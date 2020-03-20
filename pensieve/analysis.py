@@ -5,8 +5,11 @@ from textwrap import dedent
 from typing import Optional
 
 import attr
+import google.cloud.bigquery.client
+import google.cloud.bigquery.dataset
+import google.cloud.bigquery.job
+import google.cloud.bigquery.table
 import mozanalysis
-from mozanalysis.bq import BigQueryContext
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
 from mozanalysis.utils import add_days
@@ -36,8 +39,8 @@ class Analysis:
         self.logger = logging.getLogger(__name__)
 
     @property
-    def bq_context(self):
-        return BigQueryContext(project_id=self.project, dataset_id=self.dataset)
+    def bigquery(self):
+        return BigQueryClient(project=self.project, dataset=self.dataset)
 
     def _get_timelimits_if_ready(self, current_date: datetime) -> Optional[TimeLimits]:
         """
@@ -110,7 +113,7 @@ class Analysis:
             )
             """
         )
-        self.bq_context.run_query(sql)
+        self.bigquery.execute(sql)
 
     def run(self, current_date: datetime, dry_run: bool):
         """
@@ -157,6 +160,31 @@ class Analysis:
             return
 
         self.logger.info("Executing query for %s", self.experiment.slug)
-        self.bq_context.run_query(sql, res_table_name)
+        self.bigquery.execute(sql, res_table_name)
         self._publish_view("week")
         self.logger.info("Finished running query for %s", self.experiment.slug)
+
+
+@attr.s(auto_attribs=True, slots=True)
+class BigQueryClient:
+    project: str
+    dataset: str
+    _client: Optional[google.cloud.bigquery.client.Client] = None
+
+    @property
+    def client(self):
+        self._client = self._client or google.cloud.bigquery.client.Client(self.project)
+        return self._client
+
+    def execute(self, query: str, destination_table: Optional[str] = None) -> None:
+        dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
+            self.dataset, default_project=self.project,
+        )
+        kwargs = {}
+        if destination_table:
+            kwargs["destination"] = dataset.table(destination_table)
+            kwargs["write_disposition"] = google.cloud.bigquery.job.WriteDisposition.WRITE_TRUNCATE
+        config = google.cloud.bigquery.job.QueryJobConfig(default_dataset=dataset, **kwargs)
+        job = self.client.query(query, config)
+        # block on result
+        job.result(max_results=1)
