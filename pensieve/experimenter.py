@@ -28,13 +28,6 @@ class Experiment:
     variants: List[Variant]
     normandy_slug: Optional[str] = None
 
-
-@attr.s(auto_attribs=True)
-class ExperimentCollection:
-    experiments: List[Experiment] = attr.Factory(list)
-
-    EXPERIMENTER_API_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/"
-
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
         if num is None:
@@ -42,15 +35,25 @@ class ExperimentCollection:
         return dt.datetime.fromtimestamp(num / 1e3, pytz.utc)
 
     @classmethod
-    def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
-        session = session or requests.Session()
-        experiments = session.get(cls.EXPERIMENTER_API_URL).json()
-
+    def from_dict(cls, d) -> "Experiment":
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime, lambda num, _: cls._unix_millis_to_datetime(num),
         )
-        return cls([converter.structure(experiment, Experiment) for experiment in experiments])
+        return converter.structure(d, cls)
+
+
+@attr.s(auto_attribs=True)
+class ExperimentCollection:
+    experiments: List[Experiment] = attr.Factory(list)
+
+    EXPERIMENTER_API_URL = "https://experimenter.services.mozilla.com/api/v1/experiments/"
+
+    @classmethod
+    def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
+        session = session or requests.Session()
+        experiments = session.get(cls.EXPERIMENTER_API_URL).json()
+        return cls([Experiment.from_dict(experiment) for experiment in experiments])
 
     def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
