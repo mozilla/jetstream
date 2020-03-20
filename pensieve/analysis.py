@@ -13,10 +13,15 @@ from mozanalysis.utils import add_days
 from . import experimenter
 
 
+@attr.s(auto_attribs=True)
 class Analysis:
     """
     Wrapper for analysing experiments.
     """
+
+    project: str
+    dataset: str
+    experiment: experimenter.Experiment
 
     # list of standard metrics to be computed
     STANDARD_METRICS = [
@@ -26,15 +31,14 @@ class Analysis:
         mmd.search_count,
     ]
 
-    def __init__(self, project, dataset):
-        self.project = project
-        self.dataset = dataset
-        self.bq_context = None
+    def __attrs_post_init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def _get_timelimits_if_ready(
-        self, experiment: experimenter.Experiment, current_date: datetime
-    ) -> Optional[TimeLimits]:
+    @property
+    def bq_context(self):
+        return BigQueryContext(project_id=self.project, dataset_id=self.dataset)
+
+    def _get_timelimits_if_ready(self, current_date: datetime) -> Optional[TimeLimits]:
         """
         Returns a TimeLimits instance if experiment is due for analysis.
         Otherwise returns None.
@@ -42,17 +46,17 @@ class Analysis:
         prior_date_str = (current_date - timedelta(days=1)).strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        if not experiment.proposed_enrollment:
-            self.logger.info("Skipping %s; no enrollment period", experiment.slug)
+        if not self.experiment.proposed_enrollment:
+            self.logger.info("Skipping %s; no enrollment period", self.experiment.slug)
             return None
 
-        dates_enrollment = experiment.proposed_enrollment + 1
+        dates_enrollment = self.experiment.proposed_enrollment + 1
 
-        if experiment.start_date is None:
+        if self.experiment.start_date is None:
             return None
 
         time_limits_args = {
-            "first_enrollment_date": experiment.start_date.strftime("%Y-%m-%d"),
+            "first_enrollment_date": self.experiment.start_date.strftime("%Y-%m-%d"),
             "time_series_period": "weekly",
             "num_dates_enrollment": dates_enrollment,
         }
@@ -81,28 +85,28 @@ class Analysis:
 
         return current_time_limits
 
-    def run(self, experiment: experimenter.Experiment, current_date: datetime, dry_run: bool):
+    def run(self, current_date: datetime, dry_run: bool):
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        self.logger.info("Analysis.run invoked for experiment %s", experiment.slug)
+        self.logger.info("Analysis.run invoked for experiment %s", self.experiment.slug)
 
-        if experiment.normandy_slug is None:
-            self.logger.info("Skipping %s; no normandy_slug", experiment.slug)
+        if self.experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no normandy_slug", self.experiment.slug)
             return  # some experiments do not have a normandy slug
 
-        if experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", experiment.slug)
+        if self.experiment.start_date is None:
+            self.logger.info("Skipping %s; no start_date", self.experiment.slug)
             return
 
-        time_limits = self._get_timelimits_if_ready(experiment, current_date)
+        time_limits = self._get_timelimits_if_ready(current_date)
         if time_limits is None:
-            self.logger.info("Skipping %s; not ready", experiment.slug)
+            self.logger.info("Skipping %s; not ready", self.experiment.slug)
             return
 
         exp = mozanalysis.experiment.Experiment(
-            experiment_slug=experiment.normandy_slug,
-            start_date=experiment.start_date.strftime("%Y-%m-%d"),
+            experiment_slug=self.experiment.normandy_slug,
+            start_date=self.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
         window = len(time_limits.analysis_windows)
@@ -117,19 +121,16 @@ class Analysis:
         )
 
         res_table_name = sanitize_table_name_for_bq(
-            "_".join([experiment.normandy_slug, "window", str(window)])
+            "_".join([self.experiment.normandy_slug, "window", str(window)])
         )
 
         # todo additional experiment specific metrics from Experimenter
         sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
 
         if dry_run:
-            self.logger.info("Not executing query for %s; dry run", experiment.slug)
+            self.logger.info("Not executing query for %s; dry run", self.experiment.slug)
             return
 
-        if self.bq_context is None:
-            self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
-
-        self.logger.info("Executing query for %s", experiment.slug)
+        self.logger.info("Executing query for %s", self.experiment.slug)
         self.bq_context.run_query(sql, res_table_name)
-        self.logger.info("Finished running query for %s", experiment.slug)
+        self.logger.info("Finished running query for %s", self.experiment.slug)
