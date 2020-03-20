@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
+import re
 import logging
+from textwrap import dedent
 from typing import Optional
 
 import attr
 import mozanalysis
 from mozanalysis.bq import BigQueryContext
-from mozanalysis.bq import sanitize_table_name_for_bq
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
 from mozanalysis.utils import add_days
@@ -85,6 +86,32 @@ class Analysis:
 
         return current_time_limits
 
+    def _normalize_name(self, name: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9_]", "_", name)
+
+    def _table_name(self, window_period: str, window_index: int) -> str:
+        assert self.experiment.normandy_slug is not None
+        normalized_slug = self._normalize_name(self.experiment.normandy_slug)
+        return "_".join([normalized_slug, window_period, str(window_index)])
+
+    def _publish_view(self, window_period: str):
+        assert self.experiment.normandy_slug is not None
+        mapping = {"day": "daily", "week": "weekly", "all": "all"}
+        normalized_slug = self._normalize_name(self.experiment.normandy_slug)
+        view_name = "_".join([normalized_slug, mapping[window_period]])
+        wildcard_expr = "_".join([normalized_slug, window_period, "*"])
+        sql = dedent(
+            f"""
+            CREATE OR REPLACE VIEW {view_name} AS (
+                SELECT
+                    *,
+                    CAST(_TABLE_SUFFIX AS int64) AS window_index
+                FROM `{self.project}.{self.dataset}.{wildcard_expr}`
+            )
+            """
+        )
+        self.bq_context.run_query(sql)
+
     def run(self, current_date: datetime, dry_run: bool):
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -120,9 +147,7 @@ class Analysis:
             ),
         )
 
-        res_table_name = sanitize_table_name_for_bq(
-            "_".join([self.experiment.normandy_slug, "window", str(window)])
-        )
+        res_table_name = self._table_name("week", window)
 
         # todo additional experiment specific metrics from Experimenter
         sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
@@ -133,4 +158,5 @@ class Analysis:
 
         self.logger.info("Executing query for %s", self.experiment.slug)
         self.bq_context.run_query(sql, res_table_name)
+        self._publish_view("week")
         self.logger.info("Finished running query for %s", self.experiment.slug)
