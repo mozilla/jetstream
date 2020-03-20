@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import logging
 from typing import Optional
 
 import attr
@@ -28,6 +29,7 @@ class Analysis:
         self.project = project
         self.dataset = dataset
         self.bq_context = None
+        self.logger = logging.getLogger(__name__)
 
     def _get_timelimits_if_ready(
         self, experiment: experimenter.Experiment, current_date: datetime
@@ -80,15 +82,19 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
+        self.logger.info("Analysis.run invoked for experiment %s", experiment.slug)
 
         if experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no normandy_slug", experiment.slug)
             return  # some experiments do not have a normandy slug
 
         if experiment.start_date is None:
+            self.logger.info("Skipping %s; no start_date", experiment.slug)
             return
 
         time_limits = self._get_timelimits_if_ready(experiment, current_date)
         if time_limits is None:
+            self.logger.info("Skipping %s; not ready", experiment.slug)
             return
 
         exp = mozanalysis.experiment.Experiment(
@@ -112,6 +118,9 @@ class Analysis:
             self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
 
         if dry_run:
+            self.logger.info("Not executing query for %s; dry run", experiment.slug)
             return
 
+        self.logger.info("Executing query for %s", experiment.slug)
         self.bq_context.run_query(sql, res_table_name)
+        self.logger.info("Finished running query for %s", experiment.slug)
