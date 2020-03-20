@@ -8,6 +8,7 @@ from mozanalysis.bq import BigQueryContext
 from mozanalysis.bq import sanitize_table_name_for_bq
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
+from mozanalysis.utils import add_days
 
 from . import experimenter
 
@@ -105,9 +106,15 @@ class Analysis:
         )
 
         window = len(time_limits.analysis_windows)
-        last_analysis_window = time_limits.analysis_windows[-1:]
+        last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
-        last_window_limits = attr.evolve(time_limits, analysis_windows=last_analysis_window,)
+        last_window_limits = attr.evolve(
+            time_limits,
+            analysis_windows=[last_analysis_window],
+            first_date_data_required=add_days(
+                time_limits.first_enrollment_date, last_analysis_window.start
+            ),
+        )
 
         res_table_name = sanitize_table_name_for_bq(
             "_".join([experiment.normandy_slug, "window", str(window)])
