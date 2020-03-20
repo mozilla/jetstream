@@ -102,7 +102,7 @@ class Analysis:
         wildcard_expr = "_".join([normalized_slug, window_period, "*"])
         sql = dedent(
             f"""
-            CREATE OR REPLACE VIEW {view_name} AS (
+            CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
                 SELECT
                     *,
                     CAST(_TABLE_SUFFIX AS int64) AS window_index
