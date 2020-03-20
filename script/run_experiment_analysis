@@ -5,7 +5,7 @@ Fetches experiments from Experimenter and runs analysis on active experiments.
 """
 
 from argparse import ArgumentParser
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import os
 import sys
