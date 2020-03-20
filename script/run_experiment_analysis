@@ -6,6 +6,7 @@ Fetches experiments from Experimenter and runs analysis on active experiments.
 
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
+import logging
 import os
 import sys
 import pytz
@@ -43,6 +44,10 @@ def format_date(date):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
+    )
     args = parser.parse_args()
 
     # fetch experiments that are still active
