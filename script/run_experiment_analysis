@@ -60,10 +60,8 @@ def main():
     active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
     # calculate metrics for experiments and write to BigQuery
-    analysis = Analysis(args.project_id, args.dataset_id)
-
     for experiment in active_experiments.experiments:
-        analysis.run(experiment, date, dry_run=args.dry_run)
+        Analysis(args.project_id, args.dataset_id, experiment).run(date, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

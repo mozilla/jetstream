@@ -33,15 +33,15 @@ def experiments():
 
 
 def test_get_timelimits_if_ready(experiments):
-    analysis = Analysis("test", "test")
+    analysis = Analysis("test", "test", experiments[0])
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
-    assert analysis._get_timelimits_if_ready(experiments[0], date)
+    assert analysis._get_timelimits_if_ready(date)
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
-    assert analysis._get_timelimits_if_ready(experiments[0], date) is None
+    assert analysis._get_timelimits_if_ready(date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
-    assert analysis._get_timelimits_if_ready(experiments[0], date) is None
+    assert analysis._get_timelimits_if_ready(date) is None
 
 
 def test_regression_20200320():
@@ -76,10 +76,8 @@ def test_regression_20200320():
         }
     """  # noqa
     experiment = Experiment.from_dict(json.loads(experiment_json))
-    analysis = Analysis("test", "test")
-    analysis.run(
-        experiment, current_date=dt.datetime(2020, 3, 19), dry_run=True,
-    )
+    analysis = Analysis("test", "test", experiment)
+    analysis.run(current_date=dt.datetime(2020, 3, 19), dry_run=True)
 
 
 def test_regression_20200316():
@@ -137,5 +135,5 @@ def test_regression_20200316():
     }
     """
     experiment = Experiment.from_dict(json.loads(experiment_json))
-    analysis = Analysis("test", "test")
-    analysis.run(experiment, current_date=dt.datetime(2020, 3, 16), dry_run=True)
+    analysis = Analysis("test", "test", experiment)
+    analysis.run(current_date=dt.datetime(2020, 3, 16), dry_run=True)
