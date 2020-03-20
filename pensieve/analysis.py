@@ -123,12 +123,12 @@ class Analysis:
         # todo additional experiment specific metrics from Experimenter
         sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
 
-        if self.bq_context is None:
-            self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
-
         if dry_run:
             self.logger.info("Not executing query for %s; dry run", experiment.slug)
             return
+
+        if self.bq_context is None:
+            self.bq_context = BigQueryContext(project_id=self.project, dataset_id=self.dataset)
 
         self.logger.info("Executing query for %s", experiment.slug)
         self.bq_context.run_query(sql, res_table_name)
