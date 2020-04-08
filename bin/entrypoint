@@ -2,4 +2,4 @@
 
 set -e
 
-exec "./script/run_experiment_analysis" "$@"
+exec pensieve run "$@"
