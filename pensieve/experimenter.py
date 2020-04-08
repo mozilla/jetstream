@@ -10,7 +10,7 @@ import pytz
 @attr.s(auto_attribs=True)
 class Variant:
     is_control: bool
-    slug: bool
+    slug: str
     ratio: int
 
 

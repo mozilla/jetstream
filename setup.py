@@ -33,6 +33,7 @@ setup(
         "google-cloud-bigquery",
         "incremental",
         "mozanalysis",
+        "pandas",
         "pytz",
         "requests",
     ],

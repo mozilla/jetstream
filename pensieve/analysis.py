@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import re
 import logging
+import pandas as pd
 from textwrap import dedent
 from typing import Optional
 
@@ -13,6 +14,7 @@ import mozanalysis
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
 from mozanalysis.utils import add_days
+import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 
 from . import experimenter
 
@@ -115,6 +117,58 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
+
+    def _calculate_metrics(experiment: mozanalysis.experiment.Experiment, time_limits: Optional[TimeLimits], dry_run: bool):
+        """
+        Calculate metrics for a specific experiment.
+        Returns the result data which was written to BigQuery.
+        """
+        window = len(time_limits.analysis_windows)
+        last_analysis_window = time_limits.analysis_windows[-1]
+        # TODO: Add this functionality to TimeLimits.
+        last_window_limits = attr.evolve(
+            time_limits,
+            analysis_windows=[last_analysis_window],
+            first_date_data_required=add_days(
+                time_limits.first_enrollment_date, last_analysis_window.start
+            ),
+        )
+
+        res_table_name = self._table_name("week", window)
+
+        # todo additional experiment specific metrics from Experimenter
+        sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
+
+        if dry_run:
+            self.logger.info("Not executing query for %s; dry run", self.experiment.slug)
+            return
+
+        self.logger.info("Executing query for %s", self.experiment.slug)
+        result = self.bigquery.execute(sql, res_table_name)
+        self._publish_view("week")
+        self.logger.info("Finished running query for %s", self.experiment.slug)
+
+        return result.to_dataframe()
+
+
+    def _calculate_statistics(metrics_result):
+        """
+        Run statistics on metrics.
+        """
+
+        results_per_branch = metrics_result.groupby("branch")
+
+        for variant in self.experiment.variants:
+            branch = variant.slug
+
+            data = results_per_branch[branch]
+            res = mabsbb.bootstrap_one_branch(
+                data, num_samples=100, summary_quantiles=(0.5, 0.61)
+            )
+
+            print(res)
+
+
     def run(self, current_date: datetime, dry_run: bool):
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -139,30 +193,9 @@ class Analysis:
             start_date=self.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
-        window = len(time_limits.analysis_windows)
-        last_analysis_window = time_limits.analysis_windows[-1]
-        # TODO: Add this functionality to TimeLimits.
-        last_window_limits = attr.evolve(
-            time_limits,
-            analysis_windows=[last_analysis_window],
-            first_date_data_required=add_days(
-                time_limits.first_enrollment_date, last_analysis_window.start
-            ),
-        )
+        metrics_result = self._calculate_metrics(exp, time_limits, dry_run)
 
-        res_table_name = self._table_name("week", window)
-
-        # todo additional experiment specific metrics from Experimenter
-        sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
-
-        if dry_run:
-            self.logger.info("Not executing query for %s; dry run", self.experiment.slug)
-            return
-
-        self.logger.info("Executing query for %s", self.experiment.slug)
-        self.bigquery.execute(sql, res_table_name)
-        self._publish_view("week")
-        self.logger.info("Finished running query for %s", self.experiment.slug)
+        self._calculate_statistics(metrics_result)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -187,4 +220,4 @@ class BigQueryClient:
         config = google.cloud.bigquery.job.QueryJobConfig(default_dataset=dataset, **kwargs)
         job = self.client.query(query, config)
         # block on result
-        job.result(max_results=1)
+        return job.result(max_results=1)
