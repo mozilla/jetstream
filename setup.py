@@ -43,4 +43,8 @@ setup(
     long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
+    entry_points="""
+        [console_scripts]
+        pensieve=pensieve.cli:cli
+    """,
 )
