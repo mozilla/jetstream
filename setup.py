@@ -12,6 +12,7 @@ test_dependencies = [
     "pytest-black",
     "pytest-cov",
     "pytest-flake8",
+    "mock",
     "mypy",
 ]
 

@@ -118,7 +118,7 @@ class Analysis:
         self.bigquery.execute(sql)
 
 
-    def _calculate_metrics(experiment: mozanalysis.experiment.Experiment, time_limits: Optional[TimeLimits], dry_run: bool):
+    def _calculate_metrics(self, exp: mozanalysis.experiment.Experiment, time_limits: Optional[TimeLimits], dry_run: bool):
         """
         Calculate metrics for a specific experiment.
         Returns the result data which was written to BigQuery.
@@ -151,7 +151,7 @@ class Analysis:
         return result.to_dataframe()
 
 
-    def _calculate_statistics(metrics_result):
+    def _calculate_statistics(self, metrics_result):
         """
         Run statistics on metrics.
         """
@@ -195,7 +195,7 @@ class Analysis:
 
         metrics_result = self._calculate_metrics(exp, time_limits, dry_run)
 
-        self._calculate_statistics(metrics_result)
+        # self._calculate_statistics(metrics_result)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -209,7 +209,7 @@ class BigQueryClient:
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
 
-    def execute(self, query: str, destination_table: Optional[str] = None) -> None:
+    def execute(self, query: str, destination_table: Optional[str] = None):
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset, default_project=self.project,
         )

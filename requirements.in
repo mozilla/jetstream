@@ -58,6 +58,7 @@ typing-extensions==3.7.4.2  # via mypy
 urllib3==1.25.8           # via requests
 wcwidth==0.1.9            # via pytest
 zipp==3.1.0               # via importlib-metadata
+mock==4.0.2
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
