@@ -30,6 +30,7 @@ setup(
     install_requires=[
         "attrs",
         "cattrs",
+        "Click",
         "google-cloud-bigquery",
         "incremental",
         "mozanalysis",
