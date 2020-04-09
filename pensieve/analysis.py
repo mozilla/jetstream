@@ -119,12 +119,12 @@ class Analysis:
     def _calculate_metrics(
         self,
         exp: mozanalysis.experiment.Experiment,
-        time_limits: Optional[TimeLimits],
+        time_limits: TimeLimits,
         dry_run: bool,
     ):
         """
         Calculate metrics for a specific experiment.
-        Returns the result data which was written to BigQuery.
+        Returns the BigQuery table results are written to.
         """
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
@@ -151,22 +151,23 @@ class Analysis:
         self._publish_view("week")
         self.logger.info("Finished running query for %s", self.experiment.slug)
 
-        return result.to_dataframe()
+        return res_table_name
 
-    def _calculate_statistics(self, metrics_result):
+    def _calculate_statistics(self, result_table: str):
         """
         Run statistics on metrics.
         """
 
-        results_per_branch = metrics_result.groupby("branch")
+        metrics_data = self.bigquery.table_to_dataframe(result_table)
+        results_per_branch = metrics_data.groupby("branch")
 
-        for variant in self.experiment.variants:
-            branch = variant.slug
+        for branch, data in results_per_branch:
+            for metric in self.STANDARD_METRICS:
+                print(branch)
+                print(data[metric.name])
+                res = mabsbb.bootstrap_one_branch(data[metric.name], num_samples=100, summary_quantiles=(0.5, 0.61))
 
-            data = results_per_branch[branch]
-            res = mabsbb.bootstrap_one_branch(data, num_samples=100, summary_quantiles=(0.5, 0.61))
-
-            print(res)
+                print(res)
 
     def run(self, current_date: datetime, dry_run: bool):
         """
@@ -192,9 +193,9 @@ class Analysis:
             start_date=self.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
-        self._calculate_metrics(exp, time_limits, dry_run)
+        result_table = self._calculate_metrics(exp, time_limits, dry_run)
 
-        # self._calculate_statistics(metrics_result)
+        self._calculate_statistics(result_table)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -207,6 +208,12 @@ class BigQueryClient:
     def client(self):
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
+
+    def table_to_dataframe(self, table: str):
+        """Return all rows of the specified table as a dataframe."""
+        table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
+        rows = self.client.list_rows(table_ref)
+        return rows.to_dataframe()
 
     def execute(self, query: str, destination_table: Optional[str] = None):
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
