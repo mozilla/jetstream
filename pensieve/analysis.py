@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 import re
 import logging
-import pandas as pd
 from textwrap import dedent
 from typing import Optional
 
@@ -117,8 +116,12 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
-
-    def _calculate_metrics(self, exp: mozanalysis.experiment.Experiment, time_limits: Optional[TimeLimits], dry_run: bool):
+    def _calculate_metrics(
+        self,
+        exp: mozanalysis.experiment.Experiment,
+        time_limits: Optional[TimeLimits],
+        dry_run: bool,
+    ):
         """
         Calculate metrics for a specific experiment.
         Returns the result data which was written to BigQuery.
@@ -150,7 +153,6 @@ class Analysis:
 
         return result.to_dataframe()
 
-
     def _calculate_statistics(self, metrics_result):
         """
         Run statistics on metrics.
@@ -162,12 +164,9 @@ class Analysis:
             branch = variant.slug
 
             data = results_per_branch[branch]
-            res = mabsbb.bootstrap_one_branch(
-                data, num_samples=100, summary_quantiles=(0.5, 0.61)
-            )
+            res = mabsbb.bootstrap_one_branch(data, num_samples=100, summary_quantiles=(0.5, 0.61))
 
             print(res)
-
 
     def run(self, current_date: datetime, dry_run: bool):
         """
@@ -193,7 +192,7 @@ class Analysis:
             start_date=self.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
-        metrics_result = self._calculate_metrics(exp, time_limits, dry_run)
+        self._calculate_metrics(exp, time_limits, dry_run)
 
         # self._calculate_statistics(metrics_result)
 

@@ -1,7 +1,6 @@
 import datetime as dt
 from datetime import timedelta
 import json
-import os
 import pytz
 import pytest
 
