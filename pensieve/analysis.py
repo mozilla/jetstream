@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 import re
 import logging
 from textwrap import dedent
-from typing import Optional
+from functools import partial
+import pandas
 
 import attr
 import google.cloud.bigquery.client
@@ -10,12 +11,23 @@ import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import mozanalysis
+from typing import Callable, Any, List, Optional
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
 from mozanalysis.utils import add_days
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 
 from . import experimenter
+
+
+# todo: this should be moved somewhere else and might change
+# depending on how configuration is implemented
+@attr.s(auto_attribs=True)
+class Statistic:
+    name: str
+    function: Callable[..., Any]
+    metrics: List[str]
+    branches: Optional[List[str]]
 
 
 @attr.s(auto_attribs=True)
@@ -34,6 +46,17 @@ class Analysis:
         mmd.uri_count,
         mmd.ad_clicks,
         mmd.search_count,
+    ]
+
+    STANDARD_STATISTICS = [
+        Statistic(
+            name="bootstrap_one_branch",
+            function=partial(
+                mabsbb.bootstrap_one_branch, num_samples=100, summary_quantiles=(0.5, 0.61)
+            ),
+            metrics=["active_hours"],
+            branches=["branch1", "branch2"],
+        )
     ]
 
     def __attrs_post_init__(self):
@@ -117,10 +140,7 @@ class Analysis:
         self.bigquery.execute(sql)
 
     def _calculate_metrics(
-        self,
-        exp: mozanalysis.experiment.Experiment,
-        time_limits: TimeLimits,
-        dry_run: bool,
+        self, exp: mozanalysis.experiment.Experiment, time_limits: TimeLimits, dry_run: bool,
     ):
         """
         Calculate metrics for a specific experiment.
@@ -158,16 +178,53 @@ class Analysis:
         Run statistics on metrics.
         """
 
+        statistics_results = []
+
         metrics_data = self.bigquery.table_to_dataframe(result_table)
-        results_per_branch = metrics_data.groupby("branch")
 
-        for branch, data in results_per_branch:
-            for metric in self.STANDARD_METRICS:
-                print(branch)
-                print(data[metric.name])
-                res = mabsbb.bootstrap_one_branch(data[metric.name], num_samples=100, summary_quantiles=(0.5, 0.61))
+        for statistic in self.STANDARD_STATISTICS:
+            result_dict = {}
+            result_dict["statistic"] = statistic.name
 
-                print(res)
+            # calculate statistics for specified branches
+            if statistic.branches is not None:
+                results_per_branch = metrics_data.groupby("branch")
+
+                for branch in statistic.branches:
+                    data = results_per_branch.get_group(branch)
+
+                    for metric in statistic.metrics:
+                        if metric in data:
+                            key_value_results = []
+
+                            for key, value in statistic.function(data[metric]).to_dict().items():
+                                key_value_results.append({"key": key, "value": value})
+
+                            statistics_results.append(
+                                {
+                                    "name": statistic.name,
+                                    "branch": branch,
+                                    "map_key_value": key_value_results,
+                                }
+                            )
+            else:
+                # otherwise pass entire dataframe to statistics function
+                key_value_results = []
+
+                for key, value in statistic.function(metrics_data).to_dict().items():
+                    key_value_results.append({"key": key, "value": value})
+
+                statistics_results.append(
+                    {"name": statistic.name, "branch": None, "map_key_value": key_value_results}
+                )
+
+        df_statistics_results = pandas.DataFrame.from_dict(statistics_results)
+
+        print(df_statistics_results)
+
+        table_id = f"{self.project}.{self.dataset}.statistics_{result_table}"
+
+        job = self.bigquery.client.load_table_from_dataframe(df_statistics_results, table_id)
 
     def run(self, current_date: datetime, dry_run: bool):
         """

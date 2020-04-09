@@ -35,6 +35,7 @@ setup(
         "incremental",
         "mozanalysis",
         "pandas",
+        "pyarrow",
         "pytz",
         "requests",
     ],
