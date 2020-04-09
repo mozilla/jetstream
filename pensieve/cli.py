@@ -30,8 +30,10 @@ class ClickDate(click.ParamType):
 
 
 @cli.command()
-@click.option("--project_id", default="moz-fx-data-experiments", help="Project to write to")
-@click.option("--dataset_id", default="mozanalysis", help="Dataset to write to")
+@click.option(
+    "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
+)
+@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
 @click.option(
     "--date",
     type=ClickDate(),
