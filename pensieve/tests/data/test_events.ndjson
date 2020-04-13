@@ -1,0 +1,5 @@
+{"submission_date": "2020-04-02", "client_id": "aaaa", "event_category": "normandy", "event_method": "enroll", "event_string_value": "test-experiment", "event_map_values": [{"key": "branch", "value": "branch1"}]}
+{"submission_date": "2020-04-03", "client_id": "bbbb", "event_category": "normandy", "event_method": "enroll", "event_string_value": "test-experiment", "event_map_values": [{"key": "branch", "value": "branch2"}]}
+{"submission_date": "2020-04-03", "client_id": "bbbb", "event_category": "foo"}
+{"submission_date": "2020-04-03", "client_id": "cccc", "event_category": "foo", "event_method": "enroll", "event_string_value": "test-experiment", "event_map_values": [{"key": "branch", "value": "branch1"}]}
+{"submission_date": "2020-04-03", "client_id": "dddd", "event_category": "foo", "event_method": "enroll", "event_string_value": "test-experiment", "event_map_values": [{"key": "branch", "value": "branch2"}]}
