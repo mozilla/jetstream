@@ -1,0 +1,14 @@
+{"submission_date": "2020-04-06","client_id": "aaaa","active_hours_sum": 0.6,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-06","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-06","client_id": "cccc","active_hours_sum": 0.2,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-06","client_id": "dddd","active_hours_sum": 0.2}
+{"submission_date": "2020-04-06","client_id": "eeee","active_hours_sum": 0.2}
+{"submission_date": "2020-04-05","client_id": "aaaa","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-05","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-05","client_id": "cccc","active_hours_sum": 0.9,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-05","client_id": "dddd","active_hours_sum": 1}
+{"submission_date": "2020-04-05","client_id": "eeee","active_hours_sum": 0.2}
+{"submission_date": "2020-04-04","client_id": "aaaa","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-04","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}]}
+{"submission_date": "2020-04-04","client_id": "dddd","active_hours_sum": 1}
+{"submission_date": "2020-04-04","client_id": "eeee","active_hours_sum": 0.2}
