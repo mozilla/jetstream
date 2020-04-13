@@ -26,7 +26,7 @@ jobs:
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest --ignore=pensieve/tests/integration/ 
+        command: venv/bin/pytest --black --flake8 --ignore=pensieve/tests/integration/
     - run:
         name: Mypy
         command: venv/bin/mypy pensieve
@@ -39,7 +39,7 @@ jobs:
     - image: python:3.8
     steps:
     - checkout
-    - skip_forked_pr:
+    - &skip_forked_pr
       run:
         name: Early return if this build is from a forked PR
         command: |
@@ -47,13 +47,13 @@ jobs:
             echo "Cannot pass creds to forked PRs, so marking this step successful"
             circleci step halt
           fi
-    - build:
+    - &build
       run:
         name: Build
         command: |
           python3.8 -m venv venv/
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
-    - pytest_integration_test:
+    - &pytest_integration_test
       run:
         name: PyTest Integration Test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
@@ -62,12 +62,13 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          venv/bin/pytest pensieve/tests/integration/
+          venv/bin/pytest --black --flake8 pensieve/tests/integration/
 
 workflows:
   build-and-deploy:
     jobs:
       - build
+      - integration
       - gcp-gcr/build-and-push-image:
           requires:
             - build
