@@ -24,6 +24,7 @@ jobs:
         command: |
           python3.8 -m venv venv/
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
+          venv/bin/pip install -U --extra-index-url https://pypi.fury.io/arrow-nightlies/ --pre pyarrow
     - run:
         name: PyTest
         command: venv/bin/pytest --ignore=pensieve/tests/integration/ 
@@ -53,6 +54,7 @@ jobs:
         command: |
           python3.8 -m venv venv/
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
+          venv/bin/pip install -U --extra-index-url https://pypi.fury.io/arrow-nightlies/ --pre pyarrow
     - pytest_integration_test:
       run:
         name: PyTest Integration Test
