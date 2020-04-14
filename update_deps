@@ -1,6 +1,0 @@
-#!/bin/bash
-pip-compile -o - - <<< '.[testing]' |
-    grep -v 'file://' |
-    sed 's/pip-compile.*/update_deps/' > requirements.in
-
-pip-compile --generate-hashes -o requirements.txt requirements.in
