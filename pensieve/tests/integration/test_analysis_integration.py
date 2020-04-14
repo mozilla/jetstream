@@ -1,5 +1,6 @@
 import datetime as dt
 from google.cloud import bigquery
+from pathlib import Path
 import mock
 import os
 import pytz
@@ -10,6 +11,7 @@ from google.api_core.exceptions import NotFound
 from pensieve.analysis import Analysis, BigQueryClient
 from pensieve.experimenter import Experiment, Variant
 
+TEST_DIR = Path(__file__).parent.parent
 
 @pytest.mark.integration
 class TestAnalysisIntegration:
@@ -26,9 +28,9 @@ class TestAnalysisIntegration:
 
     client = bigquery.client.Client(project_id)
 
-    clients_daily_source = "pensieve/tests/data/test_clients_daily.ndjson"
-    events_source = "pensieve/tests/data/test_events.ndjson"
-    get_key_udf = "pensieve/tests/data/get_key.sql"
+    clients_daily_source = TEST_DIR / "data" / "test_clients_daily.ndjson"
+    events_source = TEST_DIR / "data" / "test_events.ndjson"
+    get_key_udf = TEST_DIR / "data" / "get_key.sql"
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -44,7 +46,7 @@ class TestAnalysisIntegration:
         except NotFound:
             table_ref = self.client.create_table(f"{self.static_dataset}.clients_daily")
             job_config = bigquery.LoadJobConfig()
-            job_config.source_format = bigquery.SourceFormat.NDJSON
+            job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
             job_config.autodetect = True
 
             with open(self.clients_daily_source, "rb") as source_file:
@@ -59,7 +61,7 @@ class TestAnalysisIntegration:
         except NotFound:
             table_ref = self.client.create_table(f"{self.static_dataset}.events")
             job_config = bigquery.LoadJobConfig()
-            job_config.source_format = bigquery.SourceFormat.NDJSON
+            job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
             job_config.autodetect = True
 
             with open(self.events_source, "rb") as source_file:
