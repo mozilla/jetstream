@@ -11,6 +11,7 @@ import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import mozanalysis
+from google.cloud import bigquery
 from typing import Callable, Any, List, Optional
 from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
@@ -24,6 +25,17 @@ from . import experimenter
 # depending on how configuration is implemented
 @attr.s(auto_attribs=True)
 class Statistic:
+    """
+    Statistic to be calculated.
+
+    Attributes:
+        name: identifier for statistic
+        function: partial function to run the statistics calculation; 
+            the data is passed to the function while running the analysis
+        metrics: list of metrics for which this type of statistic is calculated
+        branches: list of branch names to be processed; if empty applied to all branches
+    """
+
     name: str
     function: Callable[..., Any]
     metrics: List[str]
@@ -48,6 +60,7 @@ class Analysis:
         mmd.search_count,
     ]
 
+    # list of standard statistics to be computed
     STANDARD_STATISTICS = [
         Statistic(
             name="bootstrap_one_branch",
@@ -173,10 +186,16 @@ class Analysis:
 
         return res_table_name
 
-    def _calculate_statistics(self, result_table: str):
+    def _calculate_statistics(self, result_table: str, dry_run: bool):
         """
         Run statistics on metrics.
         """
+
+        if dry_run:
+            self.logger.info("Not runnings statistics for %s; dry run", self.experiment.slug)
+            return
+
+        self.logger.info("Start running statistics for %s", self.experiment.slug)
 
         statistics_results = []
 
@@ -197,6 +216,8 @@ class Analysis:
                         if metric in data:
                             key_value_results = []
 
+                            self.logger.info("Run %s for %s", statistic.name, self.experiment.slug)
+
                             for key, value in statistic.function(data[metric]).to_dict().items():
                                 key_value_results.append({"key": key, "value": value})
 
@@ -211,6 +232,7 @@ class Analysis:
                 # otherwise pass entire dataframe to statistics function
                 key_value_results = []
 
+                self.logger.info("Run %s for %s", statistic.name, self.experiment.slug)
                 for key, value in statistic.function(metrics_data).to_dict().items():
                     key_value_results.append({"key": key, "value": value})
 
@@ -218,13 +240,10 @@ class Analysis:
                     {"name": statistic.name, "branch": None, "map_key_value": key_value_results}
                 )
 
-        df_statistics_results = pandas.DataFrame.from_dict(statistics_results)
-
-        print(df_statistics_results)
-
+        # write statistics results to BigQuery
         table_id = f"{self.project}.{self.dataset}.statistics_{result_table}"
-
-        job = self.bigquery.client.load_table_from_dataframe(df_statistics_results, table_id)
+        self.bigquery.client.load_table_from_json(statistics_results, table_id)
+        self.logger.info("Finished running statistics for %s", self.experiment.slug)
 
     def run(self, current_date: datetime, dry_run: bool):
         """
@@ -251,8 +270,7 @@ class Analysis:
         )
 
         result_table = self._calculate_metrics(exp, time_limits, dry_run)
-
-        self._calculate_statistics(result_table)
+        self._calculate_statistics(result_table, dry_run)
 
 
 @attr.s(auto_attribs=True, slots=True)
