@@ -1,6 +1,7 @@
 import datetime as dt
 from google.cloud import bigquery
 from pathlib import Path
+import datetime
 import mock
 import mozanalysis
 import os
@@ -102,9 +103,7 @@ class TestAnalysisIntegration:
             return query
 
         with mock.patch.object(
-            mozanalysis.experiment.Experiment,
-            "build_query",
-            new=build_query_test_project
+            mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
         ):
             analysis = Analysis(self.project_id, self.test_dataset, experiment)
 
@@ -125,12 +124,31 @@ class TestAnalysisIntegration:
         query_job = self.client.query(
             f"""
             SELECT
-              COUNT(*) as count
+              *
             FROM `{self.project_id}.{self.test_dataset}.test_experiment_week_1`
+            ORDER BY enrollment_date DESC
         """
         )
 
-        result = query_job.result()
+        expected_results = [
+            {
+                "client_id": "bbbb",
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+            {
+                "client_id": "aaaa",
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+        ]
 
-        for row in result:
-            assert row["count"] == 2
+        for i, row in enumerate(query_job.result()):
+            for k, v in expected_results[i].items():
+                assert row[k] == v
