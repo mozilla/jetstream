@@ -26,57 +26,56 @@ class TestAnalysisIntegration:
     # contains the tables filled with test data required to run metrics analysis
     static_dataset = "test_data"
 
-    client = bigquery.client.Client(project_id)
+    @pytest.fixture(scope="class")
+    def client(self):
+        self._client = getattr(self, "_client", None) or bigquery.client.Client(self.project_id)
+        return self._client
 
     clients_daily_source = TEST_DIR / "data" / "test_clients_daily.ndjson"
     events_source = TEST_DIR / "data" / "test_events.ndjson"
     get_key_udf = TEST_DIR / "data" / "get_key.sql"
 
     @pytest.fixture(autouse=True)
-    def setup(self):
+    def setup(self, client):
         # remove all tables previously created
 
-        self.client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
-        self.client.create_dataset(self.test_dataset)
+        client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
+        client.create_dataset(self.test_dataset)
 
         try:
-            self.client.get_table(f"{self.static_dataset}.clients_daily")
+            client.get_table(f"{self.static_dataset}.clients_daily")
         except NotFound:
-            table_ref = self.client.create_table(f"{self.static_dataset}.clients_daily")
+            table_ref = client.create_table(f"{self.static_dataset}.clients_daily")
             job_config = bigquery.LoadJobConfig()
             job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
             job_config.autodetect = True
 
             with open(self.clients_daily_source, "rb") as source_file:
-                job = self.client.load_table_from_file(
-                    source_file, table_ref, job_config=job_config
-                )
+                job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
 
             job.result()  # Waits for table load to complete.
 
         try:
-            self.client.get_table(f"{self.static_dataset}.events")
+            client.get_table(f"{self.static_dataset}.events")
         except NotFound:
-            table_ref = self.client.create_table(f"{self.static_dataset}.events")
+            table_ref = client.create_table(f"{self.static_dataset}.events")
             job_config = bigquery.LoadJobConfig()
             job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
             job_config.autodetect = True
 
             with open(self.events_source, "rb") as source_file:
-                job = self.client.load_table_from_file(
-                    source_file, table_ref, job_config=job_config
-                )
+                job = client.load_table_from_file(source_file, table_ref, job_config=job_config)
 
             job.result()  # Waits for table load to complete.
 
         # create required UDF
         with open(self.get_key_udf, "r") as source_file:
-            self.client.query(source_file.read()).result()
+            client.query(source_file.read()).result()
             yield
 
-            self.client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
+            client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
 
-    def test_metrics(self):
+    def test_metrics(self, client):
         experiment = Experiment(
             slug="test-experiment",
             type="rollout",
@@ -119,7 +118,7 @@ class TestAnalysisIntegration:
         ):
             analysis.run(current_date=dt.datetime(2020, 4, 12), dry_run=False)
 
-        query_job = self.client.query(
+        query_job = client.query(
             f"""
             SELECT
               *
