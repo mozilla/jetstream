@@ -26,7 +26,8 @@ setup(
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
-    packages=["pensieve", "pensieve.tests"],
+    packages=["pensieve", "pensieve.tests", "pensieve.tests.integration"],
+    package_data={"pensieve.tests": ["data/*"]},
     install_requires=[
         "attrs",
         "cattrs",

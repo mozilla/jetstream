@@ -62,7 +62,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          venv/bin/pytest --black --flake8 pensieve/tests/integration/
+          venv/bin/pytest --black --flake8 --integration pensieve/tests/integration/
 
 workflows:
   build-and-deploy:
