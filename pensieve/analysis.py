@@ -13,6 +13,8 @@ import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
+from . import experimenter
+from pensieve.statistics import BootstrapOneBranch
 from . import AnalysisPeriod
 from . import config
 
@@ -26,6 +28,18 @@ class Analysis:
     project: str
     dataset: str
     config: config.AnalysisConfiguration
+
+    # list of standard statistics to be computed
+    STANDARD_STATISTICS = [
+        BootstrapOneBranch.from_config(
+            {
+                "num_samples": 1000,
+                "summary_quantiles": (0.5, 0.61),
+                "metrics": ["active_hours"],
+                "branches": ["branch1", "branch2"],
+            }
+        )
+    ]
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger(__name__)
