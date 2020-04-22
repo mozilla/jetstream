@@ -4,7 +4,6 @@ from pathlib import Path
 import datetime
 from unittest import mock
 import mozanalysis
-import os
 import pytz
 import pytest
 import random
@@ -12,7 +11,7 @@ import string
 
 from mozanalysis.metrics import Metric, DataSource, agg_sum
 from google.api_core.exceptions import NotFound
-from pensieve.analysis import Analysis, BigQueryClient
+from pensieve.analysis import Analysis
 from pensieve.experimenter import Experiment, Variant
 
 TEST_DIR = Path(__file__).parent.parent
@@ -22,7 +21,7 @@ class TestAnalysisIntegration:
     project_id = "pensieve-integration-test"
 
     # generate a random test dataset to avoid conflicts when running tests in parallel
-    test_dataset = "test_" + ''.join(random.choice(string.ascii_lowercase) for i in range(10))
+    test_dataset = "test_" + "".join(random.choice(string.ascii_lowercase) for i in range(10))
     # contains the tables filled with test data required to run metrics analysis
     static_dataset = "test_data"
 
