@@ -3,8 +3,9 @@ import cattr
 import mozanalysis
 from typing import Callable, Any, Dict, List, Tuple
 from pandas import DataFrame
+import pandas
 
-from pensieve.pre_treatment import PreTreatment
+from pensieve.pre_treatment import PreTreatment, RemoveNulls
 
 
 @attr.s(auto_attribs=True)
@@ -28,13 +29,14 @@ class Statistic:
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data)
 
-        return self.transformation(df)
+        results = [self.transformation(df, metric) for metric in self.metrics if metric in df]
+        return pandas.concat(results)
 
-    def transformation(self, df: DataFrame):
+    def transformation(self, df: DataFrame, metric: str):
         raise NotImplementedError("Statistic subclasses must override transformation()")
 
     @classmethod
-    def from_config(cls, config_dict: Dict[str, Any]):
+    def from_config(cls, config_dict: Dict[str, Any]):  # todo: plug in config file support
         """Create a class instance with the specified config parameters."""
         return cls(**config_dict)
 
@@ -43,8 +45,19 @@ class BootstrapOneBranch(Statistic):
     name = "bootstrap_one_branch"
     num_samples: int = 100
     summary_quantiles: Tuple[int] = (0.5)
+    pre_treatments = [RemoveNulls()]
+    branches = []
 
-    def transformation(self, df: DataFrame):
-        return mozanalysis.bayesian_stats.bayesian_bootstrap(
-            df, self.num_samples, self.summary_quantiles
-        )
+    def transformation(self, df: DataFrame, metric: str):
+        results_per_branch = df.groupby("branch")
+
+        data_by_branch = [results_per_branch.get_group(branch) for branch in self.branches]
+
+        results = [
+            mozanalysis.bayesian_stats.bayesian_bootstrap(
+                data[metric], self.num_samples, self.summary_quantiles
+            )
+            for data in data_by_branch
+        ]
+
+        return pandas.concat(results)
