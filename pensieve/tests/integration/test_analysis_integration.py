@@ -18,7 +18,6 @@ from pensieve.experimenter import Experiment, Variant
 TEST_DIR = Path(__file__).parent.parent
 
 
-@pytest.mark.integration
 class TestAnalysisIntegration:
     project_id = "pensieve-integration-test"
 
