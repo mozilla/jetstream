@@ -179,12 +179,11 @@ class Analysis:
         """
 
         metrics_data = self.bigquery.table_to_dataframe(metrics_table)
-        biguqery_client = self.bigquery.client
-        destination_table = f"statistics_{metrics_table}"
+        destination_table = f"{self.project}.{self.dataset}.statistics_{metrics_table}"
 
         for statistic in self.STANDARD_STATISTICS:
             statistic.apply(metrics_data).save_to_bigquery(
-                biguqery_client, destination_table, append=True
+                self.bigquery.client, destination_table, append=True
             )
 
     def run(self, current_date: datetime, dry_run: bool):
