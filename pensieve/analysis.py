@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import re
 import logging
+import pandas
 from textwrap import dedent
 from typing import Optional
 
@@ -142,16 +143,60 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
+    def _calculate_metrics(
+        self, exp: mozanalysis.experiment.Experiment, time_limits: TimeLimits, dry_run: bool
+    ):
+        """
+        Calculate metrics for a specific experiment.
+        Returns the BigQuery table results are written to.
+        """
+
+        window = len(time_limits.analysis_windows)
+        last_analysis_window = time_limits.analysis_windows[-1]
+        # TODO: Add this functionality to TimeLimits.
+        last_window_limits = attr.evolve(
+            time_limits,
+            analysis_windows=[last_analysis_window],
+            first_date_data_required=add_days(
+                time_limits.first_enrollment_date, last_analysis_window.start
+            ),
+        )
+
+        res_table_name = self._table_name("week", window)
+
+        # todo additional experiment specific metrics from Experimenter
+        sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
+
+        self.logger.info("Executing query for %s", self.experiment.slug)
+        self.bigquery.execute(sql, res_table_name)
+        self._publish_view("week")
+
+        return res_table_name
+
+    def _calculate_statistics(self, metrics_table: str):
+        """
+        Run statistics on metrics.
+        """
+
+        metrics_data = self.bigquery.table_to_dataframe(metrics_table)
+        biguqery_client = self.bigquery.client
+        destination_table = f"statistics_{metrics_table}"
+
+        for statistic in self.STANDARD_STATISTICS:
+            statistic.apply(metrics_data).save_to_bigquery(
+                biguqery_client, destination_table, append=True
+            )
+
     def run(self, current_date: datetime, dry_run: bool):
         """
         Run analysis using mozanalysis for a specific experiment.
         """
         self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.slug)
-
+        
         if self.config.experiment.normandy_slug is None:
             self.logger.info("Skipping %s; no normandy_slug", self.config.experiment.slug)
             return  # some experiments do not have a normandy slug
-
+        
         if self.config.experiment.start_date is None:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
@@ -217,6 +262,12 @@ class BigQueryClient:
     def client(self):
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
+
+    def table_to_dataframe(self, table: str):
+        """Return all rows of the specified table as a dataframe."""
+        table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
+        rows = self.client.list_rows(table_ref)
+        return rows.to_dataframe()
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(

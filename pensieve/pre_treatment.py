@@ -7,7 +7,9 @@ from pandas import DataFrame
 class PreTreatment:
     """Represents an abstract pre-treatment step applied to data before calculating statistics."""
 
-    name: str
+    @classmethod
+    def name(cls):
+        return __name__  # todo: snake case names?
 
     def apply(self, df: DataFrame):
         """Applies the pre-treatment transformation to a DataFrame."""
@@ -19,8 +21,6 @@ class PreTreatment:
 
 class RemoveNulls(PreTreatment):
     """Pre-treatment step to remove null rows and columns."""
-
-    name = "remove_nulls"
 
     def transformation(self, df: DataFrame):
         return df.dropna()
