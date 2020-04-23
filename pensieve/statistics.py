@@ -1,11 +1,51 @@
 import attr
 import cattr
 import mozanalysis
-from typing import Callable, Any, Dict, List, Tuple
+from google.cloud import bigquery
+from typing import Callable, Any, Dict, List, Tuple, Optional
 from pandas import DataFrame
 import pandas
 
 from pensieve.pre_treatment import PreTreatment, RemoveNulls
+
+
+@attr.s(auto_attribs=True)
+class StatisticResult:
+    """
+    Represents the resulting data after applying a statistic transformation
+    to metric data.
+    """
+
+    metric: str
+    statistic: str
+    parameter: float
+    label: str
+    ci_width: Optional[float]
+    point: Optional[float]
+    lower: Optional[float]
+    upper: Optional[float]
+
+    def save_to_bigquery(self, client, destination_table, append=True):
+        """Stores the data to a BigQuery table with a defined schema."""
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.schema = [
+            bigquery.SchemaField("metric", "STRING"),
+            bigquery.SchemaField("statistic", "STRING"),
+            bigquery.SchemaField("parameter", "FLOAT"),
+            bigquery.SchemaField("label", "STRING"),
+            bigquery.SchemaField("ci_width", "FLOAT"),
+            bigquery.SchemaField("point", "FLOAT"),
+            bigquery.SchemaField("lower", "FLOAT"),
+            bigquery.SchemaField("upper", "FLOAT"),
+        ]
+
+        if append:
+            job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
+        else:
+            job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
+        client.load_table_from_dataframe(self.data, destination_table, job_config=job_config)
 
 
 @attr.s(auto_attribs=True)
@@ -18,11 +58,14 @@ class Statistic:
     of the experiment.
     """
 
-    name: str
     metrics: List[str]
     pre_treatments: List[PreTreatment]
 
-    def apply(self, df: DataFrame):
+    @classmethod
+    def name(cls):
+        return __name__  # todo: snake case names?
+
+    def apply(self, df: DataFrame) -> "StatisticResult":
         """Run statistic on provided dataframe."""
 
         data = df
@@ -30,9 +73,9 @@ class Statistic:
             data = pre_treatment.apply(data)
 
         results = [self.transformation(df, metric) for metric in self.metrics if metric in df]
-        return pandas.concat(results)
+        return StatisticResult(pandas.concat(results))
 
-    def transformation(self, df: DataFrame, metric: str):
+    def transformation(self, df: DataFrame, metric: str) -> "StatisticResult":
         raise NotImplementedError("Statistic subclasses must override transformation()")
 
     @classmethod
@@ -42,7 +85,6 @@ class Statistic:
 
 
 class BootstrapOneBranch(Statistic):
-    name = "bootstrap_one_branch"
     num_samples: int = 100
     summary_quantiles: Tuple[int] = (0.5)
     pre_treatments = [RemoveNulls()]
@@ -60,4 +102,11 @@ class BootstrapOneBranch(Statistic):
             for data in data_by_branch
         ]
 
-        return pandas.concat(results)
+        print(results)
+
+        # return StatisticResult(
+        #     metric=metric,
+        #     statistic=self.name(),
+        #     parameter=0.0   # todo
+        #     ci
+        # )
