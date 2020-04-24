@@ -183,7 +183,7 @@ class Analysis:
                 getattr(self.config.metrics, period.adjective),
                 last_window_limits,
                 "normandy",
-                None,
+                self.config.experiment.enrollment_query,
             )
 
             if dry_run:
