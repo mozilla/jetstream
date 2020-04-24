@@ -6,6 +6,7 @@ from textwrap import dedent
 from typing import Optional
 
 import attr
+import enum
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
@@ -15,9 +16,21 @@ from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
 from . import experimenter
-from pensieve.statistics import BootstrapQuantiles
+from pensieve.statistics import BootstrapMean, Statistic
 from . import AnalysisPeriod
 from . import config
+
+# todo: this should be moved to config once that PR lands
+# todo: find a better name
+@attr.s(auto_attribs=True)
+class AnalysisStep:
+    metric: mozanalysis.metrics.Metric
+    statistic: Statistic
+
+    def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
+        """Apply the statistic transformation for data related to the specified metric."""
+        return self.statistic.apply(data, self.metric.name)
+
 
 
 @attr.s(auto_attribs=True)
@@ -30,14 +43,16 @@ class Analysis:
     dataset: str
     config: config.AnalysisConfiguration
 
-    # list of standard statistics to be computed
-    STANDARD_STATISTICS = [
-        BootstrapQuantiles.from_config(
-            {
-                "num_samples": 1000,
-                "metrics": ["active_hours"],
-                "branches": ["branch1", "branch2"],
-            }
+    # list of standard metrics and statistics to be calculated
+    STANDARD_STEPS = [
+        AnalysisStep(
+            metric=mmd.active_hours,
+            statistic=BootstrapMean.from_config(
+                {
+                    "num_samples": 1000,
+                    "branches": ["branch1", "branch2"],
+                }
+            ),
         )
     ]
 
@@ -163,8 +178,16 @@ class Analysis:
 
         res_table_name = self._table_name("week", window)
 
-        # todo additional experiment specific metrics from Experimenter
-        sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
+        # this could be rewritten to something like set([step.metric for step in self.STANDARD_STEPS])
+        # if Metric had __eq()__ implemented.
+        seen_metrics = set()
+        metrics_set = []
+        for step in self.STANDARD_STEPS:
+            if step.metric.name not in seen_metrics:
+                metrics_set.append(step.metric)
+                seen_metrics.add(step.metric.name)
+
+        sql = exp.build_query(metrics_set, last_window_limits, "normandy", None)
 
         self.logger.info("Executing query for %s", self.experiment.slug)
         self.bigquery.execute(sql, res_table_name)
@@ -180,8 +203,8 @@ class Analysis:
         metrics_data = self.bigquery.table_to_dataframe(metrics_table)
         destination_table = f"{self.project}.{self.dataset}.statistics_{metrics_table}"
 
-        for statistic in self.STANDARD_STATISTICS:
-            statistic.apply(metrics_data).save_to_bigquery(
+        for step in self.STANDARD_STEPS:
+            step.run(metrics_data).save_to_bigquery(
                 self.bigquery.client, destination_table, append=True
             )
 

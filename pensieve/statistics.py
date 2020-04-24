@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import attr
 import cattr
 from decimal import Decimal
@@ -69,7 +70,7 @@ class StatisticResultCollection:
 
 
 @attr.s(auto_attribs=True)
-class Statistic:
+class Statistic(ABC):
     """
     Abstract representation of a statistic.
 
@@ -78,7 +79,6 @@ class Statistic:
     of the experiment.
     """
 
-    metrics: List[str]
     pre_treatments: List[PreTreatment]
 
     @classmethod
@@ -86,8 +86,11 @@ class Statistic:
         """Return snake-cased name of the statistic."""
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
-    def apply(self, df: DataFrame) -> "StatisticResultCollection":
-        """Run statistic on provided dataframe."""
+    def apply(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+        """
+        Run statistic on data provided by a DataFrame and return a collection
+        of statistic results.
+        """
 
         data = df
         for pre_treatment in self.pre_treatments:
@@ -95,14 +98,13 @@ class Statistic:
 
         col = StatisticResultCollection([])
 
-        for metric in self.metrics:
-            if metric in df:
-                col.data += self.transformation(df, metric).data
+        if metric in df:
+            col.data += self.transform(df, metric).data
 
         return col
 
-    def transformation(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
-        raise NotImplementedError("Statistic subclasses must override transformation()")
+    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+        return NotImplemented
 
     @classmethod
     def from_config(cls, config_dict: Dict[str, Any]):  # todo: plug in config file support
@@ -117,7 +119,7 @@ class BootstrapMean(Statistic):
     pre_treatments: List[PreTreatment] = [RemoveNulls()]
     branches: List[str] = []
 
-    def transformation(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
 
         results_per_branch = df.groupby("branch")
