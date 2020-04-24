@@ -1,5 +1,6 @@
 import attr
 import cattr
+from decimal import Decimal
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
@@ -7,6 +8,7 @@ from typing import Callable, Any, Dict, List, Tuple, Optional
 from pandas import DataFrame
 import pandas
 import numpy as np
+import re
 
 from pensieve.pre_treatment import PreTreatment, RemoveNulls
 
@@ -20,28 +22,12 @@ class StatisticResult:
 
     metric: str
     statistic: str
-    parameter: float
+    parameter: Decimal
     label: str
     ci_width: Optional[float] = 0.0
     point: Optional[float] = 0.0
     lower: Optional[float] = 0.0
     upper: Optional[float] = 0.0
-
-    def with_ci(self, data: DataFrame, t: float, confidence_level: float) -> "StatisticResult":
-        """Calculate the confidence interval and update result."""
-        confidence_margin = 0.5 * (1.0 - confidence_level)
-        confidence_high = (0.0 + confidence_margin) * 100
-        confidence_low = (1.0 - confidence_margin) * 100
-        self.lower = t - np.percentile(data - t, confidence_low)
-        self.upper = t - np.percentile(data - t, confidence_high)
-        self.ci_width = confidence_level
-        self.point = t
-        return self
-
-    def with_point(self, point_value: float) -> "StatisticResult":
-        """Set provided value as point value result for statistic."""
-        self.point = point_value
-        return self
 
 
 @attr.s(auto_attribs=True)
@@ -52,12 +38,6 @@ class StatisticResultCollection:
 
     data: List[StatisticResult] = []
 
-    def append(self, result: StatisticResult):
-        self.data.append(result)
-
-    def merge(self, result_collection: "StatisticResultCollection"):
-        self.data = self.data + result_collection.data
-
     def save_to_bigquery(self, client, destination_table, append=True):
         """Stores the data to a BigQuery table with a defined schema."""
 
@@ -65,7 +45,7 @@ class StatisticResultCollection:
         job_config.schema = [
             bigquery.SchemaField("metric", "STRING"),
             bigquery.SchemaField("statistic", "STRING"),
-            bigquery.SchemaField("parameter", "FLOAT64"),
+            bigquery.SchemaField("parameter", "NUMERIC"),
             bigquery.SchemaField("label", "STRING"),
             bigquery.SchemaField("ci_width", "FLOAT64"),
             bigquery.SchemaField("point", "FLOAT64"),
@@ -78,7 +58,9 @@ class StatisticResultCollection:
         else:
             job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
-        client.load_table_from_json(self.to_dict()["data"], destination_table)
+        client.load_table_from_json(
+            self.to_dict()["data"], destination_table, job_config=job_config
+        )
 
     def to_dict(self):
         """Return statistic results as dict."""
@@ -101,7 +83,8 @@ class Statistic:
 
     @classmethod
     def name(cls):
-        return __name__  # todo: snake case names?
+        """Return snake-cased name of the statistic."""
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
     def apply(self, df: DataFrame) -> "StatisticResultCollection":
         """Run statistic on provided dataframe."""
@@ -114,7 +97,7 @@ class Statistic:
 
         for metric in self.metrics:
             if metric in df:
-                col.merge(self.transformation(df, metric))
+                col.data += self.transformation(df, metric).data
 
         return col
 
@@ -128,9 +111,9 @@ class Statistic:
 
 
 @attr.s(auto_attribs=True)
-class BootstrapOneBranch(Statistic):
+class BootstrapQuantiles(Statistic):
     num_samples: int = 100
-    summary_quantiles: Tuple[int] = (0.5)
+    summary_quantiles: Tuple[int] = (0.5, 0.75, 0.8, 0.9)
     confidence_interval: float = 0.95
     pre_treatments: List[PreTreatment] = [RemoveNulls()]
     branches: List[str] = []
@@ -149,12 +132,26 @@ class BootstrapOneBranch(Statistic):
             ).to_dict()
 
             for quantile in self.summary_quantiles:
+                # calculate confidence interval
+                data = branch_data[metric]
+                t = stats_result[str(quantile)]
+                confidence_margin = 0.5 * (1.0 - self.confidence_interval)
+                confidence_high = (0.0 + confidence_margin) * 100
+                confidence_low = (1.0 - confidence_margin) * 100
+                lower = t - np.percentile(data - t, confidence_low)
+                upper = t - np.percentile(data - t, confidence_high)
+
                 result = StatisticResult(
-                    metric=metric, statistic="quantiles", parameter=quantile, label=branch
-                ).with_ci(
-                    branch_data[metric], stats_result[str(quantile)], self.confidence_interval
+                    metric=metric,
+                    statistic=self.name(),
+                    parameter=quantile,
+                    label=branch,
+                    point=t,
+                    ci_width=self.confidence_interval,
+                    lower=lower,
+                    upper=upper,
                 )
 
-                stats_results.append(result)
+                stats_results.data.append(result)
 
         return stats_results
