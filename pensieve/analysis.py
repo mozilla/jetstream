@@ -15,7 +15,7 @@ from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
 from . import experimenter
-from pensieve.statistics import BootstrapOneBranch
+from pensieve.statistics import BootstrapQuantiles
 from . import AnalysisPeriod
 from . import config
 
@@ -32,10 +32,9 @@ class Analysis:
 
     # list of standard statistics to be computed
     STANDARD_STATISTICS = [
-        BootstrapOneBranch.from_config(
+        BootstrapQuantiles.from_config(
             {
                 "num_samples": 1000,
-                "summary_quantiles": (0.5, 0.61),
                 "metrics": ["active_hours"],
                 "branches": ["branch1", "branch2"],
             }
