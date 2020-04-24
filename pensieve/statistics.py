@@ -111,9 +111,8 @@ class Statistic:
 
 
 @attr.s(auto_attribs=True)
-class BootstrapQuantiles(Statistic):
+class BootstrapMean(Statistic):
     num_samples: int = 100
-    summary_quantiles: Tuple[int] = (0.5, 0.75, 0.8, 0.9)
     confidence_interval: float = 0.95
     pre_treatments: List[PreTreatment] = [RemoveNulls()]
     branches: List[str] = []
@@ -123,35 +122,37 @@ class BootstrapQuantiles(Statistic):
 
         results_per_branch = df.groupby("branch")
 
+        critical_point = (1 - self.confidence_interval) / 2
+        summary_quantiles = (critical_point, 1 - critical_point)
+
         for branch in self.branches:
             branch_data = results_per_branch.get_group(branch)
-            stats_result = mabsbb.bootstrap_one_branch(
+            ma_result = mabsbb.bootstrap_one_branch(
                 branch_data[metric],
                 num_samples=self.num_samples,
-                summary_quantiles=self.summary_quantiles,
-            ).to_dict()
-
-            for quantile in self.summary_quantiles:
-                # calculate confidence interval
-                data = branch_data[metric]
-                t = stats_result[str(quantile)]
-                confidence_margin = 0.5 * (1.0 - self.confidence_interval)
-                confidence_high = (0.0 + confidence_margin) * 100
-                confidence_low = (1.0 - confidence_margin) * 100
-                lower = t - np.percentile(data - t, confidence_low)
-                upper = t - np.percentile(data - t, confidence_high)
-
-                result = StatisticResult(
-                    metric=metric,
-                    statistic=self.name(),
-                    parameter=quantile,
-                    label=branch,
-                    point=t,
-                    ci_width=self.confidence_interval,
-                    lower=lower,
-                    upper=upper,
-                )
-
-                stats_results.data.append(result)
+                summary_quantiles=summary_quantiles,
+            )
+            # floating point arithmetic was a mistake
+            lower_index, upper_index = None, None
+            for i in ma_result.index:
+                try:
+                    f = float(i)
+                except ValueError:
+                    continue
+                if abs(f - summary_quantiles[0]) < 0.0001:
+                    lower_index = i
+                if abs(f - summary_quantiles[1]) < 0.0001:
+                    upper_index = i
+            result = StatisticResult(
+                metric=metric,
+                statistic=self.name(),
+                parameter=None,
+                label=branch,
+                ci_width=self.confidence_interval,
+                point=ma_result["mean"],
+                lower=ma_result[lower_index] if lower_index else None,
+                upper=ma_result[upper_index] if upper_index else None,
+            )
+            stats_results.data.append(result)
 
         return stats_results
