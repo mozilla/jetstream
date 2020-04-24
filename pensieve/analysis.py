@@ -14,7 +14,7 @@ from mozanalysis.experiment import TimeLimits
 import mozanalysis.metrics.desktop as mmd
 from mozanalysis.utils import add_days
 
-from . import experimenter
+from . import config
 
 
 @attr.s(auto_attribs=True)
@@ -25,7 +25,7 @@ class Analysis:
 
     project: str
     dataset: str
-    experiment: experimenter.Experiment
+    config: config.AnalysisConfiguration
 
     # list of standard metrics to be computed
     STANDARD_METRICS = [
@@ -50,17 +50,17 @@ class Analysis:
         prior_date_str = (current_date - timedelta(days=1)).strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        if not self.experiment.proposed_enrollment:
-            self.logger.info("Skipping %s; no enrollment period", self.experiment.slug)
+        if not self.config.experiment.proposed_enrollment:
+            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.slug)
             return None
 
-        dates_enrollment = self.experiment.proposed_enrollment + 1
+        dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
-        if self.experiment.start_date is None:
+        if self.config.experiment.start_date is None:
             return None
 
         time_limits_args = {
-            "first_enrollment_date": self.experiment.start_date.strftime("%Y-%m-%d"),
+            "first_enrollment_date": self.config.experiment.start_date.strftime("%Y-%m-%d"),
             "time_series_period": "weekly",
             "num_dates_enrollment": dates_enrollment,
         }
@@ -93,14 +93,14 @@ class Analysis:
         return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
     def _table_name(self, window_period: str, window_index: int) -> str:
-        assert self.experiment.normandy_slug is not None
-        normalized_slug = self._normalize_name(self.experiment.normandy_slug)
+        assert self.config.experiment.normandy_slug is not None
+        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         return "_".join([normalized_slug, window_period, str(window_index)])
 
     def _publish_view(self, window_period: str):
-        assert self.experiment.normandy_slug is not None
+        assert self.config.experiment.normandy_slug is not None
         mapping = {"day": "daily", "week": "weekly", "all": "all"}
-        normalized_slug = self._normalize_name(self.experiment.normandy_slug)
+        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, mapping[window_period]])
         wildcard_expr = "_".join([normalized_slug, window_period, "*"])
         sql = dedent(
@@ -119,24 +119,24 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        self.logger.info("Analysis.run invoked for experiment %s", self.experiment.slug)
+        self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.slug)
 
-        if self.experiment.normandy_slug is None:
-            self.logger.info("Skipping %s; no normandy_slug", self.experiment.slug)
+        if self.config.experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no normandy_slug", self.config.experiment.slug)
             return  # some experiments do not have a normandy slug
 
-        if self.experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", self.experiment.slug)
+        if self.config.experiment.start_date is None:
+            self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
 
         time_limits = self._get_timelimits_if_ready(current_date)
         if time_limits is None:
-            self.logger.info("Skipping %s; not ready", self.experiment.slug)
+            self.logger.info("Skipping %s; not ready", self.config.experiment.slug)
             return
 
         exp = mozanalysis.experiment.Experiment(
-            experiment_slug=self.experiment.normandy_slug,
-            start_date=self.experiment.start_date.strftime("%Y-%m-%d"),
+            experiment_slug=self.config.experiment.normandy_slug,
+            start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
         window = len(time_limits.analysis_windows)
@@ -156,13 +156,13 @@ class Analysis:
         sql = exp.build_query(self.STANDARD_METRICS, last_window_limits, "normandy", None)
 
         if dry_run:
-            self.logger.info("Not executing query for %s; dry run", self.experiment.slug)
+            self.logger.info("Not executing query for %s; dry run", self.config.experiment.slug)
             return
 
-        self.logger.info("Executing query for %s", self.experiment.slug)
+        self.logger.info("Executing query for %s", self.config.experiment.slug)
         self.bigquery.execute(sql, res_table_name)
         self._publish_view("week")
-        self.logger.info("Finished running query for %s", self.experiment.slug)
+        self.logger.info("Finished running query for %s", self.config.experiment.slug)
 
 
 @attr.s(auto_attribs=True, slots=True)

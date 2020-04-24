@@ -4,6 +4,7 @@ import logging
 import click
 import pytz
 
+from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .analysis import Analysis
 
@@ -52,6 +53,10 @@ def run(project_id, dataset_id, date, dry_run):
 
     active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
+    # Create a trivial configuration containing defaults
+    spec = AnalysisSpec.from_dict({})
+
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
-        Analysis(project_id, dataset_id, experiment).run(date, dry_run=dry_run)
+        config = spec.resolve(experiment)
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
