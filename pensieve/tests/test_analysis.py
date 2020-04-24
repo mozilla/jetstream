@@ -3,20 +3,35 @@ from datetime import timedelta
 import json
 import pytz
 
-from pensieve.analysis import Analysis
+from pensieve.analysis import Analysis, AnalysisPeriod
+from pensieve.config import AnalysisSpec
 from pensieve.experimenter import Experiment
 
 
 def test_get_timelimits_if_ready(experiments):
-    analysis = Analysis("test", "test", experiments[0])
-    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
-    assert analysis._get_timelimits_if_ready(date)
-
+    config = AnalysisSpec().resolve(experiments[0])
+    analysis = Analysis("test", "test", config)
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
-    assert analysis._get_timelimits_if_ready(date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
-    assert analysis._get_timelimits_if_ready(date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+
+    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(7)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+
+    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date)
+
+    date = dt.datetime(2020, 3, 1, tzinfo=pytz.utc)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
+
+    date = dt.datetime(2020, 3, 2, tzinfo=pytz.utc)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
 
 
 def test_regression_20200320():
@@ -51,7 +66,8 @@ def test_regression_20200320():
         }
     """  # noqa
     experiment = Experiment.from_dict(json.loads(experiment_json))
-    analysis = Analysis("test", "test", experiment)
+    config = AnalysisSpec().resolve(experiment)
+    analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 19), dry_run=True)
 
 
@@ -110,5 +126,6 @@ def test_regression_20200316():
     }
     """
     experiment = Experiment.from_dict(json.loads(experiment_json))
-    analysis = Analysis("test", "test", experiment)
+    config = AnalysisSpec().resolve(experiment)
+    analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16), dry_run=True)
