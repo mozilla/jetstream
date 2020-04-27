@@ -11,7 +11,9 @@ import string
 
 from mozanalysis.metrics import Metric, DataSource, agg_sum
 from google.api_core.exceptions import NotFound
+
 from pensieve.analysis import Analysis
+from pensieve.config import AnalysisSpec
 from pensieve.experimenter import Experiment, Variant
 
 TEST_DIR = Path(__file__).parent.parent
@@ -98,7 +100,7 @@ class TestAnalysisIntegration:
             query = query.replace("telemetry", self.static_dataset)
             return query
 
-        analysis = Analysis(self.project_id, self.test_dataset, experiment)
+        config = AnalysisSpec().resolve(experiment)
 
         test_clients_daily = DataSource(
             name="clients_daily", from_expr=f"`{self.project_id}.test_data.clients_daily`",
@@ -110,7 +112,11 @@ class TestAnalysisIntegration:
             select_expr=agg_sum("active_hours_sum"),
         )
 
-        analysis.STANDARD_METRICS = [test_active_hours]
+        config.metrics.daily = []
+        config.metrics.weekly = [test_active_hours]
+        config.metrics.overall = []
+
+        analysis = Analysis(self.project_id, self.test_dataset, config)
 
         with mock.patch.object(
             mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
