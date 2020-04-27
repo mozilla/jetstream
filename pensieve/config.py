@@ -34,19 +34,19 @@ import pensieve.experimenter
 # TODO: these should be objects that pair a metric with a default statistical treatment.
 DEFAULT_METRICS = {
     "desktop": {
-        "daily": {mozanalysis.metrics.desktop.unenroll},
-        "weekly": {
+        "daily": [mozanalysis.metrics.desktop.unenroll],
+        "weekly": [
             mozanalysis.metrics.desktop.active_hours,
             mozanalysis.metrics.desktop.uri_count,
             mozanalysis.metrics.desktop.ad_clicks,
             mozanalysis.metrics.desktop.search_count,
-        },
-        "overall": {
+        ],
+        "overall": [
             mozanalysis.metrics.desktop.active_hours,
             mozanalysis.metrics.desktop.uri_count,
             mozanalysis.metrics.desktop.ad_clicks,
             mozanalysis.metrics.desktop.search_count,
-        },
+        ],
     }
 }
 
