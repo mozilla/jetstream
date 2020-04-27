@@ -142,7 +142,7 @@ class Analysis:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
 
-        for period in AnalysisPeriod:
+        for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
             if time_limits is None:
                 self.logger.info(
