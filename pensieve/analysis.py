@@ -171,7 +171,7 @@ class Analysis:
 
         return res_table_name
 
-    def _calculate_statistics(self, metrics_table: str):
+    def _calculate_statistics(self, metrics_table: str, period: AnalysisPeriod):
         """
         Run statistics on metrics.
         """
@@ -179,8 +179,8 @@ class Analysis:
         metrics_data = self.bigquery.table_to_dataframe(metrics_table)
         destination_table = f"{self.project}.{self.dataset}.statistics_{metrics_table}"
 
-        for step in self.STANDARD_STEPS:
-            step.run(metrics_data).save_to_bigquery(
+        for m in self.config.metrics[period]:
+            m.run(metrics_data).save_to_bigquery(
                 self.bigquery.client, destination_table, append=True
             )
 
@@ -225,7 +225,7 @@ class Analysis:
             res_table_name = self._table_name(period.value, window)
 
             sql = exp.build_query(
-                self.config.metrics[period],
+                {m.metric for m in self.config.metrics[period]},
                 last_window_limits,
                 "normandy",
                 self.config.experiment.enrollment_query,
@@ -244,6 +244,7 @@ class Analysis:
             )
             self.bigquery.execute(sql, res_table_name)
             self._publish_view(period)
+            self._calculate_statistics(res_table_name, period)
             self.logger.info(
                 "Finished running query for %s (%s)", self.config.experiment.slug, period.value
             )

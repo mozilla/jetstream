@@ -165,7 +165,7 @@ class StatisticReference:
             # use default statistic as is
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == self.name:
-                    return statistic()
+                    return statistic.from_config({})
 
             raise ValueError(f"Statistic {self.name} does not exist.")
 
@@ -292,7 +292,7 @@ class StatisticDefinition:
     def resolve(self, spec: "AnalysisSpec") -> Statistic:
         for statistic in Statistic.__subclasses__():
             if statistic.name() == self.name:
-                return statistic(**self.args)
+                return statistic.from_config(self.args)
 
         raise ValueError(f"Statistic {self.name} does not exist.")
 
