@@ -19,7 +19,7 @@ class StatisticResult:
 
     metric: str
     statistic: str
-    parameter: Decimal
+    parameter: Optional[Decimal]
     label: str
     ci_width: Optional[float] = 0.0
     point: Optional[float] = 0.0
