@@ -14,8 +14,10 @@ from google.api_core.exceptions import NotFound
 
 from pensieve import AnalysisPeriod
 from pensieve.analysis import Analysis
-from pensieve.config import AnalysisSpec
+from pensieve.config import AnalysisSpec, MetricWithTreatment
 from pensieve.experimenter import Experiment, Variant
+from pensieve.statistics import BootstrapMean
+
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -113,7 +115,11 @@ class TestAnalysisIntegration:
             select_expr=agg_sum("active_hours_sum"),
         )
 
-        config.metrics = {AnalysisPeriod.WEEK: [test_active_hours]}
+        config.metrics = {
+            AnalysisPeriod.WEEK: [
+                MetricWithTreatment(test_active_hours, BootstrapMean.from_config({}))
+            ]
+        }
 
         analysis = Analysis(self.project_id, self.test_dataset, config)
 
