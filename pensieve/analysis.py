@@ -12,6 +12,7 @@ import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import mozanalysis
+import mozanalysis.metrics.desktop as mmd
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
