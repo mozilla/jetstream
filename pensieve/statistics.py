@@ -88,16 +88,16 @@ class Statistic(ABC):
         of statistic results.
         """
 
-        data = df
-        for pre_treatment in self.pre_treatments:
-            data = pre_treatment.apply(data)
-
-        col = StatisticResultCollection([])
+        statistic_result_collection = StatisticResultCollection([])
 
         if metric in df:
-            col.data += self.transform(df, metric).data
+            data = df
+            for pre_treatment in self.pre_treatments:
+                data = pre_treatment.apply(data)
 
-        return col
+            statistic_result_collection.data += self.transform(df, metric).data
+
+        return statistic_result_collection
 
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         return NotImplemented
