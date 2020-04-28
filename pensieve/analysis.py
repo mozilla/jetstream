@@ -19,19 +19,7 @@ from mozanalysis.utils import add_days
 from . import experimenter
 from pensieve.statistics import BootstrapMean, Statistic
 from . import AnalysisPeriod
-from . import config
-
-# todo: this should be moved to config once that PR lands
-# todo: find a better name
-@attr.s(auto_attribs=True)
-class AnalysisStep:
-    metric: mozanalysis.metrics.Metric
-    statistic: Statistic
-
-    def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
-        """Apply the statistic transformation for data related to the specified metric."""
-        return self.statistic.apply(data, self.metric.name)
-
+from pensieve.config import AnalysisConfiguration
 
 
 @attr.s(auto_attribs=True)
@@ -42,20 +30,7 @@ class Analysis:
 
     project: str
     dataset: str
-    config: config.AnalysisConfiguration
-
-    # list of standard metrics and statistics to be calculated
-    STANDARD_STEPS = [
-        AnalysisStep(
-            metric=mmd.active_hours,
-            statistic=BootstrapMean.from_config(
-                {
-                    "num_samples": 1000,
-                    "branches": ["branch1", "branch2"],
-                }
-            ),
-        )
-    ]
+    config: AnalysisConfiguration
 
     def __attrs_post_init__(self):
         self.logger = logging.getLogger(__name__)
@@ -214,11 +189,11 @@ class Analysis:
         Run analysis using mozanalysis for a specific experiment.
         """
         self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.slug)
-        
+
         if self.config.experiment.normandy_slug is None:
             self.logger.info("Skipping %s; no normandy_slug", self.config.experiment.slug)
             return  # some experiments do not have a normandy slug
-        
+
         if self.config.experiment.start_date is None:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
