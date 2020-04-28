@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import attr
-import cattr
 from pandas import DataFrame
 
 

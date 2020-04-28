@@ -1,23 +1,18 @@
 from datetime import datetime, timedelta
 import re
 import logging
-import pandas
 from textwrap import dedent
 from typing import Optional
 
 import attr
-import enum
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import mozanalysis
-import mozanalysis.metrics.desktop as mmd
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
-from . import experimenter
-from pensieve.statistics import BootstrapMean, Statistic
 from . import AnalysisPeriod
 from pensieve.config import AnalysisConfiguration
 
@@ -134,7 +129,11 @@ class Analysis:
         self.bigquery.execute(sql)
 
     def _calculate_metrics(
-        self, exp: mozanalysis.experiment.Experiment, time_limits: TimeLimits, dry_run: bool
+        self,
+        exp: mozanalysis.experiment.Experiment,
+        time_limits: TimeLimits,
+        period: AnalysisPeriod,
+        dry_run: bool,
     ):
         """
         Calculate metrics for a specific experiment.
@@ -152,22 +151,18 @@ class Analysis:
             ),
         )
 
-        res_table_name = self._table_name("week", window)
+        res_table_name = self._table_name(period.value, window)
 
-        # this could be rewritten to something like set([step.metric for step in self.STANDARD_STEPS])
-        # if Metric had __eq()__ implemented.
-        seen_metrics = set()
-        metrics_set = []
-        for step in self.STANDARD_STEPS:
-            if step.metric.name not in seen_metrics:
-                metrics_set.append(step.metric)
-                seen_metrics.add(step.metric.name)
+        sql = exp.build_query(
+            {m.metric for m in self.config.metrics[period]},
+            last_window_limits,
+            "normandy",
+            self.config.experiment.enrollment_query,
+        )
 
-        sql = exp.build_query(metrics_set, last_window_limits, "normandy", None)
-
-        self.logger.info("Executing query for %s", self.experiment.slug)
+        self.logger.info("Executing query for %s (%s)", self.config.experiment.slug, period.value)
         self.bigquery.execute(sql, res_table_name)
-        self._publish_view("week")
+        self._publish_view(period)
 
         return res_table_name
 
@@ -211,26 +206,6 @@ class Analysis:
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             )
 
-            window = len(time_limits.analysis_windows)
-            last_analysis_window = time_limits.analysis_windows[-1]
-            # TODO: Add this functionality to TimeLimits.
-            last_window_limits = attr.evolve(
-                time_limits,
-                analysis_windows=[last_analysis_window],
-                first_date_data_required=add_days(
-                    time_limits.first_enrollment_date, last_analysis_window.start
-                ),
-            )
-
-            res_table_name = self._table_name(period.value, window)
-
-            sql = exp.build_query(
-                {m.metric for m in self.config.metrics[period]},
-                last_window_limits,
-                "normandy",
-                self.config.experiment.enrollment_query,
-            )
-
             if dry_run:
                 self.logger.info(
                     "Not executing query for %s (%s); dry run",
@@ -239,12 +214,8 @@ class Analysis:
                 )
                 return
 
-            self.logger.info(
-                "Executing query for %s (%s)", self.config.experiment.slug, period.value
-            )
-            self.bigquery.execute(sql, res_table_name)
-            self._publish_view(period)
-            self._calculate_statistics(res_table_name, period)
+            metrics_table = self._calculate_metrics(exp, time_limits, period, dry_run)
+            self._calculate_statistics(metrics_table, period)
             self.logger.info(
                 "Finished running query for %s (%s)", self.config.experiment.slug, period.value
             )

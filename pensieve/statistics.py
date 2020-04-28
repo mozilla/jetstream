@@ -1,14 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import attr
-import cattr
 from decimal import Decimal
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 from google.cloud import bigquery
-from google.api_core.exceptions import NotFound
-from typing import Callable, Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional
 from pandas import DataFrame
-import pandas
-import numpy as np
 import re
 
 from pensieve.pre_treatment import PreTreatment, RemoveNulls
