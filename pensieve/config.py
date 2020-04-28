@@ -19,7 +19,7 @@ which produce concrete mozanalysis classes when resolved.
 """
 
 from types import ModuleType
-from typing import Any, Dict, Iterable, List, Optional, Set, Type, TypeVar
+from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
 
 import attr
 import cattr
@@ -27,25 +27,26 @@ import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 
+from pensieve.analysis import AnalysisPeriod
 import pensieve.experimenter
 
 
 # TODO: these should be objects that pair a metric with a default statistical treatment.
 DEFAULT_METRICS = {
     "desktop": {
-        "daily": {mozanalysis.metrics.desktop.unenroll},
-        "weekly": {
+        "daily": [mozanalysis.metrics.desktop.unenroll],
+        "weekly": [
             mozanalysis.metrics.desktop.active_hours,
             mozanalysis.metrics.desktop.uri_count,
             mozanalysis.metrics.desktop.ad_clicks,
             mozanalysis.metrics.desktop.search_count,
-        },
-        "overall": {
+        ],
+        "overall": [
             mozanalysis.metrics.desktop.active_hours,
             mozanalysis.metrics.desktop.uri_count,
             mozanalysis.metrics.desktop.ad_clicks,
             mozanalysis.metrics.desktop.search_count,
-        },
+        ],
     }
 }
 
@@ -173,13 +174,7 @@ class MetricDefinition:
         )
 
 
-@attr.s(auto_attribs=True)
-class MetricsConfiguration:
-    """Contains the metrics configured for each analysis window of an experiment."""
-
-    daily: Set[mozanalysis.metrics.Metric]
-    weekly: Set[mozanalysis.metrics.Metric]
-    overall: Set[mozanalysis.metrics.Metric]
+MetricsConfigurationType = Dict[AnalysisPeriod, List[mozanalysis.metrics.Metric]]
 
 
 @attr.s(auto_attribs=True)
@@ -195,7 +190,7 @@ class MetricsSpec:
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
         params: Dict[str, Any] = {}
-        known_keys = ("daily", "weekly", "overall")
+        known_keys = {f.name for f in attr.fields(cls)}
         for k in known_keys:
             v = d.get(k, [])
             if not isinstance(v, list):
@@ -211,21 +206,24 @@ class MetricsSpec:
     @staticmethod
     def _merge_metrics(
         user: Iterable[mozanalysis.metrics.Metric], default: Iterable[mozanalysis.metrics.Metric]
-    ) -> Set[mozanalysis.metrics.Metric]:
-        result = set(user)
+    ) -> List[mozanalysis.metrics.Metric]:
+        result = list(user)
         user_names = {m.name for m in user}
         for m in default:
             if m.name not in user_names:
-                result.add(m)
+                result.append(m)
         return result
 
-    def resolve(self, spec: "AnalysisSpec") -> MetricsConfiguration:
+    def resolve(self, spec: "AnalysisSpec") -> MetricsConfigurationType:
         def merge(k: str):
             return self._merge_metrics(
                 {ref.resolve(spec) for ref in getattr(self, k)}, DEFAULT_METRICS["desktop"][k]
             )
 
-        return MetricsConfiguration(merge("daily"), merge("weekly"), merge("overall"))
+        result = {}
+        for period in AnalysisPeriod:
+            result[period] = merge(period.adjective)
+        return result
 
 
 _converter.register_structure_hook(MetricsSpec, lambda obj, _type: MetricsSpec.from_dict(obj))
@@ -281,7 +279,7 @@ class AnalysisConfiguration:
     """
 
     experiment: ExperimentConfiguration
-    metrics: MetricsConfiguration
+    metrics: MetricsConfigurationType
 
 
 @attr.s(auto_attribs=True)

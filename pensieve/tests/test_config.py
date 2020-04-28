@@ -3,7 +3,7 @@ from textwrap import dedent
 import toml
 import pytest
 
-from pensieve import config
+from pensieve import AnalysisPeriod, config
 
 
 class TestAnalysisSpec:
@@ -13,7 +13,7 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         assert isinstance(cfg, config.AnalysisConfiguration)
         # There should be some default metrics
-        assert len(cfg.metrics.weekly)
+        assert len(cfg.metrics[AnalysisPeriod.WEEK])
 
     def test_scalar_metrics_throws_exception(self):
         config_str = dedent(
@@ -38,7 +38,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        metric = [m for m in cfg.metrics.weekly if m.name == "my_cool_metric"][0]
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "my_cool_metric"][0]
         assert "agg_histogram_mean" not in metric.select_expr
         assert "json_extract_histogram" in metric.select_expr
 
@@ -51,7 +51,9 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        assert len([m for m in cfg.metrics.weekly if m.name == "view_about_logins"]) == 1
+        assert (
+            len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "view_about_logins"]) == 1
+        )
 
     def test_duplicate_metrics_are_okay(self, experiments):
         config_str = dedent(
@@ -62,7 +64,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        assert len([m for m in cfg.metrics.weekly if m.name == "unenroll"]) == 1
+        assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "unenroll"]) == 1
 
     def test_data_source_definition(self, experiments):
         config_str = dedent(
@@ -81,7 +83,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        spam = [m for m in cfg.metrics.weekly if m.name == "spam"][0]
+        spam = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "spam"][0]
         assert spam.data_source.name == "eggs"
         assert "camelot" in spam.data_source.from_expr
         assert "client_info" in spam.data_source.client_id_column
@@ -100,7 +102,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        stock = [m for m in cfg.metrics.weekly if m.name == "active_hours"][0]
+        stock = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "active_hours"][0]
 
         config_str = dedent(
             """
@@ -114,7 +116,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        custom = [m for m in cfg.metrics.weekly if m.name == "active_hours"][0]
+        custom = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "active_hours"][0]
 
         assert stock != custom
         assert custom.select_expr == "spam"

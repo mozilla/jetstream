@@ -12,6 +12,7 @@ import string
 from mozanalysis.metrics import Metric, DataSource, agg_sum
 from google.api_core.exceptions import NotFound
 
+from pensieve import AnalysisPeriod
 from pensieve.analysis import Analysis
 from pensieve.config import AnalysisSpec
 from pensieve.experimenter import Experiment, Variant
@@ -112,9 +113,7 @@ class TestAnalysisIntegration:
             select_expr=agg_sum("active_hours_sum"),
         )
 
-        config.metrics.daily = []
-        config.metrics.weekly = [test_active_hours]
-        config.metrics.overall = []
+        config.metrics = {AnalysisPeriod.WEEK: [test_active_hours]}
 
         analysis = Analysis(self.project_id, self.test_dataset, config)
 

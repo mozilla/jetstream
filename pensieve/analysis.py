@@ -5,7 +5,6 @@ from textwrap import dedent
 from typing import Optional
 
 import attr
-import enum
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
@@ -14,18 +13,8 @@ import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
+from . import AnalysisPeriod
 from . import config
-
-
-class AnalysisPeriod(enum.Enum):
-    DAY = "day"
-    WEEK = "week"
-    OVERALL = "overall"
-
-    @property
-    def adjective(self) -> str:
-        d = {"day": "daily", "week": "weekly", "overall": "overall"}
-        return d[self.value]
 
 
 @attr.s(auto_attribs=True)
@@ -153,7 +142,7 @@ class Analysis:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
 
-        for period in AnalysisPeriod:
+        for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
             if time_limits is None:
                 self.logger.info(
@@ -180,7 +169,7 @@ class Analysis:
             res_table_name = self._table_name(period.value, window)
 
             sql = exp.build_query(
-                getattr(self.config.metrics, period.adjective),
+                self.config.metrics[period],
                 last_window_limits,
                 "normandy",
                 self.config.experiment.enrollment_query,
