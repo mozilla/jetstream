@@ -29,7 +29,7 @@ import mozanalysis.metrics.desktop
 import pandas
 
 from . import AnalysisPeriod
-from pensieve.statistics import Statistic, BootstrapMean
+from pensieve.statistics import Statistic, BootstrapMean, StatisticResultCollection
 import pensieve.experimenter
 
 
@@ -51,7 +51,7 @@ DEFAULT_METRICS = {
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.unenroll,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             )
         ],
@@ -59,25 +59,25 @@ DEFAULT_METRICS = {
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.active_hours,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.uri_count,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.search_count,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
         ],
@@ -85,25 +85,25 @@ DEFAULT_METRICS = {
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.active_hours,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.uri_count,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.search_count,
                 treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"],}
+                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
                 ),
             ),
         ],
@@ -306,7 +306,8 @@ class StatisticSpec:
     @classmethod
     def from_dict(cls, d: dict) -> "StatisticSpec":
         definitions = {
-            k: _converter.structure({"name": k, **v}, StatisticDefinition) for k, v in d.items()
+            k: _converter.structure({"name": k, "args": v}, StatisticDefinition)
+            for k, v in d.items()
         }
         return cls(definitions)
 

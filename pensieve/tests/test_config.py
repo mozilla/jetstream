@@ -4,6 +4,7 @@ import toml
 import pytest
 
 from pensieve import AnalysisPeriod, config
+from pensieve.statistics import BootstrapMean
 
 
 class TestAnalysisSpec:
@@ -154,3 +155,47 @@ class TestAnalysisSpec:
             )
 
         assert "Could not locate MyCoolClass spam" in str(e.value)
+
+    def test_unknown_statistic_failure(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = [{metric = "spam", treatment = "unknown_stat"}]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+            """
+        )
+
+        with pytest.raises(ValueError) as e:
+            spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+            spec.resolve(experiments[0])
+
+        assert "Statistic unknown_stat does not exist" in str(e)
+
+    def test_overwrite_statistic(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [statistics.bootstrap_mean]
+            num_samples = 10
+            branches = ["a", "b"]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+            0
+        ].treatment
+        bootstrap_mean.__class__ = BootstrapMean
+
+        assert bootstrap_mean.num_samples == 10
+        assert bootstrap_mean.branches == ["a", "b"]
