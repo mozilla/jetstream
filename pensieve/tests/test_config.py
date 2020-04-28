@@ -29,7 +29,7 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = ["my_cool_metric"]
+            weekly = [{metric = "my_cool_metric", treatment = "bootstrap_mean"}]
 
             [metrics.my_cool_metric]
             data_source = "main"
@@ -38,7 +38,9 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "my_cool_metric"][0]
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "my_cool_metric"][
+            0
+        ].metric
         assert "agg_histogram_mean" not in metric.select_expr
         assert "json_extract_histogram" in metric.select_expr
 
@@ -46,31 +48,43 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = ["view_about_logins"]
+            weekly = [{metric = "view_about_logins", treatment = "bootstrap_mean"}]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
         assert (
-            len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "view_about_logins"]) == 1
+            len(
+                [
+                    m
+                    for m in cfg.metrics[AnalysisPeriod.WEEK]
+                    if m.metric.name == "view_about_logins"
+                ]
+            )
+            == 1
         )
 
     def test_duplicate_metrics_are_okay(self, experiments):
         config_str = dedent(
             """
             [metrics]
-            weekly = ["unenroll", "unenroll", "active_hours"]
+            weekly = [
+                {metric = "unenroll", treatment = "bootstrap_mean"},
+                {metric = "unenroll", treatment = "bootstrap_mean"},
+                {metric = "active_hours", treatment = "bootstrap_mean"}]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "unenroll"]) == 1
+        assert (
+            len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "unenroll"]) == 1
+        )
 
     def test_data_source_definition(self, experiments):
         config_str = dedent(
             """
             [metrics]
-            weekly = ["spam"]
+            weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
 
             [metrics.spam]
             data_source = "eggs"
@@ -83,7 +97,7 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        spam = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "spam"][0]
+        spam = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
         assert spam.data_source.name == "eggs"
         assert "camelot" in spam.data_source.from_expr
         assert "client_info" in spam.data_source.client_id_column
@@ -97,17 +111,19 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = ["active_hours"]
+            weekly = [{metric = "active_hours", treatment = "bootstrap_mean"}]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        stock = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "active_hours"][0]
+        stock = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "active_hours"][
+            0
+        ].metric
 
         config_str = dedent(
             """
             [metrics]
-            weekly = ["active_hours"]
+            weekly = [{metric = "active_hours", treatment = "bootstrap_mean"}]
 
             [metrics.active_hours]
             select_expression = "spam"
@@ -116,7 +132,9 @@ class TestAnalysisSpec:
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0])
-        custom = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.name == "active_hours"][0]
+        custom = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "active_hours"][
+            0
+        ].metric
 
         assert stock != custom
         assert custom.select_expr == "spam"
