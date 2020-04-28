@@ -301,7 +301,7 @@ class StatisticDefinition:
 class StatisticSpec:
     """Describes the interface for configuring an existing statistic."""
 
-    definitions: Dict[str, Dict] = attr.Factory(dict)
+    definitions: Dict[str, StatisticDefinition] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> "StatisticSpec":
@@ -348,10 +348,10 @@ class MetricsSpec:
         result = []
         user_names = set()
 
-        for user in list(user):
-            if (user.metric.name, user.treatment.name) not in user_names:
-                result.append(user)
-                user_names.add((user.metric.name, user.treatment.name))
+        for u in list(user):
+            if (u.metric.name, u.treatment.name) not in user_names:
+                result.append(u)
+                user_names.add((u.metric.name, u.treatment.name))
 
         for m in default:
             if (m.metric.name, m.treatment.name) not in user_names:
