@@ -100,6 +100,7 @@ class Statistic(ABC):
 
         return statistic_result_collection
 
+    @abstractmethod
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         return NotImplemented
 
