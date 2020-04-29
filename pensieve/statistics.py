@@ -1,11 +1,12 @@
-from abc import ABC
-import attr
+from abc import ABC, abstractmethod
 from decimal import Decimal
-import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
-from google.cloud import bigquery
-from typing import Any, Dict, List, Optional
-from pandas import DataFrame
 import re
+from typing import Any, Dict, List, Optional
+
+import attr
+from google.cloud import bigquery
+import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
+from pandas import DataFrame
 
 from pensieve.pre_treatment import PreTreatment, RemoveNulls
 
