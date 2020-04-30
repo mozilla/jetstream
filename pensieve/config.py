@@ -45,6 +45,7 @@ class MetricWithTreatment:
         return self.treatment.apply(data, self.metric.name)
 
 
+# metrics and statistics calculated for each experiment
 DEFAULT_METRICS = {
     "desktop": {
         AnalysisPeriod.DAY: [
@@ -92,6 +93,24 @@ DEFAULT_METRICS = {
     }
 }
 
+# metrics that are available in mozanalysis with a default statistical treatment
+AVAILABLE_METRICS = {
+    "desktop": [
+        MetricWithTreatment(
+            metric=mozanalysis.metrics.desktop.view_about_logins,
+            treatment=BootstrapMean(num_samples=1000),
+        ),
+        MetricWithTreatment(
+            metric=mozanalysis.metrics.desktop.unenroll, treatment=BootstrapMean(num_samples=1000),
+        ),
+        MetricWithTreatment(
+            metric=mozanalysis.metrics.desktop.active_hours,
+            treatment=BootstrapMean(num_samples=1000),
+        ),  # todo: add more metrics
+    ]
+}
+
+
 _converter = cattr.Converter()
 
 
@@ -130,61 +149,27 @@ def _lookup_name(
 
 
 @attr.s(auto_attribs=True)
-class StatisticReference:
-    name: str
-
-    def resolve(self, spec: "AnalysisSpec") -> Statistic:
-        try:
-            # check if parameters have been defined in config
-            return _lookup_name(
-                name=self.name,
-                klass=Statistic,
-                spec=spec,
-                module=None,
-                definitions=spec.statistics.definitions,
-            )
-        except ValueError:
-            # use default statistic as is
-            for statistic in Statistic.__subclasses__():
-                if statistic.name() == self.name:
-                    return statistic.from_dict({})
-
-            raise ValueError(f"Statistic {self.name} does not exist.")
-
-
-_converter.register_structure_hook(
-    StatisticReference, lambda obj, _type: StatisticReference(name=obj)
-)
-
-
-@attr.s(auto_attribs=True)
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.metrics.Metric:
-        search = mozanalysis.metrics.desktop
-        return _lookup_name(
-            name=self.name,
-            klass=mozanalysis.metrics.Metric,
-            spec=spec,
-            module=search,
-            definitions=spec.metrics.definitions,
-        )
+    def resolve(self, spec: "AnalysisSpec") -> List[MetricWithTreatment]:
+        metrics = []
+
+        if self.name in spec.metrics.definitions:
+            return spec.metrics.definitions[self.name].resolve(spec)
+
+        for desktop_metric in AVAILABLE_METRICS["desktop"]:
+            if desktop_metric.metric.name == self.name:
+                metrics.append(desktop_metric)
+
+        if len(metrics) > 0:
+            return metrics
+
+        raise ValueError(f"Could not locate metric {self.name}")
 
 
 # These are bare strings in the configuration file.
 _converter.register_structure_hook(MetricReference, lambda obj, _type: MetricReference(name=obj))
-
-
-@attr.s(auto_attribs=True)
-class MetricWithTreatmentReference:
-    metric: MetricReference
-    treatment: StatisticReference
-
-    def resolve(self, spec: "AnalysisSpec") -> MetricWithTreatment:
-        return MetricWithTreatment(
-            metric=self.metric.resolve(spec), treatment=self.treatment.resolve(spec)
-        )
 
 
 @attr.s(auto_attribs=True)
@@ -243,58 +228,41 @@ class MetricDefinition:
     name: str  # implicit in configuration
     select_expression: str
     data_source: DataSourceReference
+    statistics: Dict[str, Dict[str, Any]]
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.metrics.Metric:
+    def resolve(self, spec: "AnalysisSpec") -> List[MetricWithTreatment]:
         select_expression = _metrics_environment.from_string(self.select_expression).render()
 
-        return mozanalysis.metrics.Metric(
+        metric = mozanalysis.metrics.Metric(
             name=self.name,
             data_source=self.data_source.resolve(spec),
             select_expr=select_expression,
         )
+
+        metrics_with_treatments = []
+
+        for statistic_name, params in self.statistics.items():
+            for statistic in Statistic.__subclasses__():
+                if statistic.name() == statistic_name:
+                    metrics_with_treatments.append(
+                        MetricWithTreatment(metric, statistic.from_dict(params))
+                    )
+                else:
+                    raise ValueError(f"Statistic {statistic_name} does not exist.")
+
+        return metrics_with_treatments
 
 
 MetricsConfigurationType = Dict[AnalysisPeriod, List[MetricWithTreatment]]
 
 
 @attr.s(auto_attribs=True)
-class StatisticDefinition:
-    name: str
-    args: Dict[str, Any]
-
-    def resolve(self, spec: "AnalysisSpec") -> Statistic:
-        for statistic in Statistic.__subclasses__():
-            if statistic.name() == self.name:
-                return statistic.from_dict(self.args)
-
-        raise ValueError(f"Statistic {self.name} does not exist.")
-
-
-@attr.s(auto_attribs=True)
-class StatisticSpec:
-    """Describes the interface for configuring an existing statistic."""
-
-    definitions: Dict[str, StatisticDefinition] = attr.Factory(dict)
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "StatisticSpec":
-        definitions = {
-            k: _converter.structure({"name": k, "args": v}, StatisticDefinition)
-            for k, v in d.items()
-        }
-        return cls(definitions)
-
-
-_converter.register_structure_hook(StatisticSpec, lambda obj, _type: StatisticSpec.from_dict(obj))
-
-
-@attr.s(auto_attribs=True)
 class MetricsSpec:
     """Describes the interface for the metrics section in configuration."""
 
-    daily: List[MetricWithTreatmentReference] = attr.Factory(list)
-    weekly: List[MetricWithTreatmentReference] = attr.Factory(list)
-    overall: List[MetricWithTreatmentReference] = attr.Factory(list)
+    daily: List[MetricReference] = attr.Factory(list)
+    weekly: List[MetricReference] = attr.Factory(list)
+    overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
@@ -306,7 +274,7 @@ class MetricsSpec:
             v = d.get(k, [])
             if not isinstance(v, list):
                 raise ValueError(f"metrics.{k} should be a list of metrics")
-            params[k] = [_converter.structure(m, MetricWithTreatmentReference) for m in v]
+            params[k] = [MetricReference(m) for m in v]
         params["definitions"] = {
             k: _converter.structure({"name": k, **v}, MetricDefinition)
             for k, v in d.items()
@@ -334,7 +302,7 @@ class MetricsSpec:
     def resolve(self, spec: "AnalysisSpec") -> MetricsConfigurationType:
         def merge(k: AnalysisPeriod):
             return self._merge_metrics(
-                [ref.resolve(spec) for ref in getattr(self, k.adjective)],
+                [m for ref in getattr(self, k.adjective) for m in ref.resolve(spec)],
                 DEFAULT_METRICS["desktop"][k],
             )
 
@@ -411,7 +379,6 @@ class AnalysisSpec:
 
     experiment: ExperimentSpec = attr.Factory(ExperimentSpec)
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
-    statistics: StatisticSpec = attr.Factory(StatisticSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
 
     @classmethod
