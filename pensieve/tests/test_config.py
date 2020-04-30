@@ -182,3 +182,6 @@ class TestAnalysisSpec:
         bootstrap_mean.__class__ = BootstrapMean
 
         assert bootstrap_mean.num_samples == 10
+
+
+# todo: test for configuring pre-treatments
