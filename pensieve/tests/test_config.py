@@ -174,28 +174,28 @@ class TestAnalysisSpec:
 
         assert "Statistic unknown_stat does not exist" in str(e)
 
-    def test_overwrite_statistic(self, experiments):
-        config_str = dedent(
-            """
-            [metrics]
-            weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
+    # def test_overwrite_statistic(self, experiments):
+    #     config_str = dedent(
+    #         """
+    #         [metrics]
+    #         weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
 
-            [metrics.spam]
-            data_source = "main"
-            select_expression = "1"
+    #         [metrics.spam]
+    #         data_source = "main"
+    #         select_expression = "1"
 
-            [statistics.bootstrap_mean]
-            num_samples = 10
-            branches = ["a", "b"]
-            """
-        )
+    #         [statistics.bootstrap_mean]
+    #         num_samples = 10
+    #         branches = ["a", "b"]
+    #         """
+    #     )
 
-        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[0])
-        bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
-            0
-        ].treatment
-        bootstrap_mean.__class__ = BootstrapMean
+    #     spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+    #     cfg = spec.resolve(experiments[0])
+    #     bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+    #         0
+    #     ].treatment
+    #     bootstrap_mean.__class__ = BootstrapMean
 
-        assert bootstrap_mean.num_samples == 10
-        assert bootstrap_mean.branches == ["a", "b"]
+    #     assert bootstrap_mean.num_samples == 10
+    #     assert bootstrap_mean.branches == ["a", "b"]

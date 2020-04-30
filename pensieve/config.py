@@ -50,61 +50,43 @@ DEFAULT_METRICS = {
         AnalysisPeriod.DAY: [
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.unenroll,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             )
         ],
         AnalysisPeriod.WEEK: [
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.active_hours,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.uri_count,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.search_count,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
         ],
         AnalysisPeriod.OVERALL: [
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.active_hours,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.uri_count,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
             MetricWithTreatment(
                 metric=mozanalysis.metrics.desktop.search_count,
-                treatment=BootstrapMean.from_config(
-                    {"num_samples": 1000, "branches": ["branch1", "branch2"]}
-                ),
+                treatment=BootstrapMean(num_samples=1000),
             ),
         ],
     }
@@ -165,7 +147,7 @@ class StatisticReference:
             # use default statistic as is
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == self.name:
-                    return statistic.from_config({})
+                    return statistic.from_dict({})
 
             raise ValueError(f"Statistic {self.name} does not exist.")
 
@@ -203,15 +185,6 @@ class MetricWithTreatmentReference:
         return MetricWithTreatment(
             metric=self.metric.resolve(spec), treatment=self.treatment.resolve(spec)
         )
-
-
-_converter.register_structure_hook(
-    MetricWithTreatmentReference,
-    lambda obj, _type: MetricWithTreatmentReference(
-        metric=_converter.structure(obj["metric"], MetricReference),
-        treatment=_converter.structure(obj["treatment"], StatisticReference),
-    ),
-)
 
 
 @attr.s(auto_attribs=True)
@@ -292,7 +265,7 @@ class StatisticDefinition:
     def resolve(self, spec: "AnalysisSpec") -> Statistic:
         for statistic in Statistic.__subclasses__():
             if statistic.name() == self.name:
-                return statistic.from_config(self.args)
+                return statistic.from_dict(self.args)
 
         raise ValueError(f"Statistic {self.name} does not exist.")
 
