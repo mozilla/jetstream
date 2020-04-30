@@ -133,8 +133,6 @@ class BootstrapMean(Statistic):
             individual_summary_quantiles=summary_quantiles,
         )
 
-        print(ma_result)
-
         ma_individual_result = ma_result["individual"]
 
         # floating point arithmetic was a mistake

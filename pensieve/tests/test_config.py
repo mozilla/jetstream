@@ -30,11 +30,12 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "my_cool_metric", treatment = "bootstrap_mean"}]
-
+            weekly = ["my_cool_metric"]
             [metrics.my_cool_metric]
             data_source = "main"
             select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -49,7 +50,7 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "view_about_logins", treatment = "bootstrap_mean"}]
+            weekly = ["view_about_logins"]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -69,10 +70,7 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = [
-                {metric = "unenroll", treatment = "bootstrap_mean"},
-                {metric = "unenroll", treatment = "bootstrap_mean"},
-                {metric = "active_hours", treatment = "bootstrap_mean"}]
+            weekly = ["unenroll", "unenroll", "active_hours"]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -85,11 +83,11 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
-
+            weekly = ["spam"]
             [metrics.spam]
             data_source = "eggs"
             select_expression = "1"
+            [metrics.spam.statistics.bootstrap_mean]
 
             [data_sources.eggs]
             from_expression = "england.camelot"
@@ -105,14 +103,13 @@ class TestAnalysisSpec:
 
     def test_definitions_override_other_metrics(self, experiments):
         """Test that config definitions override mozanalysis definitions.
-
         Users can specify a metric with the same name as a metric built into mozanalysis.
         The user's metric from the config file should win.
         """
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "active_hours", treatment = "bootstrap_mean"}]
+            weekly = ["active_hours"]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -124,11 +121,12 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "active_hours", treatment = "bootstrap_mean"}]
-
+            weekly = ["active_hours"]
             [metrics.active_hours]
             select_expression = "spam"
             data_source = "main"
+
+            [metrics.active_hours.statistics.bootstrap_mean]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -141,30 +139,17 @@ class TestAnalysisSpec:
         assert custom.select_expr == "spam"
         assert stock.select_expr != custom.select_expr
 
-    def test_lookup_name_failure(self):
-        class MyCoolClass:
-            pass
-
-        with pytest.raises(ValueError) as e:
-            config._lookup_name(
-                name="spam",
-                klass=MyCoolClass,
-                spec=config.AnalysisSpec(),
-                module=None,
-                definitions={},
-            )
-
-        assert "Could not locate MyCoolClass spam" in str(e.value)
-
     def test_unknown_statistic_failure(self, experiments):
         config_str = dedent(
             """
             [metrics]
-            weekly = [{metric = "spam", treatment = "unknown_stat"}]
+            weekly = ["spam"]
 
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
+
+            [metrics.spam.statistics.unknown_stat]
             """
         )
 
@@ -174,28 +159,26 @@ class TestAnalysisSpec:
 
         assert "Statistic unknown_stat does not exist" in str(e)
 
-    # def test_overwrite_statistic(self, experiments):
-    #     config_str = dedent(
-    #         """
-    #         [metrics]
-    #         weekly = [{metric = "spam", treatment = "bootstrap_mean"}]
+    def test_overwrite_statistic(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
 
-    #         [metrics.spam]
-    #         data_source = "main"
-    #         select_expression = "1"
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
 
-    #         [statistics.bootstrap_mean]
-    #         num_samples = 10
-    #         branches = ["a", "b"]
-    #         """
-    #     )
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
 
-    #     spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-    #     cfg = spec.resolve(experiments[0])
-    #     bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
-    #         0
-    #     ].treatment
-    #     bootstrap_mean.__class__ = BootstrapMean
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+            0
+        ].treatment
+        bootstrap_mean.__class__ = BootstrapMean
 
-    #     assert bootstrap_mean.num_samples == 10
-    #     assert bootstrap_mean.branches == ["a", "b"]
+        assert bootstrap_mean.num_samples == 10
