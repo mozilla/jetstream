@@ -107,6 +107,22 @@ class Statistic(ABC):
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]):
         """Create a class instance with the specified config parameters."""
+        if "pre_treatments" in config_dict:
+            # convert pre-treatments to class instances
+            pre_treatments = []
+
+            for pre_treatment_name in config_dict["pre_treatments"]:
+                found = False
+                for pre_treatment in PreTreatment.__subclasses__():
+                    if pre_treatment.name() == pre_treatment_name:
+                        pre_treatments.append(pre_treatment)
+                        found = True
+
+                if not found:
+                    raise ValueError(f"Could not find pre-treatment {pre_treatment_name}")
+
+            config_dict["pre_treatments"] = pre_treatments
+
         return cls(**config_dict)
 
 
