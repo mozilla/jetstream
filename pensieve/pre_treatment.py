@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import attr
 from pandas import DataFrame
+import re
 
 
 @attr.s(auto_attribs=True)
@@ -12,7 +13,8 @@ class PreTreatment(ABC):
 
     @classmethod
     def name(cls):
-        return __name__  # todo: snake case names?
+        """Return snake-cased name of the statistic."""
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
     @abstractmethod
     def apply(self, df: DataFrame) -> DataFrame:
