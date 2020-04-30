@@ -34,7 +34,7 @@ import pensieve.experimenter
 
 
 @attr.s(auto_attribs=True)
-class MetricWithTreatment:
+class Summary:
     """Represents a metric with a statistical treatment."""
 
     metric: mozanalysis.metrics.Metric
@@ -49,43 +49,43 @@ class MetricWithTreatment:
 DEFAULT_METRICS = {
     "desktop": {
         AnalysisPeriod.DAY: [
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.unenroll,
                 treatment=BootstrapMean(num_samples=1000),
             )
         ],
         AnalysisPeriod.WEEK: [
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.active_hours,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.uri_count,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.search_count,
                 treatment=BootstrapMean(num_samples=1000),
             ),
         ],
         AnalysisPeriod.OVERALL: [
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.active_hours,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.uri_count,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
                 treatment=BootstrapMean(num_samples=1000),
             ),
-            MetricWithTreatment(
+            Summary(
                 metric=mozanalysis.metrics.desktop.search_count,
                 treatment=BootstrapMean(num_samples=1000),
             ),
@@ -96,14 +96,14 @@ DEFAULT_METRICS = {
 # metrics that are available in mozanalysis with a default statistical treatment
 AVAILABLE_METRICS = {
     "desktop": [
-        MetricWithTreatment(
+        Summary(
             metric=mozanalysis.metrics.desktop.view_about_logins,
             treatment=BootstrapMean(num_samples=1000),
         ),
-        MetricWithTreatment(
+        Summary(
             metric=mozanalysis.metrics.desktop.unenroll, treatment=BootstrapMean(num_samples=1000),
         ),
-        MetricWithTreatment(
+        Summary(
             metric=mozanalysis.metrics.desktop.active_hours,
             treatment=BootstrapMean(num_samples=1000),
         ),  # todo: add more metrics
@@ -152,7 +152,7 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> List[MetricWithTreatment]:
+    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         metrics = []
 
         if self.name in spec.metrics.definitions:
@@ -230,7 +230,7 @@ class MetricDefinition:
     data_source: DataSourceReference
     statistics: Dict[str, Dict[str, Any]]
 
-    def resolve(self, spec: "AnalysisSpec") -> List[MetricWithTreatment]:
+    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         select_expression = _metrics_environment.from_string(self.select_expression).render()
 
         metric = mozanalysis.metrics.Metric(
@@ -244,16 +244,14 @@ class MetricDefinition:
         for statistic_name, params in self.statistics.items():
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == statistic_name:
-                    metrics_with_treatments.append(
-                        MetricWithTreatment(metric, statistic.from_dict(params))
-                    )
+                    metrics_with_treatments.append(Summary(metric, statistic.from_dict(params)))
                 else:
                     raise ValueError(f"Statistic {statistic_name} does not exist.")
 
         return metrics_with_treatments
 
 
-MetricsConfigurationType = Dict[AnalysisPeriod, List[MetricWithTreatment]]
+MetricsConfigurationType = Dict[AnalysisPeriod, List[Summary]]
 
 
 @attr.s(auto_attribs=True)
@@ -283,9 +281,7 @@ class MetricsSpec:
         return cls(**params)
 
     @staticmethod
-    def _merge_metrics(
-        user: Iterable[MetricWithTreatment], default: Iterable[MetricWithTreatment]
-    ) -> List[MetricWithTreatment]:
+    def _merge_metrics(user: Iterable[Summary], default: Iterable[Summary]) -> List[Summary]:
         result = []
         user_names = set()
 
