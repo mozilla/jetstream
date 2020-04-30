@@ -105,7 +105,7 @@ class Statistic(ABC):
         return NotImplemented
 
     @classmethod
-    def from_config(cls, config_dict: Dict[str, Any]):  # todo: plug in config file support
+    def from_dict(cls, config_dict: Dict[str, Any]):
         """Create a class instance with the specified config parameters."""
         return cls(**config_dict)
 
@@ -114,27 +114,33 @@ class Statistic(ABC):
 class BootstrapMean(Statistic):
     num_samples: int = 100
     confidence_interval: float = 0.95
+    ref_branch_label: str = "control"
+    threshold_quantile = None
     pre_treatments: List[PreTreatment] = [RemoveNulls()]
-    branches: List[str] = []
 
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
 
-        results_per_branch = df.groupby("branch")
-
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
-        for branch in self.branches:
-            branch_data = results_per_branch.get_group(branch)
-            ma_result = mabsbb.bootstrap_one_branch(
-                branch_data[metric],
-                num_samples=self.num_samples,
-                summary_quantiles=summary_quantiles,
-            )
-            # floating point arithmetic was a mistake
-            lower_index, upper_index = None, None
-            for i in ma_result.index:
+        ma_result = mabsbb.compare_branches(
+            df,
+            col_label=metric,
+            ref_branch_label=self.ref_branch_label,
+            num_samples=self.num_samples,
+            threshold_quantile=self.threshold_quantile,
+            individual_summary_quantiles=summary_quantiles,
+        )
+
+        print(ma_result)
+
+        ma_individual_result = ma_result["individual"]
+
+        # floating point arithmetic was a mistake
+        lower_index, upper_index = None, None
+        for branch, branch_result in ma_individual_result.items():
+            for i in branch_result.index:
                 try:
                     f = float(i)
                 except ValueError:
@@ -149,9 +155,9 @@ class BootstrapMean(Statistic):
                 parameter=None,
                 label=branch,
                 ci_width=self.confidence_interval,
-                point=ma_result["mean"],
-                lower=ma_result[lower_index] if lower_index else None,
-                upper=ma_result[upper_index] if upper_index else None,
+                point=branch_result["mean"],
+                lower=branch_result[lower_index] if lower_index else None,
+                upper=branch_result[upper_index] if upper_index else None,
             )
             stats_results.data.append(result)
 

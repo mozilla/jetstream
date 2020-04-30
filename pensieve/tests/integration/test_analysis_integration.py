@@ -77,7 +77,7 @@ class TestAnalysisIntegration:
             client.query(source_file.read()).result()
             yield
 
-            client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
+            # client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
 
     def test_metrics(self, client):
         experiment = Experiment(
@@ -117,7 +117,7 @@ class TestAnalysisIntegration:
 
         config.metrics = {
             AnalysisPeriod.WEEK: [
-                MetricWithTreatment(test_active_hours, BootstrapMean.from_config({}))
+                MetricWithTreatment(test_active_hours, BootstrapMean(ref_branch_label="branch1"))
             ]
         }
 
