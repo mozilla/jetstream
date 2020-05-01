@@ -157,11 +157,13 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
+    def resolve(
+        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+    ) -> List[Summary]:
         metrics = []
 
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec)
+            return spec.metrics.definitions[self.name].resolve(spec, experimenter)
 
         for desktop_metric in AVAILABLE_METRICS["desktop"]:
             if desktop_metric.metric.name == self.name:
@@ -253,7 +255,9 @@ class MetricDefinition:
     statistics: Dict[str, Dict[str, Any]]
     pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
 
-    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
+    def resolve(
+        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+    ) -> List[Summary]:
         select_expression = _metrics_environment.from_string(self.select_expression).render()
 
         metric = mozanalysis.metrics.Metric(
@@ -268,7 +272,12 @@ class MetricDefinition:
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == statistic_name:
                     pre_treatments = [pt.resolve for pt in self.pre_treatments]
-  
+
+                    if "ref_branch_label" not in params:
+                        for variant in experimenter.variants:
+                            if variant.is_control:
+                                params["ref_branch_label"] = variant.slug
+
                     metrics_with_treatments.append(
                         Summary(
                             metric=metric,
@@ -329,10 +338,12 @@ class MetricsSpec:
                 result.append(m)
         return result
 
-    def resolve(self, spec: "AnalysisSpec") -> MetricsConfigurationType:
+    def resolve(
+        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+    ) -> MetricsConfigurationType:
         def merge(k: AnalysisPeriod):
             return self._merge_metrics(
-                [m for ref in getattr(self, k.adjective) for m in ref.resolve(spec)],
+                [m for ref in getattr(self, k.adjective) for m in ref.resolve(spec, experimenter)],
                 DEFAULT_METRICS["desktop"][k],
             )
 
@@ -417,5 +428,5 @@ class AnalysisSpec:
 
     def resolve(self, experimenter: pensieve.experimenter.Experiment) -> AnalysisConfiguration:
         experiment = self.experiment.resolve(experimenter)
-        metrics = self.metrics.resolve(self)
+        metrics = self.metrics.resolve(self, experimenter)
         return AnalysisConfiguration(experiment, metrics)
