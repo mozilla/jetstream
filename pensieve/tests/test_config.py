@@ -5,6 +5,7 @@ import pytest
 
 from pensieve import AnalysisPeriod, config
 from pensieve.statistics import BootstrapMean
+from pensieve.pre_treatment import RemoveNulls
 
 
 class TestAnalysisSpec:
@@ -183,5 +184,49 @@ class TestAnalysisSpec:
 
         assert bootstrap_mean.num_samples == 10
 
+    def test_pre_treatment(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
 
-# todo: test for configuring pre-treatments
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+            pre_treatments = ["remove_nulls"]
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        pre_treatments = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+            0
+        ].pre_treatments
+
+        assert len(pre_treatments) == 1
+        assert pre_treatments[0].__class__ == RemoveNulls
+
+    def test_invalid_pre_treatment(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+            pre_treatments = ["not_existing"]
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        with pytest.raises(ValueError) as e:
+            spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+            spec.resolve(experiments[0])
+
+        assert "Could not find pre-treatment not_existing." in str(e)

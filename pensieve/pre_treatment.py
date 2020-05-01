@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import attr
 from pandas import DataFrame
 import re
@@ -16,7 +16,7 @@ class PreTreatment(ABC):
         """Return snake-cased name of the statistic."""
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
-    #@abstractmethod
+    # @abstractmethod
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         """
         Applies the pre-treatment transformation to a DataFrame and returns
