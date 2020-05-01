@@ -206,7 +206,7 @@ class PreTreatmentReference:
     def resolve(self, spec: "AnalysisSpec") -> PreTreatment:
         for pre_treatment in PreTreatment.__subclasses__():
             if pre_treatment.name() == self.name:
-                return pre_treatment
+                return pre_treatment()
 
         raise ValueError(f"Could not find pre-treatment {self.name}.")
 
@@ -271,7 +271,7 @@ class MetricDefinition:
         for statistic_name, params in self.statistics.items():
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == statistic_name:
-                    pre_treatments = [pt.resolve for pt in self.pre_treatments]
+                    pre_treatments = [pt.resolve(spec) for pt in self.pre_treatments]
 
                     if "ref_branch_label" not in params:
                         for variant in experimenter.variants:
