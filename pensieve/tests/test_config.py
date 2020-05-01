@@ -178,7 +178,7 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         bootstrap_mean = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
             0
-        ].treatment
+        ].statistic
         bootstrap_mean.__class__ = BootstrapMean
 
         assert bootstrap_mean.num_samples == 10

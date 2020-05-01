@@ -29,8 +29,9 @@ import mozanalysis.metrics.desktop
 import pandas
 
 from . import AnalysisPeriod
-from pensieve.statistics import Statistic, BootstrapMean, StatisticResultCollection
 import pensieve.experimenter
+from pensieve.statistics import Statistic, BootstrapMean, StatisticResultCollection
+from pensieve.pre_treatment import PreTreatment
 
 
 @attr.s(auto_attribs=True)
@@ -38,11 +39,15 @@ class Summary:
     """Represents a metric with a statistical treatment."""
 
     metric: mozanalysis.metrics.Metric
-    treatment: Statistic
+    statistic: Statistic
+    pre_treatments: List[PreTreatment] = []
 
     def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
-        return self.treatment.apply(data, self.metric.name)
+        for pre_treatment in self.pre_treatments:
+            data = pre_treatment.apply(data, self.metric.name)
+
+        return self.statistic.apply(data, self.metric.name)
 
 
 # metrics and statistics calculated for each experiment
@@ -51,43 +56,43 @@ DEFAULT_METRICS = {
         AnalysisPeriod.DAY: [
             Summary(
                 metric=mozanalysis.metrics.desktop.unenroll,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             )
         ],
         AnalysisPeriod.WEEK: [
             Summary(
                 metric=mozanalysis.metrics.desktop.active_hours,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.uri_count,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.search_count,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
         ],
         AnalysisPeriod.OVERALL: [
             Summary(
                 metric=mozanalysis.metrics.desktop.active_hours,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.uri_count,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.ad_clicks,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
             Summary(
                 metric=mozanalysis.metrics.desktop.search_count,
-                treatment=BootstrapMean(num_samples=1000),
+                statistic=BootstrapMean(num_samples=1000),
             ),
         ],
     }
@@ -98,14 +103,14 @@ AVAILABLE_METRICS = {
     "desktop": [
         Summary(
             metric=mozanalysis.metrics.desktop.view_about_logins,
-            treatment=BootstrapMean(num_samples=1000),
+            statistic=BootstrapMean(num_samples=1000),
         ),
         Summary(
-            metric=mozanalysis.metrics.desktop.unenroll, treatment=BootstrapMean(num_samples=1000),
+            metric=mozanalysis.metrics.desktop.unenroll, statistic=BootstrapMean(num_samples=1000),
         ),
         Summary(
             metric=mozanalysis.metrics.desktop.active_hours,
-            treatment=BootstrapMean(num_samples=1000),
+            statistic=BootstrapMean(num_samples=1000),
         ),  # todo: add more metrics
     ]
 }
@@ -193,6 +198,23 @@ _converter.register_structure_hook(
 
 
 @attr.s(auto_attribs=True)
+class PreTreatmentReference:
+    name: str
+
+    def resolve(self, spec: "AnalysisSpec") -> PreTreatment:
+        for pre_treatment in PreTreatment.__subclasses__():
+            if pre_treatment.name() == self.name:
+                return pre_treatment
+
+        raise ValueError(f"Could not find pre-treatment {self.name}.")
+
+
+_converter.register_structure_hook(
+    PreTreatmentReference, lambda obj, _type: PreTreatmentReference(name=obj)
+)
+
+
+@attr.s(auto_attribs=True)
 class ExperimentConfiguration:
     """Represents the configuration of an experiment for analysis."""
 
@@ -229,6 +251,7 @@ class MetricDefinition:
     select_expression: str
     data_source: DataSourceReference
     statistics: Dict[str, Dict[str, Any]]
+    pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
 
     def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         select_expression = _metrics_environment.from_string(self.select_expression).render()
@@ -244,9 +267,20 @@ class MetricDefinition:
         for statistic_name, params in self.statistics.items():
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == statistic_name:
-                    metrics_with_treatments.append(Summary(metric, statistic.from_dict(params)))
+                    pre_treatments = [pt.resolve for pt in self.pre_treatments]
+  
+                    metrics_with_treatments.append(
+                        Summary(
+                            metric=metric,
+                            statistic=statistic.from_dict(params),
+                            pre_treatments=pre_treatments,
+                        )
+                    )
                 else:
                     raise ValueError(f"Statistic {statistic_name} does not exist.")
+
+        if len(metrics_with_treatments) == 0:
+            raise ValueError(f"Metric {self.name} has no statistical treatment defined.")
 
         return metrics_with_treatments
 
@@ -286,12 +320,12 @@ class MetricsSpec:
         user_names = set()
 
         for u in list(user):
-            if (u.metric.name, u.treatment.name) not in user_names:
+            if (u.metric.name, u.statistic.name) not in user_names:
                 result.append(u)
-                user_names.add((u.metric.name, u.treatment.name))
+                user_names.add((u.metric.name, u.statistic.name))
 
         for m in default:
-            if (m.metric.name, m.treatment.name) not in user_names:
+            if (m.metric.name, m.statistic.name) not in user_names:
                 result.append(m)
         return result
 

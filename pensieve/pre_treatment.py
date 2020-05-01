@@ -17,7 +17,7 @@ class PreTreatment(ABC):
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
     @abstractmethod
-    def apply(self, df: DataFrame) -> DataFrame:
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
         """
         Applies the pre-treatment transformation to a DataFrame and returns
         the resulting DataFrame.
@@ -28,5 +28,5 @@ class PreTreatment(ABC):
 class RemoveNulls(PreTreatment):
     """Pre-treatment step to remove null rows and columns."""
 
-    def apply(self, df: DataFrame):
-        return df.dropna()
+    def apply(self, df: DataFrame, col: str):
+        return df[col].dropna()
