@@ -8,8 +8,6 @@ from google.cloud import bigquery
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 from pandas import DataFrame
 
-from pensieve.pre_treatment import PreTreatment, RemoveNulls
-
 
 @attr.s(auto_attribs=True)
 class StatisticResult:
@@ -76,6 +74,8 @@ class Statistic(ABC):
     of the experiment.
     """
 
+    ref_branch_label: str = "control"
+
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
@@ -110,7 +110,6 @@ class BootstrapMean(Statistic):
     confidence_interval: float = 0.95
     ref_branch_label: str = "control"
     threshold_quantile = None
-    pre_treatments: List[PreTreatment] = [RemoveNulls()]
 
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
