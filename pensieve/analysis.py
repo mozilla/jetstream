@@ -9,6 +9,7 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
+from google.cloud.bigquery_storage_v1beta1 import BigQueryStorageClient
 import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
@@ -226,6 +227,7 @@ class BigQueryClient:
     project: str
     dataset: str
     _client: Optional[google.cloud.bigquery.client.Client] = None
+    _storage_client: Optional[BigQueryStorageClient] = None
 
     @property
     def client(self):
@@ -234,9 +236,11 @@ class BigQueryClient:
 
     def table_to_dataframe(self, table: str):
         """Return all rows of the specified table as a dataframe."""
+        self._storage_client = self._storage_client or BigQueryStorageClient()
+
         table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
         rows = self.client.list_rows(table_ref)
-        return rows.to_dataframe()
+        return rows.to_dataframe(bqstorage_client=self._storage_client)
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
