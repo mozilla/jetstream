@@ -76,8 +76,6 @@ class Statistic(ABC):
     of the experiment.
     """
 
-    pre_treatments: List[PreTreatment]
-
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
@@ -92,10 +90,6 @@ class Statistic(ABC):
         statistic_result_collection = StatisticResultCollection([])
 
         if metric in df:
-            data = df
-            for pre_treatment in self.pre_treatments:
-                data = pre_treatment.apply(data)
-
             statistic_result_collection.data += self.transform(df, metric).data
 
         return statistic_result_collection
@@ -107,28 +101,12 @@ class Statistic(ABC):
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]):
         """Create a class instance with the specified config parameters."""
-        if "pre_treatments" in config_dict:
-            # convert pre-treatments to class instances
-            pre_treatments = []
-
-            for pre_treatment_name in config_dict["pre_treatments"]:
-                found = False
-                for pre_treatment in PreTreatment.__subclasses__():
-                    if pre_treatment.name() == pre_treatment_name:
-                        pre_treatments.append(pre_treatment)
-                        found = True
-
-                if not found:
-                    raise ValueError(f"Could not find pre-treatment {pre_treatment_name}")
-
-            config_dict["pre_treatments"] = pre_treatments
-
         return cls(**config_dict)
 
 
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
-    num_samples: int = 100
+    num_samples: int = 1000
     confidence_interval: float = 0.95
     ref_branch_label: str = "control"
     threshold_quantile = None
