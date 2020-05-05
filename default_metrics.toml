@@ -1,0 +1,24 @@
+# This defines the default metrics and statistics calculated for each experiment
+
+[metrics]
+daily = ["unenroll"]
+weekly = ["active_hours", "uri_count", "ad_clicks", "search_count"]
+overall = ["active_hours", "uri_count", "ad_clicks", "search_count"]
+
+[metric.unenroll.statistics.bootstrap_mean]
+num_samples = 1000
+
+[metric.view_about_logins.statistics.bootstrap_mean]
+num_samples = 1000
+
+[metric.active_hours.statistics.bootstrap_mean]
+num_samples = 1000
+
+[metric.uri_count.statistics.bootstrap_mean]
+num_samples = 1000
+
+[metric.ad_clicks.statistics.bootstrap_mean]
+num_samples = 1000
+
+[metric.search_count.statistics.bootstrap_mean]
+num_samples = 1000

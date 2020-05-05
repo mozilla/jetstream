@@ -19,7 +19,7 @@ which produce concrete mozanalysis classes when resolved.
 """
 
 from types import ModuleType
-from typing import Any, Dict, Iterable, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
 import cattr
@@ -30,7 +30,7 @@ import pandas
 
 from . import AnalysisPeriod
 import pensieve.experimenter
-from pensieve.statistics import Statistic, BootstrapMean, StatisticResultCollection
+from pensieve.statistics import Statistic, StatisticResultCollection
 from pensieve.pre_treatment import PreTreatment
 
 
@@ -48,72 +48,6 @@ class Summary:
             data = pre_treatment.apply(data, self.metric.name)
 
         return self.statistic.apply(data, self.metric.name)
-
-
-# metrics and statistics calculated for each experiment
-DEFAULT_METRICS = {
-    "desktop": {
-        AnalysisPeriod.DAY: [
-            Summary(
-                metric=mozanalysis.metrics.desktop.unenroll,
-                statistic=BootstrapMean(num_samples=1000),
-            )
-        ],
-        AnalysisPeriod.WEEK: [
-            Summary(
-                metric=mozanalysis.metrics.desktop.active_hours,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.uri_count,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.ad_clicks,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.search_count,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-        ],
-        AnalysisPeriod.OVERALL: [
-            Summary(
-                metric=mozanalysis.metrics.desktop.active_hours,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.uri_count,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.ad_clicks,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-            Summary(
-                metric=mozanalysis.metrics.desktop.search_count,
-                statistic=BootstrapMean(num_samples=1000),
-            ),
-        ],
-    }
-}
-
-# metrics that are available in mozanalysis with a default statistical treatment
-AVAILABLE_METRICS = {
-    "desktop": [
-        Summary(
-            metric=mozanalysis.metrics.desktop.view_about_logins,
-            statistic=BootstrapMean(num_samples=1000),
-        ),
-        Summary(
-            metric=mozanalysis.metrics.desktop.unenroll, statistic=BootstrapMean(num_samples=1000),
-        ),
-        Summary(
-            metric=mozanalysis.metrics.desktop.active_hours,
-            statistic=BootstrapMean(num_samples=1000),
-        ),  # todo: add more metrics
-    ]
-}
 
 
 _converter = cattr.Converter()
@@ -164,10 +98,6 @@ class MetricReference:
 
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experimenter)
-
-        for desktop_metric in AVAILABLE_METRICS["desktop"]:
-            if desktop_metric.metric.name == self.name:
-                metrics.append(desktop_metric)
 
         if len(metrics) > 0:
             return metrics
@@ -250,8 +180,8 @@ class MetricDefinition:
     """
 
     name: str  # implicit in configuration
-    select_expression: str
-    data_source: DataSourceReference
+    select_expression: Optional[str]
+    data_source: Optional[DataSourceReference]
     statistics: Dict[str, Dict[str, Any]]
     pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
 
@@ -260,11 +190,22 @@ class MetricDefinition:
     ) -> List[Summary]:
         select_expression = _metrics_environment.from_string(self.select_expression).render()
 
-        metric = mozanalysis.metrics.Metric(
-            name=self.name,
-            data_source=self.data_source.resolve(spec),
-            select_expr=select_expression,
-        )
+        if self.select_expression is None or self.data_source is None:
+            # checks if a metric from mozanalysis was referenced
+            search = mozanalysis.metrics.desktop
+            metric = _lookup_name(
+                name=self.name,
+                klass=mozanalysis.metrics.Metric,
+                spec=spec,
+                module=search,
+                definitions=[],
+            )
+        else:
+            metric = mozanalysis.metrics.Metric(
+                name=self.name,
+                data_source=self.data_source.resolve(spec),
+                select_expr=select_expression,
+            )
 
         metrics_with_treatments = []
 
@@ -316,6 +257,7 @@ class MetricsSpec:
             if not isinstance(v, list):
                 raise ValueError(f"metrics.{k} should be a list of metrics")
             params[k] = [MetricReference(m) for m in v]
+
         params["definitions"] = {
             k: _converter.structure({"name": k, **v}, MetricDefinition)
             for k, v in d.items()
@@ -323,34 +265,41 @@ class MetricsSpec:
         }
         return cls(**params)
 
-    @staticmethod
-    def _merge_metrics(user: Iterable[Summary], default: Iterable[Summary]) -> List[Summary]:
-        result = []
-        user_names = set()
-
-        for u in list(user):
-            if (u.metric.name, u.statistic.name) not in user_names:
-                result.append(u)
-                user_names.add((u.metric.name, u.statistic.name))
-
-        for m in default:
-            if (m.metric.name, m.statistic.name) not in user_names:
-                result.append(m)
-        return result
-
     def resolve(
         self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
     ) -> MetricsConfigurationType:
-        def merge(k: AnalysisPeriod):
-            return self._merge_metrics(
-                [m for ref in getattr(self, k.adjective) for m in ref.resolve(spec, experimenter)],
-                DEFAULT_METRICS["desktop"][k],
-            )
-
         result = {}
         for period in AnalysisPeriod:
-            result[period] = merge(period)
+            # these summaries might contain duplicates
+            summaries = [
+                m
+                for ref in getattr(self, period.adjective)
+                for m in ref.resolve(spec, experimenter)
+            ]
+            unique_summaries = []
+            seen_summaries = set()
+
+            # summaries needs to be reversed to make sure merged configs overwrite existing ones
+            summaries.reverse()
+            for summary in summaries:
+                if (summary.metric.name, summary.statistic.name) not in seen_summaries:
+                    seen_summaries.add((summary.metric.name, summary.statistic.name))
+                    unique_summaries.append(summary)
+
+            result[period] = unique_summaries
+
         return result
+
+    def merge(self, other: "MetricsSpec"):
+        """
+        Merges another metrics spec into the current one.
+
+        The `other` MetricsSpec overwrites existing metrics.
+        """
+        self.daily += other.daily
+        self.weekly += other.weekly
+        self.overall += other.overall
+        self.definitions.update(other.definitions)
 
 
 _converter.register_structure_hook(MetricsSpec, lambda obj, _type: MetricsSpec.from_dict(obj))
@@ -392,6 +341,13 @@ class DataSourcesSpec:
         }
         return cls(definitions)
 
+    def merge(self, other: "DataSourcesSpec"):
+        """
+        Merge another datasource spec into the current one.
+        The `other` DataSourcesSpec overwrites existing keys.
+        """
+        self.definitions.update(other.definitions)
+
 
 _converter.register_structure_hook(
     DataSourcesSpec, lambda obj, _type: DataSourcesSpec.from_dict(obj)
@@ -430,3 +386,8 @@ class AnalysisSpec:
         experiment = self.experiment.resolve(experimenter)
         metrics = self.metrics.resolve(self, experimenter)
         return AnalysisConfiguration(experiment, metrics)
+
+    def merge(self, other: "AnalysisSpec"):
+        """Merges another analysis spec into the current one."""
+        self.metrics.merge(other.metrics)
+        self.data_sources(other.data_sources)
