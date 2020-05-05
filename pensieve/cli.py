@@ -2,11 +2,16 @@ from datetime import datetime
 import logging
 
 import click
+from pathlib import Path
 import pytz
+import toml
 
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .analysis import Analysis
+
+
+DEFAULT_METRICS_CONFIG = Path(__file__).parent.parent / "default_metrics.toml"
 
 
 @click.group()
@@ -54,7 +59,7 @@ def run(project_id, dataset_id, date, dry_run):
     active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
     # Create a trivial configuration containing defaults
-    spec = AnalysisSpec.from_dict({})
+    spec = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
 
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
