@@ -94,7 +94,7 @@ class MetricReference:
     def resolve(
         self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
     ) -> List[Summary]:
-        metrics = []
+        metrics: List[Summary] = []
 
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experimenter)
@@ -180,16 +180,14 @@ class MetricDefinition:
     """
 
     name: str  # implicit in configuration
-    select_expression: Optional[str]
-    data_source: Optional[DataSourceReference]
     statistics: Dict[str, Dict[str, Any]]
     pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
+    select_expression: Optional[str] = None
+    data_source: Optional[DataSourceReference] = None
 
     def resolve(
         self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
     ) -> List[Summary]:
-        select_expression = _metrics_environment.from_string(self.select_expression).render()
-
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             search = mozanalysis.metrics.desktop
@@ -198,9 +196,11 @@ class MetricDefinition:
                 klass=mozanalysis.metrics.Metric,
                 spec=spec,
                 module=search,
-                definitions=[],
+                definitions={},
             )
         else:
+            select_expression = _metrics_environment.from_string(self.select_expression).render()
+
             metric = mozanalysis.metrics.Metric(
                 name=self.name,
                 data_source=self.data_source.resolve(spec),
@@ -390,4 +390,4 @@ class AnalysisSpec:
     def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""
         self.metrics.merge(other.metrics)
-        self.data_sources(other.data_sources)
+        self.data_sources.merge(other.data_sources)
