@@ -4,7 +4,6 @@ import re
 from typing import Any, Dict, List, Optional
 
 import attr
-from google.cloud import bigquery
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 from pandas import DataFrame
 
@@ -33,30 +32,6 @@ class StatisticResultCollection:
     """
 
     data: List[StatisticResult] = []
-
-    def save_to_bigquery(self, client, destination_table, append=True):
-        """Stores the data to a BigQuery table with a defined schema."""
-
-        job_config = bigquery.LoadJobConfig()
-        job_config.schema = [
-            bigquery.SchemaField("metric", "STRING"),
-            bigquery.SchemaField("statistic", "STRING"),
-            bigquery.SchemaField("parameter", "NUMERIC"),
-            bigquery.SchemaField("label", "STRING"),
-            bigquery.SchemaField("ci_width", "FLOAT64"),
-            bigquery.SchemaField("point", "FLOAT64"),
-            bigquery.SchemaField("lower", "FLOAT64"),
-            bigquery.SchemaField("upper", "FLOAT64"),
-        ]
-
-        if append:
-            job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_APPEND
-        else:
-            job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
-
-        client.load_table_from_json(
-            self.to_dict()["data"], destination_table, job_config=job_config
-        )
 
     def to_dict(self):
         """Return statistic results as dict."""
