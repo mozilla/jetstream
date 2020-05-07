@@ -9,6 +9,7 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
+from google.cloud import bigquery
 from google.cloud.bigquery_storage_v1beta1 import BigQueryStorageClient
 import mozanalysis
 from mozanalysis.experiment import TimeLimits
@@ -175,10 +176,25 @@ class Analysis:
         metrics_data = self.bigquery.table_to_dataframe(metrics_table)
         destination_table = f"{self.project}.{self.dataset}.statistics_{metrics_table}"
 
+        results = []
+
         for m in self.config.metrics[period]:
-            m.run(metrics_data).save_to_bigquery(
-                self.bigquery.client, destination_table, append=True
-            )
+            results.append(m.run(metrics_data).to_dict())
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.schema = [
+            bigquery.SchemaField("metric", "STRING"),
+            bigquery.SchemaField("statistic", "STRING"),
+            bigquery.SchemaField("parameter", "NUMERIC"),
+            bigquery.SchemaField("label", "STRING"),
+            bigquery.SchemaField("ci_width", "FLOAT64"),
+            bigquery.SchemaField("point", "FLOAT64"),
+            bigquery.SchemaField("lower", "FLOAT64"),
+            bigquery.SchemaField("upper", "FLOAT64"),
+        ]
+        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
+        self.bigquery.client.load_table_from_json(results, destination_table, job_config=job_config)
 
     def run(self, current_date: datetime, dry_run: bool):
         """
