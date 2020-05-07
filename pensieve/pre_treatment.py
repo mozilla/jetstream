@@ -22,7 +22,7 @@ class PreTreatment(ABC):
         Applies the pre-treatment transformation to a DataFrame and returns
         the resulting DataFrame.
         """
-        return NotImplemented
+        raise NotImplementedError
 
 
 class RemoveNulls(PreTreatment):
