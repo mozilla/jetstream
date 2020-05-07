@@ -259,3 +259,81 @@ class TestAnalysisSpec:
             spec.resolve(experiments[0])
 
         assert "Could not find pre-treatment not_existing." in str(e)
+
+    def test_merge_configs(self, experiments):
+        orig_conf = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        custom_conf = dedent(
+            """
+            [metrics]
+            weekly = ["foo"]
+
+            [metrics.foo]
+            data_source = "main"
+            select_expression = "2"
+
+            [metrics.foo.statistics.bootstrap_mean]
+            num_samples = 100
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(orig_conf))
+        spec.merge(config.AnalysisSpec.from_dict(toml.loads(custom_conf)))
+        cfg = spec.resolve(experiments[0])
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 2
+        assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"]) == 1
+        assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "foo"]) == 1
+
+    def test_merge_configs_override_metric(self, experiments):
+        orig_conf = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        custom_conf = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "events"
+            select_expression = "2"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 100
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(orig_conf))
+        spec.merge(config.AnalysisSpec.from_dict(toml.loads(custom_conf)))
+        cfg = spec.resolve(experiments[0])
+
+        spam = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0]
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
+        assert spam.metric.data_source.name == "events"
+        assert spam.metric.select_expr == "2"
+        assert spam.statistic.name() == "bootstrap_mean"
+        assert spam.statistic.num_samples == 100
