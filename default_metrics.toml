@@ -6,19 +6,13 @@ weekly = ["active_hours", "uri_count", "ad_clicks", "search_count"]
 overall = ["active_hours", "uri_count", "ad_clicks", "search_count"]
 
 [metrics.unenroll.statistics.bootstrap_mean]
-num_samples = 1000
 
 [metrics.view_about_logins.statistics.bootstrap_mean]
-num_samples = 1000
 
 [metrics.active_hours.statistics.bootstrap_mean]
-num_samples = 1000
 
 [metrics.uri_count.statistics.bootstrap_mean]
-num_samples = 1000
 
 [metrics.ad_clicks.statistics.bootstrap_mean]
-num_samples = 1000
 
 [metrics.search_count.statistics.bootstrap_mean]
-num_samples = 1000
