@@ -113,11 +113,17 @@ class Analysis:
         normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         return "_".join([normalized_slug, window_period, str(window_index)])
 
-    def _publish_view(self, window_period: AnalysisPeriod):
+    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.adjective])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
+
+        if table_prefix:
+            normalized_prefix = self._normalize_name(table_prefix)
+            view_name = "_".join([normalized_prefix, view_name])
+            wildcard_expr = "_".join([normalized_prefix, wildcard_expr])
+
         sql = dedent(
             f"""
             CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
@@ -179,7 +185,7 @@ class Analysis:
         results = []
 
         for m in self.config.metrics[period]:
-            results.append(m.run(metrics_data).to_dict())
+            results += m.run(metrics_data).to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = [
@@ -195,6 +201,7 @@ class Analysis:
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
         self.bigquery.client.load_table_from_json(results, destination_table, job_config=job_config)
+        self._publish_view(period, table_prefix="statistics")
 
     def run(self, current_date: datetime, dry_run: bool):
         """
