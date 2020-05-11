@@ -137,7 +137,7 @@ class TestAnalysisIntegration:
         """
         )
 
-        expected_results = [
+        expected_metrics_results = [
             {
                 "client_id": "bbbb",
                 "branch": "branch2",
@@ -157,5 +157,22 @@ class TestAnalysisIntegration:
         ]
 
         for i, row in enumerate(query_job.result()):
-            for k, v in expected_results[i].items():
+            for k, v in expected_metrics_results[i].items():
                 assert row[k] == v
+
+        assert (
+            client.get_table(f"{self.project_id}.{self.test_dataset}.test_experiment_weekly")
+            is not None
+        )
+        assert (
+            client.get_table(
+                f"{self.project_id}.{self.test_dataset}.statistics_test_experiment_week_1"
+            )
+            is not None
+        )
+        assert (
+            client.get_table(
+                f"{self.project_id}.{self.test_dataset}.statistics_test_experiment_weekly"
+            )
+            is not None
+        )
