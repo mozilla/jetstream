@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import attr
+import pandas as pd
 from pandas import DataFrame
 import re
 
@@ -26,7 +27,15 @@ class PreTreatment(ABC):
 
 
 class RemoveNulls(PreTreatment):
-    """Pre-treatment step to remove null rows and columns."""
+    """Removes rows with null values."""
 
-    def apply(self, df: DataFrame, col: str):
-        return df[col].dropna()
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        return df.dropna(subset=[col])
+
+
+class RemoveIndefinites(PreTreatment):
+    """Removes null and infinite values."""
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        with pd.option_context("mode.use_inf_as_na", True):
+            return df.dropna(subset=[col])
