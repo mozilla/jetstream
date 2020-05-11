@@ -8,31 +8,20 @@ Pensieve automatically calculates metrics and applies statistical treatments to 
 
 For more information, see [the documentation](https://github.com/mozilla/pensieve/wiki).
 
+## Running tests
 
-## Development and Testing
+Make sure `tox` is installed globally (run `brew install tox` or `pip install tox`).
 
-Install requirements:
+Then, run `tox` from wherever you cloned this repository. (You don't need to install pensieve first.)
+
+To run integration tests, run `tox -e py38-integration`.
+
+
+## Local installation
 
 ```bash
 # Create and activate a python virtual environment.
 python3 -m venv venv/
 source venv/bin/activate
-
 pip install -r requirements.txt
-```
-
-Run local tests:
-
-```bash
-venv/bin/pytest --black --flake8
-
-# or using tox
-
-venv/bin/tox
-```
-
-Run integration tests:
-
-```bash
-venv/bin/pytest --black --flake8 --integration pensieve/tests/integration/
 ```
