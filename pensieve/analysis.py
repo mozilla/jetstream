@@ -200,7 +200,11 @@ class Analysis:
         ]
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
-        self.bigquery.client.load_table_from_json(results, destination_table, job_config=job_config)
+        # wait for the job to complete
+        self.bigquery.client.load_table_from_json(
+            results, destination_table, job_config=job_config
+        ).result()
+
         self._publish_view(period, table_prefix="statistics")
 
     def run(self, current_date: datetime, dry_run: bool):
