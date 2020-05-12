@@ -18,7 +18,8 @@ class StatisticResult:
     metric: str
     statistic: str
     parameter: Optional[Decimal]
-    label: str
+    branch: str
+    comparison_to_control: Optional[str] = None
     ci_width: Optional[float] = 0.0
     point: Optional[float] = 0.0
     lower: Optional[float] = 0.0
@@ -126,7 +127,7 @@ class BootstrapMean(Statistic):
                 metric=metric,
                 statistic="mean",
                 parameter=None,
-                label=branch,
+                branch=branch,
                 ci_width=self.confidence_interval,
                 point=branch_result["mean"],
                 lower=lower,
@@ -141,7 +142,8 @@ class BootstrapMean(Statistic):
                     metric=metric,
                     statistic="mean",
                     parameter=None,
-                    label=f"{branch} - control",
+                    branch=branch,
+                    comparison_to_control="difference",
                     ci_width=self.confidence_interval,
                     point=branch_result["abs_uplift"]["exp"],
                     lower=lower_abs,
@@ -155,7 +157,8 @@ class BootstrapMean(Statistic):
                     metric=metric,
                     statistic="mean",
                     parameter=None,
-                    label=f"{branch}/control - 1",
+                    branch=branch,
+                    comparison_to_control="relative_uplift",
                     ci_width=self.confidence_interval,
                     point=branch_result["rel_uplift"]["exp"],
                     lower=lower_rel,
