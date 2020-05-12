@@ -105,7 +105,6 @@ class BootstrapMean(Statistic):
     num_samples: int = 1000
     confidence_interval: float = 0.95
     ref_branch_label: str = "control"
-    threshold_quantile = None
 
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
@@ -118,7 +117,6 @@ class BootstrapMean(Statistic):
             col_label=metric,
             ref_branch_label=self.ref_branch_label,
             num_samples=self.num_samples,
-            threshold_quantile=self.threshold_quantile,
             individual_summary_quantiles=summary_quantiles,
         )
 
