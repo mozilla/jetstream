@@ -27,3 +27,10 @@ class TestPreTreatment:
         pd.testing.assert_frame_equal(example_data, ex1)
         ex2 = pt.apply(example_data, "b")
         assert ex2.shape == (2, 2)
+
+    def test_censor_highest_values(self):
+        df = pd.DataFrame({"value": range(10000), "label": ["a"] * 10000})
+        pt = pre_treatment.CensorHighestValues(0.9)
+        assert df.shape == (10000, 2)
+        ex1 = pt.apply(df, "value")
+        assert ex1.shape == (9000, 2)

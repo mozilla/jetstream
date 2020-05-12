@@ -39,3 +39,14 @@ class RemoveIndefinites(PreTreatment):
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         with pd.option_context("mode.use_inf_as_na", True):
             return df.dropna(subset=[col])
+
+
+@attr.s(auto_attribs=True)
+class CensorHighestValues(PreTreatment):
+    """Removes rows with the highest n% of values."""
+
+    fraction: float = 1 - 1e-5
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        mask = df[col] < df[col].quantile(self.fraction)
+        return df.loc[mask, :]
