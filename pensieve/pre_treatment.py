@@ -66,3 +66,8 @@ class Log(PreTreatment):
             if self.base:
                 result /= np.log(self.base)
         return df.assign(**{col: result})
+
+
+class ZeroFill(PreTreatment):
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        return df.fillna(value={col: 0})
