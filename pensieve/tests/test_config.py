@@ -1,16 +1,16 @@
 from textwrap import dedent
 
 import toml
-from pathlib import Path
 import pytest
 
 from pensieve import AnalysisPeriod, config
+from pensieve.cli import DEFAULT_METRICS_CONFIG
 from pensieve.statistics import BootstrapMean
 from pensieve.pre_treatment import RemoveNulls
 
 
 class TestAnalysisSpec:
-    default_metrics_config = Path(__file__).parent.parent.parent / "default_metrics.toml"
+    default_metrics_config = DEFAULT_METRICS_CONFIG
 
     def test_trivial_configuration(self, experiments):
         spec = config.AnalysisSpec.from_dict({})

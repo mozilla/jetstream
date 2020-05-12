@@ -11,7 +11,7 @@ from .experimenter import ExperimentCollection
 from .analysis import Analysis
 
 
-DEFAULT_METRICS_CONFIG = Path(__file__).parent.parent / "default_metrics.toml"
+DEFAULT_METRICS_CONFIG = Path(__file__).parent / "default_metrics.toml"
 
 
 @click.group()

@@ -18,6 +18,7 @@ Definition and Reference classes are also direct representations of the configur
 which produce concrete mozanalysis classes when resolved.
 """
 
+from inspect import isabstract
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
@@ -135,8 +136,10 @@ class PreTreatmentReference:
 
     def resolve(self, spec: "AnalysisSpec") -> PreTreatment:
         for pre_treatment in PreTreatment.__subclasses__():
+            if isabstract(pre_treatment):
+                continue
             if pre_treatment.name() == self.name:
-                return pre_treatment()
+                return pre_treatment()  # type: ignore
 
         raise ValueError(f"Could not find pre-treatment {self.name}.")
 
