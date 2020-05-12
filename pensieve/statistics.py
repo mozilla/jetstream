@@ -136,4 +136,33 @@ class BootstrapMean(Statistic):
             )
             stats_results.data.append(result)
 
+        for branch, branch_result in ma_result["comparative"].items():
+            lower_abs, upper_abs = _extract_ci(branch_result["abs_uplift"], critical_point)
+            stats_results.data.append(
+                StatisticResult(
+                    metric=metric,
+                    statistic="mean",
+                    parameter=None,
+                    label=f"{branch} - control",
+                    ci_width=self.confidence_interval,
+                    point=branch_result["abs_uplift"]["exp"],
+                    lower=lower_abs,
+                    upper=upper_abs,
+                )
+            )
+
+            lower_rel, upper_rel = _extract_ci(branch_result["rel_uplift"], critical_point)
+            stats_results.data.append(
+                StatisticResult(
+                    metric=metric,
+                    statistic="mean",
+                    parameter=None,
+                    label=f"{branch}/control - 1",
+                    ci_width=self.confidence_interval,
+                    point=branch_result["rel_uplift"]["exp"],
+                    lower=lower_rel,
+                    upper=upper_rel,
+                )
+            )
+
         return stats_results
