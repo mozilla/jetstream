@@ -27,13 +27,14 @@ setup(
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
     packages=["pensieve", "pensieve.tests", "pensieve.tests.integration"],
-    package_data={"pensieve.tests": ["data/*"]},
+    package_data={"pensieve": ["*.toml"], "pensieve.tests": ["data/*"]},
     install_requires=[
         "attrs",
         "cattrs",
         "Click",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
+        "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "incremental",
         "jinja2",
         "mozanalysis",
