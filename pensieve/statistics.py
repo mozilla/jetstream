@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 
 @attr.s(auto_attribs=True)
@@ -79,6 +79,27 @@ class Statistic(ABC):
         return cls(**config_dict)
 
 
+def _extract_ci(
+    series: Series, quantile: float, threshold: float = 1e-5
+) -> Tuple[Optional[float], Optional[float]]:
+    # floating point arithmetic was a mistake
+    lower_index, upper_index = None, None
+    low_quantile, high_quantile = quantile, 1 - quantile
+    for i in series.index:
+        try:
+            f = float(i)
+        except ValueError:
+            continue
+        if abs(f - low_quantile) < threshold:
+            lower_index = i
+        if abs(f - high_quantile) < threshold:
+            upper_index = i
+    return (
+        series[lower_index] if lower_index else None,
+        series[upper_index] if upper_index else None,
+    )
+
+
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
     num_samples: int = 1000
@@ -101,29 +122,17 @@ class BootstrapMean(Statistic):
             individual_summary_quantiles=summary_quantiles,
         )
 
-        ma_individual_result = ma_result["individual"]
-
-        # floating point arithmetic was a mistake
-        lower_index, upper_index = None, None
-        for branch, branch_result in ma_individual_result.items():
-            for i in branch_result.index:
-                try:
-                    f = float(i)
-                except ValueError:
-                    continue
-                if abs(f - summary_quantiles[0]) < 0.0001:
-                    lower_index = i
-                if abs(f - summary_quantiles[1]) < 0.0001:
-                    upper_index = i
+        for branch, branch_result in ma_result["individual"].items():
+            lower, upper = _extract_ci(branch_result, critical_point)
             result = StatisticResult(
                 metric=metric,
-                statistic=self.name(),
+                statistic="mean",
                 parameter=None,
                 label=branch,
                 ci_width=self.confidence_interval,
                 point=branch_result["mean"],
-                lower=branch_result[lower_index] if lower_index else None,
-                upper=branch_result[upper_index] if upper_index else None,
+                lower=lower,
+                upper=upper,
             )
             stats_results.data.append(result)
 
