@@ -34,3 +34,13 @@ class TestPreTreatment:
         assert df.shape == (10000, 2)
         ex1 = pt.apply(df, "value")
         assert ex1.shape == (9000, 2)
+
+    def test_log_transform(self):
+        df = pd.DataFrame({"value": range(-1, 11)})
+        pt = pre_treatment.Log(10)
+        assert df.shape == (12, 1)
+        ex1 = pt.apply(df, "value")
+        assert ex1.shape == (12, 1)
+        assert np.isnan(ex1["value"]).sum() == 1
+        assert np.isinf(ex1["value"]).sum() == 1
+        assert ex1["value"].iloc[-1] == 1

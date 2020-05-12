@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
 import attr
+import re
+from typing import Optional
+
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
-import re
 
 
 @attr.s(auto_attribs=True)
@@ -50,3 +53,16 @@ class CensorHighestValues(PreTreatment):
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         mask = df[col] < df[col].quantile(self.fraction)
         return df.loc[mask, :]
+
+
+@attr.s(auto_attribs=True)
+class Log(PreTreatment):
+    base: Optional[float] = 10.0
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        # Silence divide-by-zero and domain warnings
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result = np.log(df[col])
+            if self.base:
+                result /= np.log(self.base)
+        return df.assign(**{col: result})
