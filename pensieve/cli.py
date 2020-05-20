@@ -95,3 +95,27 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
 
         for date in date_range(start_date, end_date):
             Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+
+
+@click.option(
+    "--experiment_slug",
+    "--experiment-slug",
+    help="Normandy slug of the experiment to rerun analysis for",
+    required=True,
+)
+@click.option(
+    "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
+)
+@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
+@click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
+def rerun(project_id, dataset_id, experiment_slug, dry_run):
+    """Rerun previous analyses for a specific experiment."""
+    collection = ExperimentCollection.from_experimenter()
+
+    experiments = collection.with_slug(experiment_slug)
+
+    if len(experiments.experiments) == 0:
+        logging.warn(f"No experiment with slug {experiment_slug} found.")
+
+    experiment = experiments.experiments[0]
+    run(project_id, dataset_id, experiment.start_date, None, experiment_slug, dry_run)
