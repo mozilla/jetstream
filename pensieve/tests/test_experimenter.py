@@ -205,3 +205,9 @@ def test_normandy_experiment_slug(experiment_collection):
     assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs
     assert None in normandy_slugs
     assert "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831" in normandy_slugs
+
+
+def test_with_slug(experiment_collection):
+    experiments = experiment_collection.with_slug("search-topsites")
+    assert len(experiments.experiments) == 1
+    assert experiments.experiments[0].slug == "search-topsites"
