@@ -211,3 +211,6 @@ def test_with_slug(experiment_collection):
     experiments = experiment_collection.with_slug("search-topsites")
     assert len(experiments.experiments) == 1
     assert experiments.experiments[0].slug == "search-topsites"
+
+    experiments = experiment_collection.with_slug("non-existing-slug")
+    assert len(experiments.experiments) == 0
