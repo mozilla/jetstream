@@ -44,3 +44,12 @@ class TestPreTreatment:
         assert np.isnan(ex1["value"]).sum() == 1
         assert np.isinf(ex1["value"]).sum() == 1
         assert ex1["value"].iloc[-1] == 1
+
+    def test_zero_fill(self, example_data):
+        pt = pre_treatment.ZeroFill()
+        pd.testing.assert_frame_equal(example_data, pt.apply(example_data, "a"))
+        example_data.loc[1, "a"] = np.nan
+        example_data.loc[1, "b"] = np.nan
+        ex1 = pt.apply(example_data, "a")
+        assert ex1.loc[1, "a"] == 0
+        assert np.isnan(ex1.loc[1, "b"])
