@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 import click
@@ -25,6 +25,10 @@ def format_date(date):
     """Returns the current date with UTC timezone and time set to 00:00:00."""
     return datetime.combine(date, datetime.min.time()).replace(tzinfo=pytz.utc)
 
+def date_range(start_date, end_date):
+    """Generator for a range of dates."""
+    for n in range(int ((end_date - start_date).days)):
+        yield start_date + timedelta(n)
 
 class ClickDate(click.ParamType):
     name = "date"
@@ -41,27 +45,47 @@ class ClickDate(click.ParamType):
 )
 @click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
 @click.option(
-    "--date",
+    "--start_date",
+    "--start-date",
+    type=ClickDate(),
+    help="First date for which data should be analyzed",
+    metavar="YYYY-MM-DD",
+)
+@click.option(
+    "--end_date",
+    "--end-date",
     type=ClickDate(),
     help="Last date for which data should be analyzed",
     metavar="YYYY-MM-DD",
 )
+@click.option("--experiment_slug", "--experiment-slug", help="Normandy slug of the experiment to rerun analysis for")
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-def run(project_id, dataset_id, date, dry_run):
+def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
-    if date is None:
-        date = format_date(datetime.today())
+    if start_date is None:
+        start_date = format_date(datetime.today())
     else:
-        date = format_date(date)
+        start_date = format_date(start_date)
 
-    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
+    if end_date is None:
+        end_date = format_date(datetime.today())
+    else:
+        end_date = format_date(end_date)
 
-    # Create a trivial configuration containing defaults
+    active_experiments = collection.end_on_or_after(start_date).of_type(("pref", "addon"))
+
+    if experiment_slug is not None:
+        # run analysis for specific experiment
+        active_experiments = active_experiments.with_slug(experiment_slug)
+
+    # create a trivial configuration containing defaults
     spec = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
 
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
         config = spec.resolve(experiment)
-        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+
+        for date in date_range(start_date, end_date):
+            Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)

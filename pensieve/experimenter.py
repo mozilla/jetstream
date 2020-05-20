@@ -61,6 +61,10 @@ class ExperimentCollection:
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.type in type_or_types])
 
+    def with_slug(self, slug: str) -> "ExperimentCollection":
+        cls = type(self)
+        return cls([ex for ex in self.experiments if ex.slug == slug])
+
     def started_since(self, since: dt.datetime) -> "ExperimentCollection":
         """since should be a tz-aware datetime in UTC."""
         cls = type(self)
