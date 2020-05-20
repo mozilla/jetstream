@@ -215,22 +215,23 @@ class MetricDefinition:
         for statistic_name, params in self.statistics.items():
             for statistic in Statistic.__subclasses__():
                 if statistic.name() == statistic_name:
-                    pre_treatments = [pt.resolve(spec) for pt in self.pre_treatments]
+                    break
+            else:
+                raise ValueError(f"Statistic {statistic_name} does not exist.")
+            pre_treatments = [pt.resolve(spec) for pt in self.pre_treatments]
 
-                    if "ref_branch_label" not in params:
-                        for variant in experimenter.variants:
-                            if variant.is_control:
-                                params["ref_branch_label"] = variant.slug
+            if "ref_branch_label" not in params:
+                for variant in experimenter.variants:
+                    if variant.is_control:
+                        params["ref_branch_label"] = variant.slug
 
-                    metrics_with_treatments.append(
-                        Summary(
-                            metric=metric,
-                            statistic=statistic.from_dict(params),
-                            pre_treatments=pre_treatments,
-                        )
-                    )
-                else:
-                    raise ValueError(f"Statistic {statistic_name} does not exist.")
+            metrics_with_treatments.append(
+                Summary(
+                    metric=metric,
+                    statistic=statistic.from_dict(params),
+                    pre_treatments=pre_treatments,
+                )
+            )
 
         if len(metrics_with_treatments) == 0:
             raise ValueError(f"Metric {self.name} has no statistical treatment defined.")
