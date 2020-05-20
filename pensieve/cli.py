@@ -4,6 +4,7 @@ import logging
 import click
 from pathlib import Path
 import pytz
+import sys
 import toml
 
 from .config import AnalysisSpec
@@ -26,8 +27,8 @@ def format_date(date):
     return datetime.combine(date, datetime.min.time()).replace(tzinfo=pytz.utc)
 
 
-def date_range(start_date, end_date):
-    """Generator for a range of dates."""
+def inclusive_date_range(start_date, end_date):
+    """Generator for a range of dates, includes end_date."""
     for n in range(int((end_date - start_date).days) + 1):
         yield start_date + timedelta(n)
 
@@ -93,10 +94,12 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
     for experiment in active_experiments.experiments:
         config = spec.resolve(experiment)
 
-        for date in date_range(start_date, end_date):
+        for date in inclusive_date_range(start_date, end_date):
+            print(date)
             Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
+@cli.command()
 @click.option(
     "--experiment_slug",
     "--experiment-slug",
@@ -108,14 +111,24 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
 )
 @click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-def rerun(project_id, dataset_id, experiment_slug, dry_run):
+@click.pass_context
+def rerun(ctx, project_id, dataset_id, experiment_slug, dry_run):
     """Rerun previous analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
     experiments = collection.with_slug(experiment_slug)
 
     if len(experiments.experiments) == 0:
-        logging.warn(f"No experiment with slug {experiment_slug} found.")
+        click.echo(f"No experiment with slug {experiment_slug} found.", err=True)
+        sys.exit(1)
 
     experiment = experiments.experiments[0]
-    run(project_id, dataset_id, experiment.start_date, None, experiment_slug, dry_run)
+    ctx.invoke(
+        run,
+        project_id=project_id,
+        dataset_id=dataset_id,
+        start_date=experiment.start_date,
+        end_date=None,
+        experiment_slug=experiment_slug,
+        dry_run=dry_run,
+    )
