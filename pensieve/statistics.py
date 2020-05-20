@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import attr
+import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
 from pandas import DataFrame, Series
 
@@ -156,6 +157,73 @@ class BootstrapMean(Statistic):
                 StatisticResult(
                     metric=metric,
                     statistic="mean",
+                    parameter=None,
+                    branch=branch,
+                    comparison_to_control="relative_uplift",
+                    ci_width=self.confidence_interval,
+                    point=branch_result["rel_uplift"]["exp"],
+                    lower=lower_rel,
+                    upper=upper_rel,
+                )
+            )
+
+        return stats_results
+
+
+@attr.s(auto_attribs=True)
+class Binomial(Statistic):
+    ref_branch_label: str = "control"
+    confidence_interval: float = 0.95
+
+    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+        stats_results = StatisticResultCollection([])
+
+        critical_point = (1 - self.confidence_interval) / 2
+        summary_quantiles = (critical_point, 1 - critical_point)
+
+        ma_result = mozanalysis.bayesian_stats.binary.compare_branches(
+            df,
+            col_label=metric,
+            ref_branch_label=self.ref_branch_label,
+            individual_summary_quantiles=summary_quantiles,
+            comparative_summary_quantiles=summary_quantiles,
+        )
+
+        for branch, branch_result in ma_result["individual"].items():
+            lower, upper = _extract_ci(branch_result, critical_point)
+            result = StatisticResult(
+                metric=metric,
+                statistic="binomial",
+                parameter=None,
+                branch=branch,
+                ci_width=self.confidence_interval,
+                point=branch_result["mean"],
+                lower=lower,
+                upper=upper,
+            )
+            stats_results.data.append(result)
+
+        for branch, branch_result in ma_result["comparative"].items():
+            lower_abs, upper_abs = _extract_ci(branch_result["abs_uplift"], critical_point)
+            stats_results.data.append(
+                StatisticResult(
+                    metric=metric,
+                    statistic="binomial",
+                    parameter=None,
+                    branch=branch,
+                    comparison_to_control="difference",
+                    ci_width=self.confidence_interval,
+                    point=branch_result["abs_uplift"]["exp"],
+                    lower=lower_abs,
+                    upper=upper_abs,
+                )
+            )
+
+            lower_rel, upper_rel = _extract_ci(branch_result["rel_uplift"], critical_point)
+            stats_results.data.append(
+                StatisticResult(
+                    metric=metric,
+                    statistic="binomial",
                     parameter=None,
                     branch=branch,
                     comparison_to_control="relative_uplift",
