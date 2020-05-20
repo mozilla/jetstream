@@ -25,10 +25,12 @@ def format_date(date):
     """Returns the current date with UTC timezone and time set to 00:00:00."""
     return datetime.combine(date, datetime.min.time()).replace(tzinfo=pytz.utc)
 
+
 def date_range(start_date, end_date):
     """Generator for a range of dates."""
-    for n in range(int ((end_date - start_date).days)):
+    for n in range(int((end_date - start_date).days) + 1):
         yield start_date + timedelta(n)
+
 
 class ClickDate(click.ParamType):
     name = "date"
@@ -58,7 +60,11 @@ class ClickDate(click.ParamType):
     help="Last date for which data should be analyzed",
     metavar="YYYY-MM-DD",
 )
-@click.option("--experiment_slug", "--experiment-slug", help="Normandy slug of the experiment to rerun analysis for")
+@click.option(
+    "--experiment_slug",
+    "--experiment-slug",
+    help="Normandy slug of the experiment to rerun analysis for",
+)
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
 def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
