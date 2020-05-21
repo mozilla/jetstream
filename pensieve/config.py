@@ -249,6 +249,7 @@ class MetricsSpec:
     daily: List[MetricReference] = attr.Factory(list)
     weekly: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
+    enrollment: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
@@ -303,6 +304,7 @@ class MetricsSpec:
         self.daily += other.daily
         self.weekly += other.weekly
         self.overall += other.overall
+        self.enrollment += other.enrollment
         self.definitions.update(other.definitions)
 
 

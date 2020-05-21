@@ -20,10 +20,12 @@ def test_get_timelimits_if_ready(experiments):
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(7)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.ENROLLMENT, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.ENROLLMENT, date) is None
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date)
 

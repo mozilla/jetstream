@@ -61,7 +61,7 @@ class Analysis:
             "num_dates_enrollment": dates_enrollment,
         }
 
-        if period != AnalysisPeriod.OVERALL:
+        if period in (AnalysisPeriod.DAY, AnalysisPeriod.WEEK):
             try:
                 current_time_limits = TimeLimits.for_ts(
                     last_date_full_data=current_date_str,
@@ -89,21 +89,31 @@ class Analysis:
                 return None
 
             return current_time_limits
+        elif period == AnalysisPeriod.OVERALL:
+            if self.config.experiment.end_date != prior_date:
+                return None
 
-        # Period is OVERALL
-        if self.config.experiment.end_date != prior_date:
-            return None
-
-        return TimeLimits.for_single_analysis_window(
-            last_date_full_data=prior_date_str,
-            analysis_start_days=0,
-            analysis_length_dates=(
-                self.config.experiment.end_date - self.config.experiment.start_date
-            ).days
-            - dates_enrollment
-            + 1,
-            **time_limits_args,
-        )
+            return TimeLimits.for_single_analysis_window(
+                last_date_full_data=prior_date_str,
+                analysis_start_days=0,
+                analysis_length_dates=(
+                    self.config.experiment.end_date - self.config.experiment.start_date
+                ).days
+                - dates_enrollment
+                + 1,
+                **time_limits_args,
+            )
+        elif period == AnalysisPeriod.ENROLLMENT:
+            if ((current_date - self.config.experiment.start_date).days + 1) != dates_enrollment:
+                return None
+            return TimeLimits.for_single_analysis_window(
+                last_date_full_data=current_date_str,
+                analysis_start_days=0,
+                analysis_length_dates=1,
+                **time_limits_args,
+            )
+        else:
+            raise NotImplementedError(f"I don't know how to work with period {period}")
 
     def _normalize_name(self, name: str) -> str:
         return re.sub(r"[^a-zA-Z0-9_]", "_", name)
