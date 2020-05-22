@@ -20,7 +20,7 @@ extras = {
 }
 
 setup(
-    name="Pensieve",
+    name="mozilla-pensieve",
     use_incremental=True,
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
