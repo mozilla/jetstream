@@ -68,7 +68,15 @@ class Statistic(ABC):
         statistic_result_collection = StatisticResultCollection([])
 
         if metric in df:
-            statistic_result_collection.data += self.transform(df, metric).data
+            branch_list = df.branch.to_numpy()
+            if self.ref_branch_label not in branch_list:
+                logging.warn(
+                    f"Branch {self.ref_branch_label} not in {branch_list} for {self.name()}."
+                )
+
+                statistic_result_collection.data += StatisticResultCollection([]).data
+            else:
+                statistic_result_collection.data += self.transform(df, metric).data
 
         return statistic_result_collection
 
@@ -111,13 +119,6 @@ class BootstrapMean(Statistic):
 
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
-
-        branch_list = df.branch.to_numpy()
-        if self.ref_branch_label not in branch_list:
-            logging.warn(
-                f"BootstrapMean: reference branch {self.ref_branch_label} not in {branch_list}."
-            )
-            return stats_results
 
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
