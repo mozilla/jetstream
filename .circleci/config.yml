@@ -61,7 +61,7 @@ jobs:
         # See https://cloud.google.com/docs/authentication/production
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
-          echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          echo "$GCLOUD_SERVICE_KEY_INTEGRATION_TEST" > "$GOOGLE_APPLICATION_CREDENTIALS"
           venv/bin/pytest --black --flake8 --integration pensieve/tests/integration/
 
 workflows:

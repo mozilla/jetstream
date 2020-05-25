@@ -134,7 +134,7 @@ class Analysis:
             )
             """
         )
-        _ = self.bigquery.execute(sql)
+        self.bigquery.execute(sql)
 
     def _calculate_metrics(
         self,
@@ -169,8 +169,7 @@ class Analysis:
         )
 
         self.logger.info("Executing query for %s (%s)", self.config.experiment.slug, period.value)
-        _ = self.bigquery.execute(sql, res_table_name)
-
+        self.bigquery.execute(sql, res_table_name)
         self._publish_view(period)
 
         return res_table_name
@@ -203,7 +202,7 @@ class Analysis:
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
         # wait for the job to complete
-        _ = self.bigquery.client.load_table_from_json(
+        self.bigquery.client.load_table_from_json(
             results, destination_table, job_config=job_config
         ).result()
 
@@ -225,7 +224,6 @@ class Analysis:
 
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
-
             if time_limits is None:
                 self.logger.info(
                     "Skipping %s (%s); not ready", self.config.experiment.slug, period.value
