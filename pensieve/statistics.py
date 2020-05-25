@@ -33,7 +33,7 @@ class StatisticResultCollection:
     Represents a set of statistics result data.
     """
 
-    data: List[StatisticResult] = []
+    data: List[StatisticResult] = attr.Factory(list)
 
     def to_dict(self):
         """Return statistic results as dict."""

@@ -41,7 +41,7 @@ class Summary:
 
     metric: mozanalysis.metrics.Metric
     statistic: Statistic
-    pre_treatments: List[PreTreatment] = []
+    pre_treatments: List[PreTreatment] = attr.Factory(list)
 
     def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
