@@ -111,6 +111,10 @@ class BootstrapMean(Statistic):
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
 
+        branch_list = df.branch.unique()
+        if self.ref_branch_label not in branch_list:
+            return stats_results
+
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 

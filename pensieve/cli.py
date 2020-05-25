@@ -64,13 +64,14 @@ class ClickDate(click.ParamType):
 @click.option(
     "--experiment_slug",
     "--experiment-slug",
-    help="Normandy slug of the experiment to rerun analysis for",
+    help="Experimenter slug of the experiment to rerun analysis for",
 )
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
 def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
+
     if start_date is None:
         start_date = format_date(datetime.today())
     else:
@@ -95,7 +96,6 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
         config = spec.resolve(experiment)
 
         for date in inclusive_date_range(start_date, end_date):
-            print(date)
             Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
@@ -103,7 +103,7 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
 @click.option(
     "--experiment_slug",
     "--experiment-slug",
-    help="Normandy slug of the experiment to rerun analysis for",
+    help="Experimenter slug of the experiment to rerun analysis for",
     required=True,
 )
 @click.option(
