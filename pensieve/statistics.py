@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
+import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -111,8 +112,11 @@ class BootstrapMean(Statistic):
     def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
         stats_results = StatisticResultCollection([])
 
-        branch_list = df.branch.unique()
+        branch_list = df.branch.to_numpy()
         if self.ref_branch_label not in branch_list:
+            logging.warn(
+                f"BootstrapMean: reference branch {self.ref_branch_label} not in {branch_list}."
+            )
             return stats_results
 
         critical_point = (1 - self.confidence_interval) / 2
