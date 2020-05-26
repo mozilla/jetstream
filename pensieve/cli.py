@@ -64,7 +64,7 @@ class ClickDate(click.ParamType):
 @click.option(
     "--experiment_slug",
     "--experiment-slug",
-    help="Experimenter slug of the experiment to rerun analysis for",
+    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
 )
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
 def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
@@ -103,7 +103,7 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
 @click.option(
     "--experiment_slug",
     "--experiment-slug",
-    help="Experimenter slug of the experiment to rerun analysis for",
+    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
     required=True,
 )
 @click.option(

@@ -212,5 +212,15 @@ def test_with_slug(experiment_collection):
     assert len(experiments.experiments) == 1
     assert experiments.experiments[0].slug == "search-topsites"
 
+    experiments = experiment_collection.with_slug(
+        "addon-activity-stream-search-topsites-release-69-1576277"
+    )
+    assert len(experiments.experiments) == 1
+    assert experiments.experiments[0].slug == "search-topsites"
+    assert (
+        experiments.experiments[0].normandy_slug
+        == "addon-activity-stream-search-topsites-release-69-1576277"
+    )
+
     experiments = experiment_collection.with_slug("non-existing-slug")
     assert len(experiments.experiments) == 0
