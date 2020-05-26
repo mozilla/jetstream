@@ -63,7 +63,7 @@ class ExperimentCollection:
 
     def with_slug(self, slug: str) -> "ExperimentCollection":
         cls = type(self)
-        return cls([ex for ex in self.experiments if ex.slug == slug])
+        return cls([ex for ex in self.experiments if ex.slug == slug or ex.normandy_slug == slug])
 
     def started_since(self, since: dt.datetime) -> "ExperimentCollection":
         """since should be a tz-aware datetime in UTC."""
