@@ -73,8 +73,6 @@ class Statistic(ABC):
                 logging.warn(
                     f"Branch {self.ref_branch_label} not in {branch_list} for {self.name()}."
                 )
-
-                statistic_result_collection.data += StatisticResultCollection([]).data
             else:
                 statistic_result_collection.data += self.transform(df, metric).data
 
