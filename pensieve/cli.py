@@ -47,11 +47,28 @@ class ClickDate(click.ParamType):
         return datetime.strptime(value, "%Y-%m-%d")
 
 
-@cli.command()
-@click.option(
+project_id_option = click.option(
     "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
 )
-@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
+dataset_id_option = click.option(
+    "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to"
+)
+dry_run_option = click.option(
+    "--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery"
+)
+
+experiment_slug_option = click.option(
+    "--experiment_slug",
+    "--experiment-slug",
+    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
+)
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@dry_run_option
+@experiment_slug_option
 @click.option(
     "--date",
     type=ClickDate(),
@@ -59,12 +76,6 @@ class ClickDate(click.ParamType):
     metavar="YYYY-MM-DD",
     required=True,
 )
-@click.option(
-    "--experiment_slug",
-    "--experiment-slug",
-    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
-)
-@click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
 def run(project_id, dataset_id, date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
@@ -84,19 +95,12 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run):
 
 
 @cli.command()
-@click.option(
-    "--experiment_slug",
-    "--experiment-slug",
-    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
-    required=True,
-)
-@click.option(
-    "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
-)
-@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
-@click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
+@experiment_slug_option
+@project_id_option
+@dataset_id_option
+@dry_run_option
 def rerun(project_id, dataset_id, experiment_slug, dry_run):
-    """Rerun previous analyses for a specific experiment."""
+    """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
     experiments = collection.with_slug(experiment_slug)
