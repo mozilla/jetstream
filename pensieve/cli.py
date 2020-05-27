@@ -67,8 +67,6 @@ experiment_slug_option = click.option(
 @cli.command()
 @project_id_option
 @dataset_id_option
-@dry_run_option
-@experiment_slug_option
 @click.option(
     "--date",
     type=ClickDate(),
@@ -76,6 +74,8 @@ experiment_slug_option = click.option(
     metavar="YYYY-MM-DD",
     required=True,
 )
+@experiment_slug_option
+@dry_run_option
 def run(project_id, dataset_id, date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
