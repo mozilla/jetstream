@@ -7,6 +7,7 @@ import pytz
 import sys
 import toml
 
+from . import experimenter
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .analysis import Analysis
@@ -31,6 +32,10 @@ def inclusive_date_range(start_date, end_date):
     """Generator for a range of dates, includes end_date."""
     for n in range(int((end_date - start_date).days) + 1):
         yield start_date + timedelta(n)
+
+
+def default_spec_for_experiment(experiment: experimenter.Experiment) -> AnalysisSpec:
+    return AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
 
 
 class ClickDate(click.ParamType):
@@ -88,11 +93,9 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
         # run analysis for specific experiment
         active_experiments = active_experiments.with_slug(experiment_slug)
 
-    # create a trivial configuration containing defaults
-    spec = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
-
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
+        spec = default_spec_for_experiment(experiment)
         config = spec.resolve(experiment)
 
         for date in inclusive_date_range(start_date, end_date):
