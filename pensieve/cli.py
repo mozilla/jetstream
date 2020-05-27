@@ -53,18 +53,11 @@ class ClickDate(click.ParamType):
 )
 @click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
 @click.option(
-    "--start_date",
-    "--start-date",
+    "--date",
     type=ClickDate(),
-    help="First date for which data should be analyzed",
+    help="Date for which experiments should be analyzed",
     metavar="YYYY-MM-DD",
-)
-@click.option(
-    "--end_date",
-    "--end-date",
-    type=ClickDate(),
-    help="Last date for which data should be analyzed",
-    metavar="YYYY-MM-DD",
+    required=True,
 )
 @click.option(
     "--experiment_slug",
@@ -72,22 +65,12 @@ class ClickDate(click.ParamType):
     help="Experimenter or Normandy slug of the experiment to rerun analysis for",
 )
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
+def run(project_id, dataset_id, date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
-    if start_date is None:
-        start_date = format_date(datetime.today())
-    else:
-        start_date = format_date(start_date)
-
-    if end_date is None:
-        end_date = format_date(datetime.today())
-    else:
-        end_date = format_date(end_date)
-
-    active_experiments = collection.end_on_or_after(start_date).of_type(("pref", "addon"))
+    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
     if experiment_slug is not None:
         # run analysis for specific experiment
@@ -97,9 +80,7 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
     for experiment in active_experiments.experiments:
         spec = default_spec_for_experiment(experiment)
         config = spec.resolve(experiment)
-
-        for date in inclusive_date_range(start_date, end_date):
-            Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
 @cli.command()
@@ -114,8 +95,7 @@ def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
 )
 @click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
 @click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-@click.pass_context
-def rerun(ctx, project_id, dataset_id, experiment_slug, dry_run):
+def rerun(project_id, dataset_id, experiment_slug, dry_run):
     """Rerun previous analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
@@ -126,12 +106,9 @@ def rerun(ctx, project_id, dataset_id, experiment_slug, dry_run):
         sys.exit(1)
 
     experiment = experiments.experiments[0]
-    ctx.invoke(
-        run,
-        project_id=project_id,
-        dataset_id=dataset_id,
-        start_date=experiment.start_date,
-        end_date=None,
-        experiment_slug=experiment_slug,
-        dry_run=dry_run,
-    )
+    end_date = min(experiments.end_date, datetime.now(tz=pytz.utc).date() - timedelta(days=1))
+
+    for date in inclusive_date_range(experiment.start_date, end_date):
+        spec = default_spec_for_experiment(experiment)
+        config = spec.resolve(experiment)
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
