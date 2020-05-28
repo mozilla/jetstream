@@ -13,7 +13,8 @@ from .experimenter import ExperimentCollection
 from .analysis import Analysis
 
 
-DEFAULT_METRICS_CONFIG = Path(__file__).parent / "default_metrics.toml"
+DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
+CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 
 
 @click.group()
@@ -30,7 +31,15 @@ def inclusive_date_range(start_date, end_date):
 
 
 def default_spec_for_experiment(experiment: experimenter.Experiment) -> AnalysisSpec:
-    return AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+    default_metrics = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+
+    if experiment.type == "message":
+        # CFR experiment
+        cfr_metrics = AnalysisSpec.from_dict(toml.load(CFR_METRICS_CONFIG))
+        default_metrics.merge(cfr_metrics)
+        return default_metrics
+
+    return default_metrics
 
 
 class ClickDate(click.ParamType):
@@ -76,7 +85,7 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run):
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
-    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
+    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon", "message"))
 
     if experiment_slug is not None:
         # run analysis for specific experiment
