@@ -23,11 +23,6 @@ def cli():
     )
 
 
-def format_date(date):
-    """Returns the current date with UTC timezone and time set to 00:00:00."""
-    return datetime.combine(date, datetime.min.time()).replace(tzinfo=pytz.utc)
-
-
 def inclusive_date_range(start_date, end_date):
     """Generator for a range of dates, includes end_date."""
     for n in range(int((end_date - start_date).days) + 1):
@@ -44,7 +39,7 @@ class ClickDate(click.ParamType):
     def convert(self, value, param, ctx):
         if isinstance(value, datetime):
             return value
-        return datetime.strptime(value, "%Y-%m-%d")
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
 
 project_id_option = click.option(
