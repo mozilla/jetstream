@@ -7,6 +7,7 @@ import pytz
 import sys
 import toml
 
+from . import experimenter
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .analysis import Analysis
@@ -33,6 +34,10 @@ def inclusive_date_range(start_date, end_date):
         yield start_date + timedelta(n)
 
 
+def default_spec_for_experiment(experiment: experimenter.Experiment) -> AnalysisSpec:
+    return AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+
+
 class ClickDate(click.ParamType):
     name = "date"
 
@@ -42,78 +47,60 @@ class ClickDate(click.ParamType):
         return datetime.strptime(value, "%Y-%m-%d")
 
 
-@cli.command()
-@click.option(
+project_id_option = click.option(
     "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
 )
-@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
-@click.option(
-    "--start_date",
-    "--start-date",
-    type=ClickDate(),
-    help="First date for which data should be analyzed",
-    metavar="YYYY-MM-DD",
+dataset_id_option = click.option(
+    "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to"
 )
-@click.option(
-    "--end_date",
-    "--end-date",
-    type=ClickDate(),
-    help="Last date for which data should be analyzed",
-    metavar="YYYY-MM-DD",
+dry_run_option = click.option(
+    "--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery"
 )
-@click.option(
+
+experiment_slug_option = click.option(
     "--experiment_slug",
     "--experiment-slug",
     help="Experimenter or Normandy slug of the experiment to rerun analysis for",
 )
-@click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-def run(project_id, dataset_id, start_date, end_date, experiment_slug, dry_run):
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@click.option(
+    "--date",
+    type=ClickDate(),
+    help="Date for which experiments should be analyzed",
+    metavar="YYYY-MM-DD",
+    required=True,
+)
+@experiment_slug_option
+@dry_run_option
+def run(project_id, dataset_id, date, experiment_slug, dry_run):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
-    if start_date is None:
-        start_date = format_date(datetime.today())
-    else:
-        start_date = format_date(start_date)
-
-    if end_date is None:
-        end_date = format_date(datetime.today())
-    else:
-        end_date = format_date(end_date)
-
-    active_experiments = collection.end_on_or_after(start_date).of_type(("pref", "addon"))
+    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon"))
 
     if experiment_slug is not None:
         # run analysis for specific experiment
         active_experiments = active_experiments.with_slug(experiment_slug)
 
-    # create a trivial configuration containing defaults
-    spec = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
-
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
+        spec = default_spec_for_experiment(experiment)
         config = spec.resolve(experiment)
-
-        for date in inclusive_date_range(start_date, end_date):
-            Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
 @cli.command()
-@click.option(
-    "--experiment_slug",
-    "--experiment-slug",
-    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
-    required=True,
-)
-@click.option(
-    "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
-)
-@click.option("--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to")
-@click.option("--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery")
-@click.pass_context
-def rerun(ctx, project_id, dataset_id, experiment_slug, dry_run):
-    """Rerun previous analyses for a specific experiment."""
+@experiment_slug_option
+@project_id_option
+@dataset_id_option
+@dry_run_option
+def rerun(project_id, dataset_id, experiment_slug, dry_run):
+    """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
     experiments = collection.with_slug(experiment_slug)
@@ -123,12 +110,9 @@ def rerun(ctx, project_id, dataset_id, experiment_slug, dry_run):
         sys.exit(1)
 
     experiment = experiments.experiments[0]
-    ctx.invoke(
-        run,
-        project_id=project_id,
-        dataset_id=dataset_id,
-        start_date=experiment.start_date,
-        end_date=None,
-        experiment_slug=experiment_slug,
-        dry_run=dry_run,
-    )
+    end_date = min(experiments.end_date, datetime.now(tz=pytz.utc).date() - timedelta(days=1))
+
+    for date in inclusive_date_range(experiment.start_date, end_date):
+        spec = default_spec_for_experiment(experiment)
+        config = spec.resolve(experiment)
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)

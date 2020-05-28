@@ -20,7 +20,7 @@ which produce concrete mozanalysis classes when resolved.
 
 from inspect import isabstract
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar
 
 import attr
 import cattr
@@ -383,7 +383,7 @@ class AnalysisSpec:
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AnalysisSpec":
+    def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return _converter.structure(d, cls)
 
     def resolve(self, experimenter: pensieve.experimenter.Experiment) -> AnalysisConfiguration:
