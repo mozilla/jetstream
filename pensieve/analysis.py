@@ -47,10 +47,6 @@ class Analysis:
         prior_date_str = prior_date.strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        if not self.config.experiment.proposed_enrollment:
-            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.slug)
-            return None
-
         dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
         if self.config.experiment.start_date is None:
@@ -208,7 +204,7 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
-    def run(self, current_date: datetime, dry_run: bool):
+    def run(self, current_date: datetime, dry_run: bool) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
@@ -217,6 +213,10 @@ class Analysis:
         if self.config.experiment.normandy_slug is None:
             self.logger.info("Skipping %s; no normandy_slug", self.config.experiment.slug)
             return  # some experiments do not have a normandy slug
+
+        if not self.config.experiment.proposed_enrollment:
+            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.slug)
+            return
 
         if self.config.experiment.start_date is None:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
