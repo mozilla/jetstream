@@ -53,11 +53,11 @@ class TestAnalysisSpec:
             """
             [metrics]
             weekly = ["view_about_logins"]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
             """
         )
-        default_spec = config.AnalysisSpec.from_dict(toml.load(self.default_metrics_config))
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        spec.merge(default_spec)
         cfg = spec.resolve(experiments[0])
         assert (
             len(
@@ -75,11 +75,12 @@ class TestAnalysisSpec:
             """
             [metrics]
             weekly = ["unenroll", "unenroll", "active_hours"]
+
+            [metrics.unenroll.statistics.binomial]
+            [metrics.active_hours.statistics.bootstrap_mean]
             """
         )
-        default_spec = config.AnalysisSpec.from_dict(toml.load(self.default_metrics_config))
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        spec.merge(default_spec)
         cfg = spec.resolve(experiments[0])
         assert (
             len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "unenroll"]) == 1
