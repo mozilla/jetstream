@@ -109,6 +109,60 @@ def _extract_ci(
     )
 
 
+def flatten_simple_compare_branches_result(
+    ma_result: dict, metric_name: str, statistic_name: str, ci_width: float
+) -> StatisticResultCollection:
+    critical_point = (1 - ci_width) / 2
+    statlist = []
+    for branch, branch_result in ma_result["individual"].items():
+        lower, upper = _extract_ci(branch_result, critical_point)
+        statlist.append(
+            StatisticResult(
+                metric=metric_name,
+                statistic=statistic_name,
+                parameter=None,
+                branch=branch,
+                ci_width=ci_width,
+                point=branch_result["mean"],
+                lower=lower,
+                upper=upper,
+            )
+        )
+
+    for branch, branch_result in ma_result["comparative"].items():
+        lower_abs, upper_abs = _extract_ci(branch_result["abs_uplift"], critical_point)
+        statlist.append(
+            StatisticResult(
+                metric=metric_name,
+                statistic=statistic_name,
+                parameter=None,
+                branch=branch,
+                comparison_to_control="difference",
+                ci_width=ci_width,
+                point=branch_result["abs_uplift"]["exp"],
+                lower=lower_abs,
+                upper=upper_abs,
+            )
+        )
+
+        lower_rel, upper_rel = _extract_ci(branch_result["rel_uplift"], critical_point)
+        statlist.append(
+            StatisticResult(
+                metric=metric_name,
+                statistic=statistic_name,
+                parameter=None,
+                branch=branch,
+                comparison_to_control="relative_uplift",
+                ci_width=ci_width,
+                point=branch_result["rel_uplift"]["exp"],
+                lower=lower_rel,
+                upper=upper_rel,
+            )
+        )
+
+    return StatisticResultCollection(statlist)
+
+
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
     num_samples: int = 1000
@@ -129,52 +183,9 @@ class BootstrapMean(Statistic):
             individual_summary_quantiles=summary_quantiles,
         )
 
-        for branch, branch_result in ma_result["individual"].items():
-            lower, upper = _extract_ci(branch_result, critical_point)
-            result = StatisticResult(
-                metric=metric,
-                statistic="mean",
-                parameter=None,
-                branch=branch,
-                ci_width=self.confidence_interval,
-                point=branch_result["mean"],
-                lower=lower,
-                upper=upper,
-            )
-            stats_results.data.append(result)
-
-        for branch, branch_result in ma_result["comparative"].items():
-            lower_abs, upper_abs = _extract_ci(branch_result["abs_uplift"], critical_point)
-            stats_results.data.append(
-                StatisticResult(
-                    metric=metric,
-                    statistic="mean",
-                    parameter=None,
-                    branch=branch,
-                    comparison_to_control="difference",
-                    ci_width=self.confidence_interval,
-                    point=branch_result["abs_uplift"]["exp"],
-                    lower=lower_abs,
-                    upper=upper_abs,
-                )
-            )
-
-            lower_rel, upper_rel = _extract_ci(branch_result["rel_uplift"], critical_point)
-            stats_results.data.append(
-                StatisticResult(
-                    metric=metric,
-                    statistic="mean",
-                    parameter=None,
-                    branch=branch,
-                    comparison_to_control="relative_uplift",
-                    ci_width=self.confidence_interval,
-                    point=branch_result["rel_uplift"]["exp"],
-                    lower=lower_rel,
-                    upper=upper_rel,
-                )
-            )
-
-        return stats_results
+        return flatten_simple_compare_branches_result(
+            ma_result, "mean", metric, self.confidence_interval
+        )
 
 
 @attr.s(auto_attribs=True)
@@ -196,49 +207,6 @@ class Binomial(Statistic):
             comparative_summary_quantiles=summary_quantiles,
         )
 
-        for branch, branch_result in ma_result["individual"].items():
-            lower, upper = _extract_ci(branch_result, critical_point)
-            result = StatisticResult(
-                metric=metric,
-                statistic="binomial",
-                parameter=None,
-                branch=branch,
-                ci_width=self.confidence_interval,
-                point=branch_result["mean"],
-                lower=lower,
-                upper=upper,
-            )
-            stats_results.data.append(result)
-
-        for branch, branch_result in ma_result["comparative"].items():
-            lower_abs, upper_abs = _extract_ci(branch_result["abs_uplift"], critical_point)
-            stats_results.data.append(
-                StatisticResult(
-                    metric=metric,
-                    statistic="binomial",
-                    parameter=None,
-                    branch=branch,
-                    comparison_to_control="difference",
-                    ci_width=self.confidence_interval,
-                    point=branch_result["abs_uplift"]["exp"],
-                    lower=lower_abs,
-                    upper=upper_abs,
-                )
-            )
-
-            lower_rel, upper_rel = _extract_ci(branch_result["rel_uplift"], critical_point)
-            stats_results.data.append(
-                StatisticResult(
-                    metric=metric,
-                    statistic="binomial",
-                    parameter=None,
-                    branch=branch,
-                    comparison_to_control="relative_uplift",
-                    ci_width=self.confidence_interval,
-                    point=branch_result["rel_uplift"]["exp"],
-                    lower=lower_rel,
-                    upper=upper_rel,
-                )
-            )
-
-        return stats_results
+        return flatten_simple_compare_branches_result(
+            ma_result, "binomial", metric, self.confidence_interval
+        )
