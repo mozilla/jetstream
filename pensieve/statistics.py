@@ -6,8 +6,15 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 import mozanalysis.bayesian_stats.binary
-import mozanalysis.bayesian_stats.bayesian_bootstrap as mabsbb
+import mozanalysis.bayesian_stats.bayesian_bootstrap
+import mozanalysis.bayesian_stats.frequentist_bootstrap
 from pandas import DataFrame, Series
+
+
+def _maybe_decimal(value) -> Optional[Decimal]:
+    if value is None:
+        return None
+    return Decimal(value)
 
 
 @attr.s(auto_attribs=True)
@@ -19,7 +26,7 @@ class StatisticResult:
 
     metric: str
     statistic: str
-    parameter: Optional[Decimal]
+    parameter: Optional[Decimal] = attr.ib(converter=_maybe_decimal)
     branch: str
     comparison_to_control: Optional[str] = None
     ci_width: Optional[float] = 0.0
@@ -165,17 +172,15 @@ def flatten_simple_compare_branches_result(
 
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
-    num_samples: int = 1000
+    num_samples: int = 10000
     confidence_interval: float = 0.95
     ref_branch_label: str = "control"
 
-    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
-        stats_results = StatisticResultCollection([])
-
+    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
-        ma_result = mabsbb.compare_branches(
+        ma_result = mozanalysis.bayesian_stats.bayesian_bootstrap.compare_branches(
             df,
             col_label=metric,
             ref_branch_label=self.ref_branch_label,
@@ -193,9 +198,7 @@ class Binomial(Statistic):
     ref_branch_label: str = "control"
     confidence_interval: float = 0.95
 
-    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
-        stats_results = StatisticResultCollection([])
-
+    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
