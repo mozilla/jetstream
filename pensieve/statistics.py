@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import attr
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
-import mozanalysis.bayesian_stats.frequentist_bootstrap
+import mozanalysis.frequentist_stats.bootstrap
+import numpy as np
 from pandas import DataFrame, Series
 
 
@@ -213,3 +214,89 @@ class Binomial(Statistic):
         return flatten_simple_compare_branches_result(
             ma_result, "binomial", metric, self.confidence_interval
         )
+
+
+@attr.s(auto_attribs=True)
+class Deciles(Statistic):
+    ref_branch_label: str = "control"
+    confidence_interval: float = 0.95
+    num_samples: int = 10000
+
+    @staticmethod
+    def _decilize(arr):
+        deciles = np.arange(1, 10) * 0.1
+        arr_quantiles = np.quantile(arr, deciles)
+
+        arr_dict = {
+            f"{label:.1}": arr_quantile for label, arr_quantile in zip(deciles, arr_quantiles)
+        }
+        return arr_dict
+
+    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+        stats_results = StatisticResultCollection([])
+
+        critical_point = (1 - self.confidence_interval) / 2
+        summary_quantiles = (critical_point, 1 - critical_point)
+
+        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches(
+            df,
+            stat_fn=self._decilize,
+            col_label=metric,
+            ref_branch_label=self.ref_branch_label,
+            num_samples=self.num_samples,
+            individual_summary_quantiles=summary_quantiles,
+            comparative_summary_quantiles=summary_quantiles,
+        )
+
+        for branch, branch_result in ma_result["individual"].items():
+            for param, decile_result in branch_result.iterrows():
+                lower, upper = _extract_ci(decile_result, critical_point)
+                stats_results.data.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="deciles",
+                        parameter=param,
+                        branch=branch,
+                        ci_width=self.confidence_interval,
+                        point=decile_result["mean"],
+                        lower=lower,
+                        upper=upper,
+                    )
+                )
+
+        for branch, branch_result in ma_result["comparative"].items():
+            abs_uplift = branch_result["abs_uplift"]
+            for param, decile_result in abs_uplift.iterrows():
+                lower_abs, upper_abs = _extract_ci(decile_result, critical_point)
+                stats_results.data.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="deciles",
+                        parameter=param,
+                        branch=branch,
+                        comparison_to_control="difference",
+                        ci_width=self.confidence_interval,
+                        point=decile_result["exp"],
+                        lower=lower_abs,
+                        upper=upper_abs,
+                    )
+                )
+
+            rel_uplift = branch_result["rel_uplift"]
+            for param, decile_result in rel_uplift.iterrows():
+                lower_rel, upper_rel = _extract_ci(decile_result, critical_point)
+                stats_results.data.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="deciles",
+                        parameter=param,
+                        branch=branch,
+                        comparison_to_control="relative_uplift",
+                        ci_width=self.confidence_interval,
+                        point=decile_result["exp"],
+                        lower=lower_rel,
+                        upper=upper_rel,
+                    )
+                )
+
+        return stats_results
