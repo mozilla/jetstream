@@ -95,14 +95,10 @@ class MetricReference:
     def resolve(
         self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
     ) -> List[Summary]:
-        metrics: List[Summary] = []
-
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experimenter)
-
-        if len(metrics) > 0:
-            return metrics
-
+        if hasattr(mozanalysis.metrics.desktop, self.name):
+            raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
 
 
