@@ -18,6 +18,7 @@ def experiments():
         Experiment(
             slug="test_slug",
             type="pref",
+            status="Complete",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
@@ -27,6 +28,7 @@ def experiments():
         Experiment(
             slug="test_slug",
             type="addon",
+            status="Complete",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=0,
