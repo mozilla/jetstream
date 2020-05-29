@@ -7,7 +7,7 @@ import requests
 import pytz
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Variant:
     is_control: bool
     slug: str
@@ -18,10 +18,11 @@ def _coerce_none_to_zero(x: Optional[int]) -> int:
     return 0 if x is None else x
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     slug: str  # experimenter slug
     type: str
+    status: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     proposed_enrollment: Optional[int] = attr.ib(converter=_coerce_none_to_zero)
