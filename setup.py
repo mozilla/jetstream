@@ -26,8 +26,8 @@ setup(
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/pensieve",
-    packages=["pensieve", "pensieve.tests", "pensieve.tests.integration"],
-    package_data={"pensieve": ["*.toml"], "pensieve.tests": ["data/*"]},
+    packages=["pensieve", "pensieve.config", "pensieve.tests", "pensieve.tests.integration"],
+    package_data={"pensieve.config": ["*.toml"], "pensieve.tests": ["data/*"]},
     install_requires=[
         "attrs",
         "cattrs",

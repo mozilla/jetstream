@@ -7,7 +7,7 @@ import requests
 import pytz
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Variant:
     is_control: bool
     slug: str
@@ -18,10 +18,11 @@ def _coerce_none_to_zero(x: Optional[int]) -> int:
     return 0 if x is None else x
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     slug: str  # experimenter slug
     type: str
+    status: str
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     proposed_enrollment: Optional[int] = attr.ib(converter=_coerce_none_to_zero)
@@ -61,16 +62,32 @@ class ExperimentCollection:
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.type in type_or_types])
 
+    def ever_launched(self) -> "ExperimentCollection":
+        cls = type(self)
+        return cls([ex for ex in self.experiments if ex.status in ("Complete", "Live")])
+
     def with_slug(self, slug: str) -> "ExperimentCollection":
         cls = type(self)
         return cls([ex for ex in self.experiments if ex.slug == slug or ex.normandy_slug == slug])
 
     def started_since(self, since: dt.datetime) -> "ExperimentCollection":
-        """since should be a tz-aware datetime in UTC."""
+        """All experiments that ever launched after a given time.
+
+        since should be a tz-aware datetime."""
         cls = type(self)
-        return cls([ex for ex in self.experiments if ex.start_date and ex.start_date >= since])
+        return cls(
+            [
+                ex
+                for ex in self.ever_launched().experiments
+                if ex.start_date and ex.start_date >= since
+            ]
+        )
 
     def end_on_or_after(self, after: dt.datetime) -> "ExperimentCollection":
-        """All experiments that end on or after the specified date."""
+        """All experiments that ever launched that end on or after the specified time.
+
+        after should be a tz-aware datetime."""
         cls = type(self)
-        return cls([ex for ex in self.experiments if ex.end_date and ex.end_date >= after])
+        return cls(
+            [ex for ex in self.ever_launched().experiments if ex.end_date and ex.end_date >= after]
+        )
