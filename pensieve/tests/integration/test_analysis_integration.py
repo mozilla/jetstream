@@ -83,6 +83,7 @@ class TestAnalysisIntegration:
         experiment = Experiment(
             slug="test-experiment",
             type="rollout",
+            status="Complete",
             start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
