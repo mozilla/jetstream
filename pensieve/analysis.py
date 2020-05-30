@@ -241,7 +241,7 @@ class Analysis:
                     self.config.experiment.slug,
                     period.value,
                 )
-                return
+                continue
 
             metrics_table = self._calculate_metrics(exp, time_limits, period, dry_run)
             self._calculate_statistics(metrics_table, period)
