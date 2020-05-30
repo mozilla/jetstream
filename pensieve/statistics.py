@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
 import logging
+import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import attr
+import cattr
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.frequentist_stats.bootstrap
@@ -44,10 +46,13 @@ class StatisticResultCollection:
 
     data: List[StatisticResult] = attr.Factory(list)
 
+    converter = cattr.Converter()
+    converter.register_unstructure_hook(Decimal, lambda x: str(round(x, 6).normalize()))
+    converter.register_unstructure_hook(float, lambda x: x if math.isfinite(x) else None)
+
     def to_dict(self):
         """Return statistic results as dict."""
-
-        return attr.asdict(self)
+        return self.converter.unstructure(self)
 
 
 @attr.s(auto_attribs=True)
