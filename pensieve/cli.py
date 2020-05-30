@@ -64,7 +64,11 @@ dry_run_option = click.option(
 experiment_slug_option = click.option(
     "--experiment_slug",
     "--experiment-slug",
-    help="Experimenter or Normandy slug of the experiment to rerun analysis for",
+    help="Experimenter or Normandy slug of the experiment to (re)run analysis for",
+)
+
+secret_config_file_option = click.option(
+    "--i-solemnly-swear-i-am-up-to-no-good", "config_file", type=click.File("rt"), hidden=True
 )
 
 
@@ -80,7 +84,8 @@ experiment_slug_option = click.option(
 )
 @experiment_slug_option
 @dry_run_option
-def run(project_id, dataset_id, date, experiment_slug, dry_run):
+@secret_config_file_option
+def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
@@ -94,6 +99,9 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run):
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
         spec = default_spec_for_experiment(experiment)
+        if config_file:
+            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+            spec.merge(custom_spec)
         config = spec.resolve(experiment)
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
@@ -103,7 +111,8 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run):
 @project_id_option
 @dataset_id_option
 @dry_run_option
-def rerun(project_id, dataset_id, experiment_slug, dry_run):
+@secret_config_file_option
+def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
@@ -115,8 +124,11 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run):
 
     experiment = experiments.experiments[0]
     end_date = min(experiments.end_date, datetime.now(tz=pytz.utc).date() - timedelta(days=1))
+    spec = default_spec_for_experiment(experiment)
+    if config_file:
+        custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+        spec.merge(custom_spec)
+    config = spec.resolve(experiment)
 
     for date in inclusive_date_range(experiment.start_date, end_date):
-        spec = default_spec_for_experiment(experiment)
-        config = spec.resolve(experiment)
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
