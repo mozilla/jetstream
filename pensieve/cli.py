@@ -123,7 +123,14 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
         sys.exit(1)
 
     experiment = experiments.experiments[0]
-    end_date = min(experiments.end_date, datetime.now(tz=pytz.utc).date() - timedelta(days=1))
+    end_date = min(
+        experiment.end_date,
+        datetime.combine(
+            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=pytz.utc,
+        ),
+    )
     spec = default_spec_for_experiment(experiment)
     if config_file:
         custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
