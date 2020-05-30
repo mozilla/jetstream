@@ -153,6 +153,14 @@ class ExperimentConfiguration:
     experimenter_experiment: pensieve.experimenter.Experiment
 
     def __getattr__(self, name):
+        equivalents = {
+            # Experimenter name: config name
+            "proposed_enrollment": "enrollment_period",
+        }
+        if name in equivalents:
+            candidate_attr = getattr(self.experiment_spec, equivalents[name])
+            if candidate_attr is not None:
+                return candidate_attr
         if hasattr(self.experiment_spec, name):
             return getattr(self.experiment_spec, name)
         return getattr(self.experimenter_experiment, name)
@@ -164,9 +172,14 @@ class ExperimentSpec:
 
     # TODO: Expand this list.
     enrollment_query: Optional[str] = None
+    enrollment_period: Optional[int] = None
 
     def resolve(self, experimenter: pensieve.experimenter.Experiment) -> ExperimentConfiguration:
         return ExperimentConfiguration(self, experimenter)
+
+    def merge(self, other: "ExperimentSpec") -> None:
+        self.enrollment_query = other.enrollment_query or self.enrollment_query
+        self.enrollment_period = other.enrollment_period or self.enrollment_period
 
 
 @attr.s(auto_attribs=True)
@@ -389,5 +402,6 @@ class AnalysisSpec:
 
     def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""
+        self.experiment.merge(other.experiment)
         self.metrics.merge(other.metrics)
         self.data_sources.merge(other.data_sources)
