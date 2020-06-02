@@ -87,11 +87,13 @@ class Analysis:
             return current_time_limits
 
         # Period is OVERALL
-        if self.config.experiment.end_date != prior_date:
+        # The last full day of data for an experiment is the day before an operator switches it off.
+        tomorrow = current_date + timedelta(days=1)
+        if self.config.experiment.end_date != tomorrow:
             return None
 
         return TimeLimits.for_single_analysis_window(
-            last_date_full_data=prior_date_str,
+            last_date_full_data=current_date_str,
             analysis_start_days=0,
             analysis_length_dates=(
                 self.config.experiment.end_date - self.config.experiment.start_date
@@ -228,7 +230,7 @@ class Analysis:
                 self.logger.info(
                     "Skipping %s (%s); not ready", self.config.experiment.slug, period.value
                 )
-                return
+                continue
 
             exp = mozanalysis.experiment.Experiment(
                 experiment_slug=self.config.experiment.normandy_slug,
