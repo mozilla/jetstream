@@ -27,11 +27,11 @@ def test_get_timelimits_if_ready(experiments):
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date)
 
+    date = dt.datetime(2020, 2, 29, tzinfo=pytz.utc)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
+
     date = dt.datetime(2020, 3, 1, tzinfo=pytz.utc)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
-
-    date = dt.datetime(2020, 3, 2, tzinfo=pytz.utc)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
 
 
 def test_regression_20200320():
