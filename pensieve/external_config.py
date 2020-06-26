@@ -6,9 +6,11 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 
 import datetime as dt
 import attr
+from dateutil import parser
 from github import Github
 from google.cloud import bigquery
 import os
+import re
 import toml
 from typing import List, Optional
 
@@ -28,13 +30,13 @@ class ExternalConfig:
         Check whether the config file has been updated/added and
         associated BigQuery tables are out of date.
         """
-        client = bigquery.Client(bq_project, bq_dataset)
+        client = bigquery.Client(bq_project)
         job = client.query(
             f"""
             SELECT COUNT(*) AS n FROM {bq_dataset}.__TABLES__
-            WHERE table_id LIKE '{self.normandy_slug}%'
+            WHERE table_id LIKE '{re.sub(r"[^a-zA-Z0-9_]", "_", self.normandy_slug)}%'
             AND TIMESTAMP_MILLIS(last_modified_time) <
-                '{dt.strptime(self.last_modified, "%Y-%m-%d %H:%M:%s")}'
+                '{self.last_modified.strftime("%Y-%m-%d %H:%M:%S")}'
         """
         )
 
@@ -70,8 +72,9 @@ class ExternalConfigCollection:
         for file in files:
             if file.name.endswith(".toml"):
                 normandy_slug = os.path.splitext(file.name)[0]
-                spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content))
-                configs.append(ExternalConfig(normandy_slug, spec, file.last_modified))
+                spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
+                last_modified = parser.parse(file.last_modified)
+                configs.append(ExternalConfig(normandy_slug, spec, last_modified))
 
         return cls(configs)
 
