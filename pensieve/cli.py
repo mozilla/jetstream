@@ -140,7 +140,10 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
         spec.merge(custom_spec)
     config = spec.resolve(experiment)
 
+    logger = logging.getLogger(__name__)
+
     for date in inclusive_date_range(experiment.start_date, end_date):
+        logger.info(f"*** {date}")
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
