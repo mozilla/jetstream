@@ -223,10 +223,10 @@ class TestAnalysisSpec:
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
-            pre_treatments = ["remove_nulls"]
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
+            pre_treatments = ["remove_nulls"]
             """
         )
 
@@ -248,10 +248,10 @@ class TestAnalysisSpec:
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
-            pre_treatments = ["not_existing"]
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
+            pre_treatments = ["not_existing"]
             """
         )
 
