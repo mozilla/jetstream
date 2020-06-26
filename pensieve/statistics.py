@@ -195,7 +195,10 @@ class BootstrapMean(Statistic):
         )
 
         return flatten_simple_compare_branches_result(
-            ma_result, "mean", metric, self.confidence_interval
+            ma_result=ma_result,
+            metric_name=metric,
+            statistic_name="mean",
+            ci_width=self.confidence_interval,
         )
 
 
@@ -217,7 +220,10 @@ class Binomial(Statistic):
         )
 
         return flatten_simple_compare_branches_result(
-            ma_result, "binomial", metric, self.confidence_interval
+            ma_result=ma_result,
+            metric_name=metric,
+            statistic_name="binomial",
+            ci_width=self.confidence_interval,
         )
 
 
