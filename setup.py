@@ -40,6 +40,7 @@ setup(
         "jinja2",
         "mozanalysis",
         "pyarrow",
+        "PyGithub",
         "pytz",
         "requests",
         "smart_open",
