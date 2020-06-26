@@ -193,7 +193,6 @@ class MetricDefinition:
 
     name: str  # implicit in configuration
     statistics: Dict[str, Dict[str, Any]]
-    pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
     select_expression: Optional[str] = None
     data_source: Optional[DataSourceReference] = None
 
@@ -227,7 +226,11 @@ class MetricDefinition:
                     break
             else:
                 raise ValueError(f"Statistic {statistic_name} does not exist.")
-            pre_treatments = [pt.resolve(spec) for pt in self.pre_treatments]
+
+            pre_treatments = []
+            for pt in params.pop("pre_treatments", []):
+                ref = PreTreatmentReference(pt)
+                pre_treatments.append(ref.resolve(spec))
 
             if "ref_branch_label" not in params:
                 for variant in experimenter.variants:
