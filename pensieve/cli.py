@@ -132,7 +132,7 @@ def run_cmd(
     project_id, dataset_id, date, experiment_slug, dry_run, config_file, rerun_config_changed
 ):
     """CLI command for running analyses on active experiments."""
-    run(project_id, dataset_id, date, experiment_slug, dry_run, config_file)
+    run(project_id, dataset_id, date, experiment_slug, dry_run, config_file, rerun_config_changed)
 
 
 def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
@@ -187,12 +187,12 @@ def rerun_config_changed(project_id, dataset_id, dry_run):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
-    for external_config in external_configs:
+    for external_config in external_configs.configs:
         if external_config.updated(project_id, dataset_id):
             rerun(project_id, dataset_id, external_config.normandy_slug, dry_run)
 
 
-@cli.command()
+@cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
 @dry_run_option
