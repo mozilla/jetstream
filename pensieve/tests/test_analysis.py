@@ -68,7 +68,7 @@ def test_regression_20200320():
     experiment = Experiment.from_dict(json.loads(experiment_json))
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
-    analysis.run(current_date=dt.datetime(2020, 3, 19), dry_run=True)
+    analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
 
 
 def test_regression_20200316():
@@ -128,4 +128,4 @@ def test_regression_20200316():
     experiment = Experiment.from_dict(json.loads(experiment_json))
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
-    analysis.run(current_date=dt.datetime(2020, 3, 16), dry_run=True)
+    analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
