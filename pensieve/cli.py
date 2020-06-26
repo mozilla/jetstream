@@ -154,3 +154,35 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
 def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@dry_run_option
+def rerun_config_changed(project_id, dataset_id, dry_run):
+    """Rerun all available analyses for experiments with new or updated config files."""
+    collection = ExperimentCollection.from_experimenter()
+
+    experiments = collection.with_slug(experiment_slug)
+
+    if len(experiments.experiments) == 0:
+        click.echo(f"No experiment with slug {experiment_slug} found.", err=True)
+        sys.exit(1)
+
+    experiment = experiments.experiments[0]
+    end_date = min(
+        experiment.end_date,
+        datetime.combine(
+            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=pytz.utc,
+        ),
+    )
+    spec = default_spec_for_experiment(experiment)
+    if config_file:
+        custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+        spec.merge(custom_spec)
+    config = spec.resolve(experiment)
+
+    for date in inclusive_date_range(experiment.start_date, end_date):
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
