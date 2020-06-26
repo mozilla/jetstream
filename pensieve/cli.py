@@ -76,20 +76,7 @@ secret_config_file_option = click.option(
 bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket to write to")
 
 
-@cli.command()
-@project_id_option
-@dataset_id_option
-@click.option(
-    "--date",
-    type=ClickDate(),
-    help="Date for which experiments should be analyzed",
-    metavar="YYYY-MM-DD",
-    required=True,
-)
-@experiment_slug_option
-@dry_run_option
-@secret_config_file_option
-def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
+def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file, rerun_config_changed):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
@@ -119,13 +106,35 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
         config = spec.resolve(experiment)
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
+    if rerun_config_changed:
+        rerun_config_changed(project_id, dataset_id, dry_run)
 
-@cli.command()
-@experiment_slug_option
+
+@cli.command("run")
 @project_id_option
 @dataset_id_option
+@click.option(
+    "--date",
+    type=ClickDate(),
+    help="Date for which experiments should be analyzed",
+    metavar="YYYY-MM-DD",
+    required=True,
+)
+@experiment_slug_option
 @dry_run_option
 @secret_config_file_option
+@click.option(
+    "--rerun_config_changed",
+    "--rerun-config-changed",
+    help="Re-run experiments if their config changed.",
+)
+def run_cmd(
+    project_id, dataset_id, date, experiment_slug, dry_run, config_file, rerun_config_changed
+):
+    """CLI command for running analyses on active experiments."""
+    run(project_id, dataset_id, date, experiment_slug, dry_run, config_file)
+
+
 def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
@@ -149,6 +158,47 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     if config_file:
         custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
         spec.merge(custom_spec)
+
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+    external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+
+    if external_experiment_config:
+        spec.merge(external_experiment_config)
+
+    config = spec.resolve(experiment)
+
+    for date in inclusive_date_range(experiment.start_date, end_date):
+        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+
+
+@cli.command("rerun")
+@experiment_slug_option
+@project_id_option
+@dataset_id_option
+@dry_run_option
+@secret_config_file_option
+def rerun_cmd(project_id, dataset_id, experiment_slug, dry_run, config_file):
+    """CLI command for re-running analyses."""
+    rerun(project_id, dataset_id, experiment_slug, dry_run, config_file)
+
+
+def rerun_config_changed(project_id, dataset_id, dry_run):
+    """Rerun all available analyses for experiments with new or updated config files."""
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+    for external_config in external_configs:
+        if external_config.updated(project_id, dataset_id):
+            rerun(project_id, dataset_id, external_config.normandy_slug, dry_run)
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@dry_run_option
+def rerun_config_changed_cmd(project_id, dataset_id, dry_run):
+    """CLI command for re-running experiments with updated configs."""
+    rerun_config_changed(project_id, dataset_id, dry_run)
     config = spec.resolve(experiment)
 
     logger = logging.getLogger(__name__)
