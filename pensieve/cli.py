@@ -12,6 +12,7 @@ from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
+from .external_config import ExternalConfigCollection
 
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
@@ -99,12 +100,22 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
         # run analysis for specific experiment
         active_experiments = active_experiments.with_slug(experiment_slug)
 
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
         spec = default_spec_for_experiment(experiment)
+
         if config_file:
             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
             spec.merge(custom_spec)
+
+        external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+
+        if external_experiment_config:
+            spec.merge(external_experiment_config)
+
         config = spec.resolve(experiment)
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
