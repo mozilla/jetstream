@@ -8,6 +8,7 @@ import datetime as dt
 import attr
 from dateutil import parser
 from github import Github
+from github.ContentFile import ContentFile
 from google.cloud import bigquery
 import os
 import re
@@ -67,13 +68,16 @@ class ExternalConfigCollection:
         repo = g.get_repo(cls.PENSIEVE_CONFIG_REPO)
         files = repo.get_contents("")
 
+        if isinstance(files, ContentFile):
+            files = [files]
+
         configs = []
 
         for file in files:
             if file.name.endswith(".toml"):
                 normandy_slug = os.path.splitext(file.name)[0]
                 spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
-                last_modified = parser.parse(file.last_modified)
+                last_modified = parser.parse(str(file.last_modified))
                 configs.append(ExternalConfig(normandy_slug, spec, last_modified))
 
         return cls(configs)
