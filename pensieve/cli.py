@@ -10,6 +10,7 @@ import toml
 from . import experimenter
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
+from .export_json import export_statistics_tables
 from .analysis import Analysis
 
 
@@ -70,6 +71,8 @@ experiment_slug_option = click.option(
 secret_config_file_option = click.option(
     "--i-solemnly-swear-i-am-up-to-no-good", "config_file", type=click.File("rt"), hidden=True
 )
+
+bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket to write to")
 
 
 @cli.command()
@@ -139,3 +142,12 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
 
     for date in inclusive_date_range(experiment.start_date, end_date):
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@bucket_option
+def export_json(project_id, dataset_id, bucket):
+    """Export all tables as JSON to a GCS bucket."""
+    export_statistics_tables(project_id, dataset_id, bucket)

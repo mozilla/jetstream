@@ -2,4 +2,8 @@
 
 set -e
 
-exec pensieve run "$@"
+if [ "$1" = "export_json" ]; then
+    exec pensieve export-json
+else
+    exec pensieve run "$@"
+fi
