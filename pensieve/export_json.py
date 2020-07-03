@@ -1,11 +1,12 @@
 from google.cloud import bigquery
 from google.cloud import storage
 import logging
+import smart_open
 
 logging.getLogger(__name__)
 
 
-def get_statistics_tables(client, bq_dataset: str):
+def _get_statistics_tables(client, bq_dataset: str):
     """Returns statistics table names and their last modified timestamp."""
     job = client.query(
         f"""
@@ -19,14 +20,14 @@ def get_statistics_tables(client, bq_dataset: str):
     return {row.table_id: row.last_modified for row in result}
 
 
-def get_gcs_blobs(storage_client, bucket):
+def _get_gcs_blobs(storage_client, bucket):
     """Return all blobs in the GCS location with their last modified timestamp."""
     blobs = storage_client.list_blobs(bucket)
 
-    return {blob.name: blob.updated for blob in blobs}
+    return {blob.name.replace(".json", ""): blob.updated for blob in blobs}
 
 
-def export_table(client, project_id, dataset_id, table, bucket):
+def _export_table(client, project_id, dataset_id, table, bucket, storage_client):
     """Export a single table or view to GCS as JSON."""
     # since views cannot get exported directly, write data into a temporary table
     job = client.query(
@@ -41,14 +42,53 @@ def export_table(client, project_id, dataset_id, table, bucket):
     # get the temporary table results are written to
     tmp_table = job._properties["configuration"]["query"]["destinationTable"]
 
-    destination_uri = f"gs://{bucket}/{table}.json"
+    destination_uri = f"gs://{bucket}/{table}.ndjson"
     dataset_ref = bigquery.DatasetReference(project_id, tmp_table["datasetId"])
     table_ref = dataset_ref.table(tmp_table["tableId"])
 
     logging.info(f"Export table {table} to {destination_uri}")
 
-    extract_job = client.extract_table(table_ref, destination_uri, location="US",)
+    job_config = bigquery.ExtractJobConfig()
+    job_config.destination_format = "NEWLINE_DELIMITED_JSON"
+    extract_job = client.extract_table(
+        table_ref, destination_uri, location="US", job_config=job_config
+    )
     extract_job.result()
+
+    # convert ndjson to json
+    _convert_ndjson_to_json(bucket, table, storage_client)
+
+
+def _convert_ndjson_to_json(bucket, table, storage_client):
+    """Converts the provided ndjson file on GCS to json."""
+    ndjson_blob_path = f"gs://{bucket}/{table}.ndjson"
+    json_blob_path = f"gs://{bucket}/{table}.json"
+
+    logging.info(f"Convert {ndjson_blob_path} to {json_blob_path}")
+
+    # stream from GCS
+    with smart_open.open(ndjson_blob_path) as fin:
+        first_line = True
+
+        with smart_open.open(json_blob_path, "w") as fout:
+            fout.write("[")
+
+            for line in fin:
+                if not first_line:
+                    fout.write(",")
+
+                fout.write(line.replace("\n", ""))
+                first_line = False
+
+            fout.write("]")
+            fout.close()
+            fin.close()
+
+    # delete ndjson file from bucket
+    logging.info(f"Remove file {table}.ndjson")
+    bucket = storage_client.bucket(bucket)
+    blob = bucket.blob(f"{table}.ndjson")
+    blob.delete()
 
 
 def export_statistics_tables(project_id, dataset_id, bucket):
@@ -56,11 +96,11 @@ def export_statistics_tables(project_id, dataset_id, bucket):
     bigquery_client = bigquery.Client(project_id)
     storage_client = storage.Client()
 
-    tables = get_statistics_tables(bigquery_client, dataset_id)
-    exported_json = get_gcs_blobs(storage_client, bucket)
+    tables = _get_statistics_tables(bigquery_client, dataset_id)
+    exported_json = _get_gcs_blobs(storage_client, bucket)
 
     for table, table_updated in tables.items():
         if table not in exported_json or table_updated > exported_json[table]:
             # table either new or updated since last export
             # so export new table data
-            export_table(bigquery_client, project_id, dataset_id, table, bucket)
+            _export_table(bigquery_client, project_id, dataset_id, table, bucket, storage_client)
