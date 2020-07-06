@@ -2,8 +2,8 @@
 
 set -e
 
-if [ "$1" = "export_json" ]; then
-    exec pensieve export-json
+if [ "$1" = "export_statistics_to_json" ]; then
+    exec pensieve export-statistics-to-json
 else
     exec pensieve run "$@"
 fi

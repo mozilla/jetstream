@@ -148,6 +148,6 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
 @project_id_option
 @dataset_id_option
 @bucket_option
-def export_json(project_id, dataset_id, bucket):
+def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)

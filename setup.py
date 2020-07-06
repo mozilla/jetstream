@@ -34,6 +34,7 @@ setup(
         "Click",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
+        "google-cloud-storage",
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "incremental",
         "jinja2",
@@ -41,6 +42,7 @@ setup(
         "pyarrow",
         "pytz",
         "requests",
+        "smart_open",
         "toml",
     ],
     setup_requires=["incremental"],

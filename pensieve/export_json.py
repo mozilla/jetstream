@@ -13,7 +13,7 @@ def _get_statistics_tables(client: bigquery.Client, bq_dataset: str) -> Dict[str
         f"""
         SELECT table_id, TIMESTAMP_MILLIS(last_modified_time) as last_modified
         FROM {bq_dataset}.__TABLES__
-        WHERE table_id LIKE 'statistics_%'
+        WHERE table_id LIKE 'statistics_%_daily' OR table_id LIKE 'statistics_%_weekly'
     """
     )
 
@@ -47,12 +47,9 @@ def _export_table(
 
     job.result()
 
-    # get the temporary table results are written to
-    tmp_table = job._properties["configuration"]["query"]["destinationTable"]
-
     destination_uri = f"gs://{bucket}/{table}.ndjson"
-    dataset_ref = bigquery.DatasetReference(project_id, tmp_table["datasetId"])
-    table_ref = dataset_ref.table(tmp_table["tableId"])
+    dataset_ref = bigquery.DatasetReference(project_id, job.destination.dataset_id)
+    table_ref = dataset_ref.table(job.destination.table_id)
 
     logging.info(f"Export table {table} to {destination_uri}")
 
