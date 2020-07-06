@@ -7,8 +7,10 @@ from typing import Dict
 logging.getLogger(__name__)
 
 
-def _get_statistics_tables(client: bigquery.Client, bq_dataset: str) -> Dict[str, str]:
-    """Returns statistics table names and their last modified timestamp."""
+def _get_statistics_tables_last_modified(
+    client: bigquery.Client, bq_dataset: str
+) -> Dict[str, str]:
+    """Returns statistics table names and their last modified timestamp as datetime object."""
     job = client.query(
         f"""
         SELECT table_id, TIMESTAMP_MILLIS(last_modified_time) as last_modified
@@ -101,7 +103,7 @@ def export_statistics_tables(project_id: str, dataset_id: str, bucket: str):
     bigquery_client = bigquery.Client(project_id)
     storage_client = storage.Client()
 
-    tables = _get_statistics_tables(bigquery_client, dataset_id)
+    tables = _get_statistics_tables_last_modified(bigquery_client, dataset_id)
     exported_json = _get_gcs_blobs(storage_client, bucket)
 
     for table, table_updated in tables.items():
