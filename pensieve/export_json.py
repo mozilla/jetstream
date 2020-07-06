@@ -1,3 +1,4 @@
+from datetime import datetime
 from google.cloud import bigquery
 from google.cloud import storage
 import logging
@@ -9,7 +10,7 @@ logging.getLogger(__name__)
 
 def _get_statistics_tables_last_modified(
     client: bigquery.Client, bq_dataset: str
-) -> Dict[str, str]:
+) -> Dict[str, datetime]:
     """Returns statistics table names and their last modified timestamp as datetime object."""
     job = client.query(
         f"""
@@ -23,7 +24,7 @@ def _get_statistics_tables_last_modified(
     return {row.table_id: row.last_modified for row in result}
 
 
-def _get_gcs_blobs(storage_client: storage.Client, bucket: str) -> Dict[str, str]:
+def _get_gcs_blobs(storage_client: storage.Client, bucket: str) -> Dict[str, datetime]:
     """Return all blobs in the GCS location with their last modified timestamp."""
     blobs = storage_client.list_blobs(bucket)
 
