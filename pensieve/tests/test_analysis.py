@@ -10,7 +10,11 @@ from pensieve.experimenter import Experiment
 
 def test_get_timelimits_if_ready(experiments):
     config = AnalysisSpec().resolve(experiments[0])
+    config2 = AnalysisSpec().resolve(experiments[2])
+
     analysis = Analysis("test", "test", config)
+    analysis2 = Analysis("test", "test", config2)
+
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date) is None
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
@@ -28,10 +32,11 @@ def test_get_timelimits_if_ready(experiments):
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date)
 
     date = dt.datetime(2020, 2, 29, tzinfo=pytz.utc)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
 
     date = dt.datetime(2020, 3, 1, tzinfo=pytz.utc)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
+    assert analysis2._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
 
 
 def test_regression_20200320():

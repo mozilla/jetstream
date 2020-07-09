@@ -35,4 +35,14 @@ def experiments():
             variants=[],
             normandy_slug=None,
         ),
+        Experiment(
+            slug="test_slug",
+            type="pref",
+            status="Live",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            variants=[],
+            normandy_slug="normandy-test-slug",
+        ),
     ]
