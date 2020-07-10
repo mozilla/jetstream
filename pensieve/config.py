@@ -152,17 +152,39 @@ class ExperimentConfiguration:
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: pensieve.experimenter.Experiment
 
-    def __getattr__(self, name):
-        equivalents = {
-            # Experimenter name: config name
-            "proposed_enrollment": "enrollment_period",
-        }
-        if name in equivalents:
-            candidate_attr = getattr(self.experiment_spec, equivalents[name])
-            if candidate_attr is not None:
-                return candidate_attr
-        if hasattr(self.experiment_spec, name):
-            return getattr(self.experiment_spec, name)
+    def __attrs_post_init__(self):
+        # Catch any exceptions at instantiation
+        self._enrollment_query = self.enrollment_query
+
+    @property
+    def enrollment_query(self) -> Optional[str]:
+        if self.experiment_spec.enrollment_query is None:
+            return None
+
+        if cached := getattr(self, "_enrollment_query", None):
+            return cached
+
+        class ExperimentProxy:
+            @property
+            def enrollment_query(proxy):
+                raise ValueError()
+
+            def __getattr__(proxy, name):
+                return getattr(self, name)
+
+        env = jinja2.Environment(autoescape=False)
+        env.globals["experiment"] = ExperimentProxy()
+        return env.from_string(self.experiment_spec.enrollment_query).render()
+
+    @property
+    def proposed_enrollment(self) -> int:
+        return (
+            self.experiment_spec.enrollment_period
+            or self.experimenter_experiment.proposed_enrollment
+            or 0
+        )
+
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
 

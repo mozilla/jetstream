@@ -338,3 +338,43 @@ class TestAnalysisSpec:
         assert spam.metric.select_expr == "2"
         assert spam.statistic.name() == "bootstrap_mean"
         assert spam.statistic.num_samples == 100
+
+
+class TestExperimentSpec:
+    def test_null_query(self, experiments):
+        spec = config.AnalysisSpec.from_dict({})
+        cfg = spec.resolve(experiments[0])
+        assert cfg.experiment.enrollment_query is None
+
+    def test_trivial_query(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_query = "SELECT 1"
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[0])
+        assert cfg.experiment.enrollment_query == "SELECT 1"
+
+    def test_template_query(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_query = "SELECT 1 FROM foo WHERE slug = '{{experiment.slug}}'"
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[0])
+        assert cfg.experiment.enrollment_query == "SELECT 1 FROM foo WHERE slug = 'test_slug'"
+
+    def test_silly_query(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_query = "{{experiment.enrollment_query}}"  # whoa
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        with pytest.raises(ValueError):
+            spec.resolve(experiments[0])
