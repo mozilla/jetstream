@@ -20,12 +20,12 @@ extras = {
 }
 
 setup(
-    name="mozilla-pensieve",
+    name="mozilla-jetstream",
     use_incremental=True,
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
-    url="https://github.com/mozilla/pensieve",
+    url="https://github.com/mozilla/jetstream",
     packages=["pensieve", "pensieve.config", "pensieve.tests", "pensieve.tests.integration"],
     package_data={"pensieve.config": ["*.toml"], "pensieve.tests": ["data/*"]},
     install_requires=[
@@ -54,5 +54,6 @@ setup(
     entry_points="""
         [console_scripts]
         pensieve=pensieve.cli:cli
+        jetstream=pensieve.cli:cli
     """,
 )
