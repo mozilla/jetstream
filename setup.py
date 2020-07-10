@@ -25,7 +25,7 @@ setup(
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
-    url="https://github.com/mozilla/pensieve",
+    url="https://github.com/mozilla/jetstream",
     packages=["pensieve", "pensieve.config", "pensieve.tests", "pensieve.tests.integration"],
     package_data={"pensieve.config": ["*.toml"], "pensieve.tests": ["data/*"]},
     install_requires=[

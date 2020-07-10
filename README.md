@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/mozilla/pensieve/tree/master.svg?style=shield)](https://circleci.com/gh/mozilla/pensieve/tree/master)
+[![CircleCI](https://circleci.com/gh/mozilla/jetstream/tree/master.svg?style=shield)](https://circleci.com/gh/mozilla/jetstream/tree/master)
 
 # jetstream
 
@@ -6,7 +6,7 @@ Automated experiment analysis.
 
 Jetstream automatically calculates metrics and applies statistical treatments to collected experiment data for different analysis windows.
 
-For more information, see [the documentation](https://github.com/mozilla/pensieve/wiki).
+For more information, see [the documentation](https://github.com/mozilla/jetstream/wiki).
 
 ## Running tests
 
