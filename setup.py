@@ -20,7 +20,7 @@ extras = {
 }
 
 setup(
-    name="mozilla-pensieve",
+    name="mozilla-jetstream",
     use_incremental=True,
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
@@ -54,5 +54,6 @@ setup(
     entry_points="""
         [console_scripts]
         pensieve=pensieve.cli:cli
+        jetstream=pensieve.cli:cli
     """,
 )
