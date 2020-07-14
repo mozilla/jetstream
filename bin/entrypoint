@@ -7,5 +7,6 @@ if [ "$1" = "export_statistics_to_json" ]; then
 elif [ "$1" = "rerun_config_changed" ]; then
     exec pensieve rerun_config_changed
 else
-    exec pensieve run "$@" --rerun-config-changed=true
+    exec pensieve run "$@"
+    exec pensieve rerun_config_changed
 fi

@@ -2,13 +2,13 @@ from google.cloud import bigquery
 from pathlib import Path
 import datetime
 import pytest
+import pytz
 import random
 import string
 from textwrap import dedent
 import toml
-import time
 
-from pensieve.external_config import ExternalConfig
+from pensieve.external_config import ExternalConfig, ExternalConfigCollection
 from pensieve.config import AnalysisSpec
 
 TEST_DIR = Path(__file__).parent.parent
@@ -40,55 +40,71 @@ class TestExternalConfigIntegration:
     @pytest.fixture(autouse=True)
     def setup(self, client):
         # remove all tables previously created
-
         client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
         client.create_dataset(self.test_dataset)
 
     def test_new_config(self, client):
         config = ExternalConfig(
-            normandy_slug="new_experiment", spec=self.spec, last_modified=datetime.datetime.utcnow()
+            experimenter_slug="new_experiment",
+            spec=self.spec,
+            last_modified=datetime.datetime.utcnow(),
         )
+        config_collection = ExternalConfigCollection([config])
+        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
 
-        assert config.updated(self.project_id, self.test_dataset) is False
+        assert len(updated_configs) == 0
 
     def test_old_config(self, client):
         config = ExternalConfig(
-            normandy_slug="new_table",
+            experimenter_slug="new_table",
             spec=self.spec,
-            last_modified=datetime.datetime.utcnow() - datetime.timedelta(days=1),
+            last_modified=pytz.UTC.localize(
+                datetime.datetime.utcnow() - datetime.timedelta(days=1)
+            ),
         )
 
         # table created after config loaded
         client.create_table(f"{self.test_dataset}.new_table_day1")
+        config_collection = ExternalConfigCollection([config])
+        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
 
-        assert config.updated(self.project_id, self.test_dataset) is False
+        assert len(updated_configs) == 0
 
     def test_updated_config(self, client):
         config = ExternalConfig(
-            normandy_slug="old_table",
+            experimenter_slug="old_table",
             spec=self.spec,
-            last_modified=datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            last_modified=pytz.UTC.localize(
+                datetime.datetime.utcnow() + datetime.timedelta(days=1)
+            ),
         )
 
         client.create_table(f"{self.test_dataset}.old_table_day1")
         client.create_table(f"{self.test_dataset}.old_table_day2")
 
-        assert config.updated(self.project_id, self.test_dataset) is True
+        config_collection = ExternalConfigCollection([config])
+        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+
+        print(updated_configs)
+
+        assert len(updated_configs) == 1
+        assert updated_configs[0].experimenter_slug == config.experimenter_slug
 
     def test_updated_config_while_analysis_active(self, client):
-        client.create_table(f"{self.test_dataset}.old_table_day1")
-
         client.create_table(f"{self.test_dataset}.active_table_day0")
         client.create_table(f"{self.test_dataset}.active_table_day1")
-        time.sleep(10)
 
         config = ExternalConfig(
-            normandy_slug="active_table", spec=self.spec, last_modified=datetime.datetime.utcnow()
+            experimenter_slug="active_table",
+            spec=self.spec,
+            last_modified=pytz.UTC.localize(datetime.datetime.utcnow()),
         )
-
-        time.sleep(10)
 
         client.create_table(f"{self.test_dataset}.active_table_day2")
         client.create_table(f"{self.test_dataset}.active_table_weekly")
 
-        assert config.updated(self.project_id, self.test_dataset) is True
+        config_collection = ExternalConfigCollection([config])
+        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+
+        assert len(updated_configs) == 1
+        assert updated_configs[0].experimenter_slug == config.experimenter_slug
