@@ -11,7 +11,6 @@ from github import Github
 from github.ContentFile import ContentFile
 from google.cloud import bigquery
 import os
-import re
 import toml
 from typing import List, Optional
 
@@ -22,31 +21,9 @@ from pensieve.config import AnalysisSpec
 class ExternalConfig:
     """Represent an external config file."""
 
-    normandy_slug: str
+    experimenter_slug: str
     spec: AnalysisSpec
     last_modified: dt.datetime
-
-    def updated(self, bq_project: str, bq_dataset: str) -> bool:
-        """
-        Check whether the config file has been updated/added and
-        associated BigQuery tables are out of date.
-        """
-        client = bigquery.Client(bq_project)
-        job = client.query(
-            f"""
-            SELECT COUNT(*) AS n FROM {bq_dataset}.__TABLES__
-            WHERE table_id LIKE '{re.sub(r"[^a-zA-Z0-9_]", "_", self.normandy_slug)}%'
-            AND TIMESTAMP_MILLIS(last_modified_time) <
-                '{self.last_modified.strftime("%Y-%m-%d %H:%M:%S")}'
-        """
-        )
-
-        result = job.result()
-        for row in result:
-            if row.n > 0:
-                return True
-
-        return False
 
 
 @attr.s(auto_attribs=True)
@@ -75,17 +52,45 @@ class ExternalConfigCollection:
 
         for file in files:
             if file.name.endswith(".toml"):
-                normandy_slug = os.path.splitext(file.name)[0]
+                experimenter_slug = os.path.splitext(file.name)[0]
                 spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
                 last_modified = parser.parse(str(file.last_modified))
-                configs.append(ExternalConfig(normandy_slug, spec, last_modified))
+                configs.append(ExternalConfig(experimenter_slug, spec, last_modified))
 
         return cls(configs)
 
-    def spec_for_experiment(self, normandy_slug: str) -> Optional[AnalysisSpec]:
+    def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""
         for config in self.configs:
-            if config.normandy_slug == normandy_slug:
+            if config.experimenter_slug == slug:
                 return config.spec
 
         return None
+
+    def updated_configs(self, bq_project: str, bq_dataset: str) -> List[ExternalConfig]:
+        """
+        Return external configs that have been updated/added and
+        with associated BigQuery tables being out of date.
+        """
+        client = bigquery.Client(bq_project)
+        job = client.query(
+            f"""
+            SELECT table_id, TIMESTAMP_MILLIS(last_modified_time) AS last_modified
+            FROM {bq_dataset}.__TABLES__
+            """
+        )
+
+        result = list(job.result())
+
+        updated_configs = []
+
+        for config in self.configs:
+            for row in result:
+                if (
+                    row.table_id.startswith(config.experimenter_slug)
+                    and row.last_modified < config.last_modified
+                ):
+                    updated_configs.append(config)
+                    break
+
+        return updated_configs
