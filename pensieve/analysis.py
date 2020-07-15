@@ -17,7 +17,7 @@ from mozanalysis.utils import add_days
 
 from . import AnalysisPeriod
 from pensieve.config import AnalysisConfiguration
-from pensieve.statistics import StatisticResult
+from pensieve.statistics import Count, StatisticResult
 
 
 @attr.s(auto_attribs=True)
@@ -186,6 +186,8 @@ class Analysis:
 
         for m in self.config.metrics[period]:
             results += m.run(metrics_data).to_dict()["data"]
+
+        results += Count().transform(metrics_data, "*").to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
