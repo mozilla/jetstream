@@ -1,4 +1,3 @@
-from google.cloud import bigquery
 from pathlib import Path
 import datetime
 import pytest
