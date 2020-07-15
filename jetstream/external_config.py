@@ -1,7 +1,7 @@
 """
 Retrieves external configuration files for specific experiments.
 
-Experiment-specific configuration files are stored in https://github.com/mozilla/pensieve-config/
+Experiment-specific configuration files are stored in https://github.com/mozilla/jetstream-config/
 """
 
 import datetime as dt
@@ -15,7 +15,7 @@ import pytz
 import toml
 from typing import List, Optional
 
-from pensieve.config import AnalysisSpec
+from jetstream.config import AnalysisSpec
 
 
 @attr.s(auto_attribs=True)
@@ -36,14 +36,14 @@ class ExternalConfigCollection:
 
     configs: List[ExternalConfig] = attr.Factory(list)
 
-    PENSIEVE_CONFIG_REPO = "mozilla/jetstream-config"
+    JETSTREAM_CONFIG_REPO = "mozilla/jetstream-config"
 
     @classmethod
     def from_github_repo(cls) -> "ExternalConfigCollection":
         """Pull in external config files."""
 
         g = Github()
-        repo = g.get_repo(cls.PENSIEVE_CONFIG_REPO)
+        repo = g.get_repo(cls.JETSTREAM_CONFIG_REPO)
         files = repo.get_contents("")
 
         if isinstance(files, ContentFile):

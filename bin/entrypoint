@@ -3,10 +3,10 @@
 set -e
 
 if [ "$1" = "export_statistics_to_json" ]; then
-    pensieve export-statistics-to-json
+    jetstream export-statistics-to-json
 elif [ "$1" = "rerun_config_changed" ]; then
-    pensieve rerun_config_changed
+    jetstream rerun_config_changed
 else
-    pensieve run "$@"
-    pensieve rerun_config_changed
+    jetstream run "$@"
+    jetstream rerun_config_changed
 fi

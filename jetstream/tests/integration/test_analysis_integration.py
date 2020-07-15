@@ -12,11 +12,11 @@ import string
 from mozanalysis.metrics import Metric, DataSource, agg_sum
 from google.api_core.exceptions import NotFound
 
-from pensieve import AnalysisPeriod
-from pensieve.analysis import Analysis
-from pensieve.config import AnalysisSpec, Summary
-from pensieve.experimenter import Experiment, Variant
-from pensieve.statistics import BootstrapMean
+from jetstream import AnalysisPeriod
+from jetstream.analysis import Analysis
+from jetstream.config import AnalysisSpec, Summary
+from jetstream.experimenter import Experiment, Variant
+from jetstream.statistics import BootstrapMean
 
 
 TEST_DIR = Path(__file__).parent.parent

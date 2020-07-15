@@ -26,8 +26,8 @@ setup(
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/jetstream",
-    packages=["pensieve", "pensieve.config", "pensieve.tests", "pensieve.tests.integration"],
-    package_data={"pensieve.config": ["*.toml"], "pensieve.tests": ["data/*"]},
+    packages=["jetstream", "jetstream.config", "jetstream.tests", "jetstream.tests.integration"],
+    package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"]},
     install_requires=[
         "attrs",
         "cattrs",
@@ -54,7 +54,7 @@ setup(
     python_requires=">=3.6",
     entry_points="""
         [console_scripts]
-        pensieve=pensieve.cli:cli
-        jetstream=pensieve.cli:cli
+        pensieve=jetstream.cli:cli
+        jetstream=jetstream.cli:cli
     """,
 )

@@ -3,9 +3,9 @@ from datetime import timedelta
 import json
 import pytz
 
-from pensieve.analysis import Analysis, AnalysisPeriod
-from pensieve.config import AnalysisSpec
-from pensieve.experimenter import Experiment
+from jetstream.analysis import Analysis, AnalysisPeriod
+from jetstream.config import AnalysisSpec
+from jetstream.experimenter import Experiment
 
 
 def test_get_timelimits_if_ready(experiments):

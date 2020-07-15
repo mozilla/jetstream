@@ -1,5 +1,5 @@
 from datetime import date
-from pensieve import cli
+from jetstream import cli
 
 
 class TestCli:

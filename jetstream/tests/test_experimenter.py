@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from pensieve.experimenter import ExperimentCollection, Experiment, Variant
+from jetstream.experimenter import ExperimentCollection, Experiment, Variant
 
 EXPERIMENTER_FIXTURE = r"""
 [
@@ -130,7 +130,7 @@ EXPERIMENTER_FIXTURE = r"""
       }
     ]
   },
-  {   
+  {
     "experiment_url":"https://experimenter.services.mozilla.com/experiments/doh-us-engagement-study-v2/",
     "type":"pref",
     "name":"DoH US Engagement Study V2",

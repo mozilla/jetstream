@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pensieve import pre_treatment
+from jetstream import pre_treatment
 
 
 @pytest.fixture

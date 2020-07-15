@@ -3,7 +3,7 @@ import datetime as dt
 import pytest
 import pytz
 
-from pensieve.experimenter import Experiment
+from jetstream.experimenter import Experiment
 
 
 def pytest_addoption(parser):

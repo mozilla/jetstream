@@ -17,8 +17,8 @@ from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
 from . import AnalysisPeriod
-from pensieve.config import AnalysisConfiguration
-from pensieve.statistics import Count, StatisticResult
+from jetstream.config import AnalysisConfiguration
+from jetstream.statistics import Count, StatisticResult
 
 
 @attr.s(auto_attribs=True)
