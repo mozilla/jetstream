@@ -168,6 +168,15 @@ class TestAnalysisIntegration:
             )
             is not None
         )
+
+        stats = client.list_rows(
+            f"{self.project_id}.{self.test_dataset}.statistics_test_experiment_week_1"
+        ).to_dataframe()
+
+        count_by_branch = stats.query("statistic == 'count'").set_index("branch")
+        assert count_by_branch.loc["branch1", "point"] == 1.0
+        assert count_by_branch.loc["branch2", "point"] == 1.0
+
         assert (
             client.get_table(
                 f"{self.project_id}.{self.test_dataset}.statistics_test_experiment_weekly"

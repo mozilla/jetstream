@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pensieve.statistics import BootstrapMean, Binomial
+from pensieve.statistics import BootstrapMean, Binomial, Count
 
 
 class TestStatistics:
@@ -35,3 +35,12 @@ class TestStatistics:
         difference = [r for r in result.data if r.comparison == "difference"][0]
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
+
+    def test_count(self):
+        stat = Count()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
+        )
+        result = stat.transform(test_data, "asdfasdf").data
+        assert [r.point for r in result if r.branch == "treatment"] == [20]
+        assert [r.point for r in result if r.branch == "control"] == [10]

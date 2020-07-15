@@ -337,3 +337,28 @@ class Deciles(Statistic):
                 )
 
         return stats_results
+
+
+class Count(Statistic):
+    def apply(self, df: DataFrame, metric: str):
+        return self.transform(df, metric)
+
+    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+        results = []
+        counts = df.groupby("branch").size()
+        for branch, n in counts.items():
+            results.append(
+                StatisticResult(
+                    metric="identity",
+                    statistic="count",
+                    parameter=None,
+                    branch=branch,
+                    comparison=None,
+                    comparison_to_branch=None,
+                    ci_width=None,
+                    point=n,
+                    lower=None,
+                    upper=None,
+                )
+            )
+        return StatisticResultCollection(results)
