@@ -36,7 +36,7 @@ class ExternalConfigCollection:
 
     configs: List[ExternalConfig] = attr.Factory(list)
 
-    PENSIEVE_CONFIG_REPO = "mozilla/pensieve-config"
+    PENSIEVE_CONFIG_REPO = "mozilla/jetstream-config"
 
     @classmethod
     def from_github_repo(cls) -> "ExternalConfigCollection":
