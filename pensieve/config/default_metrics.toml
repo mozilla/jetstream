@@ -2,25 +2,59 @@
 
 [metrics]
 daily = ["retained", "unenroll"]
-weekly = ["retained", "active_hours", "uri_count", "ad_clicks", "search_count"]
-overall = ["active_hours", "uri_count", "ad_clicks", "search_count"]
 
-[metrics.unenroll.statistics.binomial]
+weekly = [
+  "active_hours",
+  "ad_clicks",
+  "retained",
+  "uri_count",
+  "search_count",
+]
+
+overall = [
+  "active_hours",
+  "ad_clicks",
+  "organic_search_count",
+  "search_count",
+  "searches_with_ads",
+  "separate_search_engine",
+  "tagged_search_count",
+  "tagged_follow_on_search_count",
+  "uri_count",
+]
 
 [metrics.active_hours.statistics.bootstrap_mean]
 [metrics.active_hours.statistics.deciles]
 
-[metrics.uri_count.statistics.bootstrap_mean]
-[metrics.uri_count.statistics.deciles]
-
 [metrics.ad_clicks.statistics.bootstrap_mean]
 [metrics.ad_clicks.statistics.deciles]
 
-[metrics.search_count.statistics.bootstrap_mean]
-[metrics.search_count.statistics.deciles]
+[metrics.organic_search_count.statistics.bootstrap_mean]
+[metrics.organic_search_count.statistics.deciles]
 
 [metrics.retained]
 select_expression = "COALESCE(SUM(pings_aggregated_by_this_row), 0) > 0"
 data_source = "clients_daily"
-
 [metrics.retained.statistics.binomial]
+
+[metrics.uri_count.statistics.bootstrap_mean]
+[metrics.uri_count.statistics.deciles]
+
+[metrics.search_count.statistics.bootstrap_mean]
+[metrics.search_count.statistics.deciles]
+
+[metrics.searches_with_ads.statistics.bootstrap_mean]
+[metrics.searches_with_ads.statistics.deciles]
+
+[metrics.separate_search_engine]
+select_expression = "COALESCE(ANY_VALUE(default_search_engine != default_private_search_engine), false)"
+data_source = "search_clients_daily"
+[metrics.separate_search_engine.statistics.binomial]
+
+[metrics.tagged_search_count.statistics.bootstrap_mean]
+[metrics.tagged_search_count.statistics.deciles]
+
+[metrics.tagged_follow_on_search_count.statistics.bootstrap_mean]
+[metrics.tagged_follow_on_search_count.statistics.deciles]
+
+[metrics.unenroll.statistics.binomial]
