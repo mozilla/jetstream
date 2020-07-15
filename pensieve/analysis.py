@@ -180,7 +180,6 @@ class Analysis:
         """
 
         metrics_data = self.bigquery.table_to_dataframe(metrics_table)
-        destination_table = f"{self.project}.{self.dataset}.statistics_{metrics_table}"
 
         results = []
 
@@ -202,7 +201,9 @@ class Analysis:
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
         # wait for the job to complete
-        self.bigquery.load_table_from_json(results, destination_table, job_config=job_config)
+        self.bigquery.load_table_from_json(
+            results, f"statistics_{metrics_table}", job_config=job_config
+        )
 
         self._publish_view(period, table_prefix="statistics")
 
@@ -284,13 +285,14 @@ class BigQueryClient:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.mktime(datetime.utcnow().timetuple())))
 
-    def load_table_from_json(self, results, destination_table, job_config):
+    def load_table_from_json(self, results, table, job_config):
         # wait for the job to complete
+        destination_table = f"{self.project}.{self.dataset}.{table}"
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
         # add a label with the current timestamp to the table
         self.add_labels_to_table(
-            destination_table, {"last_updated": self._current_timestamp_label()},
+            table, {"last_updated": self._current_timestamp_label()},
         )
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
