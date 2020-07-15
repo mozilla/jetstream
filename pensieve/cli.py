@@ -179,6 +179,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
     export_statistics_tables(project_id, dataset_id, bucket)
 
 
+@cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
 @dry_run_option
