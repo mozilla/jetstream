@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import re
 import logging
 from textwrap import dedent
+import time
 from typing import Optional
 
 import attr
@@ -201,9 +202,7 @@ class Analysis:
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
         # wait for the job to complete
-        self.bigquery.client.load_table_from_json(
-            results, destination_table, job_config=job_config
-        ).result()
+        self.bigquery.load_table_from_json(results, destination_table, job_config=job_config)
 
         self._publish_view(period, table_prefix="statistics")
 
@@ -273,6 +272,27 @@ class BigQueryClient:
         rows = self.client.list_rows(table_ref)
         return rows.to_dataframe(bqstorage_client=self._storage_client)
 
+    def add_labels_to_table(self, table, labels):
+        """Adds the provided labels to the table."""
+        table_ref = self.client.dataset(self.dataset).table(table)
+        table = self.client.get_table(table_ref)
+        table.labels = labels
+
+        self.client.update_table(table, ["labels"])
+
+    def _current_timestamp_label(self):
+        """Returns the current UTC timestamp as a valid BigQuery label."""
+        return str(int(time.mktime(datetime.utcnow().timetuple())))
+
+    def load_table_from_json(self, results, destination_table, job_config):
+        # wait for the job to complete
+        self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
+
+        # add a label with the current timestamp to the table
+        self.add_labels_to_table(
+            destination_table, {"last_updated": self._current_timestamp_label()},
+        )
+
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset, default_project=self.project,
@@ -285,3 +305,9 @@ class BigQueryClient:
         job = self.client.query(query, config)
         # block on result
         job.result(max_results=1)
+
+        if destination_table:
+            # add a label with the current timestamp to the table
+            self.add_labels_to_table(
+                destination_table, {"last_updated": self._current_timestamp_label()},
+            )

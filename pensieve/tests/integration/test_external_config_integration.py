@@ -8,6 +8,7 @@ import string
 from textwrap import dedent
 import toml
 
+from pensieve.analysis import BigQueryClient
 from pensieve.external_config import ExternalConfig, ExternalConfigCollection
 from pensieve.config import AnalysisSpec
 
@@ -34,14 +35,16 @@ class TestExternalConfigIntegration:
 
     @pytest.fixture(scope="class")
     def client(self):
-        self._client = getattr(self, "_client", None) or bigquery.client.Client(self.project_id)
+        self._client = getattr(self, "_client", None) or BigQueryClient(
+            self.project_id, self.test_dataset
+        )
         return self._client
 
     @pytest.fixture(autouse=True)
     def setup(self, client):
         # remove all tables previously created
-        client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
-        client.create_dataset(self.test_dataset)
+        client.client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
+        client.client.create_dataset(self.test_dataset)
 
     def test_new_config(self, client):
         config = ExternalConfig(
@@ -64,7 +67,10 @@ class TestExternalConfigIntegration:
         )
 
         # table created after config loaded
-        client.create_table(f"{self.test_dataset}.new_table_day1")
+        client.client.create_table(f"{self.test_dataset}.new_table_day1")
+        client.add_labels_to_table(
+            "new_table_day1", {"last_updated": client._current_timestamp_label()},
+        )
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
 
@@ -79,20 +85,30 @@ class TestExternalConfigIntegration:
             ),
         )
 
-        client.create_table(f"{self.test_dataset}.old_table_day1")
-        client.create_table(f"{self.test_dataset}.old_table_day2")
+        client.client.create_table(f"{self.test_dataset}.old_table_day1")
+        client.add_labels_to_table(
+            "old_table_day1", {"last_updated": client._current_timestamp_label()},
+        )
+        client.client.create_table(f"{self.test_dataset}.old_table_day2")
+        client.add_labels_to_table(
+            "old_table_day2", {"last_updated": client._current_timestamp_label()},
+        )
 
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
-
-        print(updated_configs)
 
         assert len(updated_configs) == 1
         assert updated_configs[0].experimenter_slug == config.experimenter_slug
 
     def test_updated_config_while_analysis_active(self, client):
-        client.create_table(f"{self.test_dataset}.active_table_day0")
-        client.create_table(f"{self.test_dataset}.active_table_day1")
+        client.client.create_table(f"{self.test_dataset}.active_table_day0")
+        client.add_labels_to_table(
+            "active_table_day0", {"last_updated": client._current_timestamp_label()},
+        )
+        client.client.create_table(f"{self.test_dataset}.active_table_day1")
+        client.add_labels_to_table(
+            "active_table_day1", {"last_updated": client._current_timestamp_label()},
+        )
 
         config = ExternalConfig(
             experimenter_slug="active_table",
@@ -100,8 +116,14 @@ class TestExternalConfigIntegration:
             last_modified=pytz.UTC.localize(datetime.datetime.utcnow()),
         )
 
-        client.create_table(f"{self.test_dataset}.active_table_day2")
-        client.create_table(f"{self.test_dataset}.active_table_weekly")
+        client.client.create_table(f"{self.test_dataset}.active_table_day2")
+        client.add_labels_to_table(
+            "active_table_day2", {"last_updated": client._current_timestamp_label()},
+        )
+        client.client.create_table(f"{self.test_dataset}.active_table_weekly")
+        client.add_labels_to_table(
+            "active_table_weekly", {"last_updated": client._current_timestamp_label()},
+        )
 
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)

@@ -3,10 +3,10 @@
 set -e
 
 if [ "$1" = "export_statistics_to_json" ]; then
-    exec pensieve export-statistics-to-json
+    pensieve export-statistics-to-json
 elif [ "$1" = "rerun_config_changed" ]; then
-    exec pensieve rerun_config_changed
+    pensieve rerun_config_changed
 else
-    exec pensieve run "$@"
-    exec pensieve rerun_config_changed
+    pensieve run "$@"
+    pensieve rerun_config_changed
 fi

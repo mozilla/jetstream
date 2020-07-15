@@ -76,6 +76,7 @@ secret_config_file_option = click.option(
 bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket to write to")
 
 
+@cli.command()
 @project_id_option
 @dataset_id_option
 @click.option(
@@ -154,6 +155,7 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     config = spec.resolve(experiment)
 
     for date in inclusive_date_range(experiment.start_date, end_date):
+        logging.info(f"*** {date}")
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
