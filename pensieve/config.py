@@ -161,7 +161,9 @@ class ExperimentConfiguration:
         if self.experiment_spec.enrollment_query is None:
             return None
 
-        if cached := getattr(self, "_enrollment_query", None):
+        cached = getattr(self, "_enrollment_query", None)
+
+        if cached:
             return cached
 
         class ExperimentProxy:

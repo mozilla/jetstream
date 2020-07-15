@@ -11,6 +11,7 @@ from github import Github
 from github.ContentFile import ContentFile
 from google.cloud import bigquery
 import os
+import pytz
 import toml
 from typing import List, Optional
 
@@ -74,9 +75,16 @@ class ExternalConfigCollection:
         """
         client = bigquery.Client(bq_project)
         job = client.query(
-            f"""
-            SELECT table_id, TIMESTAMP_MILLIS(last_modified_time) AS last_modified
-            FROM {bq_dataset}.__TABLES__
+            fr"""
+            SELECT
+                table_name,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"(.+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE option_name = 'labels'
             """
         )
 
@@ -87,8 +95,10 @@ class ExternalConfigCollection:
         for config in self.configs:
             for row in result:
                 if (
-                    row.table_id.startswith(config.experimenter_slug)
-                    and row.last_modified < config.last_modified
+                    row.table_name.startswith(config.experimenter_slug)
+                    and len(row.last_updated) > 0
+                    and pytz.UTC.localize(dt.datetime.fromtimestamp(int(row.last_updated[0])))
+                    < config.last_modified
                 ):
                     updated_configs.append(config)
                     break
