@@ -17,6 +17,7 @@ from mozanalysis.utils import add_days
 
 from . import AnalysisPeriod
 from pensieve.config import AnalysisConfiguration
+from pensieve.statistics import StatisticResult
 
 
 @attr.s(auto_attribs=True)
@@ -187,17 +188,7 @@ class Analysis:
             results += m.run(metrics_data).to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
-        job_config.schema = [
-            bigquery.SchemaField("metric", "STRING"),
-            bigquery.SchemaField("statistic", "STRING"),
-            bigquery.SchemaField("parameter", "NUMERIC"),
-            bigquery.SchemaField("branch", "STRING"),
-            bigquery.SchemaField("comparison_to_control", "STRING"),
-            bigquery.SchemaField("ci_width", "FLOAT64"),
-            bigquery.SchemaField("point", "FLOAT64"),
-            bigquery.SchemaField("lower", "FLOAT64"),
-            bigquery.SchemaField("upper", "FLOAT64"),
-        ]
+        job_config.schema = StatisticResult.bq_schema
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
         # wait for the job to complete

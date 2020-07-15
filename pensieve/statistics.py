@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 import cattr
+from google.cloud import bigquery
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.frequentist_stats.bootstrap
@@ -31,11 +32,25 @@ class StatisticResult:
     statistic: str
     parameter: Optional[Decimal] = attr.ib(converter=_maybe_decimal)
     branch: str
-    comparison_to_control: Optional[str] = None
+    comparison: Optional[str] = None
+    comparison_to_branch: Optional[str] = None
     ci_width: Optional[float] = 0.0
     point: Optional[float] = 0.0
     lower: Optional[float] = 0.0
     upper: Optional[float] = 0.0
+
+    bq_schema = (
+        bigquery.SchemaField("metric", "STRING"),
+        bigquery.SchemaField("statistic", "STRING"),
+        bigquery.SchemaField("parameter", "NUMERIC"),
+        bigquery.SchemaField("branch", "STRING"),
+        bigquery.SchemaField("comparison", "STRING"),
+        bigquery.SchemaField("comparison_to_branch", "STRING"),
+        bigquery.SchemaField("ci_width", "FLOAT64"),
+        bigquery.SchemaField("point", "FLOAT64"),
+        bigquery.SchemaField("lower", "FLOAT64"),
+        bigquery.SchemaField("upper", "FLOAT64"),
+    )
 
 
 @attr.s(auto_attribs=True)
@@ -123,7 +138,12 @@ def _extract_ci(
 
 
 def flatten_simple_compare_branches_result(
-    ma_result: dict, metric_name: str, statistic_name: str, ci_width: float
+    *,
+    ma_result: dict,
+    metric_name: str,
+    statistic_name: str,
+    reference_branch: str,
+    ci_width: float,
 ) -> StatisticResultCollection:
     critical_point = (1 - ci_width) / 2
     statlist = []
@@ -150,7 +170,8 @@ def flatten_simple_compare_branches_result(
                 statistic=statistic_name,
                 parameter=None,
                 branch=branch,
-                comparison_to_control="difference",
+                comparison="difference",
+                comparison_to_branch=reference_branch,
                 ci_width=ci_width,
                 point=branch_result["abs_uplift"]["exp"],
                 lower=lower_abs,
@@ -165,7 +186,8 @@ def flatten_simple_compare_branches_result(
                 statistic=statistic_name,
                 parameter=None,
                 branch=branch,
-                comparison_to_control="relative_uplift",
+                comparison="relative_uplift",
+                comparison_to_branch=reference_branch,
                 ci_width=ci_width,
                 point=branch_result["rel_uplift"]["exp"],
                 lower=lower_rel,
@@ -198,6 +220,7 @@ class BootstrapMean(Statistic):
             ma_result=ma_result,
             metric_name=metric,
             statistic_name="mean",
+            reference_branch=self.ref_branch_label,
             ci_width=self.confidence_interval,
         )
 
@@ -223,6 +246,7 @@ class Binomial(Statistic):
             ma_result=ma_result,
             metric_name=metric,
             statistic_name="binomial",
+            reference_branch=self.ref_branch_label,
             ci_width=self.confidence_interval,
         )
 
@@ -285,7 +309,8 @@ class Deciles(Statistic):
                         statistic="deciles",
                         parameter=param,
                         branch=branch,
-                        comparison_to_control="difference",
+                        comparison="difference",
+                        comparison_to_branch=self.ref_branch_label,
                         ci_width=self.confidence_interval,
                         point=decile_result["exp"],
                         lower=lower_abs,
@@ -302,7 +327,8 @@ class Deciles(Statistic):
                         statistic="deciles",
                         parameter=param,
                         branch=branch,
-                        comparison_to_control="relative_uplift",
+                        comparison="relative_uplift",
+                        comparison_to_branch=self.ref_branch_label,
                         ci_width=self.confidence_interval,
                         point=decile_result["exp"],
                         lower=lower_rel,

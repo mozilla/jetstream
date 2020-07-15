@@ -11,7 +11,7 @@ class TestStatistics:
         )
         result = stat.transform(test_data, "value")
 
-        branch_results = [r for r in result.data if r.comparison_to_control is None]
+        branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
@@ -26,12 +26,12 @@ class TestStatistics:
             }
         )
         result = stat.transform(test_data, "value")
-        branch_results = [r for r in result.data if r.comparison_to_control is None]
+        branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
         assert treatment_result.point - 0.7 < 1e-5
 
-        difference = [r for r in result.data if r.comparison_to_control == "difference"][0]
+        difference = [r for r in result.data if r.comparison == "difference"][0]
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
