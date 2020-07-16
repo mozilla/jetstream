@@ -72,7 +72,7 @@ workflows:
       - gcp-gcr/build-and-push-image:
           requires:
             - build
-          image: pensieve
+          image: jetstream
           filters:
             branches:
               only:
