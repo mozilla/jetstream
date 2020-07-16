@@ -15,7 +15,7 @@ TEST_DIR = Path(__file__).parent.parent
 
 
 class TestExternalConfigIntegration:
-    project_id = "pensieve-integration-test"
+    project_id = "jetstream-integration-test"
 
     # generate a random test dataset to avoid conflicts when running tests in parallel
     test_dataset = "test_" + "".join(random.choice(string.ascii_lowercase) for i in range(10))
