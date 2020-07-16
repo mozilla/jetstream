@@ -1,4 +1,4 @@
-from pensieve.external_config import ExternalConfigCollection
+from jetstream.external_config import ExternalConfigCollection
 
 
 class TestExternalConfig:

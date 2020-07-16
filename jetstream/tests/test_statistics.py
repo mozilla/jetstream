@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pensieve.statistics import BootstrapMean, Binomial, Count
+from jetstream.statistics import BootstrapMean, Binomial, Count
 
 
 class TestStatistics:

@@ -3,10 +3,10 @@ from textwrap import dedent
 import toml
 import pytest
 
-from pensieve import AnalysisPeriod, config
-from pensieve.cli import DEFAULT_METRICS_CONFIG
-from pensieve.statistics import BootstrapMean
-from pensieve.pre_treatment import RemoveNulls
+from jetstream import AnalysisPeriod, config
+from jetstream.cli import DEFAULT_METRICS_CONFIG
+from jetstream.statistics import BootstrapMean
+from jetstream.pre_treatment import RemoveNulls
 
 
 class TestAnalysisSpec:

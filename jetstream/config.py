@@ -30,9 +30,9 @@ import mozanalysis.metrics.desktop
 import pandas
 
 from . import AnalysisPeriod
-import pensieve.experimenter
-from pensieve.statistics import Statistic, StatisticResultCollection
-from pensieve.pre_treatment import PreTreatment
+import jetstream.experimenter
+from jetstream.statistics import Statistic, StatisticResultCollection
+from jetstream.pre_treatment import PreTreatment
 
 
 @attr.s(auto_attribs=True)
@@ -93,7 +93,7 @@ class MetricReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
     ) -> List[Summary]:
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experimenter)
@@ -150,7 +150,7 @@ class ExperimentConfiguration:
     """Represents the configuration of an experiment for analysis."""
 
     experiment_spec: "ExperimentSpec"
-    experimenter_experiment: pensieve.experimenter.Experiment
+    experimenter_experiment: jetstream.experimenter.Experiment
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -198,7 +198,7 @@ class ExperimentSpec:
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
 
-    def resolve(self, experimenter: pensieve.experimenter.Experiment) -> ExperimentConfiguration:
+    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> ExperimentConfiguration:
         return ExperimentConfiguration(self, experimenter)
 
     def merge(self, other: "ExperimentSpec") -> None:
@@ -221,7 +221,7 @@ class MetricDefinition:
     data_source: Optional[DataSourceReference] = None
 
     def resolve(
-        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
     ) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
@@ -306,7 +306,7 @@ class MetricsSpec:
         return cls(**params)
 
     def resolve(
-        self, spec: "AnalysisSpec", experimenter: pensieve.experimenter.Experiment
+        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
@@ -422,7 +422,7 @@ class AnalysisSpec:
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return _converter.structure(d, cls)
 
-    def resolve(self, experimenter: pensieve.experimenter.Experiment) -> AnalysisConfiguration:
+    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> AnalysisConfiguration:
         experiment = self.experiment.resolve(experimenter)
         metrics = self.metrics.resolve(self, experimenter)
         return AnalysisConfiguration(experiment, metrics)

@@ -26,10 +26,10 @@ jobs:
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest --black --flake8 --ignore=pensieve/tests/integration/
+        command: venv/bin/pytest --black --flake8 --ignore=jetstream/tests/integration/
     - run:
         name: Mypy
-        command: venv/bin/mypy pensieve
+        command: venv/bin/mypy jetstream
     - save_cache:
         paths:
         - venv/
@@ -62,7 +62,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY_INTEGRATION_TEST" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          venv/bin/pytest --black --flake8 --integration pensieve/tests/integration/
+          venv/bin/pytest --black --flake8 --integration jetstream/tests/integration/
 
 workflows:
   build-and-deploy:

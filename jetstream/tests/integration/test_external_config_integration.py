@@ -7,9 +7,9 @@ import string
 from textwrap import dedent
 import toml
 
-from pensieve.analysis import BigQueryClient
-from pensieve.external_config import ExternalConfig, ExternalConfigCollection
-from pensieve.config import AnalysisSpec
+from jetstream.analysis import BigQueryClient
+from jetstream.external_config import ExternalConfig, ExternalConfigCollection
+from jetstream.config import AnalysisSpec
 
 TEST_DIR = Path(__file__).parent.parent
 
