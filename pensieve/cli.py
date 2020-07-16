@@ -89,7 +89,7 @@ bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket
 @experiment_slug_option
 @dry_run_option
 @secret_config_file_option
-def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file, rerun_config_changed):
+def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()

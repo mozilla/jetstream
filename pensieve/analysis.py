@@ -95,14 +95,23 @@ class Analysis:
         ):
             return None
 
+        analysis_length_dates = (
+            (self.config.experiment.end_date - self.config.experiment.start_date).days
+            - dates_enrollment
+            + 1
+        )
+
+        if analysis_length_dates < 0:
+            logging.error(
+                "Proposed enrollment longer than analysis dates length:"
+                + f"{self.config.experiment.experimenter_experiment.slug}"
+            )
+            return None
+
         return TimeLimits.for_single_analysis_window(
             last_date_full_data=prior_date_str,
             analysis_start_days=0,
-            analysis_length_dates=(
-                self.config.experiment.end_date - self.config.experiment.start_date
-            ).days
-            - dates_enrollment
-            + 1,
+            analysis_length_dates=analysis_length_dates,
             **time_limits_args,
         )
 
