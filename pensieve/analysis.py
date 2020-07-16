@@ -104,7 +104,7 @@ class Analysis:
         if analysis_length_dates < 0:
             logging.error(
                 "Proposed enrollment longer than analysis dates length:"
-                + f"{self.config.experiment.experimenter_experiment.slug}"
+                + f"{self.config.experiment.slug}"
             )
             return None
 
