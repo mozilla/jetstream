@@ -2,12 +2,15 @@ from datetime import datetime, timedelta
 import logging
 
 import click
+import datetime as dt
+import os
 from pathlib import Path
 import pytz
 import sys
 import toml
 
 from . import experimenter
+from .experimenter import Experiment
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
@@ -190,3 +193,38 @@ def rerun_config_changed(project_id, dataset_id):
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
         rerun(project_id, dataset_id, external_config.experimenter_slug, dry_run=False)
+
+
+@cli.command("validate_config")
+@click.argument("path")
+def validate_config(path):
+    """Validate config files."""
+    config_files = []
+    if os.path.isdir(path):
+        config_files = [
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if os.path.isfile(os.path.join(path, f)) and f.endswith(".toml")
+        ]
+    elif os.path.isfile(path):
+        config_files = [path]
+    else:
+        logging.error(f"Invalid path to config file: {path}")
+
+    # required to resolve the config
+    dummy_experiment = Experiment(
+        slug="config_dummy",
+        type="pref",
+        status="Complete",
+        start_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=1,
+        variants=[],
+    )
+
+    for file in config_files:
+        logging.info(f"Validate {file}")
+        spec = AnalysisSpec.from_dict(toml.load(file))
+        spec.resolve(dummy_experiment)
+
+        print(f"Config file at {file} is valid.")
