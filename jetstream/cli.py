@@ -10,9 +10,8 @@ import sys
 import toml
 
 from . import experimenter
-from .experimenter import Experiment
 from .config import AnalysisSpec
-from .experimenter import ExperimentCollection
+from .experimenter import Experiment, ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
@@ -196,20 +195,10 @@ def rerun_config_changed(project_id, dataset_id):
 
 
 @cli.command("validate_config")
-@click.argument("path")
+@click.argument("path", type=click.Path(exists=True), nargs=-1)
 def validate_config(path):
     """Validate config files."""
-    config_files = []
-    if os.path.isdir(path):
-        config_files = [
-            os.path.join(path, f)
-            for f in os.listdir(path)
-            if os.path.isfile(os.path.join(path, f)) and f.endswith(".toml")
-        ]
-    elif os.path.isfile(path):
-        config_files = [path]
-    else:
-        logging.error(f"Invalid path to config file: {path}")
+    config_files = [p for p in path if os.path.isfile(p)]
 
     # required to resolve the config
     dummy_experiment = Experiment(
@@ -223,8 +212,8 @@ def validate_config(path):
     )
 
     for file in config_files:
-        logging.info(f"Validate {file}")
+        click.echo(f"Validate {file}", err=False)
         spec = AnalysisSpec.from_dict(toml.load(file))
         spec.resolve(dummy_experiment)
 
-        print(f"Config file at {file} is valid.")
+        click.echo(f"Config file at {file} is valid.", err=False)
