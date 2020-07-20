@@ -18,6 +18,7 @@ from mozanalysis.utils import add_days
 
 from . import AnalysisPeriod
 from jetstream.config import AnalysisConfiguration
+from jetstream.dryrun import dry_run_query
 from jetstream.statistics import Count, StatisticResult
 
 
@@ -178,9 +179,14 @@ class Analysis:
             self.config.experiment.enrollment_query,
         )
 
-        self.logger.info("Executing query for %s (%s)", self.config.experiment.slug, period.value)
-        self.bigquery.execute(sql, res_table_name)
-        self._publish_view(period)
+        if dry_run:
+            dry_run_query(sql)
+        else:
+            self.logger.info(
+                "Executing query for %s (%s)", self.config.experiment.slug, period.value
+            )
+            self.bigquery.execute(sql, res_table_name)
+            self._publish_view(period)
 
         return res_table_name
 
@@ -229,6 +235,18 @@ class Analysis:
 
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
+
+            if dry_run:
+                # make sure time_limits has some value so that dry run starts running
+                time_limits = TimeLimits.for_single_analysis_window(
+                    first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+                    last_date_full_data=self.config.experiment.end_date.strftime("%Y-%m-%d"),
+                    analysis_start_days=0,
+                    analysis_length_dates=(
+                        self.config.experiment.end_date - self.config.experiment.start_date
+                    ).days,
+                )
+
             if time_limits is None:
                 self.logger.info(
                     "Skipping %s (%s); not ready", self.config.experiment.slug, period.value
@@ -240,15 +258,16 @@ class Analysis:
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             )
 
+            metrics_table = self._calculate_metrics(exp, time_limits, period, dry_run)
+
             if dry_run:
                 self.logger.info(
-                    "Not executing query for %s (%s); dry run",
+                    "Not calculating statistics %s (%s); dry run",
                     self.config.experiment.slug,
                     period.value,
                 )
                 continue
 
-            metrics_table = self._calculate_metrics(exp, time_limits, period, dry_run)
             self._calculate_statistics(metrics_table, period)
             self.logger.info(
                 "Finished running query for %s (%s)", self.config.experiment.slug, period.value
