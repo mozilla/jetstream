@@ -200,6 +200,8 @@ def validate_config(path):
     """Validate config files."""
     config_files = [p for p in path if os.path.isfile(p)]
 
+    collection = ExperimentCollection.from_experimenter()
+
     # required to resolve the config
     dummy_experiment = Experiment(
         slug="config_dummy",
@@ -213,7 +215,13 @@ def validate_config(path):
 
     for file in config_files:
         click.echo(f"Validate {file}", err=False)
+
         spec = AnalysisSpec.from_dict(toml.load(file))
         spec.resolve(dummy_experiment)
+
+        # check if there is an experiment with a matching slug in Experimenter
+        slug = os.path.splitext(os.path.basename(file))[0]
+        if collection.with_slug(slug).experiments == []:
+            click.echo(f"No experiment with slug {slug} in Experimenter.", err=False)
 
         click.echo(f"Config file at {file} is valid.", err=False)
