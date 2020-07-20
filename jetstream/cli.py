@@ -182,12 +182,11 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
-@dry_run_option
-def rerun_config_changed(project_id, dataset_id, dry_run):
+def rerun_config_changed(project_id, dataset_id):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        rerun(project_id, dataset_id, external_config.experimenter_slug, dry_run)
+        rerun(project_id, dataset_id, external_config.experimenter_slug, dry_run=False)
