@@ -18,7 +18,14 @@ import logging
 DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"
 
 
-def dry_run_query(sql: str) -> bool:
+class DryRunFailedError(Exception):
+    """Exception raised when dry run fails."""
+
+    def __init__(self, error):
+        super().__init__(error)
+
+
+def dry_run_query(sql: str):
     """Dry run the provided SQL query."""
     try:
         r = urlopen(
@@ -30,8 +37,7 @@ def dry_run_query(sql: str) -> bool:
             )
         )
     except Exception as e:
-        logging.error("Dry run error\n", e)
-        return False
+        raise DryRunFailedError(e)
     response = json.load(r)
     if "errors" in response and len(response["errors"]) == 1:
         error = response["errors"][0]
@@ -50,6 +56,4 @@ def dry_run_query(sql: str) -> bool:
         # exceptions.
         logging.info("Dry run OK")
     else:
-        logging.error("Dry run error\n", response["errors"])
-        return False
-    return True
+        raise DryRunFailedError(response["errors"])
