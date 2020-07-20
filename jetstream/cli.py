@@ -123,6 +123,12 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
+@cli.command("rerun")
+@experiment_slug_option
+@project_id_option
+@dataset_id_option
+@dry_run_option
+@secret_config_file_option
 def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
@@ -161,17 +167,6 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
         Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
 
 
-@cli.command("rerun")
-@experiment_slug_option
-@project_id_option
-@dataset_id_option
-@dry_run_option
-@secret_config_file_option
-def rerun_cmd(project_id, dataset_id, experiment_slug, dry_run, config_file):
-    """CLI command for re-running analyses."""
-    rerun(project_id, dataset_id, experiment_slug, dry_run, config_file)
-
-
 @cli.command()
 @project_id_option
 @dataset_id_option
@@ -184,19 +179,21 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
-def rerun_config_changed(project_id, dataset_id):
+@click.pass_context
+def rerun_config_changed(ctx, project_id, dataset_id):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        rerun(project_id, dataset_id, external_config.experimenter_slug, dry_run=False)
+        ctx.invoke(rerun, project_id, dataset_id, external_config.experimenter_slug, dry_run=False)
 
 
 @cli.command("validate_config")
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
-def validate_config(path):
+@click.pass_context
+def validate_config(ctx, path):
     """Validate config files."""
     config_files = [p for p in path if os.path.isfile(p)]
 
@@ -217,11 +214,21 @@ def validate_config(path):
         click.echo(f"Validate {file}", err=False)
 
         spec = AnalysisSpec.from_dict(toml.load(file))
-        spec.resolve(dummy_experiment)
+        config = spec.resolve(dummy_experiment)
 
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
         if collection.with_slug(slug).experiments == []:
             click.echo(f"No experiment with slug {slug} in Experimenter.", err=False)
+        else:
+            # dry run experiment analysis with the config file
+            # this will make sure config file contents are valid
+            ctx.invoke(
+                run,
+                date=config.experiment.start_date,
+                experiment_slug=slug,
+                dry_run=True,
+                config_file=file,
+            )
 
         click.echo(f"Config file at {file} is valid.", err=False)
