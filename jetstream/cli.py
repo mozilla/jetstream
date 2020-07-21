@@ -214,7 +214,7 @@ def validate_config(ctx, path):
         click.echo(f"Validate {file}", err=False)
 
         spec = AnalysisSpec.from_dict(toml.load(file))
-        config = spec.resolve(dummy_experiment)
+        spec.resolve(dummy_experiment)
 
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
@@ -225,10 +225,7 @@ def validate_config(ctx, path):
             # dry run experiment analysis with the config file
             # this will make sure config file contents are valid
             ctx.invoke(
-                rerun,
-                experiment_slug=slug,
-                dry_run=True,
-                config_file=file,
+                rerun, experiment_slug=slug, dry_run=True, config_file=file,
             )
 
         click.echo(f"Config file at {file} is valid.", err=False)
