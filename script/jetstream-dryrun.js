@@ -1,4 +1,7 @@
-// Cloud Function performing dry runs.
+// Non-authoritative reference copy of the cloud function called by jetstream.dryrun.dry_run_query.
+// Changes require manual updates of the function in the GCP console:
+// https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments&tab=general
+
 
 const { BigQuery } = require('@google-cloud/bigquery');
 
