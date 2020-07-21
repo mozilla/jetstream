@@ -11,10 +11,11 @@ accidentally running queries during tests, leaking and overwriting production
 data, we proxy the queries through the dry run service endpoint.
 """
 
-from urllib.request import urlopen, Request
+import requests
 import json
 import logging
 
+# https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments
 DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"
 
 
@@ -25,20 +26,17 @@ class DryRunFailedError(Exception):
         super().__init__(error)
 
 
-def dry_run_query(sql: str):
+def dry_run_query(sql: str) -> None:
     """Dry run the provided SQL query."""
     try:
-        r = urlopen(
-            Request(
-                DRY_RUN_URL,
-                headers={"Content-Type": "application/json"},
-                data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
-                method="POST",
-            )
+        r = requests.post(
+            DRY_RUN_URL,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
         )
     except Exception as e:
         raise DryRunFailedError(e)
-    response = json.load(r)
+    response = r.json()
     if "errors" in response and len(response["errors"]) == 1:
         error = response["errors"][0]
     else:
