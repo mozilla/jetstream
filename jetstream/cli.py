@@ -219,13 +219,13 @@ def validate_config(ctx, path):
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
         if collection.with_slug(slug).experiments == []:
-            click.echo(f"No experiment with slug {slug} in Experimenter.", err=False)
+            click.echo(f"No experiment with slug {slug} in Experimenter.", err=True)
+            sys.exit(1)
         else:
             # dry run experiment analysis with the config file
             # this will make sure config file contents are valid
             ctx.invoke(
-                run,
-                date=config.experiment.start_date,
+                rerun,
                 experiment_slug=slug,
                 dry_run=True,
                 config_file=file,
