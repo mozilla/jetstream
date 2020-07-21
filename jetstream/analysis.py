@@ -236,17 +236,6 @@ class Analysis:
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
-            if dry_run:
-                # make sure time_limits has some value so that dry run starts running
-                time_limits = TimeLimits.for_single_analysis_window(
-                    first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
-                    last_date_full_data=self.config.experiment.end_date.strftime("%Y-%m-%d"),
-                    analysis_start_days=0,
-                    analysis_length_dates=(
-                        self.config.experiment.end_date - self.config.experiment.start_date
-                    ).days,
-                )
-
             if time_limits is None:
                 self.logger.info(
                     "Skipping %s (%s); not ready", self.config.experiment.slug, period.value

@@ -127,7 +127,7 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
 
     experiments = collection.with_slug(experiment_slug)
 
-    if len(experiments.experiments) == 0:
+    if experiment_slug is None or len(experiments.experiments) == 0:
         click.echo(f"No experiment with slug {experiment_slug} found.", err=True)
         sys.exit(1)
 
