@@ -92,11 +92,9 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(
-        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
-    ) -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experimenter)
+            return spec.metrics.definitions[self.name].resolve(spec, experiment)
         if hasattr(mozanalysis.metrics.desktop, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
@@ -186,6 +184,17 @@ class ExperimentConfiguration:
             or 0
         )
 
+    @property
+    def control_branch(self) -> Optional[str]:
+        if self.experiment_spec.control_branch:
+            return self.experiment_spec.control_branch
+
+        for v in self.experimenter_experiment.variants:
+            if v.is_control:
+                return v.slug
+
+        return None
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
@@ -197,6 +206,7 @@ class ExperimentSpec:
     # TODO: Expand this list.
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
+    control_branch: Optional[str] = None
 
     def resolve(self, experimenter: jetstream.experimenter.Experiment) -> ExperimentConfiguration:
         return ExperimentConfiguration(self, experimenter)
@@ -204,6 +214,7 @@ class ExperimentSpec:
     def merge(self, other: "ExperimentSpec") -> None:
         self.enrollment_query = other.enrollment_query or self.enrollment_query
         self.enrollment_period = other.enrollment_period or self.enrollment_period
+        self.control_branch = other.control_branch or self.control_branch
 
 
 @attr.s(auto_attribs=True)
@@ -220,9 +231,7 @@ class MetricDefinition:
     select_expression: Optional[str] = None
     data_source: Optional[DataSourceReference] = None
 
-    def resolve(
-        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
-    ) -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             search = mozanalysis.metrics.desktop
@@ -256,10 +265,7 @@ class MetricDefinition:
                 ref = PreTreatmentReference(pt)
                 pre_treatments.append(ref.resolve(spec))
 
-            if "ref_branch_label" not in params:
-                for variant in experimenter.variants:
-                    if variant.is_control:
-                        params["ref_branch_label"] = variant.slug
+            params.setdefault("ref_branch_label", experiment.control_branch)
 
             metrics_with_treatments.append(
                 Summary(
@@ -306,15 +312,13 @@ class MetricsSpec:
         return cls(**params)
 
     def resolve(
-        self, spec: "AnalysisSpec", experimenter: jetstream.experimenter.Experiment
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
             # these summaries might contain duplicates
             summaries = [
-                m
-                for ref in getattr(self, period.adjective)
-                for m in ref.resolve(spec, experimenter)
+                m for ref in getattr(self, period.adjective) for m in ref.resolve(spec, experiment)
             ]
             unique_summaries = []
             seen_summaries = set()
@@ -424,7 +428,7 @@ class AnalysisSpec:
 
     def resolve(self, experimenter: jetstream.experimenter.Experiment) -> AnalysisConfiguration:
         experiment = self.experiment.resolve(experimenter)
-        metrics = self.metrics.resolve(self, experimenter)
+        metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
