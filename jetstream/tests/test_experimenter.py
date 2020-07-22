@@ -196,6 +196,17 @@ def test_end_on_or_after(experiment_collection):
     active_experiments = experiment_collection.end_on_or_after(
         dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
     )
+    assert len(active_experiments.experiments) == 0
+
+    active_experiments = experiment_collection.end_on_or_after(
+        dt.datetime(2019, 12, 16, tzinfo=pytz.utc)
+    )
+    assert len(active_experiments.experiments) == 1
+    assert active_experiments.experiments[0].slug == "doh-us-engagement-study-v2"
+
+    active_experiments = experiment_collection.end_on_or_after(
+        dt.datetime(2019, 12, 16, tzinfo=pytz.utc)
+    )
     assert len(active_experiments.experiments) == 1
     assert active_experiments.experiments[0].slug == "doh-us-engagement-study-v2"
 
