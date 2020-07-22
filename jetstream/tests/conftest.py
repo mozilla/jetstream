@@ -3,7 +3,7 @@ import datetime as dt
 import pytest
 import pytz
 
-from jetstream.experimenter import Experiment
+from jetstream.experimenter import Experiment, Variant
 
 
 def pytest_addoption(parser):
@@ -22,7 +22,10 @@ def experiments():
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
-            variants=[],
+            variants=[
+                Variant(slug="a", is_control=False, ratio=1),
+                Variant(slug="b", is_control=True, ratio=1),
+            ],
             normandy_slug="normandy-test-slug",
         ),
         Experiment(
