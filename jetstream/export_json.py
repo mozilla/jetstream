@@ -1,9 +1,12 @@
 from datetime import datetime
+import logging
+from typing import Dict
+
 from google.cloud import bigquery
 from google.cloud import storage
-import logging
 import smart_open
-from typing import Dict
+
+from jetstream import AnalysisPeriod
 
 logging.getLogger(__name__)
 
@@ -12,11 +15,15 @@ def _get_statistics_tables_last_modified(
     client: bigquery.Client, bq_dataset: str
 ) -> Dict[str, datetime]:
     """Returns statistics table names and their last modified timestamp as datetime object."""
+
+    periods = [f"'statistics_%_{p.adjective}'" for p in AnalysisPeriod]
+    expression = " OR table_id LIKE ".join(periods)
+
     job = client.query(
         f"""
         SELECT table_id, TIMESTAMP_MILLIS(last_modified_time) as last_modified
         FROM {bq_dataset}.__TABLES__
-        WHERE table_id LIKE 'statistics_%_daily' OR table_id LIKE 'statistics_%_weekly'
+        WHERE table_id LIKE {expression}
     """
     )
 
