@@ -91,3 +91,48 @@ class ExperimentCollection:
         return cls(
             [ex for ex in self.ever_launched().experiments if ex.end_date and ex.end_date >= after]
         )
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class NimbusExperiment:
+    slug: str
+    active: bool
+    is_enrollment_paused: bool
+    bucket_config: BucketConfig
+    features: List[Feature]
+    branches: List[Branch]
+    start_date: str
+    end_date: Optional[str]
+    proposed_duration: int
+    proposed_enrollment: int
+    reference_branch: str
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class BucketConfig:
+    randomization_unit: str
+    namespace: str
+    start: int
+    count: int
+    total: int
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Feature:
+    slug: str
+    telemetry: Union[FeatureEventTelemetry, FeatureScalarTelemetry]
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class FeatureScalarTelemetry:
+    kind: str = "scalar"
+    name: str
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class FeatureEventTelemetry:
+    kind: str = "event"
+    event_category: str
+    event_method: Optional[str]
+    event_object: Optional[str]
+    event_value: Optional[str]
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Branch:
+    slug: str
+    ratio: int
