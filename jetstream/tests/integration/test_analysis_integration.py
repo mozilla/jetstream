@@ -79,7 +79,7 @@ class TestAnalysisIntegration:
         experiment = Experiment(
             slug="test-experiment",
             type="rollout",
-            status="Complete",
+            status="Live",
             start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
@@ -124,7 +124,7 @@ class TestAnalysisIntegration:
         with mock.patch.object(
             mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
         ):
-            analysis.run(current_date=dt.datetime(2020, 4, 12), dry_run=False)
+            analysis.run(current_date=dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
 
         query_job = client.query(
             f"""
