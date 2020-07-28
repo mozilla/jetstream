@@ -22,7 +22,7 @@ from jetstream.config import AnalysisSpec
 class ExternalConfig:
     """Represent an external config file."""
 
-    experimenter_slug: str
+    slug: str
     spec: AnalysisSpec
     last_modified: dt.datetime
 
@@ -53,17 +53,17 @@ class ExternalConfigCollection:
 
         for file in files:
             if file.name.endswith(".toml"):
-                experimenter_slug = os.path.splitext(file.name)[0]
+                slug = os.path.splitext(file.name)[0]
                 spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
                 last_modified = parser.parse(str(file.last_modified))
-                configs.append(ExternalConfig(experimenter_slug, spec, last_modified))
+                configs.append(ExternalConfig(slug, spec, last_modified))
 
         return cls(configs)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""
         for config in self.configs:
-            if config.experimenter_slug == slug:
+            if config.slug == slug:
                 return config.spec
 
         return None
@@ -95,7 +95,7 @@ class ExternalConfigCollection:
         for config in self.configs:
             for row in result:
                 if (
-                    row.table_name.startswith(config.experimenter_slug)
+                    row.table_name.startswith(config.slug)
                     and len(row.last_updated) > 0
                     and pytz.UTC.localize(dt.datetime.fromtimestamp(int(row.last_updated[0])))
                     < config.last_modified

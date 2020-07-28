@@ -96,7 +96,9 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
-    active_experiments = collection.end_on_or_after(date).of_type(("pref", "addon", "message"))
+    active_experiments = collection.end_on_or_after(date).of_type(
+        ("pref", "addon", "message", "nimbus")
+    )
 
     if experiment_slug is not None:
         # run analysis for specific experiment
@@ -187,7 +189,7 @@ def rerun_config_changed(ctx, project_id, dataset_id):
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        ctx.invoke(rerun, project_id, dataset_id, external_config.experimenter_slug, dry_run=False)
+        ctx.invoke(rerun, project_id, dataset_id, external_config.slug, dry_run=False)
 
 
 @cli.command("validate_config")
@@ -201,13 +203,16 @@ def validate_config(ctx, path):
 
     # required to resolve the config
     dummy_experiment = Experiment(
+        normandy_slug="config_dummy",
         slug="config_dummy",
         type="pref",
         status="Complete",
+        active=True,
         start_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
         end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
         proposed_enrollment=1,
-        variants=[],
+        features=[],
+        branches=[],
     )
 
     for file in config_files:

@@ -381,14 +381,14 @@ class TestExperimentSpec:
 
     def test_control_branch(self, experiments):
         trivial = config.AnalysisSpec().resolve(experiments[0])
-        assert trivial.experiment.control_branch == "b"
+        assert trivial.experiment.reference_branch == "b"
 
         conf = dedent(
             """
             [experiment]
-            control_branch = "a"
+            reference_branch = "a"
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
         configured = spec.resolve(experiments[0])
-        assert configured.experiment.control_branch == "a"
+        assert configured.experiment.reference_branch == "a"
