@@ -23,7 +23,7 @@ def experiments():
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
-            branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1),],
+            branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
             normandy_slug="normandy-test-slug",
             features=[],
             reference_branch="b",

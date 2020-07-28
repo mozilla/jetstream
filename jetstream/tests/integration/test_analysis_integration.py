@@ -15,7 +15,7 @@ from google.api_core.exceptions import NotFound
 from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec, Summary
-from jetstream.experimenter import Experiment, Variant
+from jetstream.experimenter import Experiment, Branch
 from jetstream.statistics import BootstrapMean
 
 
@@ -80,13 +80,13 @@ class TestAnalysisIntegration:
             slug="test-experiment",
             type="rollout",
             status="Live",
+            active=True,
             start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
-            variants=[
-                Variant(is_control=False, slug="branch1", ratio=0.5),
-                Variant(is_control=True, slug="branch2", ratio=0.5),
-            ],
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            features=[],
             normandy_slug="test-experiment",
         )
 
