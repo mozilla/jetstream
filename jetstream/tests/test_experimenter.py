@@ -9,8 +9,6 @@ from jetstream.experimenter import (
     ExperimentCollection,
     Experiment,
     Branch,
-    LegacyExperiment,
-    NimbusExperiment,
 )
 
 EXPERIMENTER_FIXTURE_V1 = r"""

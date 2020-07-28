@@ -57,14 +57,14 @@ class Experiment:
 
     slug: str
     normandy_slug: Optional[str]
-    type: Optional[str]
+    type: str
     status: Optional[str]
     active: bool
     features: List[Feature]
     branches: List[Branch]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
-    proposed_enrollment: int
+    proposed_enrollment: Optional[int]
     reference_branch: Optional[str]
 
 
