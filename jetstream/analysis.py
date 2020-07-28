@@ -233,6 +233,10 @@ class Analysis:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
 
+        if self.config.experiment.end_date > current_date:
+            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
+            return
+
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
