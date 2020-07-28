@@ -233,7 +233,7 @@ class Analysis:
             self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
             return
 
-        if self.config.experiment.end_date > current_date:
+        if self.config.experiment.end_date and self.config.experiment.end_date < current_date:
             self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
             return
 

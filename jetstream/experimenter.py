@@ -89,11 +89,5 @@ class ExperimentCollection:
         after should be a tz-aware datetime."""
         cls = type(self)
         return cls(
-            [
-                ex
-                for ex in self.ever_launched().experiments
-                if ex.end_date and ex.end_date >= after
-                # some experiments may have completed before their end_date was reached
-                and (ex.status != "Complete" or ex.end_date == after)
-            ]
+            [ex for ex in self.ever_launched().experiments if ex.end_date and ex.end_date >= after]
         )
