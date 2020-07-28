@@ -1,13 +1,19 @@
 import datetime as dt
 import json
 import pytz
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 
-from jetstream.experimenter import ExperimentCollection, Experiment, Variant
+from jetstream.experimenter import (
+    ExperimentCollection,
+    Experiment,
+    Branch,
+    LegacyExperiment,
+    NimbusExperiment,
+)
 
-EXPERIMENTER_FIXTURE = r"""
+EXPERIMENTER_FIXTURE_V1 = r"""
 [
   {
     "experiment_url": "https://experimenter.services.mozilla.com/experiments/search-topsites/",
@@ -52,7 +58,7 @@ EXPERIMENTER_FIXTURE = r"""
       },
       {
         "description": "Standard address bar experience",
-        "is_control": false,
+        "is_control": true,
         "name": "control",
         "ratio": 50,
         "slug": "control",
@@ -163,11 +169,24 @@ EXPERIMENTER_FIXTURE = r"""
 ]
 """  # noqa
 
+EXPERIMENTER_FIXTURE_V4 = "[]"
+
 
 @pytest.fixture
 def mock_session():
-    session = Mock()
-    session.get.return_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE)
+    def experimenter_fixtures(url):
+        mocked_value = MagicMock()
+        if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
+            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
+        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V4:
+            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V4)
+        else:
+            raise Exception("Invalid Experimenter API call.")
+
+        return mocked_value
+
+    session = MagicMock()
+    session.get = MagicMock(side_effect=experimenter_fixtures)
     return session
 
 
@@ -178,11 +197,12 @@ def experiment_collection(mock_session):
 
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
-    mock_session.get.assert_called_once_with(ExperimentCollection.EXPERIMENTER_API_URL)
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V4)
     assert len(collection.experiments) == 3
     assert isinstance(collection.experiments[0], Experiment)
-    assert isinstance(collection.experiments[0].variants[0], Variant)
-    assert len(collection.experiments[0].variants) == 2
+    assert isinstance(collection.experiments[0].branches[0], Branch)
+    assert len(collection.experiments[0].branches) == 2
     assert collection.experiments[0].start_date > dt.datetime(2019, 1, 1, tzinfo=pytz.utc)
 
 

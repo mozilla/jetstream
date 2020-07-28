@@ -47,9 +47,7 @@ class TestExternalConfigIntegration:
 
     def test_new_config(self, client):
         config = ExternalConfig(
-            experimenter_slug="new_experiment",
-            spec=self.spec,
-            last_modified=datetime.datetime.utcnow(),
+            slug="new_experiment", spec=self.spec, last_modified=datetime.datetime.utcnow(),
         )
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
@@ -58,7 +56,7 @@ class TestExternalConfigIntegration:
 
     def test_old_config(self, client):
         config = ExternalConfig(
-            experimenter_slug="new_table",
+            slug="new_table",
             spec=self.spec,
             last_modified=pytz.UTC.localize(
                 datetime.datetime.utcnow() - datetime.timedelta(days=1)
@@ -77,7 +75,7 @@ class TestExternalConfigIntegration:
 
     def test_updated_config(self, client):
         config = ExternalConfig(
-            experimenter_slug="old_table",
+            slug="old_table",
             spec=self.spec,
             last_modified=pytz.UTC.localize(
                 datetime.datetime.utcnow() + datetime.timedelta(days=1)
@@ -97,7 +95,7 @@ class TestExternalConfigIntegration:
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
 
         assert len(updated_configs) == 1
-        assert updated_configs[0].experimenter_slug == config.experimenter_slug
+        assert updated_configs[0].slug == config.slug
 
     def test_updated_config_while_analysis_active(self, client):
         client.client.create_table(f"{self.test_dataset}.active_table_day0")
@@ -110,7 +108,7 @@ class TestExternalConfigIntegration:
         )
 
         config = ExternalConfig(
-            experimenter_slug="active_table",
+            slug="active_table",
             spec=self.spec,
             last_modified=pytz.UTC.localize(datetime.datetime.utcnow()),
         )
@@ -128,4 +126,4 @@ class TestExternalConfigIntegration:
         updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
 
         assert len(updated_configs) == 1
-        assert updated_configs[0].experimenter_slug == config.experimenter_slug
+        assert updated_configs[0].slug == config.slug

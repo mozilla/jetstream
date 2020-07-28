@@ -25,6 +25,50 @@ def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class FeatureScalarTelemetry:
+    kind: str = "scalar"
+    name: str
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class FeatureEventTelemetry:
+    kind: str = "event"
+    event_category: str
+    event_method: Optional[str]
+    event_object: Optional[str]
+    event_value: Optional[str]
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Feature:
+    slug: str
+    telemetry: Union[FeatureEventTelemetry, FeatureScalarTelemetry]
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Branch:
+    slug: str
+    ratio: int
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Experiment:
+    """Common Experimenter experiment representation."""
+
+    slug: str
+    normandy_slug: Optional[str]
+    type: Optional[str]
+    status: Optional[str]
+    active: bool
+    features: List[Feature]
+    branches: List[Branch]
+    start_date: Optional[dt.datetime]
+    end_date: Optional[dt.datetime]
+    proposed_enrollment: int
+    reference_branch: Optional[str]
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class LegacyExperiment:
     """Experimenter v1 experiment."""
 
@@ -47,19 +91,21 @@ class LegacyExperiment:
 
     def to_experiment(self) -> "Experiment":
         """Convert to Experiment."""
-        if not self.normandy_slug:
-            raise ValueError(
-                f"Cannot convert legacy experiment {self.slug}. Missing Normandy slug."
-            )
-
         branches = [Branch(slug=variant.slug, ratio=variant.ratio) for variant in self.variants]
-        control_slug = next(variant.slug for variant in self.variants if variant.is_control)
+        control_slug = None
+
+        control_slugs = [variant.slug for variant in self.variants if variant.is_control]
+        if len(control_slugs) == 1:
+            control_slug = control_slugs[0]
 
         return Experiment(
-            slug=self.normandy_slug,
+            normandy_slug=self.normandy_slug,
+            slug=self.slug,
+            type=self.type,
+            status=self.status,
             active=self.status == "Live",
             start_date=self.start_date,
-            end_Date=self.end_date,
+            end_date=self.end_date,
             proposed_enrollment=self.proposed_enrollment,
             features=[],
             branches=branches,
@@ -68,7 +114,7 @@ class LegacyExperiment:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Experiment:
+class NimbusExperiment:
     """Represents a v4 experiment from Experimenter."""
 
     slug: str  # Normandy slug
@@ -81,39 +127,28 @@ class Experiment:
     reference_branch: str
 
     @classmethod
-    def from_dict(cls, d) -> "Experiment":
+    def from_dict(cls, d) -> "NimbusExperiment":
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime, lambda num, _: _unix_millis_to_datetime(num),
         )
         return converter.structure(d, cls)
 
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Feature:
-    slug: str
-    telemetry: Union[FeatureEventTelemetry, FeatureScalarTelemetry]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureScalarTelemetry:
-    kind: str = "scalar"
-    name: str
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureEventTelemetry:
-    kind: str = "event"
-    event_category: str
-    event_method: Optional[str]
-    event_object: Optional[str]
-    event_value: Optional[str]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Branch:
-    slug: str
-    ratio: int
+    def to_experiment(self) -> "Experiment":
+        """Convert to Experiment."""
+        return Experiment(
+            normandy_slug=None,
+            slug=self.slug,
+            type="nimbus",
+            status=None,
+            active=self.active,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            proposed_enrollment=self.proposed_enrollment,
+            features=self.features,
+            branches=self.branches,
+            reference_branch=self.reference_branch,
+        )
 
 
 @attr.s(auto_attribs=True)
@@ -128,10 +163,19 @@ class ExperimentCollection:
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
-        experiments = session.get(cls.EXPERIMENTER_API_URL).json()
-        return cls([Experiment.from_dict(experiment) for experiment in experiments])
-        # todo get v4 experiments
-        # todo convert experiments to a common structure or create a proxy that encapsulates them
+        legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
+        legacy_experiments = [
+            LegacyExperiment.from_dict(experiment).to_experiment()
+            for experiment in legacy_experiments_json
+        ]
+
+        nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
+        nimbus_experiments = [
+            NimbusExperiment.from_dict(experiment).to_experiment()
+            for experiment in nimbus_experiments_json
+        ]
+
+        return cls(nimbus_experiments + legacy_experiments)
 
     def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
@@ -141,7 +185,13 @@ class ExperimentCollection:
 
     def ever_launched(self) -> "ExperimentCollection":
         cls = type(self)
-        return cls([ex for ex in self.experiments if ex.status in ("Complete", "Live")])
+        return cls(
+            [
+                ex
+                for ex in self.experiments
+                if ex.status in ("Complete", "Live") or ex.status is None
+            ]
+        )
 
     def with_slug(self, slug: str) -> "ExperimentCollection":
         cls = type(self)

@@ -3,7 +3,7 @@ import datetime as dt
 import pytest
 import pytz
 
-from jetstream.experimenter import Experiment, Variant
+from jetstream.experimenter import Experiment, Branch
 
 
 def pytest_addoption(parser):
@@ -19,33 +19,39 @@ def experiments():
             slug="test_slug",
             type="pref",
             status="Complete",
+            active=False,
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
-            variants=[
-                Variant(slug="a", is_control=False, ratio=1),
-                Variant(slug="b", is_control=True, ratio=1),
-            ],
+            branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1),],
             normandy_slug="normandy-test-slug",
+            features=[],
+            reference_branch="b",
         ),
         Experiment(
             slug="test_slug",
             type="addon",
             status="Complete",
+            active=False,
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=0,
-            variants=[],
+            branches=[],
+            features=[],
             normandy_slug=None,
+            reference_branch=None,
         ),
         Experiment(
             slug="test_slug",
             type="pref",
             status="Live",
+            active=True,
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
-            variants=[],
+            branches=[],
+            features=[],
             normandy_slug="normandy-test-slug",
+            reference_branch=None,
         ),
     ]

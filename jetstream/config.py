@@ -185,15 +185,10 @@ class ExperimentConfiguration:
         )
 
     @property
-    def control_branch(self) -> Optional[str]:
-        if self.experiment_spec.control_branch:
-            return self.experiment_spec.control_branch
-
-        for v in self.experimenter_experiment.variants:
-            if v.is_control:
-                return v.slug
-
-        return None
+    def reference_branch(self) -> Optional[str]:
+        return (
+            self.experiment_spec.reference_branch or self.experimenter_experiment.reference_branch
+        )
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
@@ -206,7 +201,7 @@ class ExperimentSpec:
     # TODO: Expand this list.
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
-    control_branch: Optional[str] = None
+    reference_branch: Optional[str] = None
 
     def resolve(self, experimenter: jetstream.experimenter.Experiment) -> ExperimentConfiguration:
         return ExperimentConfiguration(self, experimenter)
@@ -214,7 +209,7 @@ class ExperimentSpec:
     def merge(self, other: "ExperimentSpec") -> None:
         self.enrollment_query = other.enrollment_query or self.enrollment_query
         self.enrollment_period = other.enrollment_period or self.enrollment_period
-        self.control_branch = other.control_branch or self.control_branch
+        self.reference_branch = other.reference_branch or self.reference_branch
 
 
 @attr.s(auto_attribs=True)
@@ -265,7 +260,7 @@ class MetricDefinition:
                 ref = PreTreatmentReference(pt)
                 pre_treatments.append(ref.resolve(spec))
 
-            params.setdefault("ref_branch_label", experiment.control_branch)
+            params.setdefault("ref_branch_label", experiment.reference_branch)
 
             metrics_with_treatments.append(
                 Summary(
