@@ -116,7 +116,9 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
             spec.merge(custom_spec)
         else:
-            external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+            external_experiment_config = external_configs.spec_for_experiment(
+                experiment.normandy_slug
+            )
 
             if external_experiment_config:
                 spec.merge(external_experiment_config)

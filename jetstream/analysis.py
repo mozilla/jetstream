@@ -220,14 +220,18 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
+        self.logger.info(
+            "Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug
+        )
 
         if self.config.experiment.normandy_slug is None:
             self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
             return  # some experiments do not have a normandy slug
 
         if not self.config.experiment.proposed_enrollment:
-            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.normandy_slug)
+            self.logger.info(
+                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
+            )
             return
 
         if self.config.experiment.start_date is None:
@@ -243,7 +247,9 @@ class Analysis:
 
             if time_limits is None:
                 self.logger.info(
-                    "Skipping %s (%s); not ready", self.config.experiment.normandy_slug, period.value,
+                    "Skipping %s (%s); not ready",
+                    self.config.experiment.normandy_slug,
+                    period.value,
                 )
                 continue
 
@@ -264,7 +270,9 @@ class Analysis:
 
             self._calculate_statistics(metrics_table, period)
             self.logger.info(
-                "Finished running query for %s (%s)", self.config.experiment.normandy_slug, period.value,
+                "Finished running query for %s (%s)",
+                self.config.experiment.normandy_slug,
+                period.value,
             )
 
 
