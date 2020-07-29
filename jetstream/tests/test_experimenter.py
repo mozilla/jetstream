@@ -215,7 +215,7 @@ def test_end_on_or_after(experiment_collection):
         dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
     )
     assert len(active_experiments.experiments) == 1
-    assert active_experiments.experiments[0].slug == "doh-us-engagement-study-v2"
+    assert active_experiments.experiments[0].experimenter_slug == "doh-us-engagement-study-v2"
 
 
 def test_normandy_experiment_slug(experiment_collection):
@@ -228,13 +228,13 @@ def test_normandy_experiment_slug(experiment_collection):
 def test_with_slug(experiment_collection):
     experiments = experiment_collection.with_slug("search-topsites")
     assert len(experiments.experiments) == 1
-    assert experiments.experiments[0].slug == "search-topsites"
+    assert experiments.experiments[0].experimenter_slug == "search-topsites"
 
     experiments = experiment_collection.with_slug(
         "addon-activity-stream-search-topsites-release-69-1576277"
     )
     assert len(experiments.experiments) == 1
-    assert experiments.experiments[0].slug == "search-topsites"
+    assert experiments.experiments[0].experimenter_slug == "search-topsites"
     assert (
         experiments.experiments[0].normandy_slug
         == "addon-activity-stream-search-topsites-release-69-1576277"

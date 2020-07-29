@@ -5,7 +5,7 @@ import pytz
 
 from jetstream.analysis import Analysis, AnalysisPeriod
 from jetstream.config import AnalysisSpec
-from jetstream.experimenter import LegacyExperiment
+from jetstream.experimenter import ExperimentV1
 
 
 def test_get_timelimits_if_ready(experiments):
@@ -70,7 +70,7 @@ def test_regression_20200320():
           ]
         }
     """  # noqa
-    experiment = LegacyExperiment.from_dict(json.loads(experiment_json)).to_experiment()
+    experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
@@ -130,7 +130,7 @@ def test_regression_20200316():
       ]
     }
     """
-    experiment = LegacyExperiment.from_dict(json.loads(experiment_json)).to_experiment()
+    experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)

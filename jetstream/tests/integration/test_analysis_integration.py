@@ -77,7 +77,7 @@ class TestAnalysisIntegration:
 
     def test_metrics(self, client):
         experiment = Experiment(
-            slug="test-experiment",
+            experimenter_slug="test-experiment",
             type="rollout",
             status="Live",
             active=True,

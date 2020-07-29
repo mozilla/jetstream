@@ -361,7 +361,7 @@ class TestExperimentSpec:
         conf = dedent(
             """
             [experiment]
-            enrollment_query = "SELECT 1 FROM foo WHERE slug = '{{experiment.slug}}'"
+            enrollment_query = "SELECT 1 FROM foo WHERE slug = '{{experiment.experimenter_slug}}'"
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
