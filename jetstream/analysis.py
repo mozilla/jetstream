@@ -106,7 +106,7 @@ class Analysis:
         if analysis_length_dates < 0:
             logging.error(
                 "Proposed enrollment longer than analysis dates length:"
-                + f"{self.config.experiment.slug}"
+                + f"{self.config.experiment.normandy_slug}"
             )
             return None
 
@@ -121,13 +121,13 @@ class Analysis:
         return re.sub(r"[^a-zA-Z0-9_]", "_", name)
 
     def _table_name(self, window_period: str, window_index: int) -> str:
-        assert self.config.experiment.slug is not None
-        normalized_slug = self._normalize_name(self.config.experiment.slug)
+        assert self.config.experiment.normandy_slug is not None
+        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         return "_".join([normalized_slug, window_period, str(window_index)])
 
     def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
-        assert self.config.experiment.slug is not None
-        normalized_slug = self._normalize_name(self.config.experiment.slug)
+        assert self.config.experiment.normandy_slug is not None
+        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.adjective])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
@@ -184,7 +184,7 @@ class Analysis:
             dry_run_query(sql)
         else:
             self.logger.info(
-                "Executing query for %s (%s)", self.config.experiment.slug, period.value,
+                "Executing query for %s (%s)", self.config.experiment.normandy_slug, period.value,
             )
             self.bigquery.execute(sql, res_table_name)
             self._publish_view(period)
@@ -220,18 +220,18 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.slug)
+        self.logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
-        if self.config.experiment.slug is None:
-            self.logger.info("Skipping %s; no slug", self.config.experiment.slug)
+        if self.config.experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
             return  # some experiments do not have a normandy slug
 
         if not self.config.experiment.proposed_enrollment:
-            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.slug)
+            self.logger.info("Skipping %s; no enrollment period", self.config.experiment.normandy_slug)
             return
 
         if self.config.experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", self.config.experiment.slug)
+            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
             return
 
         if self.config.experiment.end_date and self.config.experiment.end_date < current_date:
@@ -243,12 +243,12 @@ class Analysis:
 
             if time_limits is None:
                 self.logger.info(
-                    "Skipping %s (%s); not ready", self.config.experiment.slug, period.value,
+                    "Skipping %s (%s); not ready", self.config.experiment.normandy_slug, period.value,
                 )
                 continue
 
             exp = mozanalysis.experiment.Experiment(
-                experiment_slug=self.config.experiment.slug,
+                experiment_slug=self.config.experiment.normandy_slug,
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             )
 
@@ -257,14 +257,14 @@ class Analysis:
             if dry_run:
                 self.logger.info(
                     "Not calculating statistics %s (%s); dry run",
-                    self.config.experiment.slug,
+                    self.config.experiment.normandy_slug,
                     period.value,
                 )
                 continue
 
             self._calculate_statistics(metrics_table, period)
             self.logger.info(
-                "Finished running query for %s (%s)", self.config.experiment.slug, period.value,
+                "Finished running query for %s (%s)", self.config.experiment.normandy_slug, period.value,
             )
 
 

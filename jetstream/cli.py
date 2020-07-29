@@ -97,7 +97,7 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
     collection = ExperimentCollection.from_experimenter()
 
     active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "nimbus")
+        ("pref", "addon", "message", "v4")
     )
 
     if experiment_slug is not None:
@@ -116,7 +116,7 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
             spec.merge(custom_spec)
         else:
-            external_experiment_config = external_configs.spec_for_experiment(experiment.slug)
+            external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
 
             if external_experiment_config:
                 spec.merge(external_experiment_config)
@@ -157,7 +157,7 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
     else:
         # get experiment-specific external configs
         external_configs = ExternalConfigCollection.from_github_repo()
-        external_experiment_config = external_configs.spec_for_experiment(experiment.slug)
+        external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
 
         if external_experiment_config:
             spec.merge(external_experiment_config)
@@ -189,7 +189,7 @@ def rerun_config_changed(ctx, project_id, dataset_id):
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        ctx.invoke(rerun, project_id, dataset_id, external_config.slug, dry_run=False)
+        ctx.invoke(rerun, project_id, dataset_id, external_config.normandy_slug, dry_run=False)
 
 
 @cli.command("validate_config")

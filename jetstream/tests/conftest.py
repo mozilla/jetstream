@@ -16,7 +16,7 @@ def pytest_addoption(parser):
 def experiments():
     return [
         Experiment(
-            slug="test_slug",
+            experimenter_slug="test_slug",
             type="pref",
             status="Complete",
             active=False,
@@ -29,7 +29,7 @@ def experiments():
             reference_branch="b",
         ),
         Experiment(
-            slug="test_slug",
+            experimenter_slug="test_slug",
             type="addon",
             status="Complete",
             active=False,
@@ -42,7 +42,7 @@ def experiments():
             reference_branch=None,
         ),
         Experiment(
-            slug="test_slug",
+            experimenter_slug="test_slug",
             type="pref",
             status="Live",
             active=True,
