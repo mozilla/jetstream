@@ -235,6 +235,27 @@ class TestAnalysisSpec:
 
         assert bootstrap_mean.num_samples == 10
 
+    def test_overwrite_default_statistic_ref_branch(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["ad_clicks"]
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            """
+        )
+
+        default_spec = config.AnalysisSpec.from_dict(toml.load(self.default_metrics_config))
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        default_spec.merge(spec)
+        cfg = default_spec.resolve(experiments[1])
+        bootstrap_mean = [
+            m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "ad_clicks"
+        ][0].statistic
+        bootstrap_mean.__class__ = BootstrapMean
+
+        assert bootstrap_mean.ref_branch_label is None
+
     def test_pre_treatment(self, experiments):
         config_str = dedent(
             """
