@@ -314,9 +314,18 @@ class MetricsSpec:
         result = {}
         for period in AnalysisPeriod:
             # these summaries might contain duplicates
-            summaries = [
-                m for ref in getattr(self, period.adjective) for m in ref.resolve(spec, experiment)
-            ]
+            summaries = []
+            if period in (AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL):
+                for f in experiment.features:
+                    summaries.extend(f.to_summaries(experiment))
+            summaries.extend(
+                [
+                    m
+                    for ref in getattr(self, period.adjective)
+                    for m in ref.resolve(spec, experiment)
+                ]
+            )
+
             unique_summaries = []
             seen_summaries = set()
 
