@@ -20,7 +20,7 @@ which produce concrete mozanalysis classes when resolved.
 
 from inspect import isabstract
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
 
 import attr
 import cattr
@@ -30,9 +30,11 @@ import mozanalysis.metrics.desktop
 import pandas
 
 from . import AnalysisPeriod
-import jetstream.experimenter
 from jetstream.statistics import Statistic, StatisticResultCollection
 from jetstream.pre_treatment import PreTreatment
+
+if TYPE_CHECKING:
+    import jetstream.experimenter
 
 
 @attr.s(auto_attribs=True)
@@ -148,7 +150,7 @@ class ExperimentConfiguration:
     """Represents the configuration of an experiment for analysis."""
 
     experiment_spec: "ExperimentSpec"
-    experimenter_experiment: jetstream.experimenter.Experiment
+    experimenter_experiment: "jetstream.experimenter.Experiment"
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -203,7 +205,7 @@ class ExperimentSpec:
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
 
-    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> ExperimentConfiguration:
+    def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> ExperimentConfiguration:
         return ExperimentConfiguration(self, experimenter)
 
     def merge(self, other: "ExperimentSpec") -> None:
@@ -421,7 +423,7 @@ class AnalysisSpec:
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return _converter.structure(d, cls)
 
-    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> AnalysisConfiguration:
+    def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
         experiment = self.experiment.resolve(experimenter)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
