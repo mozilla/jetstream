@@ -7,6 +7,10 @@ import requests
 class _DesktopProbeInfo:
     PROBE_INFO_URL = "https://probeinfo.telemetry.mozilla.org/firefox/all/main/all_probes"
 
+    def __init__(self, data=None):
+        if data:
+            self._data = data
+
     @property
     def data(self):
         if data := getattr(self, "_data", None):
