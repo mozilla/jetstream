@@ -35,6 +35,7 @@ setup(
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
         "google-cloud-storage",
+        "glom",
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "incremental",
         "jinja2",
