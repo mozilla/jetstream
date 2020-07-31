@@ -15,10 +15,29 @@ import numpy as np
 from pandas import DataFrame, Series
 
 
+from .pre_treatment import PreTreatment
+
+
 def _maybe_decimal(value) -> Optional[Decimal]:
     if value is None:
         return None
     return Decimal(value)
+
+
+@attr.s(auto_attribs=True)
+class Summary:
+    """Represents a metric with a statistical treatment."""
+
+    metric: mozanalysis.metrics.Metric
+    statistic: "Statistic"
+    pre_treatments: List[PreTreatment] = attr.Factory(list)
+
+    def run(self, data: DataFrame) -> "StatisticResultCollection":
+        """Apply the statistic transformation for data related to the specified metric."""
+        for pre_treatment in self.pre_treatments:
+            data = pre_treatment.apply(data, self.metric.name)
+
+        return self.statistic.apply(data, self.metric.name)
 
 
 @attr.s(auto_attribs=True)

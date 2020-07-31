@@ -27,31 +27,14 @@ import cattr
 import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
-import pandas
 
 from . import AnalysisPeriod
 from jetstream.statistics import Statistic, StatisticResultCollection
+from jetstream.statistics import Summary, Statistic
 from jetstream.pre_treatment import PreTreatment
 
 if TYPE_CHECKING:
     import jetstream.experimenter
-
-
-@attr.s(auto_attribs=True)
-class Summary:
-    """Represents a metric with a statistical treatment."""
-
-    metric: mozanalysis.metrics.Metric
-    statistic: Statistic
-    pre_treatments: List[PreTreatment] = attr.Factory(list)
-
-    def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
-        """Apply the statistic transformation for data related to the specified metric."""
-        for pre_treatment in self.pre_treatments:
-            data = pre_treatment.apply(data, self.metric.name)
-
-        return self.statistic.apply(data, self.metric.name)
-
 
 _converter = cattr.Converter()
 
