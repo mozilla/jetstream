@@ -28,8 +28,7 @@ import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 
-from . import AnalysisPeriod
-from jetstream.statistics import Statistic, StatisticResultCollection
+from . import AnalysisPeriod, nimbus
 from jetstream.statistics import Summary, Statistic
 from jetstream.pre_treatment import PreTreatment
 
@@ -134,10 +133,12 @@ class ExperimentConfiguration:
 
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: "jetstream.experimenter.Experiment"
+    feature_resolver: nimbus.ResolvesFeatures
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
         self._enrollment_query = self.enrollment_query
+        self._features = self.features
 
     @property
     def enrollment_query(self) -> Optional[str]:
@@ -158,6 +159,12 @@ class ExperimentConfiguration:
         env = jinja2.Environment(autoescape=False)
         env.globals["experiment"] = ExperimentProxy()
         return env.from_string(self.experiment_spec.enrollment_query).render()
+
+    @property
+    def features(self) -> List[nimbus.Feature]:
+        return [
+            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.features
+        ]
 
     @property
     def proposed_enrollment(self) -> int:
@@ -186,8 +193,12 @@ class ExperimentSpec:
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
 
-    def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> ExperimentConfiguration:
-        return ExperimentConfiguration(self, experimenter)
+    def resolve(
+        self,
+        experimenter: "jetstream.experimenter.Experiment",
+        feature_resolver: nimbus.ResolvesFeatures,
+    ) -> ExperimentConfiguration:
+        return ExperimentConfiguration(self, experimenter, feature_resolver)
 
     def merge(self, other: "ExperimentSpec") -> None:
         self.enrollment_query = other.enrollment_query or self.enrollment_query
@@ -414,7 +425,7 @@ class AnalysisSpec:
         return _converter.structure(d, cls)
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(experimenter)
+        experiment = self.experiment.resolve(experimenter, nimbus.FeatureResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 

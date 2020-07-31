@@ -5,10 +5,31 @@ import pytest
 
 from jetstream import AnalysisPeriod, config
 from jetstream.cli import DEFAULT_METRICS_CONFIG
+from jetstream.nimbus import Feature, FeatureEventTelemetry, FeatureScalarTelemetry
 from jetstream.statistics import BootstrapMean
 from jetstream.pre_treatment import RemoveNulls
 
 
+@pytest.fixture
+def fake_feature_resolver(monkeypatch):
+    class FakeFeatureResolver:
+        def resolve(self, slug: str) -> Feature:
+            return Feature(
+                slug="fake_feature",
+                name="Fake feature",
+                description="A fake feature for testing.",
+                telemetry=[
+                    FeatureEventTelemetry(event_category="fake"),
+                    FeatureScalarTelemetry(name="fake.scalar"),
+                ],
+            )
+
+    fake = FakeFeatureResolver()
+    monkeypatch.setattr("jetstream.nimbus.FeatureResolver", fake)
+    yield fake
+
+
+@pytest.mark.usefixtures("fake_feature_resolver")
 class TestAnalysisSpec:
     default_metrics_config = DEFAULT_METRICS_CONFIG
 

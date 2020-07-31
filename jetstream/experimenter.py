@@ -1,17 +1,10 @@
 import datetime as dt
-import re
-from typing import Any, Dict, List, Iterable, Optional, Union
+from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
-from mozanalysis.metrics import Metric
-import mozanalysis.metrics.desktop
 import requests
 import pytz
-
-from . import statistics
-from .config import ExperimentConfiguration, Summary
-from .probeinfo import DesktopProbeInfo
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -23,95 +16,6 @@ class Variant:
 
 def _coerce_none_to_zero(x: Optional[int]) -> int:
     return 0 if x is None else x
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureScalarTelemetry:
-    kind: str = "scalar"
-    name: str
-
-    def to_summaries(
-        self, feature_slug: str, experiment: ExperimentConfiguration
-    ) -> Iterable[Summary]:
-        processes = DesktopProbeInfo.processes_for_scalar(self.name)
-        scalar_slug = re.sub("[^a-zA-Z0-9]+", "_", self.name)
-        columns = []
-        for process in processes:
-            process = "parent" if process == "main" else process
-            columns.append(f"COALESCE(payload.processes.{process}.scalars.{scalar_slug}, 0)")
-
-        kwargs: Dict[str, Any] = {}
-        if experiment.reference_branch:
-            kwargs["ref_branch_label"] = experiment.reference_branch
-
-        ever_used = Summary(
-            Metric(
-                f"{feature_slug}_ever_used",
-                mozanalysis.metrics.desktop.main,
-                f"SUM({' + '.join(columns)}) > 0",
-            ),
-            statistics.Binomial(**kwargs),
-        )
-
-        sum_metric = Metric(
-            f"{feature_slug}_sum", mozanalysis.metrics.desktop.main, f"SUM({' + '.join(columns)})"
-        )
-
-        used_mean = Summary(sum_metric, statistics.BootstrapMean(**kwargs))
-        used_deciles = Summary(sum_metric, statistics.Deciles(**kwargs))
-
-        return [ever_used, used_mean, used_deciles]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureEventTelemetry:
-    kind: str = "event"
-    event_category: str
-    event_method: Optional[str]
-    event_object: Optional[str]
-    event_value: Optional[str]
-
-    def to_summaries(
-        self, feature_slug: str, experiment: ExperimentConfiguration
-    ) -> Iterable[Summary]:
-        clauses = [f"event_category = '{self.event_category}'"]
-        for k in ("method", "object", "value"):
-            if v := getattr(self, f"event_{k}"):
-                clauses.append(f"event_{k} = '{v}'")
-        predicate = " AND ".join(clauses)
-
-        kwargs: Dict[str, Any] = {}
-        if experiment.reference_branch:
-            kwargs["ref_branch_label"] = experiment.reference_branch
-
-        ever_used = Summary(
-            Metric(
-                f"{feature_slug}_ever_used",
-                mozanalysis.metrics.desktop.events,
-                f"COALESCE(COUNTIF({predicate}), 0) > 0",
-            ),
-            statistics.Binomial(**kwargs),
-        )
-
-        sum_metric = Metric(
-            f"{feature_slug}_sum",
-            mozanalysis.metrics.desktop.events,
-            f"COALESCE(COUNTIF({predicate}), 0)",
-        )
-
-        used_mean = Summary(sum_metric, statistics.BootstrapMean(**kwargs))
-        used_deciles = Summary(sum_metric, statistics.Deciles(**kwargs))
-
-        return [ever_used, used_mean, used_deciles]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Feature:
-    slug: str
-    telemetry: Union[FeatureEventTelemetry, FeatureScalarTelemetry]
-
-    def to_summaries(self, experiment: ExperimentConfiguration) -> Iterable[Summary]:
-        return self.telemetry.to_summaries(self.slug, experiment)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -131,7 +35,7 @@ class Experiment:
         type: V1 experiment type; always "v4" for V4 experiments
         status: V1 experiment status; "Live" for active V4 experiments,
             "Complete" for inactive V4 experiments
-        features: empty list for V1 experiments; V4 experiment features
+        features: empty list for V1 experiments; slugs for V4 experiment features
         branches: V1 experiment variants converted to branches; V4 experiment branches
         start_date: experiment start_date
         end_date: experiment end_date
@@ -145,7 +49,7 @@ class Experiment:
     type: str
     status: Optional[str]
     active: bool
-    features: List[Feature]
+    features: List[str]
     branches: List[Branch]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
@@ -210,7 +114,7 @@ class ExperimentV4:
 
     slug: str  # Normandy slug
     active: bool
-    features: List[Feature]
+    features: List[str]
     branches: List[Branch]
     startDate: dt.datetime
     endDate: Optional[dt.datetime]
