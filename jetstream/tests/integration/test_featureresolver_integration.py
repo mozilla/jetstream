@@ -8,7 +8,7 @@ def test_feature_resolver():
     assert isinstance(pip, Feature)
     fake_config = Mock()
     fake_config.reference_branch = None
-    summaries = pip.to_summaries("slug", fake_config)
+    summaries = pip.to_summaries(fake_config)
     assert len(summaries)
     assert len(pip.telemetry)
     assert len(
