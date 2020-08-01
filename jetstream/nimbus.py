@@ -1,6 +1,6 @@
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Mapping, Optional, Protocol, TYPE_CHECKING, Union
+from typing import Any, ClassVar, Dict, List, Mapping, Optional, Protocol, TYPE_CHECKING, Union
 
 import attr
 import cattr
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class FeatureScalarTelemetry:
-    kind: str = "scalar"
+    kind: ClassVar[str] = "scalar"
     name: str
 
     def to_summaries(
@@ -58,7 +58,7 @@ class FeatureScalarTelemetry:
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class FeatureEventTelemetry:
-    kind: str = "event"
+    kind: ClassVar[str] = "event"
     event_category: str
     event_method: Optional[str] = None
     event_object: Optional[str] = None
@@ -98,12 +98,15 @@ class FeatureEventTelemetry:
         return [ever_used, used_mean, used_deciles]
 
 
+FeatureTelemetryType = Union[FeatureEventTelemetry, FeatureScalarTelemetry]
+
+
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Feature:
     slug: str
     name: str
     description: str
-    telemetry: List[Union[FeatureEventTelemetry, FeatureScalarTelemetry]]
+    telemetry: List[FeatureTelemetryType]
 
     def to_summaries(self, experiment: "ExperimentConfiguration") -> List[Summary]:
         summaries = []
@@ -113,7 +116,17 @@ class Feature:
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]):
-        return cattr.structure(d, cls)
+        converter = cattr.Converter()
+
+        def discriminate_telemetry(d, type):
+            kind = d.pop("kind")
+            for klass in type.__args__:
+                if kind == klass.kind:
+                    return klass(**d)
+            raise ValueError(f"Could not discriminate telemetry kind {kind}")
+
+        converter.register_structure_hook(FeatureTelemetryType, discriminate_telemetry)
+        return converter.structure(d, cls)
 
 
 class ResolvesFeatures(Protocol):
