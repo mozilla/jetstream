@@ -1,5 +1,5 @@
 #!/bin/bash
-pip-compile --max-rounds 20 -o - - <<< '.[testing]' |
+pip-compile -o - - <<< '.[testing]' |
     grep -v 'file://' |
     sed 's/pip-compile.*/update_deps/' > requirements.in
 
