@@ -1,21 +1,64 @@
 from pathlib import Path
 import re
-from typing import Any, ClassVar, Dict, List, Mapping, Optional, Protocol, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attr
 import cattr
 from github import Github
 from github.ContentFile import ContentFile
+from google.cloud import bigquery
+from google.cloud.bigquery.schema import SchemaField
 from mozanalysis.metrics import Metric
 import mozanalysis.metrics.desktop
 import toml
 
 from . import statistics
 from .statistics import Summary
-from .probeinfo import DesktopProbeInfo
 
 if TYPE_CHECKING:
     from .config import ExperimentConfiguration
+
+
+class _ProbeLister:
+    @property
+    def schema(self) -> List[SchemaField]:
+        if schema := getattr(self, "_schema", None):
+            return schema
+        client = bigquery.Client()
+        self._schema = client.get_table("moz-fx-data-shared-prod.telemetry.main").schema
+        return self._schema
+
+    @staticmethod
+    def _step(schema: List[SchemaField], keys: Iterable[str]) -> Dict[str, SchemaField]:
+        for key in keys:
+            d = {field.name: field for field in schema}
+            schema = d[key].fields
+        return {field.name: field for field in schema}
+
+    def columns_for_scalar(self, scalar_name: str) -> List[str]:
+        scalar_slug = re.sub("[^a-zA-Z0-9]+", "_", scalar_name)
+        columns = []
+        processes = self._step(self.schema, ("payload", "processes"))
+        for process_name, field in processes.items():
+            scalars = self._step(field.fields, ("scalars",))
+            if scalar_slug in scalars:
+                column_name = ".".join(("payload.processes", process_name, "scalars", scalar_slug))
+                columns.append(column_name)
+        return columns
+
+
+ProbeLister = _ProbeLister()
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -26,12 +69,11 @@ class FeatureScalarTelemetry:
     def to_summaries(
         self, feature_slug: str, experiment: "ExperimentConfiguration"
     ) -> List[Summary]:
-        processes = DesktopProbeInfo.processes_for_scalar(self.name)
-        scalar_slug = re.sub("[^a-zA-Z0-9]+", "_", self.name)
-        columns = []
-        for process in processes:
-            process = "parent" if process == "main" else process
-            columns.append(f"COALESCE(payload.processes.{process}.scalars.{scalar_slug}, 0)")
+        column_names = ProbeLister.columns_for_scalar(self.name)
+
+        column_exprs = []
+        for column_name in column_names:
+            column_exprs.append(f"COALESCE({column_name}, 0)")
 
         kwargs: Dict[str, Any] = {}
         if experiment.reference_branch:
@@ -41,13 +83,15 @@ class FeatureScalarTelemetry:
             Metric(
                 f"{feature_slug}_ever_used",
                 mozanalysis.metrics.desktop.main,
-                f"SUM({' + '.join(columns)}) > 0",
+                f"SUM({' + '.join(column_exprs)}) > 0",
             ),
             statistics.Binomial(**kwargs),
         )
 
         sum_metric = Metric(
-            f"{feature_slug}_sum", mozanalysis.metrics.desktop.main, f"SUM({' + '.join(columns)})"
+            f"{feature_slug}_sum",
+            mozanalysis.metrics.desktop.main,
+            f"SUM({' + '.join(column_exprs)})",
         )
 
         used_mean = Summary(sum_metric, statistics.BootstrapMean(**kwargs))

@@ -1,5 +1,5 @@
 from unittest.mock import Mock
-from typing import Set
+from typing import List
 
 import mozanalysis.metrics
 import pytest
@@ -8,17 +8,17 @@ from jetstream.nimbus import FeatureEventTelemetry, FeatureScalarTelemetry
 
 
 @pytest.fixture
-def fake_desktop_probe_info(monkeypatch):
-    class FakeDesktopProbeInfo:
-        def processes_for_scalar(self, slug: str) -> Set[str]:
-            return {"main", "cheese"}
+def fake_probe_lister(monkeypatch):
+    class FakeDesktopProbeLister:
+        def columns_for_scalar(self, slug: str) -> List[str]:
+            return ["a.fancy.column.definitely_not_real", "a.fancier.column.definitely_not_real"]
 
-    fake = FakeDesktopProbeInfo()
-    monkeypatch.setattr("jetstream.nimbus.DesktopProbeInfo", fake)
+    fake = FakeDesktopProbeLister()
+    monkeypatch.setattr("jetstream.nimbus.ProbeLister", fake)
     yield fake
 
 
-@pytest.mark.usefixtures("fake_desktop_probe_info")
+@pytest.mark.usefixtures("fake_probe_lister")
 class TestFeature:
     def test_feature_event_telemetry(self):
         et = FeatureEventTelemetry(event_category="a", event_method="b")
