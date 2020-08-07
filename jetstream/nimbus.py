@@ -178,6 +178,16 @@ class ResolvesFeatures(Protocol):
 
 
 class _FeatureResolver:
+    """Consume Features from the nimbus-shared repository.
+
+    This document describes how data is represented in nimbus-shared:
+    https://github.com/mozilla/nimbus-shared/blob/29526cb13c3b12ed6870ebd042261273a6e02785/docs/pages/dev/data.md
+
+    The Feature data adopts the described convention of using a __nimbusMeta.toml
+    file in the same path as our data to describe the type of the data, so we avoid
+    consuming files with leading underscores.
+    """
+
     FEATURE_DEFINITION_REPO = "mozilla/nimbus-shared"
     FEATURE_PATH = "data/features"
 
