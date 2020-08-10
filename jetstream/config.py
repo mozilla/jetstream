@@ -20,36 +20,20 @@ which produce concrete mozanalysis classes when resolved.
 
 from inspect import isabstract
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
 
 import attr
 import cattr
 import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
-import pandas
 
-from . import AnalysisPeriod
-import jetstream.experimenter
-from jetstream.statistics import Statistic, StatisticResultCollection
+from . import AnalysisPeriod, nimbus
+from jetstream.statistics import Summary, Statistic
 from jetstream.pre_treatment import PreTreatment
 
-
-@attr.s(auto_attribs=True)
-class Summary:
-    """Represents a metric with a statistical treatment."""
-
-    metric: mozanalysis.metrics.Metric
-    statistic: Statistic
-    pre_treatments: List[PreTreatment] = attr.Factory(list)
-
-    def run(self, data: pandas.DataFrame) -> "StatisticResultCollection":
-        """Apply the statistic transformation for data related to the specified metric."""
-        for pre_treatment in self.pre_treatments:
-            data = pre_treatment.apply(data, self.metric.name)
-
-        return self.statistic.apply(data, self.metric.name)
-
+if TYPE_CHECKING:
+    import jetstream.experimenter
 
 _converter = cattr.Converter()
 
@@ -148,20 +132,20 @@ class ExperimentConfiguration:
     """Represents the configuration of an experiment for analysis."""
 
     experiment_spec: "ExperimentSpec"
-    experimenter_experiment: jetstream.experimenter.Experiment
+    experimenter_experiment: "jetstream.experimenter.Experiment"
+    feature_resolver: nimbus.ResolvesFeatures
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
         self._enrollment_query = self.enrollment_query
+        self._features = self.features
 
     @property
     def enrollment_query(self) -> Optional[str]:
         if self.experiment_spec.enrollment_query is None:
             return None
 
-        cached = getattr(self, "_enrollment_query", None)
-
-        if cached:
+        if cached := getattr(self, "_enrollment_query", None):
             return cached
 
         class ExperimentProxy:
@@ -175,6 +159,12 @@ class ExperimentConfiguration:
         env = jinja2.Environment(autoescape=False)
         env.globals["experiment"] = ExperimentProxy()
         return env.from_string(self.experiment_spec.enrollment_query).render()
+
+    @property
+    def features(self) -> List[nimbus.Feature]:
+        return [
+            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.features
+        ]
 
     @property
     def proposed_enrollment(self) -> int:
@@ -203,8 +193,12 @@ class ExperimentSpec:
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
 
-    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> ExperimentConfiguration:
-        return ExperimentConfiguration(self, experimenter)
+    def resolve(
+        self,
+        experimenter: "jetstream.experimenter.Experiment",
+        feature_resolver: nimbus.ResolvesFeatures,
+    ) -> ExperimentConfiguration:
+        return ExperimentConfiguration(self, experimenter, feature_resolver)
 
     def merge(self, other: "ExperimentSpec") -> None:
         self.enrollment_query = other.enrollment_query or self.enrollment_query
@@ -312,9 +306,18 @@ class MetricsSpec:
         result = {}
         for period in AnalysisPeriod:
             # these summaries might contain duplicates
-            summaries = [
-                m for ref in getattr(self, period.adjective) for m in ref.resolve(spec, experiment)
-            ]
+            summaries = []
+            if period in (AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL):
+                for feature in experiment.features:
+                    summaries.extend(feature.to_summaries(experiment))
+            summaries.extend(
+                [
+                    summary
+                    for ref in getattr(self, period.adjective)
+                    for summary in ref.resolve(spec, experiment)
+                ]
+            )
+
             unique_summaries = []
             seen_summaries = set()
 
@@ -421,8 +424,8 @@ class AnalysisSpec:
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return _converter.structure(d, cls)
 
-    def resolve(self, experimenter: jetstream.experimenter.Experiment) -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(experimenter)
+    def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
+        experiment = self.experiment.resolve(experimenter, nimbus.FeatureResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 

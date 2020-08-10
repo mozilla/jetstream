@@ -19,27 +19,6 @@ def _coerce_none_to_zero(x: Optional[int]) -> int:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureScalarTelemetry:
-    kind: str = "scalar"
-    name: str
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureEventTelemetry:
-    kind: str = "event"
-    event_category: str
-    event_method: Optional[str]
-    event_object: Optional[str]
-    event_value: Optional[str]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Feature:
-    slug: str
-    telemetry: Union[FeatureEventTelemetry, FeatureScalarTelemetry]
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Branch:
     slug: str
     ratio: int
@@ -56,7 +35,7 @@ class Experiment:
         type: V1 experiment type; always "v4" for V4 experiments
         status: V1 experiment status; "Live" for active V4 experiments,
             "Complete" for inactive V4 experiments
-        features: empty list for V1 experiments; V4 experiment features
+        features: empty list for V1 experiments; slugs for V4 experiment features
         branches: V1 experiment variants converted to branches; V4 experiment branches
         start_date: experiment start_date
         end_date: experiment end_date
@@ -70,7 +49,7 @@ class Experiment:
     type: str
     status: Optional[str]
     active: bool
-    features: List[Feature]
+    features: List[str]
     branches: List[Branch]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
@@ -135,7 +114,7 @@ class ExperimentV4:
 
     slug: str  # Normandy slug
     active: bool
-    features: List[Feature]
+    features: List[str]
     branches: List[Branch]
     startDate: dt.datetime
     endDate: Optional[dt.datetime]

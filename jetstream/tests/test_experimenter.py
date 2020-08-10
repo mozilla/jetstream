@@ -12,8 +12,6 @@ from jetstream.experimenter import (
     ExperimentV1,
     ExperimentV4,
     Variant,
-    Feature,
-    FeatureScalarTelemetry,
 )
 
 EXPERIMENTER_FIXTURE_V1 = r"""
@@ -219,13 +217,7 @@ EXPERIMENTER_FIXTURE_V4 = r"""
     "active":true,
     "isEnrollmentPaused":false,
     "features":[
-      {
-        "slug": "picture_in_picture",
-        "telemetry": {
-          "kind": "scalar",
-          "name": "x"
-        }
-      }
+      "fake_feature"
     ],
     "proposedEnrollment":14,
     "bucketConfig":{
@@ -366,7 +358,7 @@ def test_convert_experiment_v4_to_experiment():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        features=[Feature(slug="feature-slug", telemetry=FeatureScalarTelemetry(name="telemetry"))],
+        features=["fake_feature"],
     )
 
     experiment = experiment_v4.to_experiment()
