@@ -1,13 +1,10 @@
 from pathlib import Path
 import datetime
-import pytest
 import pytz
-import random
-import string
 from textwrap import dedent
 import toml
 
-from jetstream.analysis import BigQueryClient
+
 from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 from jetstream.config import AnalysisSpec
 
@@ -15,13 +12,6 @@ TEST_DIR = Path(__file__).parent.parent
 
 
 class TestExternalConfigIntegration:
-    project_id = "jetstream-integration-test"
-
-    # generate a random test dataset to avoid conflicts when running tests in parallel
-    test_dataset = "test_" + "".join(random.choice(string.ascii_lowercase) for i in range(10))
-    # contains the tables filled with test data required to run metrics analysis
-    static_dataset = "test_data"
-
     config_str = dedent(
         """
         [metrics]
@@ -32,29 +22,16 @@ class TestExternalConfigIntegration:
     )
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
 
-    @pytest.fixture(scope="class")
-    def client(self):
-        self._client = getattr(self, "_client", None) or BigQueryClient(
-            self.project_id, self.test_dataset
-        )
-        return self._client
-
-    @pytest.fixture(autouse=True)
-    def setup(self, client):
-        # remove all tables previously created
-        client.client.delete_dataset(self.test_dataset, delete_contents=True, not_found_ok=True)
-        client.client.create_dataset(self.test_dataset)
-
-    def test_new_config(self, client):
+    def test_new_config(self, client, project_id, temporary_dataset):
         config = ExternalConfig(
             slug="new_experiment", spec=self.spec, last_modified=datetime.datetime.utcnow(),
         )
         config_collection = ExternalConfigCollection([config])
-        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+        updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
 
         assert len(updated_configs) == 0
 
-    def test_old_config(self, client):
+    def test_old_config(self, client, project_id, temporary_dataset):
         config = ExternalConfig(
             slug="new_table",
             spec=self.spec,
@@ -64,16 +41,16 @@ class TestExternalConfigIntegration:
         )
 
         # table created after config loaded
-        client.client.create_table(f"{self.test_dataset}.new_table_day1")
+        client.client.create_table(f"{temporary_dataset}.new_table_day1")
         client.add_labels_to_table(
             "new_table_day1", {"last_updated": client._current_timestamp_label()},
         )
         config_collection = ExternalConfigCollection([config])
-        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+        updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
 
         assert len(updated_configs) == 0
 
-    def test_updated_config(self, client):
+    def test_updated_config(self, client, temporary_dataset, project_id):
         config = ExternalConfig(
             slug="old_table",
             spec=self.spec,
@@ -82,27 +59,27 @@ class TestExternalConfigIntegration:
             ),
         )
 
-        client.client.create_table(f"{self.test_dataset}.old_table_day1")
+        client.client.create_table(f"{temporary_dataset}.old_table_day1")
         client.add_labels_to_table(
             "old_table_day1", {"last_updated": client._current_timestamp_label()},
         )
-        client.client.create_table(f"{self.test_dataset}.old_table_day2")
+        client.client.create_table(f"{temporary_dataset}.old_table_day2")
         client.add_labels_to_table(
             "old_table_day2", {"last_updated": client._current_timestamp_label()},
         )
 
         config_collection = ExternalConfigCollection([config])
-        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+        updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
 
         assert len(updated_configs) == 1
         assert updated_configs[0].slug == config.slug
 
-    def test_updated_config_while_analysis_active(self, client):
-        client.client.create_table(f"{self.test_dataset}.active_table_day0")
+    def test_updated_config_while_analysis_active(self, client, temporary_dataset, project_id):
+        client.client.create_table(f"{temporary_dataset}.active_table_day0")
         client.add_labels_to_table(
             "active_table_day0", {"last_updated": client._current_timestamp_label()},
         )
-        client.client.create_table(f"{self.test_dataset}.active_table_day1")
+        client.client.create_table(f"{temporary_dataset}.active_table_day1")
         client.add_labels_to_table(
             "active_table_day1", {"last_updated": client._current_timestamp_label()},
         )
@@ -113,17 +90,17 @@ class TestExternalConfigIntegration:
             last_modified=pytz.UTC.localize(datetime.datetime.utcnow()),
         )
 
-        client.client.create_table(f"{self.test_dataset}.active_table_day2")
+        client.client.create_table(f"{temporary_dataset}.active_table_day2")
         client.add_labels_to_table(
             "active_table_day2", {"last_updated": client._current_timestamp_label()},
         )
-        client.client.create_table(f"{self.test_dataset}.active_table_weekly")
+        client.client.create_table(f"{temporary_dataset}.active_table_weekly")
         client.add_labels_to_table(
             "active_table_weekly", {"last_updated": client._current_timestamp_label()},
         )
 
         config_collection = ExternalConfigCollection([config])
-        updated_configs = config_collection.updated_configs(self.project_id, self.test_dataset)
+        updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
 
         assert len(updated_configs) == 1
         assert updated_configs[0].slug == config.slug
