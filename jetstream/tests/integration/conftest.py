@@ -24,12 +24,11 @@ def project_id():
 
 
 @pytest.fixture
-def temporary_dataset(request):
+def temporary_dataset(project_id):
     """Fixture for creating a random temporary BigQuery dataset."""
     # generate a random test dataset to avoid conflicts when running tests in parallel
-    test_dataset = "test_" + "".join(random.choice(string.ascii_lowercase) for i in range(12))
+    test_dataset = "test_" + "".join(random.choices(string.ascii_lowercase, k=12))
 
-    project_id = request.getfixturevalue("project_id")
     client = bigquery.Client(project_id)
     client.create_dataset(test_dataset)
 
@@ -40,20 +39,17 @@ def temporary_dataset(request):
 
 
 @pytest.fixture
-def client(request):
+def client(project_id, temporary_dataset):
     """Provide a BigQuery client."""
-    project_id = request.getfixturevalue("project_id")
-    temporary_dataset = request.getfixturevalue("temporary_dataset")
     return BigQueryClient(project_id, temporary_dataset)
 
 
 @pytest.fixture
-def static_dataset(request):
+def static_dataset(project_id):
     """Dataset with static test data."""
     clients_daily_source = TEST_DIR / "data" / "test_clients_daily.ndjson"
     events_source = TEST_DIR / "data" / "test_events.ndjson"
 
-    project_id = request.getfixturevalue("project_id")
     bigquery_client = bigquery.Client(project_id)
     static_dataset = "test_data"
 
