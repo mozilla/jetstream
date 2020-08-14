@@ -41,6 +41,6 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
-        result = stat.transform(test_data, "asdfasdf").data
+        result = stat.transform(test_data, "asdfasdf", "control").data
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
