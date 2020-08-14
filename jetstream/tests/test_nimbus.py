@@ -1,4 +1,3 @@
-from unittest.mock import Mock
 from typing import List
 
 import mozanalysis.metrics
@@ -22,18 +21,14 @@ def fake_probe_lister(monkeypatch):
 class TestFeature:
     def test_feature_event_telemetry(self):
         et = FeatureEventTelemetry(event_category="a", event_method="b")
-        fake_config = Mock()
-        fake_config.reference_branch = None
-        summaries = et.to_summaries("bonus_slug", fake_config)
+        summaries = et.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
             assert isinstance(s.metric, mozanalysis.metrics.Metric)
 
     def test_scalar_event_telemetry(self):
         st = FeatureScalarTelemetry(name="definitely.not.real")
-        fake_config = Mock()
-        fake_config.reference_branch = None
-        summaries = st.to_summaries("bonus_slug", fake_config)
+        summaries = st.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
             assert isinstance(s.metric, mozanalysis.metrics.Metric)

@@ -76,9 +76,9 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experiment)
+            return spec.metrics.definitions[self.name].resolve(spec)
         if hasattr(mozanalysis.metrics.desktop, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
@@ -220,7 +220,7 @@ class MetricDefinition:
     select_expression: Optional[str] = None
     data_source: Optional[DataSourceReference] = None
 
-    def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             search = mozanalysis.metrics.desktop
@@ -253,8 +253,6 @@ class MetricDefinition:
             for pt in params.pop("pre_treatments", []):
                 ref = PreTreatmentReference(pt)
                 pre_treatments.append(ref.resolve(spec))
-
-            params.setdefault("ref_branch_label", experiment.reference_branch)
 
             metrics_with_treatments.append(
                 Summary(
@@ -309,12 +307,12 @@ class MetricsSpec:
             summaries = []
             if period in (AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL):
                 for feature in experiment.features:
-                    summaries.extend(feature.to_summaries(experiment))
+                    summaries.extend(feature.to_summaries())
             summaries.extend(
                 [
                     summary
                     for ref in getattr(self, period.adjective)
-                    for summary in ref.resolve(spec, experiment)
+                    for summary in ref.resolve(spec)
                 ]
             )
 

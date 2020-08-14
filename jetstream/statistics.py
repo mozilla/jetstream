@@ -32,12 +32,12 @@ class Summary:
     statistic: "Statistic"
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
-    def run(self, data: DataFrame) -> "StatisticResultCollection":
+    def run(self, data: DataFrame, reference_branch: Optional[str]) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
-        return self.statistic.apply(data, self.metric.name)
+        return self.statistic.apply(data, self.metric.name, reference_branch)
 
 
 @attr.s(auto_attribs=True)
@@ -99,14 +99,14 @@ class Statistic(ABC):
     of the experiment.
     """
 
-    ref_branch_label: str = "control"
-
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
         return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
 
-    def apply(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+    def apply(
+        self, df: DataFrame, metric: str, reference_branch: Optional[str]
+    ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
         of statistic results.
@@ -116,23 +116,25 @@ class Statistic(ABC):
 
         if metric in df:
             branch_list = df.branch.to_numpy()
-            if self.ref_branch_label not in branch_list:
-                logging.warn(
-                    f"Branch {self.ref_branch_label} not in {branch_list} for {self.name()}."
-                )
+            if reference_branch not in branch_list or reference_branch is None:
+                logging.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
             else:
-                statistic_result_collection.data += self.transform(df, metric).data
+                statistic_result_collection.data += self.transform(
+                    df, metric, reference_branch
+                ).data
 
         return statistic_result_collection
 
     @abstractmethod
-    def transform(self, df: DataFrame, metric: str) -> "StatisticResultCollection":
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> "StatisticResultCollection":
         return NotImplemented
 
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]):
         """Create a class instance with the specified config parameters."""
-        return cls(**config_dict)
+        return cls(**config_dict)  # type: ignore
 
 
 def _extract_ci(
@@ -221,16 +223,17 @@ def flatten_simple_compare_branches_result(
 class BootstrapMean(Statistic):
     num_samples: int = 10000
     confidence_interval: float = 0.95
-    ref_branch_label: str = "control"
 
-    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
         ma_result = mozanalysis.bayesian_stats.bayesian_bootstrap.compare_branches(
             df,
             col_label=metric,
-            ref_branch_label=self.ref_branch_label,
+            ref_branch_label=reference_branch,
             num_samples=self.num_samples,
             individual_summary_quantiles=summary_quantiles,
         )
@@ -239,24 +242,25 @@ class BootstrapMean(Statistic):
             ma_result=ma_result,
             metric_name=metric,
             statistic_name="mean",
-            reference_branch=self.ref_branch_label,
+            reference_branch=reference_branch,
             ci_width=self.confidence_interval,
         )
 
 
 @attr.s(auto_attribs=True)
 class Binomial(Statistic):
-    ref_branch_label: str = "control"
     confidence_interval: float = 0.95
 
-    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
         ma_result = mozanalysis.bayesian_stats.binary.compare_branches(
             df,
             col_label=metric,
-            ref_branch_label=self.ref_branch_label,
+            ref_branch_label=reference_branch,
             individual_summary_quantiles=summary_quantiles,
             comparative_summary_quantiles=summary_quantiles,
         )
@@ -265,14 +269,13 @@ class Binomial(Statistic):
             ma_result=ma_result,
             metric_name=metric,
             statistic_name="binomial",
-            reference_branch=self.ref_branch_label,
+            reference_branch=reference_branch,
             ci_width=self.confidence_interval,
         )
 
 
 @attr.s(auto_attribs=True)
 class Deciles(Statistic):
-    ref_branch_label: str = "control"
     confidence_interval: float = 0.95
     num_samples: int = 10000
 
@@ -286,7 +289,9 @@ class Deciles(Statistic):
         }
         return arr_dict
 
-    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
         critical_point = (1 - self.confidence_interval) / 2
@@ -296,7 +301,7 @@ class Deciles(Statistic):
             df,
             stat_fn=self._decilize,
             col_label=metric,
-            ref_branch_label=self.ref_branch_label,
+            ref_branch_label=reference_branch,
             num_samples=self.num_samples,
             individual_summary_quantiles=summary_quantiles,
             comparative_summary_quantiles=summary_quantiles,
@@ -329,7 +334,7 @@ class Deciles(Statistic):
                         parameter=param,
                         branch=branch,
                         comparison="difference",
-                        comparison_to_branch=self.ref_branch_label,
+                        comparison_to_branch=reference_branch,
                         ci_width=self.confidence_interval,
                         point=decile_result["exp"],
                         lower=lower_abs,
@@ -347,7 +352,7 @@ class Deciles(Statistic):
                         parameter=param,
                         branch=branch,
                         comparison="relative_uplift",
-                        comparison_to_branch=self.ref_branch_label,
+                        comparison_to_branch=reference_branch,
                         ci_width=self.confidence_interval,
                         point=decile_result["exp"],
                         lower=lower_rel,
@@ -359,10 +364,12 @@ class Deciles(Statistic):
 
 
 class Count(Statistic):
-    def apply(self, df: DataFrame, metric: str):
+    def apply(self, df: DataFrame, metric: str, reference_branch: Optional[str]):
         return self.transform(df, metric)
 
-    def transform(self, df: DataFrame, metric: str) -> StatisticResultCollection:
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str = "control"
+    ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
         for branch, n in counts.items():
