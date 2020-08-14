@@ -9,7 +9,6 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -24,9 +23,6 @@ import mozanalysis.metrics.desktop
 import toml
 
 from . import statistics
-
-if TYPE_CHECKING:
-    from .config import ExperimentConfiguration
 
 
 class _ProbeLister:
@@ -65,18 +61,12 @@ class FeatureScalarTelemetry:
     kind: ClassVar[str] = "scalar"
     name: str
 
-    def to_summaries(
-        self, feature_slug: str, experiment: "ExperimentConfiguration"
-    ) -> List[statistics.Summary]:
+    def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         column_names = ProbeLister.columns_for_scalar(self.name)
 
         column_exprs = []
         for column_name in column_names:
             column_exprs.append(f"COALESCE({column_name}, 0)")
-
-        kwargs: Dict[str, Any] = {}
-        if experiment.reference_branch:
-            kwargs["ref_branch_label"] = experiment.reference_branch
 
         ever_used = statistics.Summary(
             Metric(
@@ -84,7 +74,7 @@ class FeatureScalarTelemetry:
                 mozanalysis.metrics.desktop.main,
                 f"SUM({' + '.join(column_exprs)}) > 0",
             ),
-            statistics.Binomial(**kwargs),
+            statistics.Binomial(),
         )
 
         sum_metric = Metric(
@@ -93,8 +83,8 @@ class FeatureScalarTelemetry:
             f"SUM({' + '.join(column_exprs)})",
         )
 
-        used_mean = statistics.Summary(sum_metric, statistics.BootstrapMean(**kwargs))
-        used_deciles = statistics.Summary(sum_metric, statistics.Deciles(**kwargs))
+        used_mean = statistics.Summary(sum_metric, statistics.BootstrapMean())
+        used_deciles = statistics.Summary(sum_metric, statistics.Deciles())
 
         return [ever_used, used_mean, used_deciles]
 
@@ -107,18 +97,12 @@ class FeatureEventTelemetry:
     event_object: Optional[str] = None
     event_value: Optional[str] = None
 
-    def to_summaries(
-        self, feature_slug: str, experiment: "ExperimentConfiguration"
-    ) -> List[statistics.Summary]:
+    def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         clauses = [f"event_category = '{self.event_category}'"]
         for k in ("method", "object", "value"):
             if v := getattr(self, f"event_{k}"):
                 clauses.append(f"event_{k} = '{v}'")
         predicate = " AND ".join(clauses)
-
-        kwargs: Dict[str, Any] = {}
-        if experiment.reference_branch:
-            kwargs["ref_branch_label"] = experiment.reference_branch
 
         ever_used = statistics.Summary(
             Metric(
@@ -126,7 +110,7 @@ class FeatureEventTelemetry:
                 mozanalysis.metrics.desktop.events,
                 f"COALESCE(COUNTIF({predicate}), 0) > 0",
             ),
-            statistics.Binomial(**kwargs),
+            statistics.Binomial(),
         )
 
         sum_metric = Metric(
@@ -135,8 +119,8 @@ class FeatureEventTelemetry:
             f"COALESCE(COUNTIF({predicate}), 0)",
         )
 
-        used_mean = statistics.Summary(sum_metric, statistics.BootstrapMean(**kwargs))
-        used_deciles = statistics.Summary(sum_metric, statistics.Deciles(**kwargs))
+        used_mean = statistics.Summary(sum_metric, statistics.BootstrapMean())
+        used_deciles = statistics.Summary(sum_metric, statistics.Deciles())
 
         return [ever_used, used_mean, used_deciles]
 
@@ -151,10 +135,10 @@ class Feature:
     description: str
     telemetry: List[FeatureTelemetryType]
 
-    def to_summaries(self, experiment: "ExperimentConfiguration") -> List[statistics.Summary]:
+    def to_summaries(self) -> List[statistics.Summary]:
         summaries = []
         for t in self.telemetry:
-            summaries.extend(t.to_summaries(self.slug, experiment))
+            summaries.extend(t.to_summaries(self.slug))
         return summaries
 
     @classmethod

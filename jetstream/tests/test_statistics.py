@@ -9,7 +9,7 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
-        result = stat.transform(test_data, "value")
+        result = stat.transform(test_data, "value", "control")
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -25,7 +25,7 @@ class TestStatistics:
                 "value": [False] * 7 + [True] * 3 + [False] * 5 + [True] * 5,
             }
         )
-        result = stat.transform(test_data, "value")
+        result = stat.transform(test_data, "value", "control")
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]

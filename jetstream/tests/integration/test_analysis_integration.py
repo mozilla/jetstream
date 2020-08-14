@@ -56,11 +56,7 @@ class TestAnalysisIntegration:
             select_expr=agg_sum("active_hours_sum"),
         )
 
-        config.metrics = {
-            AnalysisPeriod.WEEK: [
-                Summary(test_active_hours, BootstrapMean(ref_branch_label="branch1"))
-            ]
-        }
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
 
         analysis = Analysis(project_id, temporary_dataset, config)
 
