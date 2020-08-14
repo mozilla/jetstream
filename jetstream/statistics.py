@@ -365,10 +365,10 @@ class Deciles(Statistic):
 
 class Count(Statistic):
     def apply(self, df: DataFrame, metric: str, reference_branch: Optional[str]):
-        return self.transform(df, metric)
+        return self.transform(df, metric, reference_branch or "control")
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str = "control"
+        self, df: DataFrame, metric: str, reference_branch: str
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()

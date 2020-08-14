@@ -200,11 +200,11 @@ class Analysis:
 
         results = []
 
-        reference_branch = self.config.experiment.experiment_spec.reference_branch
+        reference_branch = self.config.experiment.reference_branch
         for m in self.config.metrics[period]:
             results += m.run(metrics_data, reference_branch).to_dict()["data"]
 
-        results += Count().transform(metrics_data, "*").to_dict()["data"]
+        results += Count().transform(metrics_data, "*", "control").to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
