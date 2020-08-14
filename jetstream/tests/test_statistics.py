@@ -46,7 +46,7 @@ class TestStatistics:
         assert [r.point for r in result if r.branch == "control"] == [10]
 
     def test_binomial_no_reference_branch(self):
-        stat = Binomial(ref_branch_label=None)
+        stat = Binomial()
         test_data = pd.DataFrame(
             {
                 "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
@@ -58,7 +58,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.transform(test_data, "value")
+        result = stat.apply(test_data, "value", None)
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
