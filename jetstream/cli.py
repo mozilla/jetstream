@@ -144,6 +144,11 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
         sys.exit(1)
 
     experiment = experiments.experiments[0]
+
+    if experiment.end_date is None:
+        click.echo(f"End date is missing for experiment {experiment_slug}", err=True)
+        sys.exit(1)
+
     end_date = min(
         experiment.end_date,
         datetime.combine(
