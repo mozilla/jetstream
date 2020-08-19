@@ -19,7 +19,7 @@ from mozanalysis.utils import add_days
 from . import AnalysisPeriod
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
-from jetstream.statistics import Count, StatisticResult
+from jetstream.statistics import Count, StatisticResult, StatisticResultCollection
 
 
 @attr.s(auto_attribs=True)
@@ -208,16 +208,13 @@ class Analysis:
         results += counts
 
         # add count=0 row to statistics table for missing branches
-        missing_branch_counts = [
-            b for b in self.config.experiment.branches if not any(c.branch == b for c in counts)
-        ]
-        for missing_branch in missing_branch_counts:
-            results.append(
+        missing_counts = StatisticResultCollection(
+            [
                 StatisticResult(
                     metric="identity",
                     statistic="count",
                     parameter=None,
-                    branch=missing_branch,
+                    branch=b.slug,
                     comparison=None,
                     comparison_to_branch=None,
                     ci_width=None,
@@ -225,7 +222,12 @@ class Analysis:
                     lower=None,
                     upper=None,
                 )
-            )
+                for b in self.config.experiment.branches
+                if not any(c["branch"] == b.slug for c in counts)
+            ]
+        )
+
+        results += missing_counts.to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
