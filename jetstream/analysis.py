@@ -204,7 +204,28 @@ class Analysis:
         for m in self.config.metrics[period]:
             results += m.run(metrics_data, reference_branch).to_dict()["data"]
 
-        results += Count().transform(metrics_data, "*", "control").to_dict()["data"]
+        counts = Count().transform(metrics_data, "*", "*").to_dict()["data"]
+        results += counts
+
+        # add count=0 row to statistics table for missing branches
+        missing_branch_counts = [
+            b for b in self.config.experiment.branches if not any(c.branch == b for c in counts)
+        ]
+        for missing_branch in missing_branch_counts:
+            results.append(
+                StatisticResult(
+                    metric="identity",
+                    statistic="count",
+                    parameter=None,
+                    branch=missing_branch,
+                    comparison=None,
+                    comparison_to_branch=None,
+                    ci_width=None,
+                    point=0,
+                    lower=None,
+                    upper=None,
+                )
+            )
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
