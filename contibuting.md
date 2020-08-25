@@ -8,6 +8,6 @@ Issues we do not intend to work in the near term are labeled and not added to th
 
 Time-definite milestones are represented as columns on the [Cirrus project board]. Milestones are complete when all cards in the column are complete. Completed issues remain in the milestone column.
 
-A “backlog” column exists for issues that we intend to work in the near term but do not correspond to a time-definite milestone.
+A "backlog" column exists for issues that we intend to work in the near term but do not correspond to a time-definite milestone.
 
 [Cirrus project board]: https://github.com/orgs/mozilla/projects/142
