@@ -223,7 +223,7 @@ class Analysis:
                     upper=None,
                 )
                 for b in self.config.experiment.branches
-                if not any(c["branch"] == b.slug for c in counts)
+                if b.slug not in {c["branch"] for c in counts}
             ]
         )
 
