@@ -458,8 +458,8 @@ six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
     --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \
     # via -r requirements.in, google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, protobuf, python-dateutil
-smart-open==2.1.0 \
-    --hash=sha256:c8792d2e77f33b349fbaa62eb28ddc519e6b7e5d36407e9bdc00bececeaa776d \
+smart-open==2.1.1 \
+    --hash=sha256:51b05acd85ec007e1d4dcdbf2bbf917218a45026f37d559559401114bb5e5840 \
     # via -r requirements.in
 toml==0.10.1 \
     --hash=sha256:926b612be1e5ce0634a2ca03470f95169cf16f939018233a670519cb4ac58b0f \
