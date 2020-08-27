@@ -6,7 +6,7 @@
 #
 appdirs==1.4.4            # via black
 attrs==19.3.0             # via black, cattrs, mozanalysis, mozilla-jetstream, pytest
-black==19.10b0            # via pytest-black
+black==20.8b1            # via pytest-black
 boto3==1.14.21            # via smart-open
 boto==2.49.0              # via smart-open
 botocore==1.17.21         # via boto3, s3transfer
