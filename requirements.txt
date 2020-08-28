@@ -24,9 +24,9 @@ boto==2.49.0 \
     --hash=sha256:147758d41ae7240dc989f0039f27da8ca0d53734be0eb869ef16e3adcfa462e8 \
     --hash=sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a \
     # via -r requirements.in, smart-open
-botocore==1.17.21 \
-    --hash=sha256:9c4694e413c344ca2fb1175f33a97265dbf7f8a5943fbeafde3161d080b72308 \
-    --hash=sha256:fcbcda16c815744482be4206ed098f4d08f2dfddfb1fcfa0f822f4cfd94adb85 \
+botocore==1.17.50 \
+    --hash=sha256:96e2d0fd2893f2899316142df58911ba0f70c65016320f40bf1c366cd5a23090 \
+    --hash=sha256:9bad0c66527099103f52d836f4294b1f87372cff942bb8ff498996253ce8be44 \
     # via -r requirements.in, boto3, s3transfer
 cachetools==4.1.1 \
     --hash=sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98 \

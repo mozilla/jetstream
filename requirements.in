@@ -9,7 +9,7 @@ attrs==19.3.0             # via black, cattrs, mozanalysis, mozilla-jetstream, p
 black==19.10b0            # via pytest-black
 boto3==1.14.21            # via smart-open
 boto==2.49.0              # via smart-open
-botocore==1.17.21         # via boto3, s3transfer
+botocore==1.17.50         # via boto3, s3transfer
 cachetools==4.1.1         # via google-auth
 cattrs==1.0.0             # via mozilla-jetstream
 certifi==2020.6.20        # via requests
