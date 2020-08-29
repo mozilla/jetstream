@@ -184,7 +184,9 @@ class Analysis:
             dry_run_query(sql)
         else:
             self.logger.info(
-                "Executing query for %s (%s)", self.config.experiment.normandy_slug, period.value,
+                "Executing query for %s (%s)",
+                self.config.experiment.normandy_slug,
+                period.value,
             )
             self.bigquery.execute(sql, res_table_name)
             self._publish_view(period)
@@ -339,12 +341,14 @@ class BigQueryClient:
 
         # add a label with the current timestamp to the table
         self.add_labels_to_table(
-            table, {"last_updated": self._current_timestamp_label()},
+            table,
+            {"last_updated": self._current_timestamp_label()},
         )
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
-            self.dataset, default_project=self.project,
+            self.dataset,
+            default_project=self.project,
         )
         kwargs = {}
         if destination_table:
@@ -358,5 +362,6 @@ class BigQueryClient:
         if destination_table:
             # add a label with the current timestamp to the table
             self.add_labels_to_table(
-                destination_table, {"last_updated": self._current_timestamp_label()},
+                destination_table,
+                {"last_updated": self._current_timestamp_label()},
             )

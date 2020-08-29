@@ -80,7 +80,8 @@ class ExperimentV1:
     def from_dict(cls, d) -> "ExperimentV1":
         converter = cattr.Converter()
         converter.register_structure_hook(
-            dt.datetime, lambda num, _: cls._unix_millis_to_datetime(num),
+            dt.datetime,
+            lambda num, _: cls._unix_millis_to_datetime(num),
         )
         return converter.structure(d, cls)
 
@@ -125,7 +126,8 @@ class ExperimentV4:
     def from_dict(cls, d) -> "ExperimentV4":
         converter = cattr.Converter()
         converter.register_structure_hook(
-            dt.datetime, lambda num, _: pytz.utc.localize(dt.datetime.strptime(num, "%Y-%m-%d")),
+            dt.datetime,
+            lambda num, _: pytz.utc.localize(dt.datetime.strptime(num, "%Y-%m-%d")),
         )
         return converter.structure(d, cls)
 
