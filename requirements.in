@@ -54,7 +54,7 @@ pygithub==1.51            # via mozilla-jetstream
 pyjwt==1.7.1              # via pygithub
 pyparsing==2.4.7          # via packaging
 pytest-black==0.3.10      # via mozilla-jetstream
-pytest-cov==2.10.0        # via mozilla-jetstream
+pytest-cov==2.10.1        # via mozilla-jetstream
 pytest-flake8==1.0.6      # via mozilla-jetstream
 pytest==5.4.3             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via botocore, pandas
