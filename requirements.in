@@ -63,7 +63,7 @@ regex==2020.7.14          # via black
 requests==2.24.0          # via google-api-core, mozilla-jetstream, pygithub, smart-open
 rsa==4.6                  # via google-auth
 s3transfer==0.3.3         # via boto3
-scipy==1.5.1              # via mozanalysis
+scipy==1.5.2              # via mozanalysis
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, protobuf, python-dateutil
 smart-open==2.1.0         # via mozilla-jetstream
 toml==0.10.1              # via black, mozilla-jetstream, pytest-black
