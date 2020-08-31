@@ -43,7 +43,7 @@ packaging==20.4           # via pytest
 pandas==1.0.5             # via mozanalysis
 pathspec==0.8.0           # via black
 pluggy==0.13.1            # via pytest
-protobuf==3.12.2          # via google-api-core, google-cloud-bigquery, googleapis-common-protos
+protobuf==3.13.0          # via google-api-core, google-cloud-bigquery, googleapis-common-protos
 py==1.9.0                 # via pytest
 pyarrow==0.17.1           # via mozilla-jetstream
 pyasn1-modules==0.2.8     # via google-auth
