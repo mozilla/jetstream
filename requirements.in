@@ -38,7 +38,7 @@ more-itertools==8.4.0     # via pytest
 mozanalysis==2020.6.2     # via mozilla-jetstream
 mypy-extensions==0.4.3    # via mypy
 mypy==0.782               # via mozilla-jetstream
-numpy==1.19.0             # via mozanalysis, pandas, pyarrow, scipy
+numpy==1.19.1             # via mozanalysis, pandas, pyarrow, scipy
 packaging==20.4           # via pytest
 pandas==1.0.5             # via mozanalysis
 pathspec==0.8.0           # via black
