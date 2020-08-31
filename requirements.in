@@ -65,7 +65,7 @@ rsa==4.6                  # via google-auth
 s3transfer==0.3.3         # via boto3
 scipy==1.5.1              # via mozanalysis
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, protobuf, python-dateutil
-smart-open==2.1.0         # via mozilla-jetstream
+smart-open==2.1.1         # via mozilla-jetstream
 toml==0.10.1              # via black, mozilla-jetstream, pytest-black
 typed-ast==1.4.1          # via black, mypy
 typing-extensions==3.7.4.2  # via mypy
