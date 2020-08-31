@@ -34,7 +34,7 @@ jinja2==2.11.2            # via mozilla-jetstream
 jmespath==0.10.0          # via boto3, botocore
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
-more-itertools==8.4.0     # via pytest
+more-itertools==8.5.0     # via pytest
 mozanalysis==2020.6.2     # via mozilla-jetstream
 mypy-extensions==0.4.3    # via mypy
 mypy==0.782               # via mozilla-jetstream
