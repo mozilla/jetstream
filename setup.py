@@ -44,6 +44,7 @@ setup(
         "pytz",
         "requests",
         "smart_open",
+        "statsmodels",
         "toml",
     ],
     setup_requires=["incremental"],
