@@ -53,7 +53,8 @@ class TestAnalysisIntegration:
         config = AnalysisSpec().resolve(experiment)
 
         test_clients_daily = DataSource(
-            name="clients_daily", from_expr=f"`{project_id}.test_data.clients_daily`",
+            name="clients_daily",
+            from_expr=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(

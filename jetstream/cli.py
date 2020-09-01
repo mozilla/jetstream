@@ -24,7 +24,8 @@ CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 @click.group()
 def cli():
     logging.basicConfig(
-        level=logging.INFO, format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
+        level=logging.INFO,
+        format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
     )
 
 
@@ -237,7 +238,10 @@ def validate_config(ctx, path):
             # dry run experiment analysis with the config file
             # this will make sure config file contents are valid
             ctx.invoke(
-                rerun, experiment_slug=slug, dry_run=True, config_file=file,
+                rerun,
+                experiment_slug=slug,
+                dry_run=True,
+                config_file=file,
             )
 
         click.echo(f"Config file at {file} is valid.", err=False)
