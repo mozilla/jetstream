@@ -177,6 +177,7 @@ class Analysis:
             last_window_limits,
             "normandy",
             self.config.experiment.enrollment_query,
+            self.config.experiment.segments,
         )
 
         if dry_run:
@@ -206,33 +207,50 @@ class Analysis:
         results = []
 
         reference_branch = self.config.experiment.reference_branch
-        for m in self.config.metrics[period]:
-            results += m.run(metrics_data, reference_branch).to_dict()["data"]
+        segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+        for segment in segment_labels:
+            if segment != "all":
+                if segment not in metrics_data.columns:
+                    self.logger.error(
+                        "Segment %s not in metrics table (%s)",
+                        segment,
+                        self.config.experiment.normandy_slug,
+                    )
+                    continue
+                segment_data = metrics_data[metrics_data[segment]]
+            else:
+                segment_data = metrics_data
+            for m in self.config.metrics[period]:
+                stats = m.run(segment_data, reference_branch).set_segment(segment)
+                results += stats.to_dict()["data"]
 
-        counts = Count().transform(metrics_data, "*", "*").to_dict()["data"]
-        results += counts
+            counts = (
+                Count().transform(segment_data, "*", "*").set_segment(segment).to_dict()["data"]
+            )
+            results += counts
 
-        # add count=0 row to statistics table for missing branches
-        missing_counts = StatisticResultCollection(
-            [
-                StatisticResult(
-                    metric="identity",
-                    statistic="count",
-                    parameter=None,
-                    branch=b.slug,
-                    comparison=None,
-                    comparison_to_branch=None,
-                    ci_width=None,
-                    point=0,
-                    lower=None,
-                    upper=None,
-                )
-                for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts}
-            ]
-        )
+            # add count=0 row to statistics table for missing branches
+            missing_counts = StatisticResultCollection(
+                [
+                    StatisticResult(
+                        metric="identity",
+                        statistic="count",
+                        parameter=None,
+                        branch=b.slug,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=0,
+                        lower=None,
+                        upper=None,
+                        segment=segment,
+                    )
+                    for b in self.config.experiment.branches
+                    if b.slug not in {c["branch"] for c in counts}
+                ]
+            )
 
-        results += missing_counts.to_dict()["data"]
+            results += missing_counts.to_dict()["data"]
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
