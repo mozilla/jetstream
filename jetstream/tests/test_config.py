@@ -1,6 +1,7 @@
 import datetime as dt
 from textwrap import dedent
 
+import mozanalysis.segments
 import toml
 import pytest
 import pytz
@@ -40,6 +41,7 @@ class TestAnalysisSpec:
         assert isinstance(spec, config.AnalysisSpec)
         cfg = spec.resolve(experiments[0])
         assert isinstance(cfg, config.AnalysisConfiguration)
+        assert cfg.experiment.segments == []
 
     def test_scalar_metrics_throws_exception(self):
         config_str = dedent(
@@ -415,6 +417,17 @@ class TestExperimentSpec:
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
         configured = spec.resolve(experiments[0])
         assert configured.experiment.reference_branch == "a"
+
+    def test_recognizes_segments(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            segments = ["regular_users_v3"]
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        configured = spec.resolve(experiments[0])
+        assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
 
 
 class TestExperimentConf:
