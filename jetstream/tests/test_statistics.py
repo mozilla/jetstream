@@ -108,3 +108,5 @@ class TestStatistics:
         wine["ash"] = -wine["ash"]
         result = logstat.transform(wine, "ash", "*").data
         assert len(result) > 0
+
+        assert stat.name() == "empirical_cdf"

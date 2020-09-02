@@ -107,7 +107,9 @@ class Statistic(ABC):
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
-        return re.sub(r"(?<!^)(?=[A-Z])", "_", cls.__name__).lower()
+        # https://stackoverflow.com/a/1176023
+        name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", cls.__name__)
+        return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
     def apply(
         self, df: DataFrame, metric: str, reference_branch: Optional[str]
