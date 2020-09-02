@@ -1,3 +1,4 @@
+import datetime
 from google.cloud import bigquery
 from logging.handlers import BufferingHandler
 from typing import Optional
@@ -27,7 +28,9 @@ class BigQueryLogHandler(BufferingHandler):
         """Converts the records in the buffer to JSON."""
         return [
             {
-                "submission_timestamp": record.created,
+                "submission_timestamp": datetime.datetime.fromtimestamp(record.created).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
                 "experiment": None if not hasattr(record, "experiment") else record.experiment,
                 "message": record.msg,
                 "log_level": record.levelname,
