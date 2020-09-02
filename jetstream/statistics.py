@@ -124,7 +124,9 @@ class Statistic(ABC):
         if metric in df:
             branch_list = df.branch.unique()
             if reference_branch and reference_branch not in branch_list:
-                _logger.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
+                _logger.warning(
+                    f"Branch {reference_branch} not in {branch_list} for {self.name()}."
+                )
             else:
                 if reference_branch is None:
                     ref_branch_list = branch_list
@@ -451,7 +453,7 @@ class EmpiricalCDF(Statistic):
             zero = None
             log_space = self.log_space
             if start < 0 and log_space:
-                _logger.warn(
+                _logger.warning(
                     f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
                     f"in branch {branch}, which has negative values"
                 )
