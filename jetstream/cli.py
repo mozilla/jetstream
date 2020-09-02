@@ -14,6 +14,7 @@ from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
+from .logging.bigquery_log_handler import BigQueryLogHandler
 
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
@@ -26,6 +27,11 @@ def cli():
         level=logging.INFO,
         format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
     )
+
+
+# logger = logging.getLogger("test_logger")
+# logger.setLevel(logging.INFO)
+# logger.addHandler(BigQueryLogHandler("jetstream-integration-test", "log", "test"))
 
 
 def inclusive_date_range(start_date, end_date):

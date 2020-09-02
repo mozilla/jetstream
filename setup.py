@@ -26,7 +26,13 @@ setup(
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
     url="https://github.com/mozilla/jetstream",
-    packages=["jetstream", "jetstream.config", "jetstream.tests", "jetstream.tests.integration"],
+    packages=[
+        "jetstream",
+        "jetstream.config",
+        "jetstream.tests",
+        "jetstream.tests.integration",
+        "jetstream.logging",
+    ],
     package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"]},
     install_requires=[
         "attrs",
