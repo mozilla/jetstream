@@ -1,6 +1,16 @@
-import pandas as pd
+from pathlib import Path
 
-from jetstream.statistics import BootstrapMean, Binomial, Count
+import pandas as pd
+import pytest
+
+from jetstream.statistics import BootstrapMean, Binomial, Count, KernelDensityEstimate, EmpiricalCDF
+
+
+@pytest.fixture()
+def wine():
+    return pd.read_csv(Path(__file__).parent / "data/wine.data").rename(
+        columns={"cultivar": "branch"}
+    )
 
 
 class TestStatistics:
@@ -80,3 +90,21 @@ class TestStatistics:
         assert ("treatment", "control", "relative_uplift") in comparison_branches
         assert ("control", "foo", "difference") in comparison_branches
         assert ("control", "foo", "relative_uplift") in comparison_branches
+
+    def test_kde(self, wine):
+        stat = KernelDensityEstimate()
+        result = stat.transform(wine, "ash", "*").data
+        assert len(result) > 0
+
+    def test_ecdf(self, wine):
+        stat = EmpiricalCDF()
+        result = stat.transform(wine, "ash", "*").data
+        assert len(result) > 0
+
+        logstat = EmpiricalCDF(log_space=True)
+        result = logstat.transform(wine, "ash", "*").data
+        assert len(result) > 0
+
+        wine["ash"] = -wine["ash"]
+        result = logstat.transform(wine, "ash", "*").data
+        assert len(result) > 0
