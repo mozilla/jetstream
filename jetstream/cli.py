@@ -30,7 +30,7 @@ CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 @click.option(
     "--log_dataset_id",
     "--log-dataset-id",
-    default="jetstream_logs",
+    default="monitoring",
     help="Dataset to write logs to",
 )
 @click.option("--log_table_id", "--log-table-id", default="logs", help="Table to write logs to")
