@@ -13,7 +13,7 @@ data, we proxy the queries through the dry run service endpoint.
 
 import requests
 import json
-import logging
+from jetstream.logging import logger
 
 # https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments
 DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"
@@ -39,7 +39,7 @@ def dry_run_query(sql: str) -> None:
     response = r.json()
 
     if response["valid"]:
-        logging.info("Dry run OK")
+        logger.info("Dry run OK")
         return
 
     if "errors" in response and len(response["errors"]) == 1:
@@ -56,7 +56,7 @@ def dry_run_query(sql: str) -> None:
         # We want the dryrun service to only have read permissions, so
         # we expect CREATE VIEW and CREATE TABLE to throw specific
         # exceptions.
-        logging.info("Dry run OK")
+        logger.info("Dry run OK")
         return
 
     raise DryRunFailedError((error and error.get("message", None)) or response["errors"])
