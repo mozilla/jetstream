@@ -13,9 +13,14 @@ import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.frequentist_stats.bootstrap
 import numpy as np
 from pandas import DataFrame, Series
+import statsmodels.api as sm
+from statsmodels.distributions.empirical_distribution import ECDF
 
 
 from .pre_treatment import PreTreatment
+
+
+_logger = logging.getLogger(__name__)
 
 
 def _maybe_decimal(value) -> Optional[Decimal]:
@@ -117,7 +122,7 @@ class Statistic(ABC):
         if metric in df:
             branch_list = df.branch.unique()
             if reference_branch and reference_branch not in branch_list:
-                logging.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
+                _logger.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
             else:
                 if reference_branch is None:
                     ref_branch_list = branch_list
@@ -392,4 +397,99 @@ class Count(Statistic):
                     upper=None,
                 )
             )
+        return StatisticResultCollection(results)
+
+
+@attr.s(auto_attribs=True)
+class KernelDensityEstimate(Statistic):
+    bandwidth: str = "normal_reference"
+    adjust: float = 1.0
+    kernel: str = "gau"
+    grid_size: int = 256
+
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> StatisticResultCollection:
+        results = []
+        for branch, group in df.groupby("branch"):
+            kde = sm.nonparametric.KDEUnivariate(group[metric])
+            kde.fit(
+                bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel, gridsize=self.grid_size
+            )
+            for x, y in zip(kde.support, kde.density):
+                results.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="kernel_density_estimate",
+                        parameter=x,
+                        branch=branch,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=y,
+                        lower=None,
+                        upper=None,
+                    )
+                )
+        return StatisticResultCollection(results)
+
+
+@attr.s(auto_attribs=True)
+class EmpiricalCDF(Statistic):
+    log_space: bool = False
+    grid_size: int = 256
+
+    def transform(
+        self, df: DataFrame, metric: str, reference_branch: str
+    ) -> StatisticResultCollection:
+        results = []
+        for branch, group in df.groupby("branch"):
+            f = ECDF(group[metric])
+            start, stop = group[metric].min(), group[metric].max()
+            zero = None
+            log_space = self.log_space
+            if start < 0 and log_space:
+                _logger.warn(
+                    f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
+                    f"in branch {branch}, which has negative values"
+                )
+                log_space = False
+            if log_space:
+                if start == 0:
+                    start = group[metric].nsmallest(2)[1]
+                    zero = f(0)
+                grid = np.geomspace(start, stop, self.grid_size)
+            else:
+                grid = np.linspace(start, stop, self.grid_size)
+            if zero is not None:
+                results.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="empirical_cdf",
+                        parameter=0,
+                        branch=branch,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=zero,
+                        lower=None,
+                        upper=None,
+                    )
+                )
+            cdf = f(grid)
+            for x, y in zip(grid, cdf):
+                results.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="empirical_cdf",
+                        parameter=x,
+                        branch=branch,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=y,
+                        lower=None,
+                        upper=None,
+                    )
+                )
         return StatisticResultCollection(results)
