@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import logging
 
 import click
 import os
@@ -14,24 +13,30 @@ from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
-from .logging.bigquery_log_handler import BigQueryLogHandler
 
+from .logging import setup_logger, logger
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 
 
 @click.group()
-def cli():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
-    )
-
-
-# logger = logging.getLogger("test_logger")
-# logger.setLevel(logging.INFO)
-# logger.addHandler(BigQueryLogHandler("jetstream-integration-test", "log", "test"))
+@click.option(
+    "--log_project_id",
+    "--log-project-id",
+    default="moz-fx-data-experiments",
+    help="GCP project to write logs to",
+)
+@click.option(
+    "--log_dataset_id",
+    "--log-dataset-id",
+    default="jetstream_logs",
+    help="Dataset to write logs to",
+)
+@click.option("--log_table_id", "--log-table-id", default="logs", help="Table to write logs to")
+@click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
+def cli(log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
+    setup_logger(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
 
 
 def inclusive_date_range(start_date, end_date):
@@ -173,7 +178,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     config = spec.resolve(experiment)
 
     for date in inclusive_date_range(experiment.start_date, end_date):
-        logging.info(f"*** {date}")
+        logger.info(f"*** {date}")
         Analysis(project_id, dataset_id, config).run(date)
 
 

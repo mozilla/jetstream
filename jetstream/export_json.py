@@ -1,14 +1,12 @@
 from datetime import datetime
-import logging
 from typing import Dict
 
 from google.cloud import bigquery
 from google.cloud import storage
 import smart_open
 
+from jetstream.logging import logger
 from jetstream import AnalysisPeriod
-
-logging.getLogger(__name__)
 
 
 def _get_statistics_tables_last_modified(
@@ -61,7 +59,7 @@ def _export_table(
     dataset_ref = bigquery.DatasetReference(project_id, job.destination.dataset_id)
     table_ref = dataset_ref.table(job.destination.table_id)
 
-    logging.info(f"Export table {table} to {destination_uri}")
+    logger.info(f"Export table {table} to {destination_uri}")
 
     job_config = bigquery.ExtractJobConfig()
     job_config.destination_format = "NEWLINE_DELIMITED_JSON"
@@ -79,7 +77,7 @@ def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storag
     ndjson_blob_path = f"gs://{bucket_name}/{table}.ndjson"
     json_blob_path = f"gs://{bucket_name}/{table}.json"
 
-    logging.info(f"Convert {ndjson_blob_path} to {json_blob_path}")
+    logger.info(f"Convert {ndjson_blob_path} to {json_blob_path}")
 
     # stream from GCS
     with smart_open.open(ndjson_blob_path) as fin:
@@ -100,7 +98,7 @@ def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storag
             fin.close()
 
     # delete ndjson file from bucket
-    logging.info(f"Remove file {table}.ndjson")
+    logger.info(f"Remove file {table}.ndjson")
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(f"{table}.ndjson")
     blob.delete()

@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import re
-import logging
 from textwrap import dedent
 import time
 from typing import Optional
@@ -20,6 +19,7 @@ from . import AnalysisPeriod
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 from jetstream.statistics import Count, StatisticResult, StatisticResultCollection
+from jetstream.logging import logger
 
 
 @attr.s(auto_attribs=True)
@@ -33,7 +33,7 @@ class Analysis:
     config: AnalysisConfiguration
 
     def __attrs_post_init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
 
     @property
     def bigquery(self):
@@ -103,7 +103,7 @@ class Analysis:
         )
 
         if analysis_length_dates < 0:
-            logging.error(
+            logger.error(
                 "Proposed enrollment longer than analysis dates length:"
                 + f"{self.config.experiment.normandy_slug}"
             )

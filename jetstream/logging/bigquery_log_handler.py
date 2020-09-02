@@ -12,7 +12,7 @@ class BigQueryLogHandler(BufferingHandler):
         dataset_id: str,
         table_id: str,
         client: Optional[bigquery.Client] = None,
-        capacity=1,
+        capacity=50,
     ):
         self.project_id = project_id
         self.dataset_id = dataset_id

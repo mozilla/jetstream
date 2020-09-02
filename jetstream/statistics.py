@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
-import logging
 import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
@@ -17,6 +16,7 @@ import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
 
 
+from jetstream.logging import logger
 from .pre_treatment import PreTreatment
 
 
@@ -132,18 +132,11 @@ class Statistic(ABC):
         if metric in df:
             branch_list = df.branch.unique()
             if reference_branch and reference_branch not in branch_list:
-                _logger.warning(
-                    f"Branch {reference_branch} not in {branch_list} for {self.name()}."
-                )
+                logger.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
             else:
-                if reference_branch is None:
-                    ref_branch_list = branch_list
-                else:
-                    ref_branch_list = [reference_branch]
-
-                for ref_branch in ref_branch_list:
-                    statistic_result_collection.data += self.transform(df, metric, ref_branch).data
-                    df = df[df.branch != ref_branch]
+                statistic_result_collection.data += self.transform(
+                    df, metric, reference_branch
+                ).data
 
         return statistic_result_collection
 
