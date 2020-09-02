@@ -126,6 +126,7 @@ class Statistic(ABC):
 
                 for ref_branch in ref_branch_list:
                     statistic_result_collection.data += self.transform(df, metric, ref_branch).data
+                    df = df[df.branch != ref_branch]
 
         return statistic_result_collection
 
