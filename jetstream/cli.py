@@ -173,7 +173,9 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
         else:
             # get experiment-specific external configs
             external_configs = ExternalConfigCollection.from_github_repo()
-            external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+            external_experiment_config = external_configs.spec_for_experiment(
+                experiment.normandy_slug
+            )
 
             if external_experiment_config:
                 spec.merge(external_experiment_config)
