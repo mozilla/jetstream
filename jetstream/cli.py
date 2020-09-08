@@ -147,43 +147,44 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
-    experiments = collection.with_slug(experiment_slug)
+    try:
+        experiments = collection.with_slug(experiment_slug)
 
-    if experiment_slug is None or len(experiments.experiments) == 0:
-        click.echo(f"No experiment with slug {experiment_slug} found.", err=True)
-        sys.exit(1)
+        if experiment_slug is None or len(experiments.experiments) == 0:
+            raise Exception(f"No experiment with slug {experiment_slug} found.")
 
-    experiment = experiments.experiments[0]
+        experiment = experiments.experiments[0]
 
-    if experiment.end_date is None:
-        click.echo(f"End date is missing for experiment {experiment_slug}", err=True)
-        sys.exit(1)
+        if experiment.end_date is None:
+            raise Exception(f"End date is missing for experiment {experiment_slug}")
 
-    end_date = min(
-        experiment.end_date,
-        datetime.combine(
-            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
-            datetime.min.time(),
-            tzinfo=pytz.utc,
-        ),
-    )
-    spec = default_spec_for_experiment(experiment)
-    if config_file:
-        custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-        spec.merge(custom_spec)
-    else:
-        # get experiment-specific external configs
-        external_configs = ExternalConfigCollection.from_github_repo()
-        external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+        end_date = min(
+            experiment.end_date,
+            datetime.combine(
+                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=pytz.utc,
+            ),
+        )
+        spec = default_spec_for_experiment(experiment)
+        if config_file:
+            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+            spec.merge(custom_spec)
+        else:
+            # get experiment-specific external configs
+            external_configs = ExternalConfigCollection.from_github_repo()
+            external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
 
-        if external_experiment_config:
-            spec.merge(external_experiment_config)
+            if external_experiment_config:
+                spec.merge(external_experiment_config)
 
-    config = spec.resolve(experiment)
+        config = spec.resolve(experiment)
 
-    for date in inclusive_date_range(experiment.start_date, end_date):
-        logger.info(f"*** {date}")
-        Analysis(project_id, dataset_id, config).run(date)
+        for date in inclusive_date_range(experiment.start_date, end_date):
+            logger.info(f"*** {date}")
+            Analysis(project_id, dataset_id, config).run(date)
+    except Exception as e:
+        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
 
 
 @cli.command()

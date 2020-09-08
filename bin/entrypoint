@@ -3,10 +3,13 @@
 set -e
 
 if [ "$1" = "export_statistics_to_json" ]; then
+    # this is triggered by Airflow
     jetstream export-statistics-to-json
 elif [ "$1" = "rerun_config_changed" ]; then
+    # this is triggered by the jetstream-config repo
     jetstream rerun_config_changed
 else
-    jetstream run "$@"
-    jetstream rerun_config_changed
+    # this is triggered by Airflow
+    jetstream --log_to_bigquery run "$@"
+    jetstream --log_to_bigquery rerun_config_changed
 fi
