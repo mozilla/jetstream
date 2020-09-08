@@ -21,7 +21,7 @@ deprecated==1.2.10        # via pygithub
 docutils==0.15.2          # via botocore
 flake8==3.8.3             # via pytest-flake8
 google-api-core[grpc]==1.22.1  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
-google-auth==1.21.0       # via google-api-core, google-cloud-storage
+google-auth==1.21.1       # via google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==1.0.0  # via mozilla-jetstream
 google-cloud-bigquery==1.27.2  # via mozanalysis, mozilla-jetstream
 google-cloud-core==1.4.1  # via google-cloud-bigquery, google-cloud-storage
