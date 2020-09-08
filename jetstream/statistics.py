@@ -20,9 +20,6 @@ from jetstream.logging import logger
 from .pre_treatment import PreTreatment
 
 
-_logger = logging.getLogger(__name__)
-
-
 def _maybe_decimal(value) -> Optional[Decimal]:
     if value is None:
         return None
@@ -134,9 +131,14 @@ class Statistic(ABC):
             if reference_branch and reference_branch not in branch_list:
                 logger.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
             else:
-                statistic_result_collection.data += self.transform(
-                    df, metric, reference_branch
-                ).data
+                if reference_branch is None:
+                    ref_branch_list = branch_list
+                else:
+                    ref_branch_list = [reference_branch]
+
+                for ref_branch in ref_branch_list:
+                    statistic_result_collection.data += self.transform(df, metric, ref_branch).data
+                    df = df[df.branch != ref_branch]
 
         return statistic_result_collection
 
@@ -454,7 +456,7 @@ class EmpiricalCDF(Statistic):
             zero = None
             log_space = self.log_space
             if start < 0 and log_space:
-                _logger.warning(
+                logger.warning(
                     f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
                     f"in branch {branch}, which has negative values"
                 )

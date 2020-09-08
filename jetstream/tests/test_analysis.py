@@ -82,7 +82,7 @@ def test_regression_20200320():
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
     with pytest.raises(AnalysisException):
-      analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
+        analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
 
 
 def test_regression_20200316():
