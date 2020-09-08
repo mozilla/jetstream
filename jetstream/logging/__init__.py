@@ -15,10 +15,11 @@ def setup_logger(
     logger = logging.getLogger(LOGGER)
 
     if log_to_bigquery:
-        logger.setLevel(logging.WARNING)
-        logger.addHandler(
-            BigQueryLogHandler(log_project_id, log_dataset_id, log_table_id, client, capacity)
+        bigquery_handler = BigQueryLogHandler(
+            log_project_id, log_dataset_id, log_table_id, client, capacity
         )
+        bigquery_handler.setLevel(logging.WARNING)
+        logger.addHandler(bigquery_handler)
 
 
 logger = logging.getLogger(LOGGER)

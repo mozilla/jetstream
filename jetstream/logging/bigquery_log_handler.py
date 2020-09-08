@@ -37,6 +37,7 @@ class BigQueryLogHandler(BufferingHandler):
                 "exception": str(record.exc_info),
                 "filename": record.filename,
                 "func_name": record.funcName,
+                "exception_type": None if not record.exc_info else record.exc_info[0].__name__,
             }
             for record in buffer
         ]
