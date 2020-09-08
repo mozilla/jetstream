@@ -116,22 +116,26 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
 
     # calculate metrics for experiments and write to BigQuery
     for experiment in active_experiments.experiments:
-        spec = default_spec_for_experiment(experiment)
+        try:
+            spec = default_spec_for_experiment(experiment)
 
-        if config_file:
-            # secret CLI configs overwrite external configs
-            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-            spec.merge(custom_spec)
-        else:
-            external_experiment_config = external_configs.spec_for_experiment(
-                experiment.normandy_slug
-            )
+            if config_file:
+                # secret CLI configs overwrite external configs
+                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+                spec.merge(custom_spec)
+            else:
+                external_experiment_config = external_configs.spec_for_experiment(
+                    experiment.normandy_slug
+                )
 
-            if external_experiment_config:
-                spec.merge(external_experiment_config)
+                if external_experiment_config:
+                    spec.merge(external_experiment_config)
 
-        config = spec.resolve(experiment)
-        Analysis(project_id, dataset_id, config).run(date)
+            config = spec.resolve(experiment)
+
+            Analysis(project_id, dataset_id, config).run(date)
+        except Exception as e:
+            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
 
 
 @cli.command("rerun")

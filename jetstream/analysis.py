@@ -22,6 +22,12 @@ from jetstream.statistics import Count, StatisticResult, StatisticResultCollecti
 from jetstream.logging import logger
 
 
+class AnalysisException(Exception):
+    """Analysis error."""
+
+    pass
+
+
 @attr.s(auto_attribs=True)
 class Analysis:
     """
@@ -103,11 +109,10 @@ class Analysis:
         )
 
         if analysis_length_dates < 0:
-            logger.error(
+            raise AnalysisException(
                 "Proposed enrollment longer than analysis dates length:"
                 + f"{self.config.experiment.normandy_slug}"
             )
-            return None
 
         return TimeLimits.for_single_analysis_window(
             last_date_full_data=prior_date_str,
@@ -265,18 +270,18 @@ class Analysis:
 
     def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
-            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
-            return False  # some experiments do not have a normandy slug
+            # some experiments do not have a normandy slug
+            raise AnalysisException("Skipping %s; no slug", self.config.experiment.normandy_slug)
 
         if not self.config.experiment.proposed_enrollment:
-            self.logger.info(
+            raise AnalysisException(
                 "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
             )
-            return False
 
         if self.config.experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
-            return False
+            raise AnalysisException(
+                "Skipping %s; no start_date", self.config.experiment.normandy_slug
+            )
 
         if (
             current_date
