@@ -22,8 +22,32 @@ from jetstream.statistics import Count, StatisticResult, StatisticResultCollecti
 from jetstream.logging import logger
 
 
-class AnalysisException(Exception):
-    """Analysis error."""
+class NoSlugException(Exception):
+    """Experiment has no slug."""
+
+    pass
+
+
+class NoEnrollmentPeriodException(Exception):
+    """Experiment has no enrollment period."""
+
+    pass
+
+
+class NoStartDateException(Exception):
+    """Experiment has no start date."""
+
+    pass
+
+
+class EndedException(Exception):
+    """Experiment has already ended."""
+
+    pass
+
+
+class EnrollmentLongerThanAnalysisException(Exception):
+    """Enrollment period is longer than analysis dates"""
 
     pass
 
@@ -109,7 +133,7 @@ class Analysis:
         )
 
         if analysis_length_dates < 0:
-            raise AnalysisException(
+            raise EnrollmentLongerThanAnalysisException(
                 "Proposed enrollment longer than analysis dates length:"
                 + f"{self.config.experiment.normandy_slug}"
             )
@@ -271,16 +295,16 @@ class Analysis:
     def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
-            raise AnalysisException("Skipping %s; no slug", self.config.experiment.normandy_slug)
+            raise NoSlugException("Skipping %s; no slug", self.config.experiment.normandy_slug)
 
         if not self.config.experiment.proposed_enrollment:
-            raise AnalysisException(
-                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
+            raise NoEnrollmentPeriodException(
+                f"Skipping {self.config.experiment.normandy_slug}; no enrollment period"
             )
 
         if self.config.experiment.start_date is None:
-            raise AnalysisException(
-                "Skipping %s; no start_date", self.config.experiment.normandy_slug
+            raise NoStartDateException(
+                f"Skipping {self.config.experiment.normandy_slug}; no start_date"
             )
 
         if (

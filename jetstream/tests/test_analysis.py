@@ -10,7 +10,7 @@ import pytz
 import toml
 
 import jetstream.analysis
-from jetstream.analysis import Analysis, AnalysisPeriod, AnalysisException
+from jetstream.analysis import Analysis, AnalysisPeriod, NoEnrollmentPeriodException
 from jetstream.cli import default_spec_for_experiment
 from jetstream.config import AnalysisSpec
 from jetstream.experimenter import ExperimentV1
@@ -81,7 +81,7 @@ def test_regression_20200320():
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
-    with pytest.raises(AnalysisException):
+    with pytest.raises(NoEnrollmentPeriodException):
         analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
 
 

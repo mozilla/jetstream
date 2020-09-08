@@ -15,6 +15,7 @@ class TestLoggingIntegration:
             bigquery.SchemaField("exception", "STRING"),
             bigquery.SchemaField("filename", "STRING"),
             bigquery.SchemaField("func_name", "STRING"),
+            bigquery.SchemaField("exception_type", "STRING"),
         ]
 
         table = bigquery.Table(f"{project_id}.{temporary_dataset}.logs", schema=schema)
