@@ -93,7 +93,6 @@ class Analysis:
         if (
             self.config.experiment.end_date != current_date
             or self.config.experiment.status != "Complete"
-            or self.config.experiment.active
         ):
             return None
 
