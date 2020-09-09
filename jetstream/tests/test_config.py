@@ -1,7 +1,9 @@
+import datetime as dt
 from textwrap import dedent
 
 import toml
 import pytest
+import pytz
 
 from jetstream import AnalysisPeriod, config
 from jetstream.cli import DEFAULT_METRICS_CONFIG
@@ -413,3 +415,26 @@ class TestExperimentSpec:
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
         configured = spec.resolve(experiments[0])
         assert configured.experiment.reference_branch == "a"
+
+
+class TestExperimentConf:
+    def test_bad_end_date(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            end_date = "Christmas"
+            """
+        )
+        with pytest.raises(ValueError):
+            config.AnalysisSpec.from_dict(toml.loads(conf))
+
+    def test_good_end_date(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            end_date = "2020-12-31"
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[0])
+        assert cfg.experiment.end_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
