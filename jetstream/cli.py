@@ -201,8 +201,7 @@ def rerun_config_changed(ctx, project_id, dataset_id):
 
 @cli.command("validate_config")
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
-@click.pass_context
-def validate_config(ctx, path):
+def validate_config(path):
     """Validate config files."""
     config_files = [p for p in path if os.path.isfile(p)]
 
@@ -211,21 +210,17 @@ def validate_config(ctx, path):
     for file in config_files:
         click.echo(f"Validate {file}", err=False)
 
-        AnalysisSpec.from_dict(toml.load(file))
+        custom_spec = AnalysisSpec.from_dict(toml.load(file))
 
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
-        if collection.with_slug(slug).experiments == []:
+        if (experiments := collection.with_slug(slug).experiments) == []:
             click.echo(f"No experiment with slug {slug} in Experimenter.", err=True)
             sys.exit(1)
-        else:
-            # dry run experiment analysis with the config file
-            # this will make sure config file contents are valid
-            ctx.invoke(
-                rerun,
-                experiment_slug=slug,
-                dry_run=True,
-                config_file=file,
-            )
+
+        spec = default_spec_for_experiment(experiments[0])
+        spec.merge(custom_spec)
+        conf = spec.resolve(experiments[0])
+        Analysis("no project", "no dataset", conf).validate()
 
         click.echo(f"Config file at {file} is valid.", err=False)

@@ -266,6 +266,51 @@ class Analysis:
 
         return True
 
+    def validate(self) -> None:
+        if not self.is_runnable():
+            raise Exception("Cannot validate experiment")
+
+        dates_enrollment = self.config.experiment.proposed_enrollment + 1
+
+        analysis_length_dates = (
+            (self.config.experiment.end_date - self.config.experiment.start_date).days
+            - dates_enrollment
+            + 1
+        )
+
+        if analysis_length_dates < 0:
+            logging.error(
+                "Proposed enrollment longer than analysis dates length:"
+                + f"{self.config.experiment.normandy_slug}"
+            )
+            raise Exception("Cannot validate experiment")
+
+        limits = TimeLimits.for_single_analysis_window(
+            last_date_full_data=self.config.experiment.end_date.strftime("%Y-%m-%d"),
+            analysis_start_days=0,
+            analysis_length_dates=analysis_length_dates,
+            first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            num_dates_enrollment=dates_enrollment,
+        )
+
+        exp = mozanalysis.experiment.Experiment(
+            experiment_slug=self.config.experiment.normandy_slug,
+            start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+        )
+
+        metrics = set()
+        for v in self.config.metrics.values():
+            metrics |= {m.metric for m in v}
+
+        sql = exp.build_query(
+            metrics,
+            limits,
+            "normandy",
+            self.config.experiment.enrollment_query,
+        )
+
+        dry_run_query(sql)
+
     def run(self, current_date: datetime, dry_run: bool) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
