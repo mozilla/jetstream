@@ -186,6 +186,14 @@ class ExperimentConfiguration:
     def end_date(self) -> Optional[dt.datetime]:
         return self.experiment_spec.parse_end_date() or self.experimenter_experiment.end_date
 
+    @property
+    def status(self) -> str:
+        """Assert the experiment is Complete if an end date is provided.
+
+        Functionally, this lets the Overall metrics run on the specified date.
+        """
+        return "Complete" if self.experiment_spec.end_date else self.experimenter_experiment.status
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
