@@ -241,6 +241,31 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
+    def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
+        if self.config.experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
+            return False  # some experiments do not have a normandy slug
+
+        if not self.config.experiment.proposed_enrollment:
+            self.logger.info(
+                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
+            )
+            return False
+
+        if self.config.experiment.start_date is None:
+            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
+            return False
+
+        if (
+            current_date
+            and self.config.experiment.end_date
+            and self.config.experiment.end_date < current_date
+        ):
+            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
+            return False
+
+        return True
+
     def run(self, current_date: datetime, dry_run: bool) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -249,22 +274,7 @@ class Analysis:
             "Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug
         )
 
-        if self.config.experiment.normandy_slug is None:
-            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
-            return  # some experiments do not have a normandy slug
-
-        if not self.config.experiment.proposed_enrollment:
-            self.logger.info(
-                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
-            )
-            return
-
-        if self.config.experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
-            return
-
-        if self.config.experiment.end_date and self.config.experiment.end_date < current_date:
-            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
+        if not self.is_runnable(current_date):
             return
 
         for period in self.config.metrics:
