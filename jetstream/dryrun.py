@@ -13,7 +13,9 @@ data, we proxy the queries through the dry run service endpoint.
 
 import requests
 import json
-from jetstream.logging import logger
+import logging
+
+logger = logging.getLogger()
 
 # https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments
 DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"

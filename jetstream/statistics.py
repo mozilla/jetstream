@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
 import math
+import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -16,8 +17,10 @@ import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
 
 
-from jetstream.logging import logger
 from .pre_treatment import PreTreatment
+import jetstream.config as config
+
+logger = logging.getLogger()
 
 
 def _maybe_decimal(value) -> Optional[Decimal]:
@@ -34,12 +37,17 @@ class Summary:
     statistic: "Statistic"
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
-    def run(self, data: DataFrame, reference_branch: Optional[str]) -> "StatisticResultCollection":
+    def run(
+        self,
+        data: DataFrame,
+        reference_branch: Optional[str],
+        experiment: "config.ExperimentConfiguration",
+    ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
-        return self.statistic.apply(data, self.metric.name, reference_branch)
+        return self.statistic.apply(data, self.metric.name, reference_branch, experiment)
 
 
 @attr.s(auto_attribs=True)
@@ -117,7 +125,11 @@ class Statistic(ABC):
         return re.sub("([a-z0-9])([A-Z])", r"\1_\2", name).lower()
 
     def apply(
-        self, df: DataFrame, metric: str, reference_branch: Optional[str]
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: Optional[str],
+        experiment: "config.ExperimentConfiguration",
     ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
@@ -129,7 +141,10 @@ class Statistic(ABC):
         if metric in df:
             branch_list = df.branch.unique()
             if reference_branch and reference_branch not in branch_list:
-                logger.warn(f"Branch {reference_branch} not in {branch_list} for {self.name()}.")
+                logger.warning(
+                    f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
+                    extra={"experiment": experiment.normandy_slug},
+                )
             else:
                 if reference_branch is None:
                     ref_branch_list = branch_list
@@ -137,14 +152,20 @@ class Statistic(ABC):
                     ref_branch_list = [reference_branch]
 
                 for ref_branch in ref_branch_list:
-                    statistic_result_collection.data += self.transform(df, metric, ref_branch).data
+                    statistic_result_collection.data += self.transform(
+                        df, metric, ref_branch, experiment
+                    ).data
                     df = df[df.branch != ref_branch]
 
         return statistic_result_collection
 
     @abstractmethod
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: "config.ExperimentConfiguration",
     ) -> "StatisticResultCollection":
         return NotImplemented
 
@@ -242,7 +263,11 @@ class BootstrapMean(Statistic):
     confidence_interval: float = 0.95
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        _experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -269,7 +294,11 @@ class Binomial(Statistic):
     confidence_interval: float = 0.95
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        _experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -307,7 +336,11 @@ class Deciles(Statistic):
         return arr_dict
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        _experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -381,11 +414,21 @@ class Deciles(Statistic):
 
 
 class Count(Statistic):
-    def apply(self, df: DataFrame, metric: str, reference_branch: Optional[str]):
-        return self.transform(df, metric, reference_branch or "control")
+    def apply(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: Optional[str],
+        experiment: "config.ExperimentConfiguration",
+    ):
+        return self.transform(df, metric, reference_branch or "control", experiment)
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        _experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -415,7 +458,11 @@ class KernelDensityEstimate(Statistic):
     grid_size: int = 256
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        _experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -447,7 +494,11 @@ class EmpiricalCDF(Statistic):
     grid_size: int = 256
 
     def transform(
-        self, df: DataFrame, metric: str, reference_branch: str
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -458,7 +509,8 @@ class EmpiricalCDF(Statistic):
             if start < 0 and log_space:
                 logger.warning(
                     f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
-                    f"in branch {branch}, which has negative values"
+                    f"in branch {branch}, which has negative values",
+                    extra={"experiment": experiment},
                 )
                 log_space = False
             if log_space:

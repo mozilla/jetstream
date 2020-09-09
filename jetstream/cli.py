@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import click
 import os
+import logging
 from pathlib import Path
 import pytz
 import sys
@@ -14,10 +15,12 @@ from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
 
-from .logging import setup_logger, logger
+from .logging import setup_logger
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
+
+logger = logging.getLogger()
 
 
 @click.group()

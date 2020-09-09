@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import re
+import logging
 from textwrap import dedent
 import time
 from typing import Optional
@@ -19,37 +20,33 @@ from . import AnalysisPeriod
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 from jetstream.statistics import Count, StatisticResult, StatisticResultCollection
-from jetstream.logging import logger
+
+logger = logging.getLogger()
 
 
 class NoSlugException(Exception):
-    """Experiment has no slug."""
-
-    pass
+    def __init__(self, normandy_slug, message="Experiment has no slug"):
+        super().__init__(f"{normandy_slug} -> {message}")
 
 
 class NoEnrollmentPeriodException(Exception):
-    """Experiment has no enrollment period."""
-
-    pass
+    def __init__(self, normandy_slug, message="Experiment has no enrollment period"):
+        super().__init__(f"{normandy_slug} -> {message}")
 
 
 class NoStartDateException(Exception):
-    """Experiment has no start date."""
-
-    pass
+    def __init__(self, normandy_slug, message="Experiment has no start date."):
+        super().__init__(f"{normandy_slug} -> {message}")
 
 
 class EndedException(Exception):
-    """Experiment has already ended."""
-
-    pass
+    def __init__(self, normandy_slug, message="Experiment has already ended."):
+        super().__init__(f"{normandy_slug} -> {message}")
 
 
 class EnrollmentLongerThanAnalysisException(Exception):
-    """Enrollment period is longer than analysis dates"""
-
-    pass
+    def __init__(self, normandy_slug, message="Enrollment period is longer than analysis dates."):
+        super().__init__(f"{normandy_slug} -> {message}")
 
 
 @attr.s(auto_attribs=True)
@@ -133,10 +130,7 @@ class Analysis:
         )
 
         if analysis_length_dates < 0:
-            raise EnrollmentLongerThanAnalysisException(
-                "Proposed enrollment longer than analysis dates length:"
-                + f"{self.config.experiment.normandy_slug}"
-            )
+            raise EnrollmentLongerThanAnalysisException(self.config.experiment.normandy_slug)
 
         return TimeLimits.for_single_analysis_window(
             last_date_full_data=prior_date_str,
@@ -295,17 +289,13 @@ class Analysis:
     def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
-            raise NoSlugException("Skipping %s; no slug", self.config.experiment.normandy_slug)
+            raise NoSlugException(self.config.experiment.normandy_slug)
 
         if not self.config.experiment.proposed_enrollment:
-            raise NoEnrollmentPeriodException(
-                f"Skipping {self.config.experiment.normandy_slug}; no enrollment period"
-            )
+            raise NoEnrollmentPeriodException(self.config.experiment.normandy_slug)
 
         if self.config.experiment.start_date is None:
-            raise NoStartDateException(
-                f"Skipping {self.config.experiment.normandy_slug}; no start_date"
-            )
+            raise NoStartDateException(self.config.experiment.normandy_slug)
 
         if (
             current_date
