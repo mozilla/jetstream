@@ -1,14 +1,15 @@
 from google.cloud import bigquery
 import pytest
+import logging
 
-from jetstream.logging import setup_logger, logger
+from jetstream.logging import setup_logger
 
 
 class TestLoggingIntegration:
     @pytest.fixture(autouse=True)
     def logging_table_setup(self, client, temporary_dataset, project_id):
         schema = [
-            bigquery.SchemaField("submission_timestamp", "TIMESTAMP"),
+            bigquery.SchemaField("timestamp", "TIMESTAMP"),
             bigquery.SchemaField("experiment", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("log_level", "STRING"),
@@ -27,6 +28,7 @@ class TestLoggingIntegration:
         client.client.delete_table(table, not_found_ok=True)
 
     def test_logging_to_bigquery(self, client, temporary_dataset, project_id):
+        logger = logging.getLogger()
         logger.info("Do not write to BigQuery")
         logger.warning("Write warning to Bigquery")
         logger.error("Write error to BigQuery", extra={"experiment": "test_experiment"})

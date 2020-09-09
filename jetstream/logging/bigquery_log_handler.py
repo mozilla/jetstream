@@ -28,11 +28,11 @@ class BigQueryLogHandler(BufferingHandler):
         """Converts the records in the buffer to JSON."""
         return [
             {
-                "submission_timestamp": datetime.datetime.fromtimestamp(record.created).strftime(
+                "timestamp": datetime.datetime.fromtimestamp(record.created).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
                 "experiment": None if not hasattr(record, "experiment") else record.experiment,
-                "message": record.msg,
+                "message": record.getMessage(),
                 "log_level": record.levelname,
                 "exception": str(record.exc_info),
                 "filename": record.filename,

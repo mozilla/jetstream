@@ -1,12 +1,14 @@
 from datetime import datetime
+import logging
 from typing import Dict
 
 from google.cloud import bigquery
 from google.cloud import storage
 import smart_open
 
-from jetstream.logging import logger
 from jetstream import AnalysisPeriod
+
+logger = logging.getLogger()
 
 
 def _get_statistics_tables_last_modified(

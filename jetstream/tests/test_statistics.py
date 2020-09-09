@@ -19,7 +19,7 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
-        result = stat.transform(test_data, "value", "control")
+        result = stat.transform(test_data, "value", "control", None)
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -35,7 +35,7 @@ class TestStatistics:
                 "value": [False] * 7 + [True] * 3 + [False] * 5 + [True] * 5,
             }
         )
-        result = stat.transform(test_data, "value", "control")
+        result = stat.transform(test_data, "value", "control", None)
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
@@ -51,7 +51,7 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
-        result = stat.transform(test_data, "asdfasdf", "control").data
+        result = stat.transform(test_data, "asdfasdf", "control", None).data
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
 
@@ -68,7 +68,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(test_data, "value", None)
+        result = stat.apply(test_data, "value", None, None)
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -93,20 +93,20 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        result = stat.transform(wine, "ash", "*").data
+        result = stat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
 
     def test_ecdf(self, wine):
         stat = EmpiricalCDF()
-        result = stat.transform(wine, "ash", "*").data
+        result = stat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
 
         logstat = EmpiricalCDF(log_space=True)
-        result = logstat.transform(wine, "ash", "*").data
+        result = logstat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
 
         wine["ash"] = -wine["ash"]
-        result = logstat.transform(wine, "ash", "*").data
+        result = logstat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
 
         assert stat.name() == "empirical_cdf"
