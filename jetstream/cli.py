@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import logging
 
 import click
-import datetime as dt
 import os
 from pathlib import Path
 import pytz
@@ -11,7 +10,7 @@ import toml
 
 from . import experimenter
 from .config import AnalysisSpec
-from .experimenter import Experiment, ExperimentCollection
+from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
@@ -209,25 +208,10 @@ def validate_config(ctx, path):
 
     collection = ExperimentCollection.from_experimenter()
 
-    # required to resolve the config
-    dummy_experiment = Experiment(
-        normandy_slug="config_dummy",
-        slug="config_dummy",
-        type="pref",
-        status="Complete",
-        active=True,
-        start_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-        proposed_enrollment=1,
-        features=[],
-        branches=[],
-    )
-
     for file in config_files:
         click.echo(f"Validate {file}", err=False)
 
-        spec = AnalysisSpec.from_dict(toml.load(file))
-        spec.resolve(dummy_experiment)
+        AnalysisSpec.from_dict(toml.load(file))
 
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
