@@ -436,5 +436,7 @@ class TestExperimentConf:
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
-        cfg = spec.resolve(experiments[0])
+        live_experiment = [x for x in experiments if x.status == "Live"][0]
+        cfg = spec.resolve(live_experiment)
         assert cfg.experiment.end_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
+        assert cfg.experiment.status == "Complete"
