@@ -180,7 +180,11 @@ class Analysis:
         )
 
         if dry_run:
-            dry_run_query(sql)
+            self.logger.info(
+                "Dry run; not actually calculating %s metrics for %s",
+                period.value,
+                self.config.experiment.normandy_slug,
+            )
         else:
             self.logger.info(
                 "Executing query for %s (%s)",
