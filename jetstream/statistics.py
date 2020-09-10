@@ -62,6 +62,7 @@ class StatisticResult:
     point: Optional[float] = 0.0
     lower: Optional[float] = 0.0
     upper: Optional[float] = 0.0
+    segment: Optional[str] = None
 
     bq_schema = (
         bigquery.SchemaField("metric", "STRING"),
@@ -74,6 +75,7 @@ class StatisticResult:
         bigquery.SchemaField("point", "FLOAT64"),
         bigquery.SchemaField("lower", "FLOAT64"),
         bigquery.SchemaField("upper", "FLOAT64"),
+        bigquery.SchemaField("segment", "STRING"),
     )
 
 
@@ -89,9 +91,15 @@ class StatisticResultCollection:
     converter.register_unstructure_hook(Decimal, lambda x: str(round(x, 6).normalize()))
     converter.register_unstructure_hook(float, lambda x: x if math.isfinite(x) else None)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Return statistic results as dict."""
         return self.converter.unstructure(self)
+
+    def set_segment(self, segment: str) -> "StatisticResultCollection":
+        """Sets the `segment` field in-place on all children."""
+        for result in self.data:
+            result.segment = segment
+        return self
 
 
 @attr.s(auto_attribs=True)

@@ -1,8 +1,12 @@
 import datetime as dt
 from datetime import timedelta
 import json
-import pytz
 from unittest.mock import Mock
+from textwrap import dedent
+
+import mozanalysis.segments
+import pytz
+import toml
 
 import jetstream.analysis
 from jetstream.analysis import Analysis, AnalysisPeriod
@@ -146,3 +150,18 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     config = default_spec_for_experiment(x).resolve(x)
     Analysis("spam", "eggs", config).validate()
     m.assert_called_once()
+
+
+def test_analysis_doesnt_choke_on_segments(experiments):
+    conf = dedent(
+        """
+        [experiment]
+        segments = ["regular_users_v3"]
+        """
+    )
+    spec = AnalysisSpec.from_dict(toml.loads(conf))
+    configured = spec.resolve(experiments[0])
+    assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
+    Analysis("test", "test", configured).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+    )

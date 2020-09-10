@@ -47,40 +47,25 @@ def client(project_id, temporary_dataset):
 @pytest.fixture
 def static_dataset(project_id):
     """Dataset with static test data."""
-    clients_daily_source = TEST_DIR / "data" / "test_clients_daily.ndjson"
-    events_source = TEST_DIR / "data" / "test_events.ndjson"
-
     bigquery_client = bigquery.Client(project_id)
     static_dataset = "test_data"
 
-    try:
-        bigquery_client.get_table(f"{static_dataset}.clients_daily")
-    except NotFound:
-        table_ref = bigquery_client.create_table(f"{static_dataset}.clients_daily")
-        job_config = bigquery.LoadJobConfig()
-        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-        job_config.autodetect = True
+    for slug in ("clients_daily", "clients_last_seen", "events"):
+        try:
+            bigquery_client.get_table(f"{static_dataset}.{slug}")
+        except NotFound:
+            table_ref = bigquery_client.create_table(f"{static_dataset}.{slug}")
+            job_config = bigquery.LoadJobConfig()
+            job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+            job_config.autodetect = True
 
-        with open(clients_daily_source, "rb") as source_file:
-            job = bigquery_client.load_table_from_file(
-                source_file, table_ref, job_config=job_config
-            )
+            table_source = TEST_DIR / "data" / f"test_{slug}.ndjson"
 
-        job.result()  # Waits for table load to complete.
+            with open(table_source, "rb") as source_file:
+                job = bigquery_client.load_table_from_file(
+                    source_file, table_ref, job_config=job_config
+                )
 
-    try:
-        bigquery_client.get_table(f"{static_dataset}.events")
-    except NotFound:
-        table_ref = bigquery_client.create_table(f"{static_dataset}.events")
-        job_config = bigquery.LoadJobConfig()
-        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-        job_config.autodetect = True
-
-        with open(events_source, "rb") as source_file:
-            job = bigquery_client.load_table_from_file(
-                source_file, table_ref, job_config=job_config
-            )
-
-        job.result()  # Waits for table load to complete.
+            job.result()  # Waits for table load to complete.
 
     return static_dataset

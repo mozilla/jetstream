@@ -1,0 +1,22 @@
+{"submission_date": "2020-04-06","client_id": "aaaa","active_hours_sum": 0.6,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": false}
+{"submission_date": "2020-04-06","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": true}
+{"submission_date": "2020-04-06","client_id": "cccc","active_hours_sum": 0.2,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": false}
+{"submission_date": "2020-04-06","client_id": "dddd","active_hours_sum": 0.2,"is_regular_user_v3": false}
+{"submission_date": "2020-04-06","client_id": "eeee","active_hours_sum": 0.2,"is_regular_user_v3": true}
+{"submission_date": "2020-04-05","client_id": "aaaa","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": false}
+{"submission_date": "2020-04-05","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": true}
+{"submission_date": "2020-04-05","client_id": "cccc","active_hours_sum": 0.9,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": false}
+{"submission_date": "2020-04-05","client_id": "dddd","active_hours_sum": 1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-05","client_id": "eeee","active_hours_sum": 0.2,"is_regular_user_v3": true}
+{"submission_date": "2020-04-04","client_id": "aaaa","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": false}
+{"submission_date": "2020-04-04","client_id": "bbbb","active_hours_sum": 0.1,"experiments": [{"key": "test-experiment","value": "rollout"}],"is_regular_user_v3": true}
+{"submission_date": "2020-04-04","client_id": "dddd","active_hours_sum": 1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-04","client_id": "eeee","active_hours_sum": 0.2,"is_regular_user_v3": true}
+{"submission_date": "2020-04-03","client_id": "aaaa","active_hours_sum": 0.1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-03","client_id": "bbbb","active_hours_sum": 0.1,"is_regular_user_v3": true}
+{"submission_date": "2020-04-03","client_id": "dddd","active_hours_sum": 1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-03","client_id": "eeee","active_hours_sum": 0.2,"is_regular_user_v3": true}
+{"submission_date": "2020-04-02","client_id": "aaaa","active_hours_sum": 0.1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-02","client_id": "bbbb","active_hours_sum": 0.1,"is_regular_user_v3": true}
+{"submission_date": "2020-04-02","client_id": "dddd","active_hours_sum": 1,"is_regular_user_v3": false}
+{"submission_date": "2020-04-02","client_id": "eeee","active_hours_sum": 0.2,"is_regular_user_v3": true}

@@ -28,6 +28,8 @@ import cattr
 import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
+import mozanalysis.segments
+import mozanalysis.segments.desktop
 import pytz
 
 from . import AnalysisPeriod, nimbus
@@ -111,6 +113,24 @@ _converter.register_structure_hook(
 
 
 @attr.s(auto_attribs=True)
+class SegmentReference:
+    name: str
+
+    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.Segment:
+        search = mozanalysis.segments.desktop
+        return _lookup_name(
+            name=self.name,
+            klass=mozanalysis.segments.Segment,
+            spec=spec,
+            module=search,
+            definitions={},
+        )
+
+
+_converter.register_structure_hook(SegmentReference, lambda obj, _type: SegmentReference(name=obj))
+
+
+@attr.s(auto_attribs=True)
 class PreTreatmentReference:
     name: str
 
@@ -136,6 +156,7 @@ class ExperimentConfiguration:
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: "jetstream.experimenter.Experiment"
     feature_resolver: nimbus.ResolvesFeatures
+    segments: List[mozanalysis.segments.Segment]
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -207,6 +228,7 @@ class ExperimentSpec:
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
     end_date: Optional[str] = attr.ib(default=None)  # YYYY-MM-DD
+    segments: List[SegmentReference] = attr.Factory(list)
 
     @end_date.validator
     def _validate_date(self, attribute, value):
@@ -219,10 +241,12 @@ class ExperimentSpec:
 
     def resolve(
         self,
+        spec: "AnalysisSpec",
         experimenter: "jetstream.experimenter.Experiment",
         feature_resolver: nimbus.ResolvesFeatures,
     ) -> ExperimentConfiguration:
-        return ExperimentConfiguration(self, experimenter, feature_resolver)
+        segments = [ref.resolve(spec) for ref in self.segments]
+        return ExperimentConfiguration(self, experimenter, feature_resolver, segments)
 
     def merge(self, other: "ExperimentSpec") -> None:
         for key in attr.fields_dict(type(self)):
@@ -446,7 +470,7 @@ class AnalysisSpec:
         return _converter.structure(d, cls)
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(experimenter, nimbus.FeatureResolver)
+        experiment = self.experiment.resolve(self, experimenter, nimbus.FeatureResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 
