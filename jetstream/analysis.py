@@ -180,7 +180,11 @@ class Analysis:
         )
 
         if dry_run:
-            dry_run_query(sql)
+            self.logger.info(
+                "Dry run; not actually calculating %s metrics for %s",
+                period.value,
+                self.config.experiment.normandy_slug,
+            )
         else:
             self.logger.info(
                 "Executing query for %s (%s)",
@@ -241,6 +245,81 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
+    def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
+        if self.config.experiment.normandy_slug is None:
+            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
+            return False  # some experiments do not have a normandy slug
+
+        if not self.config.experiment.proposed_enrollment:
+            self.logger.info(
+                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
+            )
+            return False
+
+        if self.config.experiment.start_date is None:
+            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
+            return False
+
+        if (
+            current_date
+            and self.config.experiment.end_date
+            and self.config.experiment.end_date < current_date
+        ):
+            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
+            return False
+
+        return True
+
+    def validate(self) -> None:
+        if not self.is_runnable():
+            raise Exception("Cannot validate experiment")
+
+        dates_enrollment = self.config.experiment.proposed_enrollment + 1
+
+        if self.config.experiment.end_date is not None:
+            end_date = self.config.experiment.end_date
+            analysis_length_dates = (
+                (end_date - self.config.experiment.start_date).days - dates_enrollment + 1
+            )
+        else:
+            analysis_length_dates = 21  # arbitrary
+            end_date = self.config.experiment.start_date + timedelta(
+                days=analysis_length_dates + dates_enrollment - 1
+            )
+
+        if analysis_length_dates < 0:
+            logging.error(
+                "Proposed enrollment longer than analysis dates length:"
+                + f"{self.config.experiment.normandy_slug}"
+            )
+            raise Exception("Cannot validate experiment")
+
+        limits = TimeLimits.for_single_analysis_window(
+            last_date_full_data=end_date.strftime("%Y-%m-%d"),
+            analysis_start_days=0,
+            analysis_length_dates=analysis_length_dates,
+            first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            num_dates_enrollment=dates_enrollment,
+        )
+
+        exp = mozanalysis.experiment.Experiment(
+            experiment_slug=self.config.experiment.normandy_slug,
+            start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+        )
+
+        metrics = set()
+        for v in self.config.metrics.values():
+            metrics |= {m.metric for m in v}
+
+        sql = exp.build_query(
+            metrics,
+            limits,
+            "normandy",
+            self.config.experiment.enrollment_query,
+        )
+
+        dry_run_query(sql)
+
     def run(self, current_date: datetime, dry_run: bool) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -249,22 +328,7 @@ class Analysis:
             "Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug
         )
 
-        if self.config.experiment.normandy_slug is None:
-            self.logger.info("Skipping %s; no slug", self.config.experiment.normandy_slug)
-            return  # some experiments do not have a normandy slug
-
-        if not self.config.experiment.proposed_enrollment:
-            self.logger.info(
-                "Skipping %s; no enrollment period", self.config.experiment.normandy_slug
-            )
-            return
-
-        if self.config.experiment.start_date is None:
-            self.logger.info("Skipping %s; no start_date", self.config.experiment.normandy_slug)
-            return
-
-        if self.config.experiment.end_date and self.config.experiment.end_date < current_date:
-            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
+        if not self.is_runnable(current_date):
             return
 
         for period in self.config.metrics:

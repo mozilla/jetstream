@@ -37,13 +37,17 @@ def dry_run_query(sql: str) -> None:
     except Exception as e:
         raise DryRunFailedError(e)
     response = r.json()
+
+    if response["valid"]:
+        logging.info("Dry run OK")
+        return
+
     if "errors" in response and len(response["errors"]) == 1:
         error = response["errors"][0]
     else:
         error = None
-    if response["valid"]:
-        logging.info("Dry run OK")
-    elif (
+
+    if (
         error
         and error.get("code", None) in [400, 403]
         and "does not have bigquery.tables.create permission for dataset"
@@ -53,5 +57,6 @@ def dry_run_query(sql: str) -> None:
         # we expect CREATE VIEW and CREATE TABLE to throw specific
         # exceptions.
         logging.info("Dry run OK")
-    else:
-        raise DryRunFailedError(response["errors"])
+        return
+
+    raise DryRunFailedError((error and error.get("message", None)) or response["errors"])

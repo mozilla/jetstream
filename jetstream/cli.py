@@ -61,9 +61,6 @@ project_id_option = click.option(
 dataset_id_option = click.option(
     "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to"
 )
-dry_run_option = click.option(
-    "--dry_run/--no_dry_run", help="Don't publish any changes to BigQuery"
-)
 
 experiment_slug_option = click.option(
     "--experiment_slug",
@@ -89,9 +86,8 @@ bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket
     required=True,
 )
 @experiment_slug_option
-@dry_run_option
 @secret_config_file_option
-def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
+def run(project_id, dataset_id, date, experiment_slug, config_file):
     """Fetches experiments from Experimenter and runs analysis on active experiments."""
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
@@ -124,16 +120,15 @@ def run(project_id, dataset_id, date, experiment_slug, dry_run, config_file):
                 spec.merge(external_experiment_config)
 
         config = spec.resolve(experiment)
-        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+        Analysis(project_id, dataset_id, config).run(date)
 
 
 @cli.command("rerun")
 @experiment_slug_option
 @project_id_option
 @dataset_id_option
-@dry_run_option
 @secret_config_file_option
-def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
+def rerun(project_id, dataset_id, experiment_slug, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
 
@@ -173,7 +168,7 @@ def rerun(project_id, dataset_id, experiment_slug, dry_run, config_file):
 
     for date in inclusive_date_range(experiment.start_date, end_date):
         logging.info(f"*** {date}")
-        Analysis(project_id, dataset_id, config).run(date, dry_run=dry_run)
+        Analysis(project_id, dataset_id, config).run(date)
 
 
 @cli.command()
@@ -196,13 +191,12 @@ def rerun_config_changed(ctx, project_id, dataset_id):
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        ctx.invoke(rerun, project_id, dataset_id, external_config.normandy_slug, dry_run=False)
+        ctx.invoke(rerun, project_id, dataset_id, external_config.normandy_slug)
 
 
 @cli.command("validate_config")
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
-@click.pass_context
-def validate_config(ctx, path):
+def validate_config(path):
     """Validate config files."""
     config_files = [p for p in path if os.path.isfile(p)]
 
@@ -211,21 +205,17 @@ def validate_config(ctx, path):
     for file in config_files:
         click.echo(f"Validate {file}", err=False)
 
-        AnalysisSpec.from_dict(toml.load(file))
+        custom_spec = AnalysisSpec.from_dict(toml.load(file))
 
         # check if there is an experiment with a matching slug in Experimenter
         slug = os.path.splitext(os.path.basename(file))[0]
-        if collection.with_slug(slug).experiments == []:
+        if (experiments := collection.with_slug(slug).experiments) == []:
             click.echo(f"No experiment with slug {slug} in Experimenter.", err=True)
             sys.exit(1)
-        else:
-            # dry run experiment analysis with the config file
-            # this will make sure config file contents are valid
-            ctx.invoke(
-                rerun,
-                experiment_slug=slug,
-                dry_run=True,
-                config_file=file,
-            )
+
+        spec = default_spec_for_experiment(experiments[0])
+        spec.merge(custom_spec)
+        conf = spec.resolve(experiments[0])
+        Analysis("no project", "no dataset", conf).validate()
 
         click.echo(f"Config file at {file} is valid.", err=False)

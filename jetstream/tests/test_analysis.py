@@ -2,8 +2,11 @@ import datetime as dt
 from datetime import timedelta
 import json
 import pytz
+from unittest.mock import Mock
 
+import jetstream.analysis
 from jetstream.analysis import Analysis, AnalysisPeriod
+from jetstream.cli import default_spec_for_experiment
 from jetstream.config import AnalysisSpec
 from jetstream.experimenter import ExperimentV1
 
@@ -134,3 +137,12 @@ def test_regression_20200316():
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
+
+
+def test_validate_doesnt_explode(experiments, monkeypatch):
+    m = Mock()
+    monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
+    x = experiments[0]
+    config = default_spec_for_experiment(x).resolve(x)
+    Analysis("spam", "eggs", config).validate()
+    m.assert_called_once()
