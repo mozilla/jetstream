@@ -123,7 +123,7 @@ class SegmentReference:
             klass=mozanalysis.segments.Segment,
             spec=spec,
             module=search,
-            definitions={},
+            definitions=spec.segments.definitions,
         )
 
 
@@ -442,6 +442,90 @@ _converter.register_structure_hook(
 
 
 @attr.s(auto_attribs=True)
+class SegmentDataSourceDefinition:
+    name: str
+    from_expression: str
+    window_start: int = 0
+    window_end: int = 0
+    client_id_column: Optional[str] = None
+    submission_date_column: Optional[str] = None
+
+    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.SegmentDataSource:
+        kwargs = {
+            "name": self.name,
+            "from_expr": self.from_expression,
+            "window_start": self.window_start,
+            "window_end": self.window_end,
+        }
+        for k in ("client_id_column", "submission_date_column"):
+            if v := getattr(self, k):
+                kwargs[k] = v
+        return mozanalysis.segments.SegmentDataSource(**kwargs)
+
+
+@attr.s(auto_attribs=True)
+class SegmentDataSourceReference:
+    name: str
+
+    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.SegmentDataSource:
+        return _lookup_name(
+            name=self.name,
+            klass=mozanalysis.segments.SegmentDataSource,
+            spec=spec,
+            module=mozanalysis.segments.desktop,
+            definitions=spec.segments.data_sources,
+        )
+
+
+_converter.register_structure_hook(
+    SegmentDataSourceReference, lambda obj, _type: SegmentDataSourceReference(name=obj)
+)
+
+
+@attr.s(auto_attribs=True)
+class SegmentDefinition:
+    name: str
+    data_source: SegmentDataSourceReference
+    select_expression: str
+
+    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.Segment:
+        data_source = self.data_source.resolve(spec)
+        return mozanalysis.segments.Segment(
+            name=self.name,
+            data_source=data_source,
+            select_expr=_metrics_environment.from_string(self.select_expression).render(),
+        )
+
+
+@attr.s(auto_attribs=True)
+class SegmentsSpec:
+    definitions: Dict[str, SegmentDefinition] = attr.Factory(dict)
+    data_sources: Dict[str, SegmentDataSourceDefinition] = attr.Factory(dict)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SegmentsSpec":
+        data_sources = {
+            k: _converter.structure({"name": k, **v}, SegmentDataSourceDefinition)
+            for k, v in d.pop("data_sources", {}).items()
+        }
+        definitions = {
+            k: _converter.structure({"name": k, **v}, SegmentDefinition) for k, v in d.items()
+        }
+        return cls(definitions, data_sources)
+
+    def merge(self, other: "SegmentsSpec"):
+        """
+        Merge another datasource spec into the current one.
+        The `other` DataSourcesSpec overwrites existing keys.
+        """
+        self.data_sources.update(other.data_sources)
+        self.definitions.update(other.definitions)
+
+
+_converter.register_structure_hook(SegmentsSpec, lambda obj, _type: SegmentsSpec.from_dict(obj))
+
+
+@attr.s(auto_attribs=True)
 class AnalysisConfiguration:
     """A fully concrete representation of the configuration for an experiment.
 
@@ -464,6 +548,7 @@ class AnalysisSpec:
     experiment: ExperimentSpec = attr.Factory(ExperimentSpec)
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
+    segments: SegmentsSpec = attr.Factory(SegmentsSpec)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
@@ -479,3 +564,4 @@ class AnalysisSpec:
         self.experiment.merge(other.experiment)
         self.metrics.merge(other.metrics)
         self.data_sources.merge(other.data_sources)
+        self.segments.merge(other.segments)
