@@ -276,11 +276,16 @@ class Analysis:
 
         dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
-        analysis_length_dates = (
-            (self.config.experiment.end_date - self.config.experiment.start_date).days
-            - dates_enrollment
-            + 1
-        )
+        if self.config.experiment.end_date is not None:
+            end_date = self.config.experiment.end_date
+            analysis_length_dates = (
+                (end_date - self.config.experiment.start_date).days - dates_enrollment + 1
+            )
+        else:
+            analysis_length_dates = 21  # arbitrary
+            end_date = self.config.experiment.start_date + timedelta(
+                days=analysis_length_dates + dates_enrollment - 1
+            )
 
         if analysis_length_dates < 0:
             logging.error(
@@ -290,7 +295,7 @@ class Analysis:
             raise Exception("Cannot validate experiment")
 
         limits = TimeLimits.for_single_analysis_window(
-            last_date_full_data=self.config.experiment.end_date.strftime("%Y-%m-%d"),
+            last_date_full_data=end_date.strftime("%Y-%m-%d"),
             analysis_start_days=0,
             analysis_length_dates=analysis_length_dates,
             first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
