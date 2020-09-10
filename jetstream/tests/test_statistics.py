@@ -55,7 +55,7 @@ class TestStatistics:
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
 
-    def test_binomial_no_reference_branch(self):
+    def test_binomial_no_reference_branch(self, experiments):
         stat = Binomial()
         test_data = pd.DataFrame(
             {
@@ -68,7 +68,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(test_data, "value", None, None)
+        result = stat.apply(test_data, "value", experiments[1])
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -96,17 +96,17 @@ class TestStatistics:
         result = stat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
 
-    def test_ecdf(self, wine):
+    def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
-        result = stat.transform(wine, "ash", "*", None).data
+        result = stat.transform(wine, "ash", "*", experiments[0]).data
         assert len(result) > 0
 
         logstat = EmpiricalCDF(log_space=True)
-        result = logstat.transform(wine, "ash", "*", None).data
+        result = logstat.transform(wine, "ash", "*", experiments[0]).data
         assert len(result) > 0
 
         wine["ash"] = -wine["ash"]
-        result = logstat.transform(wine, "ash", "*", None).data
+        result = logstat.transform(wine, "ash", "*", experiments[0]).data
         assert len(result) > 0
 
         assert stat.name() == "empirical_cdf"

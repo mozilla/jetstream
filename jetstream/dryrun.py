@@ -15,7 +15,7 @@ import requests
 import json
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 # https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments
 DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"

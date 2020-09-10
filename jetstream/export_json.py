@@ -8,7 +8,7 @@ import smart_open
 
 from jetstream import AnalysisPeriod
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def _get_statistics_tables_last_modified(

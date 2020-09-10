@@ -2,7 +2,7 @@ from google.cloud import bigquery
 import pytest
 import logging
 
-from jetstream.logging import setup_logger
+from jetstream.cli import setup_logger
 
 
 class TestLoggingIntegration:
@@ -28,7 +28,7 @@ class TestLoggingIntegration:
         client.client.delete_table(table, not_found_ok=True)
 
     def test_logging_to_bigquery(self, client, temporary_dataset, project_id):
-        logger = logging.getLogger()
+        logger = logging.getLogger(__name__)
         logger.info("Do not write to BigQuery")
         logger.warning("Write warning to Bigquery")
         logger.error("Write error to BigQuery", extra={"experiment": "test_experiment"})

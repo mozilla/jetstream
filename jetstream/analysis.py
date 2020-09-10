@@ -21,12 +21,12 @@ from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 from jetstream.statistics import Count, StatisticResult, StatisticResultCollection
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class NoSlugException(Exception):
-    def __init__(self, normandy_slug, message="Experiment has no slug"):
-        super().__init__(f"{normandy_slug} -> {message}")
+    def __init__(self, message="Experiment has no slug"):
+        super().__init__(message)
 
 
 class NoEnrollmentPeriodException(Exception):
@@ -58,9 +58,6 @@ class Analysis:
     project: str
     dataset: str
     config: AnalysisConfiguration
-
-    def __attrs_post_init__(self):
-        self.logger = logger
 
     @property
     def bigquery(self):
@@ -204,13 +201,13 @@ class Analysis:
         )
 
         if dry_run:
-            self.logger.info(
+            logger.info(
                 "Dry run; not actually calculating %s metrics for %s",
                 period.value,
                 self.config.experiment.normandy_slug,
             )
         else:
-            self.logger.info(
+            logger.info(
                 "Executing query for %s (%s)",
                 self.config.experiment.normandy_slug,
                 period.value,
@@ -286,10 +283,10 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
-    def is_runnable(self, current_date: Optional[datetime] = None) -> bool:
+    def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
-            raise NoSlugException(self.config.experiment.normandy_slug)
+            raise NoSlugException()
 
         if not self.config.experiment.proposed_enrollment:
             raise NoEnrollmentPeriodException(self.config.experiment.normandy_slug)
@@ -302,14 +299,12 @@ class Analysis:
             and self.config.experiment.end_date
             and self.config.experiment.end_date < current_date
         ):
-            self.logger.info("Skipping %s; already ended", self.config.experiment.slug)
-            return False
+            raise EndedException(self.config.experiment.normandy_slug)
 
         return True
 
     def validate(self) -> None:
-        if not self.is_runnable():
-            raise Exception("Cannot validate experiment")
+        self.check_runnable()
 
         dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
@@ -361,18 +356,15 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        self.logger.info(
-            "Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug
-        )
+        logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
-        if not self.is_runnable(current_date):
-            return
+        self.check_runnable(current_date)
 
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
-                self.logger.info(
+                logger.info(
                     "Skipping %s (%s); not ready",
                     self.config.experiment.normandy_slug,
                     period.value,
@@ -387,7 +379,7 @@ class Analysis:
             metrics_table = self._calculate_metrics(exp, time_limits, period, dry_run)
 
             if dry_run:
-                self.logger.info(
+                logger.info(
                     "Not calculating statistics %s (%s); dry run",
                     self.config.experiment.normandy_slug,
                     period.value,
@@ -395,7 +387,7 @@ class Analysis:
                 continue
 
             self._calculate_statistics(metrics_table, period)
-            self.logger.info(
+            logger.info(
                 "Finished running query for %s (%s)",
                 self.config.experiment.normandy_slug,
                 period.value,
