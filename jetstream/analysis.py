@@ -226,26 +226,27 @@ class Analysis:
 
         results = []
 
-        reference_branch = self.config.experiment.reference_branch
         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
         for segment in segment_labels:
             if segment != "all":
                 if segment not in metrics_data.columns:
-                    self.logger.error(
-                        "Segment %s not in metrics table (%s)",
-                        segment,
-                        self.config.experiment.normandy_slug,
+                    logger.error(
+                        f"Segment {segment} not in metrics table",
+                        extra={"experiment": self.config.experiment.normandy_slug},
                     )
                     continue
                 segment_data = metrics_data[metrics_data[segment]]
             else:
                 segment_data = metrics_data
             for m in self.config.metrics[period]:
-                stats = m.run(segment_data, reference_branch).set_segment(segment)
+                stats = m.run(segment_data, self.config.experiment).set_segment(segment)
                 results += stats.to_dict()["data"]
 
             counts = (
-                Count().transform(segment_data, "*", "*").set_segment(segment).to_dict()["data"]
+                Count()
+                .transform(segment_data, "*", "*", self.config.experiment)
+                .set_segment(segment)
+                .to_dict()["data"]
             )
             results += counts
 
