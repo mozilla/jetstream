@@ -48,7 +48,6 @@ class Experiment:
     normandy_slug: Optional[str]
     type: str
     status: Optional[str]
-    active: bool
     features: List[str]
     branches: List[Branch]
     start_date: Optional[dt.datetime]
@@ -99,7 +98,6 @@ class ExperimentV1:
             experimenter_slug=self.slug,
             type=self.type,
             status=self.status,
-            active=self.status == "Live",
             start_date=self.start_date,
             end_date=self.end_date,
             proposed_enrollment=self.proposed_enrollment,
@@ -138,7 +136,6 @@ class ExperimentV4:
             experimenter_slug=None,
             type="v4",
             status="Live" if self.active else "Complete",
-            active=self.active,
             start_date=self.startDate,
             end_date=self.endDate,
             proposed_enrollment=self.proposedEnrollment,

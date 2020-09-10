@@ -343,7 +343,6 @@ def test_convert_experiment_v1_to_experiment():
 
     assert experiment.experimenter_slug == "test-slug"
     assert experiment.normandy_slug == "test_slug"
-    assert experiment.active
     assert experiment.features == []
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
@@ -367,7 +366,6 @@ def test_convert_experiment_v4_to_experiment():
     assert experiment.normandy_slug == "test_slug"
     assert experiment.status == "Live"
     assert experiment.type == "v4"
-    assert experiment.active
     assert len(experiment.features) == 1
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"

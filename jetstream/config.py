@@ -18,6 +18,7 @@ Definition and Reference classes are also direct representations of the configur
 which produce concrete mozanalysis classes when resolved.
 """
 
+import datetime as dt
 from inspect import isabstract
 from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
@@ -27,6 +28,7 @@ import cattr
 import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
+import pytz
 
 from . import AnalysisPeriod, nimbus
 from jetstream.statistics import Summary, Statistic
@@ -180,6 +182,18 @@ class ExperimentConfiguration:
             self.experiment_spec.reference_branch or self.experimenter_experiment.reference_branch
         )
 
+    @property
+    def end_date(self) -> Optional[dt.datetime]:
+        return self.experiment_spec.parse_end_date() or self.experimenter_experiment.end_date
+
+    @property
+    def status(self) -> Optional[str]:
+        """Assert the experiment is Complete if an end date is provided.
+
+        Functionally, this lets the Overall metrics run on the specified date.
+        """
+        return "Complete" if self.experiment_spec.end_date else self.experimenter_experiment.status
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
@@ -192,6 +206,16 @@ class ExperimentSpec:
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
+    end_date: Optional[str] = attr.ib(default=None)  # YYYY-MM-DD
+
+    @end_date.validator
+    def _validate_date(self, attribute, value):
+        self.parse_end_date()
+
+    def parse_end_date(self) -> Optional[dt.datetime]:
+        if not self.end_date:
+            return None
+        return dt.datetime.strptime(self.end_date, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
     def resolve(
         self,
@@ -201,9 +225,8 @@ class ExperimentSpec:
         return ExperimentConfiguration(self, experimenter, feature_resolver)
 
     def merge(self, other: "ExperimentSpec") -> None:
-        self.enrollment_query = other.enrollment_query or self.enrollment_query
-        self.enrollment_period = other.enrollment_period or self.enrollment_period
-        self.reference_branch = other.reference_branch or self.reference_branch
+        for key in attr.fields_dict(type(self)):
+            setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 @attr.s(auto_attribs=True)
