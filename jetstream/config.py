@@ -442,30 +442,6 @@ _converter.register_structure_hook(
 
 
 @attr.s(auto_attribs=True)
-class SegmentDefinition:
-    pass
-
-
-@attr.s(auto_attribs=True)
-class SegmentsSpec:
-    definitions: Dict[str, SegmentDefinition] = attr.Factory(dict)
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "SegmentsSpec":
-        definitions = {
-            k: _converter.structure({"name": k, **v}, SegmentDefinition) for k, v in d.items()
-        }
-        return cls(definitions)
-
-    def merge(self, other: "SegmentsSpec"):
-        """
-        Merge another datasource spec into the current one.
-        The `other` DataSourcesSpec overwrites existing keys.
-        """
-        self.definitions.update(other.definitions)
-
-
-@attr.s(auto_attribs=True)
 class AnalysisConfiguration:
     """A fully concrete representation of the configuration for an experiment.
 
