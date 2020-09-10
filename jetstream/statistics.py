@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from decimal import Decimal
-import math
 import logging
+import math
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -20,7 +20,7 @@ from statsmodels.distributions.empirical_distribution import ECDF
 from .pre_treatment import PreTreatment
 import jetstream.config as config
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def _maybe_decimal(value) -> Optional[Decimal]:
@@ -40,14 +40,13 @@ class Summary:
     def run(
         self,
         data: DataFrame,
-        reference_branch: Optional[str],
         experiment: "config.ExperimentConfiguration",
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
-        return self.statistic.apply(data, self.metric.name, reference_branch, experiment)
+        return self.statistic.apply(data, self.metric.name, experiment)
 
 
 @attr.s(auto_attribs=True)
@@ -128,7 +127,6 @@ class Statistic(ABC):
         self,
         df: DataFrame,
         metric: str,
-        reference_branch: Optional[str],
         experiment: "config.ExperimentConfiguration",
     ) -> "StatisticResultCollection":
         """
@@ -140,6 +138,7 @@ class Statistic(ABC):
 
         if metric in df:
             branch_list = df.branch.unique()
+            reference_branch = experiment.reference_branch
             if reference_branch and reference_branch not in branch_list:
                 logger.warning(
                     f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
@@ -418,10 +417,9 @@ class Count(Statistic):
         self,
         df: DataFrame,
         metric: str,
-        reference_branch: Optional[str],
         experiment: "config.ExperimentConfiguration",
     ):
-        return self.transform(df, metric, reference_branch or "control", experiment)
+        return self.transform(df, metric, experiment.reference_branch or "control", experiment)
 
     def transform(
         self,
@@ -510,7 +508,7 @@ class EmpiricalCDF(Statistic):
                 logger.warning(
                     f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
                     f"in branch {branch}, which has negative values",
-                    extra={"experiment": experiment},
+                    extra={"experiment": experiment.normandy_slug},
                 )
                 log_space = False
             if log_space:

@@ -14,13 +14,30 @@ from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
-
-from .logging import setup_logger
+from .logging.bigquery_log_handler import BigQueryLogHandler
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 
-logger = logging.getLogger()
+
+def setup_logger(
+    log_project_id, log_dataset_id, log_table_id, log_to_bigquery, client=None, capacity=50
+):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
+    )
+    logger = logging.getLogger()
+
+    if log_to_bigquery:
+        bigquery_handler = BigQueryLogHandler(
+            log_project_id, log_dataset_id, log_table_id, client, capacity
+        )
+        bigquery_handler.setLevel(logging.WARNING)
+        logger.addHandler(bigquery_handler)
+
+
+logger = logging.getLogger(__name__)
 
 
 @click.group()
