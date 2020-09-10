@@ -2,10 +2,11 @@ import datetime as dt
 from pathlib import Path
 import datetime
 from unittest import mock
-import mozanalysis
-import pytz
 
+import mozanalysis
+from mozanalysis.segments import Segment, SegmentDataSource
 from mozanalysis.metrics import Metric, DataSource, agg_sum
+import pytz
 
 from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
@@ -164,6 +165,112 @@ class TestAnalysisIntegration:
         assert (
             client.client.get_table(
                 f"{project_id}.{temporary_dataset}.statistics_test_experiment_2_weekly"
+            )
+            is not None
+        )
+
+    def test_with_segments(self, client, project_id, static_dataset, temporary_dataset):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            active=True,
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            features=[],
+            normandy_slug="test-experiment",
+        )
+
+        config = AnalysisSpec().resolve(experiment)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expr=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expr=agg_sum("active_hours_sum"),
+        )
+
+        test_clients_last_seen = SegmentDataSource(
+            "clients_last_seen", f"`{project_id}.test_data.clients_last_seen`"
+        )
+        regular_user_v3 = Segment(
+            "regular_user_v3",
+            test_clients_last_seen,
+            "COALESCE(LOGICAL_OR(is_regular_user_v3), FALSE)",
+        )
+        config.experiment.segments = [regular_user_v3]
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+
+        self.analysis_mock_run(config, static_dataset, temporary_dataset, project_id)
+
+        query_job = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.test_experiment_week_1`
+            ORDER BY enrollment_date DESC
+        """
+        )
+
+        expected_metrics_results = [
+            {
+                "client_id": "bbbb",
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+                "regular_user_v3": True,
+            },
+            {
+                "client_id": "aaaa",
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+                "regular_user_v3": False,
+            },
+        ]
+
+        for i, row in enumerate(query_job.result()):
+            for k, v in expected_metrics_results[i].items():
+                assert row[k] == v
+
+        assert (
+            client.client.get_table(f"{project_id}.{temporary_dataset}.test_experiment_weekly")
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            )
+            is not None
+        )
+
+        stats = client.client.list_rows(
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+        ).to_dataframe()
+
+        count_by_branch = stats.query("segment == 'all' and statistic == 'count'").set_index(
+            "branch"
+        )
+        assert count_by_branch.loc["branch1", "point"] == 1.0
+        assert count_by_branch.loc["branch2", "point"] == 1.0
+
+        assert len(stats.query("segment == 'regular_user_v3'")) > 0
+
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
             )
             is not None
         )
