@@ -266,7 +266,7 @@ class BootstrapMean(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        _experiment: "config.ExperimentConfiguration",
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -297,7 +297,7 @@ class Binomial(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        _experiment: "config.ExperimentConfiguration",
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -339,7 +339,7 @@ class Deciles(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        _experiment: "config.ExperimentConfiguration",
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -426,7 +426,7 @@ class Count(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        _experiment: "config.ExperimentConfiguration",
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -460,7 +460,7 @@ class KernelDensityEstimate(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        _experiment: "config.ExperimentConfiguration",
+        experiment: "config.ExperimentConfiguration",
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
