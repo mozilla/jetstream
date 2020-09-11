@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, Type
 import attr
 import cattr
 import jinja2
+from jinja2 import StrictUndefined
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.segments
@@ -46,7 +47,7 @@ def _populate_environment() -> jinja2.Environment:
     """Create a Jinja2 environment that understands the SQL agg_* helpers in mozanalysis.metrics.
 
     Just a wrapper to avoid leaking temporary variables to the module scope."""
-    env = jinja2.Environment(autoescape=False)
+    env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
     for name in dir(mozanalysis.metrics):
         if not name.startswith("agg_"):
             continue
@@ -187,7 +188,7 @@ class ExperimentConfiguration:
             def __getattr__(proxy, name):
                 return getattr(self, name)
 
-        env = jinja2.Environment(autoescape=False)
+        env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         return env.from_string(self.experiment_spec.enrollment_query).render(
             experiment=ExperimentProxy()
         )
@@ -478,7 +479,7 @@ class SegmentDataSourceDefinition:
     def resolve(
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
     ) -> mozanalysis.segments.SegmentDataSource:
-        env = jinja2.Environment(autoescape=False)
+        env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         from_expr = env.from_string(self.from_expression).render(experiment=experiment)
         kwargs = {
             "name": self.name,
