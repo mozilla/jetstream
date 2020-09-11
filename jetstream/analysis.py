@@ -118,12 +118,12 @@ class Analysis:
 
     def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
         assert self.config.experiment.normandy_slug is not None
-        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.adjective])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
         if table_prefix:
-            normalized_prefix = self._normalize_name(table_prefix)
+            normalized_prefix = bq_normalize_name(table_prefix)
             view_name = "_".join([normalized_prefix, view_name])
             wildcard_expr = "_".join([normalized_prefix, wildcard_expr])
 
