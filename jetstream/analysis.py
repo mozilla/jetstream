@@ -353,7 +353,7 @@ class Analysis:
 
         dry_run_query(sql)
 
-    def run(self, current_date: datetime, dry_run: bool) -> None:
+    def run(self, current_date: datetime, dry_run: bool = False) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
