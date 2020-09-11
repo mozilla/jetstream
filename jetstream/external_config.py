@@ -15,6 +15,7 @@ import pytz
 import toml
 from typing import List, Optional
 
+from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
 
 
@@ -95,7 +96,7 @@ class ExternalConfigCollection:
         for config in self.configs:
             for row in result:
                 if (
-                    row.table_name.startswith(config.slug)
+                    row.table_name.startswith(bq_normalize_name(config.slug))
                     and len(row.last_updated) > 0
                     and pytz.UTC.localize(dt.datetime.fromtimestamp(int(row.last_updated[0])))
                     < config.last_modified
