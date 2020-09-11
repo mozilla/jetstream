@@ -34,6 +34,7 @@ import mozanalysis.segments.desktop
 import pytz
 
 from . import AnalysisPeriod, nimbus
+from jetstream.errors import NoStartDateException
 from jetstream.statistics import Summary, Statistic
 from jetstream.pre_treatment import PreTreatment
 
@@ -229,13 +230,13 @@ class ExperimentConfiguration:
     @property
     def start_date_str(self) -> str:
         if not self.start_date:
-            return "1970-01-01"
+            raise NoStartDateException(self.normandy_slug)
         return self.start_date.strftime("%Y-%m-%d")
 
     @property
     def last_enrollment_date_str(self) -> str:
         if not self.start_date:
-            return "1970-01-01"
+            raise NoStartDateException(self.normandy_slug)
         return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
 
     def __getattr__(self, name: str) -> Any:
