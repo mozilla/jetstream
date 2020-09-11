@@ -515,8 +515,8 @@ class SegmentsSpec:
 
     def merge(self, other: "SegmentsSpec"):
         """
-        Merge another datasource spec into the current one.
-        The `other` DataSourcesSpec overwrites existing keys.
+        Merge another segments spec into the current one.
+        The `other` SegmentsSpec overwrites existing keys.
         """
         self.data_sources.update(other.data_sources)
         self.definitions.update(other.definitions)
