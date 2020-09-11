@@ -429,6 +429,33 @@ class TestExperimentSpec:
         configured = spec.resolve(experiments[0])
         assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
 
+    def test_segment_definitions(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            segments = ["regular_users_v3", "my_cool_segment"]
+
+            [segments.my_cool_segment]
+            data_source = "my_cool_data_source"
+            select_expression = "{{agg_any('1')}}"
+
+            [segments.data_sources.my_cool_data_source]
+            from_expression = "(SELECT 1 WHERE submission_date BETWEEN {{experiment.start_date_str}} AND {{experiment.last_enrollment_date_str}})"
+            """  # noqa
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        configured = spec.resolve(experiments[0])
+        assert len(configured.experiment.segments) == 2
+        for segment in configured.experiment.segments:
+            assert isinstance(segment, mozanalysis.segments.Segment)
+        assert configured.experiment.segments[0].name == "regular_users_v3"
+        assert configured.experiment.segments[1].name == "my_cool_segment"
+        assert "agg_any" not in configured.experiment.segments[1].select_expr
+        assert "1970" not in configured.experiment.segments[1].data_source.from_expr
+        assert "{{" not in configured.experiment.segments[1].data_source.from_expr
+        assert "2019-12-01" in configured.experiment.segments[1].data_source.from_expr
+
 
 class TestExperimentConf:
     def test_bad_end_date(self, experiments):

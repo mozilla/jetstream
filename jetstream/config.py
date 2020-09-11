@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, Type
 import attr
 import cattr
 import jinja2
+from jinja2 import StrictUndefined
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.segments
@@ -33,6 +34,7 @@ import mozanalysis.segments.desktop
 import pytz
 
 from . import AnalysisPeriod, nimbus
+from jetstream.errors import NoStartDateException
 from jetstream.statistics import Summary, Statistic
 from jetstream.pre_treatment import PreTreatment
 
@@ -46,7 +48,7 @@ def _populate_environment() -> jinja2.Environment:
     """Create a Jinja2 environment that understands the SQL agg_* helpers in mozanalysis.metrics.
 
     Just a wrapper to avoid leaking temporary variables to the module scope."""
-    env = jinja2.Environment(autoescape=False)
+    env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
     for name in dir(mozanalysis.metrics):
         if not name.startswith("agg_"):
             continue
@@ -64,13 +66,18 @@ T = TypeVar("T")
 
 
 def _lookup_name(
-    name: str, klass: Type[T], spec: "AnalysisSpec", module: Optional[ModuleType], definitions: dict
+    name: str,
+    klass: Type[T],
+    spec: "AnalysisSpec",
+    module: Optional[ModuleType],
+    definitions: dict,
+    resolve_extras: Optional[Mapping[str, Any]] = None,
 ) -> T:
     needle = None
     if module and hasattr(module, name):
         needle = getattr(module, name)
     if name in definitions:
-        needle = definitions[name].resolve(spec)
+        needle = definitions[name].resolve(spec, **(resolve_extras or {}))
     if isinstance(needle, klass):
         return needle
     raise ValueError(f"Could not locate {klass.__name__} {name}")
@@ -116,14 +123,17 @@ _converter.register_structure_hook(
 class SegmentReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.Segment:
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
+    ) -> mozanalysis.segments.Segment:
         search = mozanalysis.segments.desktop
         return _lookup_name(
             name=self.name,
             klass=mozanalysis.segments.Segment,
             spec=spec,
             module=search,
-            definitions={},
+            definitions=spec.segments.definitions,
+            resolve_extras={"experiment": experiment},
         )
 
 
@@ -179,9 +189,10 @@ class ExperimentConfiguration:
             def __getattr__(proxy, name):
                 return getattr(self, name)
 
-        env = jinja2.Environment(autoescape=False)
-        env.globals["experiment"] = ExperimentProxy()
-        return env.from_string(self.experiment_spec.enrollment_query).render()
+        env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
+        return env.from_string(self.experiment_spec.enrollment_query).render(
+            experiment=ExperimentProxy()
+        )
 
     @property
     def features(self) -> List[nimbus.Feature]:
@@ -215,6 +226,19 @@ class ExperimentConfiguration:
         """
         return "Complete" if self.experiment_spec.end_date else self.experimenter_experiment.status
 
+    # Helpers for configuration templates
+    @property
+    def start_date_str(self) -> str:
+        if not self.start_date:
+            raise NoStartDateException(self.normandy_slug)
+        return self.start_date.strftime("%Y-%m-%d")
+
+    @property
+    def last_enrollment_date_str(self) -> str:
+        if not self.start_date:
+            raise NoStartDateException(self.normandy_slug)
+        return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
@@ -245,8 +269,11 @@ class ExperimentSpec:
         experimenter: "jetstream.experimenter.Experiment",
         feature_resolver: nimbus.ResolvesFeatures,
     ) -> ExperimentConfiguration:
-        segments = [ref.resolve(spec) for ref in self.segments]
-        return ExperimentConfiguration(self, experimenter, feature_resolver, segments)
+        experiment = ExperimentConfiguration(self, experimenter, feature_resolver, [])
+        # Segment data sources may need to know the enrollment dates of the experiment,
+        # so we'll forward the Experiment we know about so far.
+        experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
+        return experiment
 
     def merge(self, other: "ExperimentSpec") -> None:
         for key in attr.fields_dict(type(self)):
@@ -442,6 +469,99 @@ _converter.register_structure_hook(
 
 
 @attr.s(auto_attribs=True)
+class SegmentDataSourceDefinition:
+    name: str
+    from_expression: str
+    window_start: int = 0
+    window_end: int = 0
+    client_id_column: Optional[str] = None
+    submission_date_column: Optional[str] = None
+
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.SegmentDataSource:
+        env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
+        from_expr = env.from_string(self.from_expression).render(experiment=experiment)
+        kwargs = {
+            "name": self.name,
+            "from_expr": from_expr,
+            "window_start": self.window_start,
+            "window_end": self.window_end,
+        }
+        for k in ("client_id_column", "submission_date_column"):
+            if v := getattr(self, k):
+                kwargs[k] = v
+        return mozanalysis.segments.SegmentDataSource(**kwargs)
+
+
+@attr.s(auto_attribs=True)
+class SegmentDataSourceReference:
+    name: str
+
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.SegmentDataSource:
+        return _lookup_name(
+            name=self.name,
+            klass=mozanalysis.segments.SegmentDataSource,
+            spec=spec,
+            module=mozanalysis.segments.desktop,
+            definitions=spec.segments.data_sources,
+            resolve_extras={"experiment": experiment},
+        )
+
+
+_converter.register_structure_hook(
+    SegmentDataSourceReference, lambda obj, _type: SegmentDataSourceReference(name=obj)
+)
+
+
+@attr.s(auto_attribs=True)
+class SegmentDefinition:
+    name: str
+    data_source: SegmentDataSourceReference
+    select_expression: str
+
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.Segment:
+        data_source = self.data_source.resolve(spec, experiment)
+        return mozanalysis.segments.Segment(
+            name=self.name,
+            data_source=data_source,
+            select_expr=_metrics_environment.from_string(self.select_expression).render(),
+        )
+
+
+@attr.s(auto_attribs=True)
+class SegmentsSpec:
+    definitions: Dict[str, SegmentDefinition] = attr.Factory(dict)
+    data_sources: Dict[str, SegmentDataSourceDefinition] = attr.Factory(dict)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SegmentsSpec":
+        data_sources = {
+            k: _converter.structure({"name": k, **v}, SegmentDataSourceDefinition)
+            for k, v in d.pop("data_sources", {}).items()
+        }
+        definitions = {
+            k: _converter.structure({"name": k, **v}, SegmentDefinition) for k, v in d.items()
+        }
+        return cls(definitions, data_sources)
+
+    def merge(self, other: "SegmentsSpec"):
+        """
+        Merge another segments spec into the current one.
+        The `other` SegmentsSpec overwrites existing keys.
+        """
+        self.data_sources.update(other.data_sources)
+        self.definitions.update(other.definitions)
+
+
+_converter.register_structure_hook(SegmentsSpec, lambda obj, _type: SegmentsSpec.from_dict(obj))
+
+
+@attr.s(auto_attribs=True)
 class AnalysisConfiguration:
     """A fully concrete representation of the configuration for an experiment.
 
@@ -464,6 +584,7 @@ class AnalysisSpec:
     experiment: ExperimentSpec = attr.Factory(ExperimentSpec)
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
+    segments: SegmentsSpec = attr.Factory(SegmentsSpec)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
@@ -479,3 +600,4 @@ class AnalysisSpec:
         self.experiment.merge(other.experiment)
         self.metrics.merge(other.metrics)
         self.data_sources.merge(other.data_sources)
+        self.segments.merge(other.segments)

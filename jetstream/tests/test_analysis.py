@@ -10,7 +10,8 @@ import pytz
 import toml
 
 import jetstream.analysis
-from jetstream.analysis import Analysis, AnalysisPeriod, NoEnrollmentPeriodException
+from jetstream.analysis import Analysis, AnalysisPeriod
+from jetstream.errors import NoEnrollmentPeriodException
 from jetstream.cli import default_spec_for_experiment
 from jetstream.config import AnalysisSpec
 from jetstream.experimenter import ExperimentV1
