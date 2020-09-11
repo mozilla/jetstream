@@ -229,7 +229,12 @@ def rerun_config_changed(ctx, project_id, dataset_id):
 
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
     for external_config in updated_external_configs:
-        ctx.invoke(rerun, project_id, dataset_id, external_config.slug)
+        ctx.invoke(
+            rerun,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            experiment_slug=external_config.slug,
+        )
 
 
 @cli.command("validate_config")
