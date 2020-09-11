@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import re
 import logging
 from textwrap import dedent
 import time
@@ -16,7 +15,7 @@ import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 
-from . import AnalysisPeriod
+from . import AnalysisPeriod, bq_normalize_name
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 import jetstream.errors as errors
@@ -112,12 +111,9 @@ class Analysis:
             **time_limits_args,
         )
 
-    def _normalize_name(self, name: str) -> str:
-        return re.sub(r"[^a-zA-Z0-9_]", "_", name)
-
     def _table_name(self, window_period: str, window_index: int) -> str:
         assert self.config.experiment.normandy_slug is not None
-        normalized_slug = self._normalize_name(self.config.experiment.normandy_slug)
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         return "_".join([normalized_slug, window_period, str(window_index)])
 
     def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
