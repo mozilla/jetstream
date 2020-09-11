@@ -224,6 +224,19 @@ class ExperimentConfiguration:
         """
         return "Complete" if self.experiment_spec.end_date else self.experimenter_experiment.status
 
+    # Helpers for configuration templates
+    @property
+    def start_date_str(self) -> str:
+        if not self.start_date:
+            return "1970-01-01"
+        return self.start_date.strftime("%Y-%m-%d")
+
+    @property
+    def last_enrollment_date_str(self) -> str:
+        if not self.start_date:
+            return "1970-01-01"
+        return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
+
     def __getattr__(self, name: str) -> Any:
         return getattr(self.experimenter_experiment, name)
 
