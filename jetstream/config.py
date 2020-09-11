@@ -64,13 +64,18 @@ T = TypeVar("T")
 
 
 def _lookup_name(
-    name: str, klass: Type[T], spec: "AnalysisSpec", module: Optional[ModuleType], definitions: dict
+    name: str,
+    klass: Type[T],
+    spec: "AnalysisSpec",
+    module: Optional[ModuleType],
+    definitions: dict,
+    resolve_extras: Optional[Mapping[str, Any]] = None,
 ) -> T:
     needle = None
     if module and hasattr(module, name):
         needle = getattr(module, name)
     if name in definitions:
-        needle = definitions[name].resolve(spec)
+        needle = definitions[name].resolve(spec, **(resolve_extras or {}))
     if isinstance(needle, klass):
         return needle
     raise ValueError(f"Could not locate {klass.__name__} {name}")
@@ -116,7 +121,9 @@ _converter.register_structure_hook(
 class SegmentReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.Segment:
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
+    ) -> mozanalysis.segments.Segment:
         search = mozanalysis.segments.desktop
         return _lookup_name(
             name=self.name,
@@ -124,6 +131,7 @@ class SegmentReference:
             spec=spec,
             module=search,
             definitions=spec.segments.definitions,
+            resolve_extras={"experiment": experiment},
         )
 
 
@@ -180,8 +188,9 @@ class ExperimentConfiguration:
                 return getattr(self, name)
 
         env = jinja2.Environment(autoescape=False)
-        env.globals["experiment"] = ExperimentProxy()
-        return env.from_string(self.experiment_spec.enrollment_query).render()
+        return env.from_string(self.experiment_spec.enrollment_query).render(
+            experiment=ExperimentProxy()
+        )
 
     @property
     def features(self) -> List[nimbus.Feature]:
@@ -245,8 +254,11 @@ class ExperimentSpec:
         experimenter: "jetstream.experimenter.Experiment",
         feature_resolver: nimbus.ResolvesFeatures,
     ) -> ExperimentConfiguration:
-        segments = [ref.resolve(spec) for ref in self.segments]
-        return ExperimentConfiguration(self, experimenter, feature_resolver, segments)
+        experiment = ExperimentConfiguration(self, experimenter, feature_resolver, [])
+        # Segment data sources may need to know the enrollment dates of the experiment,
+        # so we'll forward the Experiment we know about so far.
+        experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
+        return experiment
 
     def merge(self, other: "ExperimentSpec") -> None:
         for key in attr.fields_dict(type(self)):
@@ -450,10 +462,14 @@ class SegmentDataSourceDefinition:
     client_id_column: Optional[str] = None
     submission_date_column: Optional[str] = None
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.SegmentDataSource:
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.SegmentDataSource:
+        env = jinja2.Environment(autoescape=False)
+        from_expr = env.from_string(self.from_expression).render(experiment=experiment)
         kwargs = {
             "name": self.name,
-            "from_expr": self.from_expression,
+            "from_expr": from_expr,
             "window_start": self.window_start,
             "window_end": self.window_end,
         }
@@ -467,13 +483,16 @@ class SegmentDataSourceDefinition:
 class SegmentDataSourceReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.SegmentDataSource:
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.SegmentDataSource:
         return _lookup_name(
             name=self.name,
             klass=mozanalysis.segments.SegmentDataSource,
             spec=spec,
             module=mozanalysis.segments.desktop,
             definitions=spec.segments.data_sources,
+            resolve_extras={"experiment": experiment},
         )
 
 
@@ -488,8 +507,10 @@ class SegmentDefinition:
     data_source: SegmentDataSourceReference
     select_expression: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.segments.Segment:
-        data_source = self.data_source.resolve(spec)
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.segments.Segment:
+        data_source = self.data_source.resolve(spec, experiment)
         return mozanalysis.segments.Segment(
             name=self.name,
             data_source=data_source,
