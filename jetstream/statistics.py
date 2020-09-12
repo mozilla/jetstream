@@ -511,10 +511,18 @@ class EmpiricalCDF(Statistic):
                     extra={"experiment": experiment.normandy_slug},
                 )
                 log_space = False
-            if log_space:
-                if start == 0:
-                    start = group[metric].nsmallest(2)[1]
+            if log_space and start == 0:
+                try:
+                    start = group[metric].nsmallest(2).iloc[1]
                     zero = f(0)
+                except Exception:
+                    logger.warning(
+                        f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
+                        f"in branch {branch}, which has only zero values",
+                        extra={"experiment": experiment.normandy_slug},
+                    )
+                    log_space = False
+            if log_space:
                 grid = np.geomspace(start, stop, self.grid_size)
             else:
                 grid = np.linspace(start, stop, self.grid_size)
