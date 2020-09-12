@@ -504,16 +504,25 @@ class EmpiricalCDF(Statistic):
             start, stop = group[metric].min(), group[metric].max()
             zero = None
             log_space = self.log_space
-            if start < 0 and log_space:
+            if log_space and start < 0:
                 logger.warning(
                     f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
                     f"in branch {branch}, which has negative values",
                     extra={"experiment": experiment.normandy_slug},
                 )
                 log_space = False
+            if log_space and stop <= 0:
+                logger.warning(
+                    f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
+                    f"in branch {branch}, which has nonpositive highest value",
+                    extra={"experiment": experiment.normandy_slug},
+                )
+                log_space = False
             if log_space and start == 0:
                 try:
-                    start = group[metric].nsmallest(2).iloc[1]
+                    start = group[metric].drop_duplicates().nsmallest(2).iloc[1]
+                    if start == 0:
+                        raise ValueError
                     zero = f(0)
                 except Exception:
                     logger.warning(
