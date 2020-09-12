@@ -520,7 +520,7 @@ class EmpiricalCDF(Statistic):
                 log_space = False
             if log_space and start == 0:
                 try:
-                    start = group[metric].nsmallest(2).iloc[1]
+                    start = group[metric].drop_duplicates().nsmallest(2).iloc[1]
                     if start == 0:
                         raise ValueError
                     zero = f(0)
