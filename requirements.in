@@ -16,7 +16,7 @@ certifi==2020.6.20        # via requests
 cffi==1.14.2              # via google-crc32c
 chardet==3.0.4            # via requests
 click==7.1.2              # via black, mozilla-jetstream
-coverage==5.2.1           # via mozilla-jetstream, pytest-cov
+coverage==5.3           # via mozilla-jetstream, pytest-cov
 deprecated==1.2.10        # via pygithub
 docutils==0.15.2          # via botocore
 flake8==3.8.3             # via pytest-flake8
