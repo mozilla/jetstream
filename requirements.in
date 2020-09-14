@@ -7,20 +7,20 @@
 appdirs==1.4.4            # via black
 attrs==20.2.0             # via cattrs, mozanalysis, mozilla-jetstream, pytest
 black==20.8b1             # via pytest-black
-boto3==1.14.53            # via smart-open
+boto3==1.14.60            # via smart-open
 boto==2.49.0              # via smart-open
-botocore==1.17.57         # via boto3, s3transfer
+botocore==1.17.60         # via boto3, s3transfer
 cachetools==4.1.1         # via google-auth
 cattrs==1.0.0             # via mozilla-jetstream
 certifi==2020.6.20        # via requests
 cffi==1.14.2              # via google-crc32c
 chardet==3.0.4            # via requests
 click==7.1.2              # via black, mozilla-jetstream
-coverage==5.2.1           # via mozilla-jetstream, pytest-cov
+coverage==5.3             # via mozilla-jetstream, pytest-cov
 deprecated==1.2.10        # via pygithub
 docutils==0.15.2          # via botocore
 flake8==3.8.3             # via pytest-flake8
-google-api-core[grpc]==1.22.1  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
+google-api-core[grpc]==1.22.2  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
 google-auth==1.21.1       # via google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==1.0.0  # via mozilla-jetstream
 google-cloud-bigquery==1.27.2  # via mozanalysis, mozilla-jetstream
@@ -29,7 +29,7 @@ google-cloud-storage==1.31.0  # via mozilla-jetstream
 google-crc32c==1.0.0      # via google-resumable-media
 google-resumable-media==1.0.0  # via google-cloud-bigquery, google-cloud-storage
 googleapis-common-protos==1.52.0  # via google-api-core
-grpcio==1.31.0            # via google-api-core, mozilla-jetstream
+grpcio==1.32.0            # via google-api-core, mozilla-jetstream
 idna==2.10                # via requests
 incremental==17.5.0       # via mozilla-jetstream
 iniconfig==1.0.1          # via pytest
@@ -41,9 +41,9 @@ more-itertools==8.5.0     # via pytest
 mozanalysis==2020.6.2     # via mozilla-jetstream
 mypy-extensions==0.4.3    # via black, mypy
 mypy==0.782               # via mozilla-jetstream
-numpy==1.19.1             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
+numpy==1.19.2             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
 packaging==20.4           # via pytest
-pandas==1.1.1             # via mozanalysis, statsmodels
+pandas==1.1.2             # via mozanalysis, statsmodels
 pathspec==0.8.0           # via black
 patsy==0.5.1              # via statsmodels
 pluggy==0.13.1            # via pytest
@@ -61,7 +61,7 @@ pyparsing==2.4.7          # via packaging
 pytest-black==0.3.11      # via mozilla-jetstream
 pytest-cov==2.10.1        # via mozilla-jetstream
 pytest-flake8==1.0.6      # via mozilla-jetstream
-pytest==6.0.1             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
+pytest==6.0.2             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via botocore, pandas
 pytz==2020.1              # via google-api-core, mozilla-jetstream, pandas
 regex==2020.7.14          # via black
