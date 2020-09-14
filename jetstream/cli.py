@@ -168,6 +168,7 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
 def rerun(project_id, dataset_id, experiment_slug, config_file):
     """Rerun all available analyses for a specific experiment."""
     collection = ExperimentCollection.from_experimenter()
+    exceptions = []
 
     try:
         experiments = collection.with_slug(experiment_slug)
@@ -216,6 +217,11 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
             Analysis(project_id, dataset_id, config).run(date)
     except Exception as e:
         logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
+        exceptions.append(e)
+
+    if len(exceptions) > 0:
+        # return error status code for instances triggered via jetstream-config
+        sys.exit(1)
 
 
 @cli.command()
