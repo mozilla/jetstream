@@ -29,7 +29,7 @@ google-cloud-storage==1.31.0  # via mozilla-jetstream
 google-crc32c==1.0.0      # via google-resumable-media
 google-resumable-media==1.0.0  # via google-cloud-bigquery, google-cloud-storage
 googleapis-common-protos==1.52.0  # via google-api-core
-grpcio==1.31.0            # via google-api-core, mozilla-jetstream
+grpcio==1.32.0            # via google-api-core, mozilla-jetstream
 idna==2.10                # via requests
 incremental==17.5.0       # via mozilla-jetstream
 iniconfig==1.0.1          # via pytest
