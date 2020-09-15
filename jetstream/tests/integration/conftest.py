@@ -5,7 +5,7 @@ import pytest
 import random
 import string
 
-from jetstream.analysis import BigQueryClient
+from jetstream.bigquery_client import BigQueryClient
 
 TEST_DIR = Path(__file__).parent.parent
 
