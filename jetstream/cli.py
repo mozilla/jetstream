@@ -15,6 +15,8 @@ from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
+from .bigquery_client import BigQueryClient
+from . import bq_normalize_name
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
@@ -201,6 +203,12 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
                 spec.merge(external_experiment_config)
 
         config = spec.resolve(experiment)
+
+        # delete all tables previously created when this experiment was analysed
+        client = BigQueryClient(project_id, dataset_id)
+        normalized_slug = bq_normalize_name(experiment.normandy_slug)
+        table_name_re = f"(statistics_)?{normalized_slug}.*"
+        client.delete_tables_matching_regex(table_name_re)
 
         for date in inclusive_date_range(experiment.start_date, end_date):
             logger.info(f"*** {date}")
