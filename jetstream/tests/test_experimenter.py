@@ -346,6 +346,7 @@ def test_convert_experiment_v1_to_experiment():
     assert experiment.features == []
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
+    assert experiment.is_high_population is False
 
 
 def test_convert_experiment_v4_to_experiment():
@@ -369,3 +370,4 @@ def test_convert_experiment_v4_to_experiment():
     assert len(experiment.features) == 1
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
+    assert experiment.is_high_population is False
