@@ -121,7 +121,14 @@ bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket
 @experiment_slug_option
 @secret_config_file_option
 def run(project_id, dataset_id, date, experiment_slug, config_file):
-    """Fetches experiments from Experimenter and runs analysis on active experiments."""
+    """
+    Runs analysis on active experiments for the provided date.
+
+    This command is invoked by Airflow. All errors are written to the console and
+    BigQuery. Runs will always return a success code, even if exceptions were
+    thrown during some experiment analyses. This ensures that the Airflow task will
+    not retry the task and run all of the analyses again.
+    """
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
@@ -166,7 +173,14 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
 @dataset_id_option
 @secret_config_file_option
 def rerun(project_id, dataset_id, experiment_slug, config_file):
-    """Rerun all available analyses for a specific experiment."""
+    """
+    Rerun all available analyses for a specific experiment.
+
+    This command is invoked after adding new custom configs via jetstream-config.
+    If exceptions are thrown during a re-run, Jetstream will return with an error code.
+    jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
+    report back to CircleCI whether or not the run was successful.
+    """
     collection = ExperimentCollection.from_experimenter()
     exceptions = []
 
