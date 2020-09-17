@@ -54,6 +54,7 @@ class Experiment:
     end_date: Optional[dt.datetime]
     proposed_enrollment: Optional[int]
     reference_branch: Optional[str]
+    is_high_population: bool
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -68,6 +69,7 @@ class ExperimentV1:
     proposed_enrollment: Optional[int] = attr.ib(converter=_coerce_none_to_zero)
     variants: List[Variant]
     normandy_slug: Optional[str] = None
+    is_high_population: Optional[bool] = None
 
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
@@ -104,6 +106,7 @@ class ExperimentV1:
             features=[],
             branches=branches,
             reference_branch=control_slug,
+            is_high_population=self.is_high_population or False,
         )
 
 
@@ -142,6 +145,7 @@ class ExperimentV4:
             features=self.features,
             branches=self.branches,
             reference_branch=self.referenceBranch,
+            is_high_population=False,
         )
 
 

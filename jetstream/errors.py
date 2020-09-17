@@ -21,3 +21,8 @@ class EndedException(Exception):
 class EnrollmentLongerThanAnalysisException(Exception):
     def __init__(self, normandy_slug, message="Enrollment period is longer than analysis dates."):
         super().__init__(f"{normandy_slug} -> {message}")
+
+
+class HighPopulationException(Exception):
+    def __init__(self, normandy_slug, message="Experiment has high population."):
+        super().__init__(f"{normandy_slug} -> {message}")

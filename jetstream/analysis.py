@@ -256,6 +256,9 @@ class Analysis:
             # some experiments do not have a normandy slug
             raise errors.NoSlugException()
 
+        if self.config.experiment.is_high_population:
+            raise errors.HighPopulationException(self.config.experiment.normandy_slug)
+
         if not self.config.experiment.proposed_enrollment:
             raise errors.NoEnrollmentPeriodException(self.config.experiment.normandy_slug)
 
