@@ -48,6 +48,7 @@ class TestAnalysisIntegration:
             reference_branch="branch2",
             features=[],
             normandy_slug="test-experiment",
+            is_high_population=False,
         )
 
         config = AnalysisSpec().resolve(experiment)
@@ -137,6 +138,7 @@ class TestAnalysisIntegration:
             reference_branch="a",
             features=[],
             normandy_slug="test-experiment-2",
+            is_high_population=False,
         )
 
         config = AnalysisSpec().resolve(experiment)
@@ -181,6 +183,7 @@ class TestAnalysisIntegration:
             reference_branch="branch2",
             features=[],
             normandy_slug="test-experiment",
+            is_high_population=False,
         )
 
         config = AnalysisSpec().resolve(experiment)

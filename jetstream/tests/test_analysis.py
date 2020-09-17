@@ -15,6 +15,7 @@ from jetstream.errors import NoEnrollmentPeriodException
 from jetstream.cli import default_spec_for_experiment
 from jetstream.config import AnalysisSpec
 from jetstream.experimenter import ExperimentV1
+from jetstream.errors import HighPopulationException
 
 
 def test_get_timelimits_if_ready(experiments):
@@ -168,3 +169,11 @@ def test_analysis_doesnt_choke_on_segments(experiments):
     Analysis("test", "test", configured).run(
         current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
     )
+
+
+def test_is_high_population_check(experiments):
+    x = experiments[3]
+    config = default_spec_for_experiment(x).resolve(x)
+
+    with pytest.raises(HighPopulationException):
+        Analysis("spam", "eggs", config).check_runnable()
