@@ -13,7 +13,7 @@ botocore==1.17.60         # via boto3, s3transfer
 cachetools==4.1.1         # via google-auth
 cattrs==1.0.0             # via mozilla-jetstream
 certifi==2020.6.20        # via requests
-cffi==1.14.2              # via google-crc32c
+cffi==1.14.3              # via google-crc32c
 chardet==3.0.4            # via requests
 click==7.1.2              # via black, mozilla-jetstream
 coverage==5.3             # via mozilla-jetstream, pytest-cov
