@@ -131,9 +131,9 @@ google-api-core[grpc]==1.22.2 \
     --hash=sha256:67e33a852dcca7cb7eff49abc35c8cc2c0bb8ab11397dc8306d911505cae2990 \
     --hash=sha256:779107f17e0fef8169c5239d56a8fbff03f9f72a3893c0c9e5842ec29dfedd54 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
-google-auth==1.21.1 \
-    --hash=sha256:bcbd9f970e7144fe933908aa286d7a12c44b7deb6d78a76871f0377a29d09789 \
-    --hash=sha256:f4d5093f13b1b1c0a434ab1dc851cd26a983f86a4d75c95239974e33ed406a87 \
+google-auth==1.21.2 \
+    --hash=sha256:7084c50c03f7a8a5696ef4500e65df0c525a0f6909f3c70b9ee65900a230c755 \
+    --hash=sha256:dcf86c5adc3a8a7659be190b12bb8912ae019cfd9ee2a571ea881e289fafbe39 \
     # via -r requirements.in, google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==1.0.0 \
     --hash=sha256:3d976b71cd66f97b6b1c29dd20c934e71b8de5979de5b097b4d805112580c8e3 \
