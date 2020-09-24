@@ -16,17 +16,17 @@ black==20.8b1 \
     --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea \
     --hash=sha256:70b62ef1527c950db59062cda342ea224d772abdf6adc58b86a45421bab20a6b \
     # via -r requirements.in, pytest-black
-boto3==1.15.1 \
-    --hash=sha256:44073b1b1823ffc9edcf9027afbca908dad6bd5000f512ca73f929f6a604ae24 \
-    --hash=sha256:888be45e289ba56c4e47cfae5d6b08f097bc981d077fbe6521a6d3dc7a4d757e \
+boto3==1.15.5 \
+    --hash=sha256:0c464a7de522f88b581ca0d41ffa71e9be5e17fbb0456c275421f65b7c5f6a55 \
+    --hash=sha256:0fce548e19d6db8e11fd0e2ae7809e1e3282080636b4062b2452bfa20e4f0233 \
     # via -r requirements.in, smart-open
 boto==2.49.0 \
     --hash=sha256:147758d41ae7240dc989f0039f27da8ca0d53734be0eb869ef16e3adcfa462e8 \
     --hash=sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a \
     # via -r requirements.in, smart-open
-botocore==1.18.1 \
-    --hash=sha256:6bdf60281c2e80360fe904851a1a07df3dcfe066fe88dc7fba2b5e626ac05c8c \
-    --hash=sha256:d6bdf51c8880aa9974e6b61d2f7d9d1debe407287e2e9e60f36c789fe8ba6790 \
+botocore==1.18.5 \
+    --hash=sha256:7ce7a05b98ffb3170396960273383e8aade9be6026d5a762f5f40969d5d6b761 \
+    --hash=sha256:e3bf44fba058f6df16006b94a67650418a080a525c82521abb3cb516a4cba362 \
     # via -r requirements.in, boto3, s3transfer
 cachetools==4.1.1 \
     --hash=sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98 \
@@ -134,25 +134,25 @@ google-api-core[grpc]==1.22.2 \
     --hash=sha256:67e33a852dcca7cb7eff49abc35c8cc2c0bb8ab11397dc8306d911505cae2990 \
     --hash=sha256:779107f17e0fef8169c5239d56a8fbff03f9f72a3893c0c9e5842ec29dfedd54 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
-google-auth==1.21.2 \
-    --hash=sha256:7084c50c03f7a8a5696ef4500e65df0c525a0f6909f3c70b9ee65900a230c755 \
-    --hash=sha256:dcf86c5adc3a8a7659be190b12bb8912ae019cfd9ee2a571ea881e289fafbe39 \
+google-auth==1.21.3 \
+    --hash=sha256:31941bf019fb242c04d0de32845da10180788bfddb0de87d78c4bdf55555dda1 \
+    --hash=sha256:873051a6317294b083795cffc467bcd05b6df483ef542bfe0069ddbfbac0a096 \
     # via -r requirements.in, google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==1.1.0 \
     --hash=sha256:c92533cedbb672f1a35555c112d4d5cccb9f8f6d0e98a604fbf98223773adad3 \
     --hash=sha256:fc543e9d2343d34c043ad48984333ba84de10be31b7af8435548aaf8555507c4 \
     # via -r requirements.in
-google-cloud-bigquery==1.27.2 \
-    --hash=sha256:171eb279a43df3e51cefd25542cbb9ab0d59d62949a29a7c33f0020560573a8d \
-    --hash=sha256:8a21cfe5db0c84aca0730197b50ea1649350619849283d0b5e7b506d803a6fa1 \
+google-cloud-bigquery==1.28.0 \
+    --hash=sha256:9266e989531f290d3b836dc7b308ac22b350c4d664af19325bd0102261231b71 \
+    --hash=sha256:9784cff71d6a46ce202748169f9c7e38fc99d6babbb2f3cdc540475d11f572b9 \
     # via -r requirements.in, mozanalysis
 google-cloud-core==1.4.1 \
     --hash=sha256:4c9e457fcfc026fdde2e492228f04417d4c717fb0f29f070122fb0ab89e34ebd \
     --hash=sha256:613e56f164b6bee487dd34f606083a0130f66f42f7b10f99730afdf1630df507 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-storage
-google-cloud-storage==1.31.0 \
-    --hash=sha256:34fb8f7e8a2a633cbfb09d8dec38b3450c4029af1a328a67bca64f6226a1f4a5 \
-    --hash=sha256:4f51c7700242a9d54c07117f25fec5d110ab85435b3ce60ac28cc553f8ea938b \
+google-cloud-storage==1.31.2 \
+    --hash=sha256:74bbb5b2d0b249de4a52f561435d0c3570ddc19b249653ae588ec0abcc3c81e6 \
+    --hash=sha256:e2a2533b5e368365e84d2acaa53b75266a09802fc1c8bda52e3212335eccb6bd \
     # via -r requirements.in
 google-crc32c==1.0.0 \
     --hash=sha256:00b34d4c9ac565b2be553f81f58e5861e51d43af2043ed7cbfe1853ee2f54671 \
@@ -286,9 +286,9 @@ more-itertools==8.5.0 \
     --hash=sha256:6f83822ae94818eae2612063a5101a7311e68ae8002005b5e05f03fd74a86a20 \
     --hash=sha256:9b30f12df9393f0d28af9210ff8efe48d10c94f73e5daf886f10c4b0b0b4f03c \
     # via -r requirements.in, pytest
-mozanalysis==2020.6.2 \
-    --hash=sha256:0d0e71f1c766fdb262b4c05537328e149a51051d5617f0f809c1063bf6071ef3 \
-    --hash=sha256:3f098770447eb1e7d9867e682fcb0d47ef1c13ba1552abe9c6498f58edabb346 \
+mozanalysis==2020.9.1 \
+    --hash=sha256:6bb718fe09ab9d1651010db22013244641c8eefaf6007db5d628c735b3fa21a1 \
+    --hash=sha256:d166777246f0ff5b7c7ca7588360f36b4e03a85e8ce0d7f41ef923dda7794501 \
     # via -r requirements.in
 mypy-extensions==0.4.3 \
     --hash=sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d \
@@ -500,7 +500,7 @@ regex==2020.7.14 \
 requests==2.24.0 \
     --hash=sha256:b3559a131db72c33ee969480840fff4bb6dd111de7dd27c8ee1f820f4f00231b \
     --hash=sha256:fe75cc94a9443b9246fc7049224f75604b113c36acb93f87b80ed42c44cbb898 \
-    # via -r requirements.in, google-api-core, pygithub, smart-open
+    # via -r requirements.in, google-api-core, google-cloud-storage, pygithub, smart-open
 rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233 \
