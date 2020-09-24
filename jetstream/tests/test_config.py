@@ -480,3 +480,16 @@ class TestExperimentConf:
         cfg = spec.resolve(live_experiment)
         assert cfg.experiment.end_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
         assert cfg.experiment.status == "Complete"
+
+
+class TestDefaultConfiguration:
+    def test_descriptions_defined(self, experiments):
+        default_spec = config.AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+        cfg = default_spec.resolve(experiments[0])
+        ever_ran = False
+        for summaries in cfg.metrics.values():
+            for summary in summaries:
+                ever_ran = True
+                assert summary.metric.friendly_name
+                assert summary.metric.description
+        assert ever_ran
