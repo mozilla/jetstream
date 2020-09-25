@@ -293,6 +293,8 @@ class MetricDefinition:
     statistics: Dict[str, Dict[str, Any]]
     select_expression: Optional[str] = None
     data_source: Optional[DataSourceReference] = None
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
 
     def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
@@ -312,6 +314,8 @@ class MetricDefinition:
                 name=self.name,
                 data_source=self.data_source.resolve(spec),
                 select_expr=select_expression,
+                friendly_name=self.friendly_name,
+                description=self.description,
             )
 
         metrics_with_treatments = []
@@ -521,6 +525,8 @@ class SegmentDefinition:
     name: str
     data_source: SegmentDataSourceReference
     select_expression: str
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
 
     def resolve(
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
@@ -530,6 +536,8 @@ class SegmentDefinition:
             name=self.name,
             data_source=data_source,
             select_expr=_metrics_environment.from_string(self.select_expression).render(),
+            friendly_name=self.friendly_name,
+            description=self.description,
         )
 
 
