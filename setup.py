@@ -49,7 +49,7 @@ setup(
         "PyGithub",
         "pytz",
         "requests",
-        "smart_open[gcs]",
+        "smart_open[gcp]",
         "statsmodels",
         "toml",
     ],

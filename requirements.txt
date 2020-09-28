@@ -141,7 +141,7 @@ google-cloud-core==1.4.1 \
 google-cloud-storage==1.31.2 \
     --hash=sha256:74bbb5b2d0b249de4a52f561435d0c3570ddc19b249653ae588ec0abcc3c81e6 \
     --hash=sha256:e2a2533b5e368365e84d2acaa53b75266a09802fc1c8bda52e3212335eccb6bd \
-    # via -r requirements.in
+    # via -r requirements.in, smart-open
 google-crc32c==1.0.0 \
     --hash=sha256:00b34d4c9ac565b2be553f81f58e5861e51d43af2043ed7cbfe1853ee2f54671 \
     --hash=sha256:17223ac9135eab28e874ff1e221810190d109a1abd482451d0776dc388be14de \
@@ -507,7 +507,7 @@ six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
     --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \
     # via -r requirements.in, google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
-smart-open[gcs]==2.2.0 \
+smart-open[gcp]==2.2.0 \
     --hash=sha256:3e95f4d3edc566aed46d0711c69b1a7b3d14ddf3af61cfa941e76cdb1dfe9918 \
     # via -r requirements.in
 statsmodels==0.12.0 \

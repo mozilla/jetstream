@@ -21,7 +21,7 @@ google-auth==1.21.3       # via google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==1.1.0  # via mozilla-jetstream
 google-cloud-bigquery==1.28.0  # via mozanalysis, mozilla-jetstream
 google-cloud-core==1.4.1  # via google-cloud-bigquery, google-cloud-storage
-google-cloud-storage==1.31.2  # via mozilla-jetstream
+google-cloud-storage==1.31.2  # via mozilla-jetstream, smart-open
 google-crc32c==1.0.0      # via google-resumable-media
 google-resumable-media==1.0.0  # via google-cloud-bigquery, google-cloud-storage
 googleapis-common-protos==1.52.0  # via google-api-core
@@ -63,7 +63,7 @@ requests==2.24.0          # via google-api-core, google-cloud-storage, mozilla-j
 rsa==4.6                  # via google-auth
 scipy==1.5.2              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
-smart-open[gcs]==2.2.0    # via mozilla-jetstream
+smart-open[gcp]==2.2.0    # via mozilla-jetstream
 statsmodels==0.12.0       # via mozilla-jetstream
 toml==0.10.1              # via black, mozilla-jetstream, pytest, pytest-black
 typed-ast==1.4.1          # via black, mypy
