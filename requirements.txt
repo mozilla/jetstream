@@ -285,7 +285,7 @@ mccabe==0.6.1 \
 more-itertools==8.5.0 \
     --hash=sha256:6f83822ae94818eae2612063a5101a7311e68ae8002005b5e05f03fd74a86a20 \
     --hash=sha256:9b30f12df9393f0d28af9210ff8efe48d10c94f73e5daf886f10c4b0b0b4f03c \
-    # via -r requirements.in, pytest
+    # via -r requirements.in
 mozanalysis==2020.9.1 \
     --hash=sha256:6bb718fe09ab9d1651010db22013244641c8eefaf6007db5d628c735b3fa21a1 \
     --hash=sha256:d166777246f0ff5b7c7ca7588360f36b4e03a85e8ce0d7f41ef923dda7794501 \
@@ -462,9 +462,9 @@ pytest-flake8==1.0.6 \
     --hash=sha256:1b82bb58c88eb1db40524018d3fcfd0424575029703b4e2d8e3ee873f2b17027 \
     --hash=sha256:2e91578ecd9b200066f99c1e1de0f510fbb85bcf43712d46ea29fe47607cc234 \
     # via -r requirements.in
-pytest==6.0.2 \
-    --hash=sha256:0e37f61339c4578776e090c3b8f6b16ce4db333889d65d0efb305243ec544b40 \
-    --hash=sha256:c8f57c2a30983f469bf03e68cdfa74dc474ce56b8f280ddcb080dfd91df01043 \
+pytest==6.1.0 \
+    --hash=sha256:1cd09785c0a50f9af72220dd12aa78cfa49cbffc356c61eab009ca189e018a33 \
+    --hash=sha256:d010e24666435b39a4cf48740b039885642b6c273a3f77be3e7e03554d2806b7 \
     # via -r requirements.in, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
