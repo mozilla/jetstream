@@ -7,9 +7,6 @@
 appdirs==1.4.4            # via black
 attrs==20.2.0             # via cattrs, mozanalysis, mozilla-jetstream, pytest
 black==20.8b1             # via pytest-black
-boto3==1.15.5             # via smart-open
-boto==2.49.0              # via smart-open
-botocore==1.18.5          # via boto3, s3transfer
 cachetools==4.1.1         # via google-auth
 cattrs==1.0.0             # via mozilla-jetstream
 certifi==2020.6.20        # via requests
@@ -33,10 +30,8 @@ idna==2.10                # via requests
 incremental==17.5.0       # via mozilla-jetstream
 iniconfig==1.0.1          # via pytest
 jinja2==2.11.2            # via mozilla-jetstream
-jmespath==0.10.0          # via boto3, botocore
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
-more-itertools==8.5.0     # via pytest
 mozanalysis==2020.9.1     # via mozilla-jetstream
 mypy-extensions==0.4.3    # via black, mypy
 mypy==0.782               # via mozilla-jetstream
@@ -60,21 +55,20 @@ pyparsing==2.4.7          # via packaging
 pytest-black==0.3.11      # via mozilla-jetstream
 pytest-cov==2.10.1        # via mozilla-jetstream
 pytest-flake8==1.0.6      # via mozilla-jetstream
-pytest==6.0.2             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
-python-dateutil==2.8.1    # via botocore, pandas
+pytest==6.1.0             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
+python-dateutil==2.8.1    # via pandas
 pytz==2020.1              # via google-api-core, mozilla-jetstream, pandas
-regex==2020.7.14          # via black
+regex==2020.9.27          # via black
 requests==2.24.0          # via google-api-core, google-cloud-storage, mozilla-jetstream, pygithub, smart-open
 rsa==4.6                  # via google-auth
-s3transfer==0.3.3         # via boto3
 scipy==1.5.2              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
-smart-open==2.1.1         # via mozilla-jetstream
+smart-open[gcs]==2.2.0    # via mozilla-jetstream
 statsmodels==0.12.0       # via mozilla-jetstream
 toml==0.10.1              # via black, mozilla-jetstream, pytest, pytest-black
 typed-ast==1.4.1          # via black, mypy
 typing-extensions==3.7.4.3  # via black, mypy
-urllib3==1.25.10          # via botocore, requests
+urllib3==1.25.10          # via requests
 wrapt==1.12.1             # via deprecated
 
 # The following packages are considered to be unsafe in a requirements file:
