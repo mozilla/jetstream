@@ -8,7 +8,7 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
-from google.cloud.bigquery_storage_v1beta1 import BigQueryStorageClient
+from google.cloud.bigquery_storage import BigQueryReadClient
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -16,7 +16,7 @@ class BigQueryClient:
     project: str
     dataset: str
     _client: Optional[google.cloud.bigquery.client.Client] = None
-    _storage_client: Optional[BigQueryStorageClient] = None
+    _storage_client: Optional[BigQueryReadClient] = None
 
     @property
     def client(self):
@@ -25,7 +25,7 @@ class BigQueryClient:
 
     def table_to_dataframe(self, table: str):
         """Return all rows of the specified table as a dataframe."""
-        self._storage_client = self._storage_client or BigQueryStorageClient()
+        self._storage_client = self._storage_client or BigQueryReadClient()
 
         table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
         rows = self.client.list_rows(table_ref)
