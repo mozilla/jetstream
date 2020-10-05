@@ -118,9 +118,9 @@ flake8==3.8.3 \
     --hash=sha256:15e351d19611c887e482fb960eae4d44845013cc142d42896e9862f775d8cf5c \
     --hash=sha256:f04b9fcbac03b0a3e58c0ab3a0ecc462e023a9faf046d57794184028123aa208 \
     # via -r requirements.in, pytest-flake8
-google-api-core[grpc]==1.22.2 \
-    --hash=sha256:67e33a852dcca7cb7eff49abc35c8cc2c0bb8ab11397dc8306d911505cae2990 \
-    --hash=sha256:779107f17e0fef8169c5239d56a8fbff03f9f72a3893c0c9e5842ec29dfedd54 \
+google-api-core[grpc]==1.22.3 \
+    --hash=sha256:1166371f6b1164a30cfed26092e3679450bb837a2b425779c8d1dd140c0732f4 \
+    --hash=sha256:6a95bfcf6f661ec0dffd96013b47100765f4f88ce54412562176bfcb11a997c1 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
 google-auth==1.21.3 \
     --hash=sha256:31941bf019fb242c04d0de32845da10180788bfddb0de87d78c4bdf55555dda1 \
