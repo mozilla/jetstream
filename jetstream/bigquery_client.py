@@ -82,4 +82,4 @@ class BigQueryClient:
         existing_tables = self.client.list_tables(self.dataset)
         for table in existing_tables:
             if table_name_re.match(table.table_id):
-                self.client.delete_table(table.table_id, not_found_ok=True)
+                self.client.delete_table(table, not_found_ok=True)
