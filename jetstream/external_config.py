@@ -59,7 +59,7 @@ class ExternalConfigCollection:
                 if commits.totalCount:
                     slug = os.path.splitext(file.name)[0]
                     spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
-                    last_modified = parser.parse(str(commits[0].commit.author.date))
+                    last_modified = parser.parse(str(commits[0].commit.committer.date))
                     configs.append(ExternalConfig(slug, spec, last_modified))
 
         return cls(configs)
