@@ -54,10 +54,13 @@ class ExternalConfigCollection:
 
         for file in files:
             if file.name.endswith(".toml"):
-                slug = os.path.splitext(file.name)[0]
-                spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
-                last_modified = parser.parse(str(file.last_modified))
-                configs.append(ExternalConfig(slug, spec, last_modified))
+                commits = repo.get_commits(path=file.path)
+
+                if commits.totalCount:
+                    slug = os.path.splitext(file.name)[0]
+                    spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
+                    last_modified = parser.parse(str(commits[0].commit.author.date))
+                    configs.append(ExternalConfig(slug, spec, last_modified))
 
         return cls(configs)
 
