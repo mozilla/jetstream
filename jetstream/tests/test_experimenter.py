@@ -244,6 +244,33 @@ EXPERIMENTER_FIXTURE_V4 = r"""
   "filter_expression":"env.version|versionCompare('79.0') >= 0",
   "enabled":true,
   "targeting":null
+},
+{   
+  "id":"bug-1670159-rapid-testing-test-beta-78",
+  "arguments":{      
+    "slug":"bug-1670159-rapid-testing-test-beta-78",
+    "userFacingName":"test",
+    "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
+    "active":true,
+    "isEnrollmentPaused":false,
+    "features":[
+      "fake_feature"
+    ],
+    "proposedEnrollment":14,
+    "bucketConfig":{
+      "randomizationUnit":"normandy_id",
+      "namespace":"",
+      "start":0,
+      "count":0,
+      "total":10000
+    },
+    "startDate":null,
+    "endDate":null,
+    "branches":[],
+  "referenceBranch":"control" 
+  },
+  "enabled":true,
+  "targeting":null
 }
 ]
 """  # noqa

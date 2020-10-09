@@ -162,7 +162,7 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v4/experiments/"
 
     @classmethod
-    def _handle_errors(cls, func: Callable[[], Any], slug: str) -> Optional[Any]:
+    def _handle_errors(cls, func: Callable[[], Any], slug: str) -> Optional[Experiment]:
         """Handles exceptions when pulling in and working with experiments from Experimenter."""
         try:
             return func()
@@ -190,10 +190,10 @@ class ExperimentCollection:
 
         nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
         nimbus_experiments = [
-            e
+            ex
             for experiment in nimbus_experiments_json
             if (
-                e := cls._handle_errors(
+                ex := cls._handle_errors(
                     lambda: ExperimentV4.from_dict(experiment["arguments"]).to_experiment(),
                     experiment["arguments"]["slug"],
                 )
