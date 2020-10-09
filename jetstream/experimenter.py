@@ -1,10 +1,13 @@
 import datetime as dt
-from typing import List, Iterable, Optional, Union
+from typing import List, Iterable, Optional, Union, Any, Callable
 
 import attr
 import cattr
+import logging
 import requests
 import pytz
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -159,19 +162,43 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v4/experiments/"
 
     @classmethod
+    def _handle_errors(cls, func: Callable[[], Any], slug: str) -> Optional[Any]:
+        """Handles exceptions when pulling in and working with experiments from Experimenter."""
+        try:
+            return func()
+        except Exception as e:
+            logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+            return None
+
+    @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
         legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
+
         legacy_experiments = [
-            ExperimentV1.from_dict(experiment).to_experiment()
+            e
             for experiment in legacy_experiments_json
             if experiment["type"] != "rapid"
+            and (
+                e := cls._handle_errors(
+                    lambda: ExperimentV1.from_dict(experiment).to_experiment(),
+                    experiment["slug"],
+                )
+            )
+            is not None
         ]
 
         nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
         nimbus_experiments = [
-            ExperimentV4.from_dict(experiment["arguments"]).to_experiment()
+            e
             for experiment in nimbus_experiments_json
+            if (
+                e := cls._handle_errors(
+                    lambda: ExperimentV4.from_dict(experiment["arguments"]).to_experiment(),
+                    experiment["arguments"]["slug"],
+                )
+            )
+            is not None
         ]
 
         return cls(nimbus_experiments + legacy_experiments)
