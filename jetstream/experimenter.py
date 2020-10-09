@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import List, Iterable, Optional, Union, Any, Callable
+from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
@@ -121,7 +121,7 @@ class ExperimentV4:
     active: bool
     features: List[str]
     branches: List[Branch]
-    startDate: dt.datetime
+    startDate: Optional[dt.datetime]
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
     referenceBranch: Optional[str]
@@ -162,44 +162,30 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v4/experiments/"
 
     @classmethod
-    def _handle_errors(cls, func: Callable[[], Any], slug: str) -> Optional[Experiment]:
-        """Handles exceptions when pulling in and working with experiments from Experimenter."""
-        try:
-            return func()
-        except Exception as e:
-            logger.exception(str(e), exc_info=e, extra={"experiment": slug})
-            return None
-
-    @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
         legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
+        legacy_experiments = []
 
-        legacy_experiments = [
-            e
-            for experiment in legacy_experiments_json
-            if experiment["type"] != "rapid"
-            and (
-                e := cls._handle_errors(
-                    lambda: ExperimentV1.from_dict(experiment).to_experiment(),
-                    experiment["slug"],
-                )
-            )
-            is not None
-        ]
+        for experiment in legacy_experiments_json:
+            if experiment["type"] != "rapid":
+                try:
+                    legacy_experiments.append(ExperimentV1.from_dict(experiment).to_experiment())
+                except Exception as e:
+                    logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
         nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
-        nimbus_experiments = [
-            ex
-            for experiment in nimbus_experiments_json
-            if (
-                ex := cls._handle_errors(
-                    lambda: ExperimentV4.from_dict(experiment["arguments"]).to_experiment(),
-                    experiment["arguments"]["slug"],
+        nimbus_experiments = []
+
+        for experiment in nimbus_experiments_json:
+            try:
+                nimbus_experiments.append(
+                    ExperimentV4.from_dict(experiment["arguments"]).to_experiment()
                 )
-            )
-            is not None
-        ]
+            except Exception as e:
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": experiment["arguments"]["slug"]}
+                )
 
         return cls(nimbus_experiments + legacy_experiments)
 
