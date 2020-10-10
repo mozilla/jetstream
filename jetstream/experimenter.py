@@ -3,8 +3,11 @@ from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
+import logging
 import requests
 import pytz
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -118,7 +121,7 @@ class ExperimentV4:
     active: bool
     features: List[str]
     branches: List[Branch]
-    startDate: dt.datetime
+    startDate: Optional[dt.datetime]
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
     referenceBranch: Optional[str]
@@ -162,17 +165,27 @@ class ExperimentCollection:
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
         legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
-        legacy_experiments = [
-            ExperimentV1.from_dict(experiment).to_experiment()
-            for experiment in legacy_experiments_json
-            if experiment["type"] != "rapid"
-        ]
+        legacy_experiments = []
+
+        for experiment in legacy_experiments_json:
+            if experiment["type"] != "rapid":
+                try:
+                    legacy_experiments.append(ExperimentV1.from_dict(experiment).to_experiment())
+                except Exception as e:
+                    logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
         nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
-        nimbus_experiments = [
-            ExperimentV4.from_dict(experiment["arguments"]).to_experiment()
-            for experiment in nimbus_experiments_json
-        ]
+        nimbus_experiments = []
+
+        for experiment in nimbus_experiments_json:
+            try:
+                nimbus_experiments.append(
+                    ExperimentV4.from_dict(experiment["arguments"]).to_experiment()
+                )
+            except Exception as e:
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": experiment["arguments"]["slug"]}
+                )
 
         return cls(nimbus_experiments + legacy_experiments)
 
