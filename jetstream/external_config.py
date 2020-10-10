@@ -9,11 +9,10 @@ import os
 from typing import List, Optional
 
 import attr
-from dateutil import parser
 from github import Github
 from github.ContentFile import ContentFile
 from google.cloud import bigquery
-import pytz
+from pytz import UTC
 import toml
 
 from . import bq_normalize_name
@@ -60,7 +59,7 @@ class ExternalConfigCollection:
                 if commits.totalCount:
                     slug = os.path.splitext(file.name)[0]
                     spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
-                    last_modified = parser.parse(str(commits[0].commit.committer.date))
+                    last_modified = UTC.localize(commits[0].commit.committer.date)
                     configs.append(ExternalConfig(slug, spec, last_modified))
 
         return cls(configs)
@@ -98,13 +97,16 @@ class ExternalConfigCollection:
         updated_configs = []
 
         for config in self.configs:
+            table_prefix = bq_normalize_name(config.slug)
             for row in result:
-                if (
-                    row.table_name.startswith(bq_normalize_name(config.slug))
-                    and len(row.last_updated) > 0
-                    and pytz.UTC.localize(dt.datetime.fromtimestamp(int(row.last_updated[0])))
-                    < config.last_modified
-                ):
+                if not row.table_name.startswith(table_prefix):
+                    continue
+                if not len(row.last_updated):
+                    continue
+                table_last_updated = UTC.localize(
+                    dt.datetime.fromtimestamp(int(row.last_updated[0]))
+                )
+                if table_last_updated < config.last_modified:
                     updated_configs.append(config)
                     break
 
