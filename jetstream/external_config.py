@@ -5,15 +5,16 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
+import os
+from typing import List, Optional
+
 import attr
 from dateutil import parser
 from github import Github
 from github.ContentFile import ContentFile
 from google.cloud import bigquery
-import os
 import pytz
 import toml
-from typing import List, Optional
 
 from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
