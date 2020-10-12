@@ -138,9 +138,9 @@ google-cloud-bigquery-storage==2.0.0 \
     --hash=sha256:3fb8d85e3afe9ce2a2d7219ad9ace41426a477ab73845cdb3e9087772e2a41a2 \
     --hash=sha256:cebeaf1da7b7e4e3fd95e4a51a6d9c26dc49027d5191ba1fe894d9e1ef259592 \
     # via -r requirements.in
-google-cloud-bigquery==2.0.0 \
-    --hash=sha256:28449800e502b8d4f70ba8d338f6abac1495000005a6c89632687f6847ee03cf \
-    --hash=sha256:d008b8640a53bec2d10f0459b4f9f0472b68c28525c3056eb0353ca74299adb9 \
+google-cloud-bigquery==2.1.0 \
+    --hash=sha256:7369e2f81ccddfa62f2af4009dbddf7a1daaef0fc701a4097e8de5508235af74 \
+    --hash=sha256:eafd9e3458b271d12c0b28cbb18e0e267ab96361d03a98a9042163eb1f5f78f6 \
     # via -r requirements.in, mozanalysis
 google-cloud-core==1.4.2 \
     --hash=sha256:64c35fc379e51cadac7fc9cdef0777369ca1370c2eb2d51823fd0cd4c2d16082 \
@@ -242,7 +242,7 @@ jmespath==0.10.0 \
 libcst==0.3.12 \
     --hash=sha256:a1837239a9a32bcd00c6241b093abc3213431c71c1e6f53da0928a0f57ebfcfd \
     --hash=sha256:f38f24917660a197683208a7086d78e23b3047b27bef8c795838b9d265858b10 \
-    # via google-cloud-bigquery, google-cloud-bigquery-storage
+    # via google-cloud-bigquery-storage
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
     --hash=sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161 \

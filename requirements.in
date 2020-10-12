@@ -19,7 +19,7 @@ flake8==3.8.4             # via pytest-flake8
 google-api-core[grpc]==1.22.4  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
 google-auth==1.22.1       # via google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==2.0.0  # via mozilla-jetstream
-google-cloud-bigquery==2.0.0  # via mozanalysis, mozilla-jetstream
+google-cloud-bigquery==2.1.0  # via mozanalysis, mozilla-jetstream
 google-cloud-core==1.4.2  # via google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.31.2  # via mozilla-jetstream, smart-open
 google-crc32c==1.0.0      # via google-resumable-media
