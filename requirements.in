@@ -58,7 +58,7 @@ pytest-flake8==1.0.6      # via mozilla-jetstream
 pytest==6.1.1             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via pandas
 pytz==2020.1              # via google-api-core, mozilla-jetstream, pandas
-regex==2020.9.27          # via black
+regex==2020.10.11          # via black
 requests==2.24.0          # via google-api-core, google-cloud-storage, mozilla-jetstream, pygithub, smart-open
 rsa==4.6                  # via google-auth
 scipy==1.5.2              # via mozanalysis, statsmodels
