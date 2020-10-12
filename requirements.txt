@@ -16,14 +16,6 @@ black==20.8b1 \
     --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea \
     --hash=sha256:70b62ef1527c950db59062cda342ea224d772abdf6adc58b86a45421bab20a6b \
     # via -r requirements.in, pytest-black
-boto3==1.15.12 \
-    --hash=sha256:cb3becf1b2f2cb5f58030fe947a6abd26f27c01df0403097ae2a52bfadefcf19 \
-    --hash=sha256:de2bdcd9a8d638c2ef391ffc6d4b692ad701a6d8ad6e9d77d016059cf89b481a \
-    # via smart-open
-botocore==1.18.12 \
-    --hash=sha256:12b2381ee82ff32d5135c0887eadec18d38c8ff7fac06405ba6a8584f2159c3c \
-    --hash=sha256:368f85992b0c7fda95b216776d475791c59e4c4415325fda683a02c5c110cf35 \
-    # via boto3, s3transfer
 cachetools==4.1.1 \
     --hash=sha256:513d4ff98dd27f85743a8dc0e92f55ddb1b49e060c2d5961512855cda2c01a98 \
     --hash=sha256:bbaa39c3dede00175df2dc2b03d0cf18dd2d32a7de7beb68072d13043c9edb20 \
@@ -235,10 +227,6 @@ jinja2==2.11.2 \
     --hash=sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0 \
     --hash=sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035 \
     # via -r requirements.in
-jmespath==0.10.0 \
-    --hash=sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9 \
-    --hash=sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f \
-    # via boto3, botocore
 libcst==0.3.12 \
     --hash=sha256:a1837239a9a32bcd00c6241b093abc3213431c71c1e6f53da0928a0f57ebfcfd \
     --hash=sha256:f38f24917660a197683208a7086d78e23b3047b27bef8c795838b9d265858b10 \
@@ -468,7 +456,7 @@ pytest==6.1.1 \
 python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
     --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a \
-    # via -r requirements.in, botocore, pandas
+    # via -r requirements.in, pandas
 pytz==2020.1 \
     --hash=sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed \
     --hash=sha256:c35965d010ce31b23eeb663ed3cc8c906275d6be1a34393a1d73a41febf4a048 \
@@ -517,10 +505,6 @@ rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233 \
     # via -r requirements.in, google-auth
-s3transfer==0.3.3 \
-    --hash=sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13 \
-    --hash=sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db \
-    # via boto3
 scipy==1.5.2 \
     --hash=sha256:066c513d90eb3fd7567a9e150828d39111ebd88d3e924cdfc9f8ce19ab6f90c9 \
     --hash=sha256:07e52b316b40a4f001667d1ad4eb5f2318738de34597bd91537851365b6c61f1 \
@@ -543,8 +527,8 @@ six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
     --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \
     # via -r requirements.in, google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
-smart-open[gcp]==2.2.1 \
-    --hash=sha256:144bb74c61552a5a6a50a85c8a5afacbc14d2394ecfde9fc3bc56b938ab60772 \
+smart-open[gcp]==3.0.0 \
+    --hash=sha256:7f4e85b71df5a3618f5447d0b417b7a3576308c839690a24a70338b8993684c3 \
     # via -r requirements.in
 statsmodels==0.12.0 \
     --hash=sha256:20e275f63e7e4c79133af444043a6ea95846b6165ecb21c7a4983fa7dbaf5396 \
@@ -604,7 +588,7 @@ typing-inspect==0.6.0 \
 urllib3==1.25.10 \
     --hash=sha256:91056c15fa70756691db97756772bb1eb9678fa585d9184f24534b100dc60f4a \
     --hash=sha256:e7983572181f5e1522d9c98453462384ee92a0be7fac5f1413a1e35c56cc0461 \
-    # via -r requirements.in, botocore, requests
+    # via -r requirements.in, requests
 wrapt==1.12.1 \
     --hash=sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7 \
     # via -r requirements.in, deprecated
