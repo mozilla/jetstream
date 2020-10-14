@@ -50,7 +50,6 @@ pyasn1==0.4.8             # via pyasn1-modules, rsa
 pycodestyle==2.6.0        # via flake8
 pycparser==2.20           # via cffi
 pyflakes==2.2.0           # via flake8
-pygithub==1.53            # via mozilla-jetstream
 pyjwt==1.7.1              # via pygithub
 pyparsing==2.4.7          # via packaging
 pytest-black==0.3.12      # via mozilla-jetstream

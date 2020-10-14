@@ -14,12 +14,12 @@ from typing import (
 
 import attr
 import cattr
-from github import Github
-from github.ContentFile import ContentFile
+from git import Repo
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField
 from mozanalysis.metrics import Metric
 import mozanalysis.metrics.desktop
+import tempfile
 import toml
 
 from . import statistics
@@ -172,28 +172,24 @@ class _FeatureResolver:
     consuming files with leading underscores.
     """
 
-    FEATURE_DEFINITION_REPO = "mozilla/nimbus-shared"
+    FEATURE_DEFINITION_REPO = "https://github.com/mozilla/nimbus-shared"
     FEATURE_PATH = "data/features"
 
     @property
     def data(self) -> Dict[str, Feature]:
         if data := getattr(self, "_data", None):
             return data
-        g = Github()
-        repo = g.get_repo(self.FEATURE_DEFINITION_REPO)
-        specs = repo.get_contents(self.FEATURE_PATH)
 
-        if isinstance(specs, ContentFile):
-            specs = [specs]
+        tmp_dir = Path(tempfile.mkdtemp())
+        Repo.clone_from(self.FEATURE_DEFINITION_REPO, tmp_dir)
 
         data = {}
 
-        for spec in specs:
-            p = Path(spec.name)
-            slug = p.stem
-            if slug.startswith("_") or p.suffix != ".toml":
+        for spec in tmp_dir.rglob(self.FEATURE_PATH + "/**/*.toml"):
+            slug = spec.stem
+            if slug.startswith("_"):
                 continue
-            contents = toml.loads(spec.decoded_content.decode("utf-8"))
+            contents = toml.loads(spec.read_text())
             contents["slug"] = slug
             feature = Feature.from_dict(contents)
             data[slug] = feature
