@@ -5,17 +5,15 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
-import io
 from typing import List, Optional
 
 import attr
+from git import Repo
 from google.cloud import bigquery
 from pathlib import Path
 from pytz import UTC
-import requests
 import tempfile
 import toml
-import zipfile
 
 from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
@@ -39,31 +37,29 @@ class ExternalConfigCollection:
 
     configs: List[ExternalConfig] = attr.Factory(list)
 
-    JETSTREAM_CONFIG_ZIP = "https://github.com/mozilla/jetstream-config/archive/main.zip"
+    JETSTREAM_CONFIG_URL = "https://github.com/mozilla/jetstream-config"
 
     @classmethod
     def from_github_repo(cls) -> "ExternalConfigCollection":
         """Pull in external config files."""
         # download files to tmp directory
         tmp_dir = Path(tempfile.mkdtemp())
-        r = requests.get(cls.JETSTREAM_CONFIG_ZIP)
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        z.extractall(tmp_dir)
+        repo = Repo.clone_from(cls.JETSTREAM_CONFIG_URL, tmp_dir)
 
-        a = cls(
-            [
+        external_configs = []
+
+        for config_file in tmp_dir.glob("**/*.toml"):
+            last_modified = list(repo.iter_commits("main", paths=config_file))[0].committed_date
+
+            external_configs.append(
                 ExternalConfig(
-                    f.stem,
-                    AnalysisSpec.from_dict(toml.loads(f.read_text())),
-                    dt.datetime.fromtimestamp(f.stat().st_atime),
+                    config_file.stem,
+                    AnalysisSpec.from_dict(toml.loads(config_file.read_text())),
+                    UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                 )
-                for f in tmp_dir.glob("**/*.toml")
-            ]
-        )
+            )
 
-        print(a)
-
-        return a
+        return cls(external_configs)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""
