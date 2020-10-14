@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: jetstream-
+spec:
+  entrypoint: jetstream
+  onExit: export-statistics   # export statistics after all analyses 
+  arguments:
+    parameters:
+    - name: experiment_slug   # set slug dynamically when workflow gets deployed
+  templates:
+  - name: jetstream
+    steps:
+    - - name: rerun-experiment
+        template: rerun-experiment  # return config for each date experiment was active
+    - - name: analyse-experiment
+        template: analyse-experiment
+        arguments:
+          parameters:
+          - name: experiment
+            value: "{{item}}"
+        withParam: "{{steps.rerun-experiment.outputs.result}}"  # process active experiments in parallel
+    - - name: export-statistics
+        template: export-statistics # after all analyses are completed, export to GCS
+
+  - name: rerun-experiment
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, rerun_experiment, --experiment_slug={{inputs.parameters.experiment_slug}}]
+
+  - name: analyse-experiment
+    inputs:
+      parameters:
+      - name: experiment
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, analyse_experiment, "--experiment_json={{inputs.parameters.experiment}}"]
+      resources:
+        requests:
+          memory: 1Gi
+
+  - name: export-statistics
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, export_statistics_to_json]

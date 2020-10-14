@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: jetstream-
+spec:
+  entrypoint: jetstream
+  onExit: export-statistics # export statistics after all analyses 
+  arguments:
+    parameters:
+    - name: date  # set date dynamically when worklfow gets deployed
+  templates:
+  - name: jetstream
+    steps:
+    - - name: get-active-experiments
+        template: active-experiments  # return active experiments for specific date
+    - - name: analyse-experiment      
+        template: analyse-experiment  
+        arguments:
+          parameters:
+          - name: experiment
+            value: "{{item}}"
+        withParam: "{{steps.get-active-experiments.outputs.result}}"  # process active experiments in parallel
+
+  - name: active-experiments
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, get_active_experiments, --date={{inputs.parameters.date}}]
+
+  - name: analyse-experiment
+    inputs:
+      parameters:
+      - name: experiment
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, analyse_experiment, "--experiment_json={{inputs.parameters.experiment}}"]
+
+  - name: export-statistics
+    container:
+      image: gcr.io/ascholtz-dev/jetstream:latest
+      command: [bin/entrypoint, export_statistics_to_json]
