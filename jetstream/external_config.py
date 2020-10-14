@@ -5,15 +5,17 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
-import os
+import io
 from typing import List, Optional
 
 import attr
-from github import Github
-from github.ContentFile import ContentFile
 from google.cloud import bigquery
+from pathlib import Path
 from pytz import UTC
+import requests
+import tempfile
 import toml
+import zipfile
 
 from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
@@ -37,32 +39,31 @@ class ExternalConfigCollection:
 
     configs: List[ExternalConfig] = attr.Factory(list)
 
-    JETSTREAM_CONFIG_REPO = "mozilla/jetstream-config"
+    JETSTREAM_CONFIG_ZIP = "https://github.com/mozilla/jetstream-config/archive/main.zip"
 
     @classmethod
     def from_github_repo(cls) -> "ExternalConfigCollection":
         """Pull in external config files."""
+        # download files to tmp directory
+        tmp_dir = Path(tempfile.mkdtemp())
+        r = requests.get(cls.JETSTREAM_CONFIG_ZIP)
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        z.extractall(tmp_dir)
 
-        g = Github()
-        repo = g.get_repo(cls.JETSTREAM_CONFIG_REPO)
-        files = repo.get_contents("")
+        a = cls(
+            [
+                ExternalConfig(
+                    f.stem,
+                    AnalysisSpec.from_dict(toml.loads(f.read_text())),
+                    dt.datetime.fromtimestamp(f.stat().st_atime),
+                )
+                for f in tmp_dir.glob("**/*.toml")
+            ]
+        )
 
-        if isinstance(files, ContentFile):
-            files = [files]
+        print(a)
 
-        configs = []
-
-        for file in files:
-            if file.name.endswith(".toml"):
-                commits = repo.get_commits(path=file.path)
-
-                if commits.totalCount:
-                    slug = os.path.splitext(file.name)[0]
-                    spec = AnalysisSpec.from_dict(toml.loads(file.decoded_content.decode("utf-8")))
-                    last_modified = UTC.localize(commits[0].commit.committer.date)
-                    configs.append(ExternalConfig(slug, spec, last_modified))
-
-        return cls(configs)
+        return a
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""
