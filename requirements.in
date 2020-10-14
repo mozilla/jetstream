@@ -16,6 +16,7 @@ click==7.1.2              # via black, mozilla-jetstream
 coverage==5.3             # via mozilla-jetstream, pytest-cov
 deprecated==1.2.10        # via pygithub
 flake8==3.8.4             # via pytest-flake8
+GitPython==3.1.9          # via mozilla-jetstream
 google-api-core[grpc]==1.22.4  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
 google-auth==1.22.1       # via google-api-core, google-cloud-storage
 google-cloud-bigquery-storage==2.0.0  # via mozilla-jetstream
