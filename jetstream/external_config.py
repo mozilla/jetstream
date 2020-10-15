@@ -48,7 +48,7 @@ class ExternalConfigCollection:
             external_configs = []
 
             for config_file in tmp_dir.glob("**/*.toml"):
-                last_modified = list(repo.iter_commits("main", paths=config_file))[0].committed_date
+                last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
 
                 external_configs.append(
                     ExternalConfig(
@@ -58,7 +58,7 @@ class ExternalConfigCollection:
                     )
                 )
 
-            return cls(external_configs)
+        return cls(external_configs)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""

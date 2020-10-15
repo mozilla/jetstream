@@ -184,7 +184,7 @@ class _FeatureResolver:
 
             data = {}
 
-            for spec in tmp_dir.rglob(self.FEATURE_PATH + "/**/*.toml"):
+            for spec in tmp_dir.glob(self.FEATURE_PATH + "/**/*.toml"):
                 slug = spec.stem
                 if slug.startswith("_"):
                     continue
@@ -193,8 +193,8 @@ class _FeatureResolver:
                 feature = Feature.from_dict(contents)
                 data[slug] = feature
 
-            self._data = data
-            return self._data
+        self._data = data
+        return self._data
 
     def resolve(self, slug: str) -> Feature:
         return self.data[slug]
