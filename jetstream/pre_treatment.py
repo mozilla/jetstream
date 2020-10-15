@@ -61,6 +61,39 @@ class CensorHighestValues(PreTreatment):
 
 
 @attr.s(auto_attribs=True)
+class CensorLowestValues(PreTreatment):
+    """Removes rows with the lowest n% of values."""
+
+    fraction: float = 1e-5
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        mask = df[col] > df[col].quantile(self.fraction)
+        return df.loc[mask, :]
+
+
+@attr.s(auto_attribs=True)
+class CensorValuesBelowThreshold(PreTreatment):
+    """Removes rows with values below the provided threshold."""
+
+    threshold: float = 0.5
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        mask = df[col] > self.threshold
+        return df.loc[mask, :]
+
+
+@attr.s(auto_attribs=True)
+class CensorValuesAboveThreshold(PreTreatment):
+    """Removes rows with values above the provided threshold."""
+
+    threshold: float = 0.5
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        mask = df[col] < self.threshold
+        return df.loc[mask, :]
+
+
+@attr.s(auto_attribs=True)
 class Log(PreTreatment):
     base: Optional[float] = 10.0
 

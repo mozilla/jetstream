@@ -35,6 +35,27 @@ class TestPreTreatment:
         ex1 = pt.apply(df, "value")
         assert ex1.shape == (9000, 2)
 
+    def test_censor_lowest_values(self):
+        df = pd.DataFrame({"value": range(10000), "label": ["a"] * 10000})
+        pt = pre_treatment.CensorLowestValues(0.1)
+        assert df.shape == (10000, 2)
+        ex1 = pt.apply(df, "value")
+        assert ex1.shape == (9000, 2)
+
+    def test_censor_below_threshold(self):
+        df = pd.DataFrame({"value": [0.05] * 150 + [1.1] * 50, "label": ["a"] * 200})
+        pt = pre_treatment.CensorValuesBelowThreshold(0.1)
+        assert df.shape == (200, 2)
+        ex1 = pt.apply(df, "value")
+        assert ex1.shape == (50, 2)
+
+    def test_censor_above_threshold(self):
+        df = pd.DataFrame({"value": [0.05] * 150 + [1.1] * 50, "label": ["a"] * 200})
+        pt = pre_treatment.CensorValuesAboveThreshold(0.1)
+        assert df.shape == (200, 2)
+        ex1 = pt.apply(df, "value")
+        assert ex1.shape == (150, 2)
+
     def test_log_transform(self):
         df = pd.DataFrame({"value": range(-1, 11)})
         pt = pre_treatment.Log(10)
