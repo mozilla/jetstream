@@ -10,13 +10,12 @@ from typing import List, Optional
 import attr
 from git import Repo
 from google.cloud import bigquery
-from pathlib import Path
 from pytz import UTC
-import tempfile
 import toml
 
 from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
+from jetstream.util import TemporaryDirectory
 
 
 @attr.s(auto_attribs=True)
@@ -43,23 +42,23 @@ class ExternalConfigCollection:
     def from_github_repo(cls) -> "ExternalConfigCollection":
         """Pull in external config files."""
         # download files to tmp directory
-        tmp_dir = Path(tempfile.mkdtemp())
-        repo = Repo.clone_from(cls.JETSTREAM_CONFIG_URL, tmp_dir)
+        with TemporaryDirectory() as tmp_dir:
+            repo = Repo.clone_from(cls.JETSTREAM_CONFIG_URL, tmp_dir)
 
-        external_configs = []
+            external_configs = []
 
-        for config_file in tmp_dir.glob("**/*.toml"):
-            last_modified = list(repo.iter_commits("main", paths=config_file))[0].committed_date
+            for config_file in tmp_dir.glob("**/*.toml"):
+                last_modified = list(repo.iter_commits("main", paths=config_file))[0].committed_date
 
-            external_configs.append(
-                ExternalConfig(
-                    config_file.stem,
-                    AnalysisSpec.from_dict(toml.loads(config_file.read_text())),
-                    UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                external_configs.append(
+                    ExternalConfig(
+                        config_file.stem,
+                        AnalysisSpec.from_dict(toml.load(config_file)),
+                        UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                    )
                 )
-            )
 
-        return cls(external_configs)
+            return cls(external_configs)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""
