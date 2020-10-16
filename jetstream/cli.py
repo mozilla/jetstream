@@ -9,10 +9,11 @@ import attr
 import click
 import pytz
 import toml
+from typing import Optional
 
 from . import experimenter
 from .config import AnalysisSpec
-from .experimenter import ExperimentCollection
+from .experimenter import ExperimentCollection, Experiment
 from .export_json import export_statistics_tables
 from .analysis import Analysis
 from .external_config import ExternalConfigCollection
@@ -344,3 +345,100 @@ def validate_config(path):
         Analysis("no project", "no dataset", conf).validate()
 
         click.echo(f"Config file at {file} is valid.", err=False)
+
+
+def _base64_encode(d):
+    """Base64 encodes an object."""
+    converter = cattr.Converter()
+    converter.register_unstructure_hook(datetime, lambda d: str(d.date()))
+    return base64.b64encode(json.dumps(converter.unstructure(d)).encode()).decode("utf-8")
+
+
+def _base64_decode(d):
+    """Decodes Base64 to a dict."""
+    return json.loads(base64.b64decode(d.encode()).decode("utf-8"))
+
+
+@attr.s(auto_attribs=True)
+class AnalysisRunConfig:
+    """Run config used to defined what should be executed in a experiment analysis step."""
+
+    date: datetime
+    experiment: Experiment
+    external_config: Optional[AnalysisSpec]
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@click.option(
+    "--date",
+    type=ClickDate(),
+    help="Date for which experiments should be analyzed",
+    metavar="YYYY-MM-DD",
+    required=True,
+)
+@click.pass_context
+def get_active_experiments(ctx, project_id, dataset_id, date):
+    """
+    Get all active experiment, including their configurations as bse64 encoded JSON objects.
+
+    We need to encode/decode the config dict to pass it between Argo workflow steps.
+    The configs include some Jinja templates, Argo also uses Jinja templates for defining
+    workflows, so when passing config dicts to a step in the workflow it tries to evaluate
+    the template and will fail. To work around this, instead of passing the config dict as is,
+    it is base64 encoded instead, and decoded within the step.
+    """
+    # fetch experiments that are still active
+    collection = ExperimentCollection.from_experimenter()
+
+    active_experiments = collection.end_on_or_after(date).of_type(
+        ("pref", "addon", "message", "v4")
+    )
+
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+
+    experiment_runs_configs = []
+
+    for experiment in active_experiments.experiments:
+        external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
+
+        experiment_runs_configs.append(
+            _base64_encode(AnalysisRunConfig(date, experiment, external_experiment_config))
+        )
+
+    # Write config to stdout which will be read by argo and then used to spawn analysis jobs
+    json.dump(experiment_runs_configs, sys.stdout)
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@click.option(
+    "--experiment_config",
+    help="Experiment config as base64 encoded JSON",
+    required=True,
+)
+def analyse_experiment(project_id, dataset_id, experiment_config):
+    converter = cattr.Converter()
+    converter.register_structure_hook(
+        datetime,
+        lambda num, _: pytz.utc.localize(datetime.strptime(num, "%Y-%m-%d")),
+    )
+    analysis_run_config = converter.structure(_base64_decode(experiment_config), AnalysisRunConfig)
+
+    spec = default_spec_for_experiment(analysis_run_config.experiment)
+
+    if analysis_run_config.external_config:
+        spec.merge(analysis_run_config.external_config)
+
+    config = spec.resolve(analysis_run_config.experiment)
+
+    # calculate metrics for experiments and write to BigQuery
+    try:
+        Analysis(project_id, dataset_id, config).run(analysis_run_config.date)
+    except Exception as e:
+        logger.exception(
+            str(e), exc_info=e, extra={"experiment": analysis_run_config.experiment.normandy_slug}
+        )
