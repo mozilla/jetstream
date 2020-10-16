@@ -24,7 +24,7 @@ spec:
   - name: active-experiments
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, get_active_experiments, --date={{inputs.parameters.date}}]
+      command: [bin/entrypoint, get-active-experiments, --date={{inputs.parameters.date}}]
 
   - name: analyse-experiment
     inputs:
@@ -32,7 +32,7 @@ spec:
       - name: experiment
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, analyse_experiment, "--experiment_json={{inputs.parameters.experiment}}"]
+      command: [bin/entrypoint, analyse-experiment, "--experiment_config={{inputs.parameters.experiment}}"]
 
   - name: export-statistics
     container:
