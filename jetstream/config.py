@@ -143,20 +143,16 @@ _converter.register_structure_hook(SegmentReference, lambda obj, _type: SegmentR
 @attr.s(auto_attribs=True)
 class PreTreatmentReference:
     name: str
+    args: Dict[str, Any]
 
     def resolve(self, spec: "AnalysisSpec") -> PreTreatment:
         for pre_treatment in PreTreatment.__subclasses__():
             if isabstract(pre_treatment):
                 continue
             if pre_treatment.name() == self.name:
-                return pre_treatment()  # type: ignore
+                return pre_treatment.from_dict(self.args)  # type: ignore
 
         raise ValueError(f"Could not find pre-treatment {self.name}.")
-
-
-_converter.register_structure_hook(
-    PreTreatmentReference, lambda obj, _type: PreTreatmentReference(name=obj)
-)
 
 
 @attr.s(auto_attribs=True)
@@ -328,8 +324,8 @@ class MetricDefinition:
                 raise ValueError(f"Statistic {statistic_name} does not exist.")
 
             pre_treatments = []
-            for pt in params.pop("pre_treatments", []):
-                ref = PreTreatmentReference(pt)
+            for pt, pt_params in params.pop("pre_treatments", {}).items():
+                ref = PreTreatmentReference(pt, pt_params)
                 pre_treatments.append(ref.resolve(spec))
 
             metrics_with_treatments.append(
