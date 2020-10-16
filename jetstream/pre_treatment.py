@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import attr
 import re
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,11 @@ class PreTreatment(ABC):
         the resulting DataFrame.
         """
         raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, config_dict: Dict[str, Any]):
+        """Create a class instance with the specified config parameters."""
+        return cls(**config_dict)  # type: ignore
 
 
 class RemoveNulls(PreTreatment):
