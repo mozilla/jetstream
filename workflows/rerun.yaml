@@ -34,7 +34,7 @@ spec:
       - name: experiment
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, analyse_experiment, "--experiment_json={{inputs.parameters.experiment}}"]
+      command: [bin/entrypoint, analyse-experiment, "--experiment_json={{inputs.parameters.experiment}}"]
       resources:
         requests:
           memory: 1Gi
