@@ -59,7 +59,7 @@ pytz==2020.1              # via google-api-core, mozilla-jetstream, pandas
 regex==2020.10.15          # via black
 requests==2.24.0          # via google-api-core, google-cloud-storage, mozilla-jetstream, smart-open
 rsa==4.6                  # via google-auth
-scipy==1.5.2              # via mozanalysis, statsmodels
+scipy==1.5.3              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
 smart-open[gcp]==3.0.0    # via mozilla-jetstream
 statsmodels==0.12.0       # via mozilla-jetstream
