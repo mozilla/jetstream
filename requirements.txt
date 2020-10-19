@@ -8,6 +8,10 @@ appdirs==1.4.4 \
     --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
     --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128 \
     # via -r requirements.in, black
+argo-workflows==3.5.0 \
+    --hash=sha256:3832b9912410db92986665b893ddc1bd10ea06eff80fd20df2361e8917fa9885 \
+    --hash=sha256:598641b20ed6b522d39a914e7df491ce850bae31709eeddaf6b12045171c748b \
+    # via -r requirements.in
 attrs==20.2.0 \
     --hash=sha256:26b54ddbbb9ee1d34d5d3668dd37d6cf74990ab23c828c2888dccdceee395594 \
     --hash=sha256:fce7fc47dfc976152e82d53ff92fa0407700c21acd20886a13777a0d20e655dc \
@@ -27,7 +31,7 @@ cattrs==1.0.0 \
 certifi==2020.6.20 \
     --hash=sha256:5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3 \
     --hash=sha256:8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41 \
-    # via -r requirements.in, requests
+    # via -r requirements.in, kubernetes, requests
 cffi==1.14.3 \
     --hash=sha256:005f2bfe11b6745d726dbb07ace4d53f057de66e336ff92d61b8c7e9c8f4777d \
     --hash=sha256:09e96138280241bd355cd585148dec04dbbedb4f46128f340d696eaafc82dd7b \
@@ -125,11 +129,11 @@ gitpython==3.1.9 \
 google-api-core[grpc]==1.22.4 \
     --hash=sha256:15e00ceb7e6dc44159e2a41a222830744e9ebcb3a553c580b61cb5a66572f2f0 \
     --hash=sha256:4a9d7ac2527a9e298eebb580a5e24e7e41d6afd97010848dd0f306cae198ec1a \
-    # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
+    # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
 google-auth==1.22.1 \
     --hash=sha256:712dd7d140a9a1ea218e5688c7fcb04af71b431a29ec9ce433e384c60e387b98 \
     --hash=sha256:9c0f71789438d703f77b94aad4ea545afaec9a65f10e6cc1bc8b89ce242244bb \
-    # via -r requirements.in, google-api-core, google-cloud-storage
+    # via -r requirements.in, google-api-core, google-cloud-storage, kubernetes
 google-cloud-bigquery-storage==2.0.0 \
     --hash=sha256:3fb8d85e3afe9ce2a2d7219ad9ace41426a477ab73845cdb3e9087772e2a41a2 \
     --hash=sha256:cebeaf1da7b7e4e3fd95e4a51a6d9c26dc49027d5191ba1fe894d9e1ef259592 \
@@ -138,6 +142,10 @@ google-cloud-bigquery==2.1.0 \
     --hash=sha256:7369e2f81ccddfa62f2af4009dbddf7a1daaef0fc701a4097e8de5508235af74 \
     --hash=sha256:eafd9e3458b271d12c0b28cbb18e0e267ab96361d03a98a9042163eb1f5f78f6 \
     # via -r requirements.in, mozanalysis
+google-cloud-container==2.1.0 \
+    --hash=sha256:982f643a3c01c981446619e4aec73dfdd9f65e1289df40a23b4b95fa421d913c \
+    --hash=sha256:fd800230f51484d2ad59b7a6daea85c5497cf412c6b5623d53cafd4418c12c1f \
+    # via -r requirements.in
 google-cloud-core==1.4.3 \
     --hash=sha256:21afb70c1b0bce8eeb8abb5dca63c5fd37fc8aea18f4b6d60e803bd3d27e6b80 \
     --hash=sha256:75abff9056977809937127418323faa3917f32df68490704d39a4f0d492ebc2b \
@@ -170,10 +178,13 @@ google-resumable-media==1.1.0 \
     --hash=sha256:dcdab13e95bc534d268f87d5293e482cce5bc86dfce6ca0f2e2e89cbb73ef38c \
     --hash=sha256:ecabcd90d74a6e00331af0c87f500f238c44870d9626e01b385dda3af7b99269 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-storage
-googleapis-common-protos==1.52.0 \
+googleapis-common-protos[grpc]==1.52.0 \
     --hash=sha256:560716c807117394da12cecb0a54da5a451b5cf9866f1d37e9a5e2329a665351 \
     --hash=sha256:c8961760f5aad9a711d37b675be103e0cc4e9a39327e0d6d857872f698403e24 \
-    # via -r requirements.in, google-api-core
+    # via -r requirements.in, google-api-core, grpc-google-iam-v1
+grpc-google-iam-v1==0.12.3 \
+    --hash=sha256:0bfb5b56f648f457021a91c0df0db4934b6e0c300bd0f2de2333383fe958aa72 \
+    # via google-cloud-container
 grpcio==1.32.0 \
     --hash=sha256:01d3046fe980be25796d368f8fc5ff34b7cf5e1444f3789a017a7fe794465639 \
     --hash=sha256:07b430fa68e5eecd78e2ad529ab80f6a234b55fc1b675fe47335ccbf64c6c6c8 \
@@ -214,7 +225,7 @@ grpcio==1.32.0 \
     --hash=sha256:f12900be4c3fd2145ba94ab0d80b7c3d71c9e6414cfee2f31b1c20188b5c281f \
     --hash=sha256:f53f2dfc8ff9a58a993e414a016c8b21af333955ae83960454ad91798d467c7b \
     --hash=sha256:f7d508691301027033215d3662dab7e178f54d5cca2329f26a71ae175d94b83f \
-    # via -r requirements.in, google-api-core
+    # via -r requirements.in, google-api-core, googleapis-common-protos, grpc-google-iam-v1
 idna==2.10 \
     --hash=sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6 \
     --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0 \
@@ -231,10 +242,14 @@ jinja2==2.11.2 \
     --hash=sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0 \
     --hash=sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035 \
     # via -r requirements.in
+kubernetes==12.0.0b1 \
+    --hash=sha256:6881c66380abfd3711c5a9b1850fbd200ab2f029025ad56e3f02e591b7fe8256 \
+    --hash=sha256:fd943b1464d3ecbc99beacd0d312ffd92a81a5eabe33446f99dfbcceedffb41a \
+    # via argo-workflows
 libcst==0.3.12 \
     --hash=sha256:a1837239a9a32bcd00c6241b093abc3213431c71c1e6f53da0928a0f57ebfcfd \
     --hash=sha256:f38f24917660a197683208a7086d78e23b3047b27bef8c795838b9d265858b10 \
-    # via google-cloud-bigquery-storage
+    # via google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
     --hash=sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161 \
@@ -274,6 +289,10 @@ mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
     --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f \
     # via -r requirements.in, flake8
+mock==4.0.2 \
+    --hash=sha256:3f9b2c0196c60d21838f307f5825a7b86b678cedc58ab9e50a8988187b4d81e0 \
+    --hash=sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72 \
+    # via argo-workflows
 mozanalysis==2020.9.1 \
     --hash=sha256:6bb718fe09ab9d1651010db22013244641c8eefaf6007db5d628c735b3fa21a1 \
     --hash=sha256:d166777246f0ff5b7c7ca7588360f36b4e03a85e8ce0d7f41ef923dda7794501 \
@@ -326,6 +345,10 @@ numpy==1.19.2 \
     --hash=sha256:e6ddbdc5113628f15de7e4911c02aed74a4ccff531842c583e5032f6e5a179bd \
     --hash=sha256:eb25c381d168daf351147713f49c626030dcff7a393d5caa62515d415a6071d8 \
     # via -r requirements.in, mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
+oauthlib==3.1.0 \
+    --hash=sha256:bee41cc35fcca6e988463cacc3bcb8a96224f470ca547e697b604cc697b2f889 \
+    --hash=sha256:df884cd6cbe20e32633f1db1072e9356f53638e4361bef4e8b03c9127c9328ea \
+    # via requests-oauthlib
 packaging==20.4 \
     --hash=sha256:4357f74f47b9c12db93624a82154e9b120fa8293699949152b22065d556079f8 \
     --hash=sha256:998416ba6962ae7fbd6596850b80e17859a5753ba17c32284f67bfff33784181 \
@@ -365,7 +388,7 @@ pluggy==0.13.1 \
     # via -r requirements.in, pytest
 proto-plus==1.10.0 \
     --hash=sha256:899f2bdc081197e683e3e29d05cd75861efbdd3de883bfb8b78165d74fb587f1 \
-    # via google-cloud-bigquery, google-cloud-bigquery-storage
+    # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container
 protobuf==3.13.0 \
     --hash=sha256:0bba42f439bf45c0f600c3c5993666fcb88e8441d011fad80a11df6f324eef33 \
     --hash=sha256:1e834076dfef9e585815757a2c7e4560c7ccc5962b9d09f831214c693a91b463 \
@@ -455,7 +478,7 @@ pytest==6.1.1 \
 python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
     --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a \
-    # via -r requirements.in, pandas
+    # via -r requirements.in, kubernetes, pandas
 pytz==2020.1 \
     --hash=sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed \
     --hash=sha256:c35965d010ce31b23eeb663ed3cc8c906275d6be1a34393a1d73a41febf4a048 \
@@ -472,7 +495,7 @@ pyyaml==5.3.1 \
     --hash=sha256:b8eac752c5e14d3eca0e6dd9199cd627518cb5ec06add0de9d32baeee6fe645d \
     --hash=sha256:cc8955cfbfc7a115fa81d85284ee61147059a753344bc51098f3ccd69b0d7e0c \
     --hash=sha256:d13155f591e6fcc1ec3b30685d50bf0711574e2c0dfffd7644babf8b5102ca1a \
-    # via libcst
+    # via -r requirements.in, kubernetes, libcst
 regex==2020.10.15 \
     --hash=sha256:02686a2f0b1a4be0facdd0d3ad4dc6c23acaa0f38fb5470d892ae88584ba705c \
     --hash=sha256:137da580d1e6302484be3ef41d72cf5c3ad22a076070051b7449c0e13ab2c482 \
@@ -502,10 +525,14 @@ regex==2020.10.15 \
     --hash=sha256:e935a166a5f4c02afe3f7e4ce92ce5a786f75c6caa0c4ce09c922541d74b77e8 \
     --hash=sha256:ef3a55b16c6450574734db92e0a3aca283290889934a23f7498eaf417e3af9f0 \
     # via -r requirements.in, black
+requests-oauthlib==1.3.0 \
+    --hash=sha256:7f71572defaecd16372f9006f33c2ec8c077c3cfa6f5911a9a90202beb513f3d \
+    --hash=sha256:b4261601a71fd721a8bd6d7aa1cc1d6a8a93b4a9f5e96626f8e4d91e8beeaa6a \
+    # via kubernetes
 requests==2.24.0 \
     --hash=sha256:b3559a131db72c33ee969480840fff4bb6dd111de7dd27c8ee1f820f4f00231b \
     --hash=sha256:fe75cc94a9443b9246fc7049224f75604b113c36acb93f87b80ed42c44cbb898 \
-    # via -r requirements.in, google-api-core, google-cloud-storage, smart-open
+    # via -r requirements.in, google-api-core, google-cloud-storage, kubernetes, requests-oauthlib, smart-open
 rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233 \
@@ -531,7 +558,7 @@ scipy==1.5.2 \
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
     --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \
-    # via -r requirements.in, google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, packaging, patsy, protobuf, python-dateutil
+    # via -r requirements.in, google-api-core, google-auth, google-cloud-bigquery, google-resumable-media, grpcio, kubernetes, packaging, patsy, protobuf, python-dateutil, websocket-client
 smart-open[gcp]==3.0.0 \
     --hash=sha256:7f4e85b71df5a3618f5447d0b417b7a3576308c839690a24a70338b8993684c3 \
     # via -r requirements.in
@@ -597,7 +624,11 @@ typing-inspect==0.6.0 \
 urllib3==1.25.10 \
     --hash=sha256:91056c15fa70756691db97756772bb1eb9678fa585d9184f24534b100dc60f4a \
     --hash=sha256:e7983572181f5e1522d9c98453462384ee92a0be7fac5f1413a1e35c56cc0461 \
-    # via -r requirements.in, requests
+    # via -r requirements.in, kubernetes, requests
+websocket-client==0.57.0 \
+    --hash=sha256:0fc45c961324d79c781bab301359d5a1b00b13ad1b10415a4780229ef71a5549 \
+    --hash=sha256:d735b91d6d1692a6a181f2a8c9e0238e5f6373356f561bb9dc4c7af36f452010 \
+    # via kubernetes
 wrapt==1.12.1 \
     --hash=sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7 \
     # via -r requirements.in

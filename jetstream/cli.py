@@ -14,6 +14,7 @@ import toml
 from typing import Optional
 
 from . import experimenter
+from .argo import submit_workflow
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection, Experiment
 from .export_json import export_statistics_tables
@@ -23,8 +24,12 @@ from .logging.bigquery_log_handler import BigQueryLogHandler
 from .bigquery_client import BigQueryClient
 from . import bq_normalize_name, AnalysisPeriod
 
+
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
+WORKLFOW_DIR = Path(__file__).parent / "workflows"
+RERUN_WORKFLOW = WORKLFOW_DIR / "rerun.yaml"
+RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
 
 
 def setup_logger(
@@ -94,10 +99,24 @@ class ClickDate(click.ParamType):
 
 
 project_id_option = click.option(
-    "--project_id", "--project-id", default="moz-fx-data-experiments", help="Project to write to"
+    "--project_id",
+    "--project-id",
+    default="moz-fx-data-experiments",
+    help="Project to write to",
+    required=True,
 )
 dataset_id_option = click.option(
-    "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to"
+    "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to", required=True
+)
+zone_option = click.option(
+    "--zone", default="us-central1-a", help="Kubernetes cluster zone", required=True
+)
+cluster_id_option = click.option(
+    "--cluster_id",
+    "--cluster-id",
+    default="jetstream",
+    help="Kubernetes cluster name",
+    required=True,
 )
 
 experiment_slug_option = click.option(
@@ -112,6 +131,10 @@ secret_config_file_option = click.option(
 
 bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket to write to")
 
+argo_option = click.option(
+    "--argo", is_flag=True, default=False, help="Run on Kubernetes with Argo"
+)
+
 
 @cli.command()
 @project_id_option
@@ -125,7 +148,10 @@ bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket
 )
 @experiment_slug_option
 @secret_config_file_option
-def run(project_id, dataset_id, date, experiment_slug, config_file):
+@argo_option
+@zone_option
+@cluster_id_option
+def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, cluster_id):
     """
     Runs analysis on active experiments for the provided date.
 
@@ -134,42 +160,48 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     thrown during some experiment analyses. This ensures that the Airflow task will
     not retry the task and run all of the analyses again.
     """
-    # fetch experiments that are still active
-    collection = ExperimentCollection.from_experimenter()
 
-    active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v4")
-    )
+    if argo:
+        submit_workflow(project_id, zone, cluster_id, RUN_WORKFLOW, monitor_status=True)
+        click.echo("Submitted workflow to Argo")
+        return
 
-    if experiment_slug is not None:
-        # run analysis for specific experiment
-        active_experiments = active_experiments.with_slug(experiment_slug)
+    # # fetch experiments that are still active
+    # collection = ExperimentCollection.from_experimenter()
 
-    # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
+    # active_experiments = collection.end_on_or_after(date).of_type(
+    #     ("pref", "addon", "message", "v4")
+    # )
 
-    # calculate metrics for experiments and write to BigQuery
-    for experiment in active_experiments.experiments:
-        try:
-            spec = default_spec_for_experiment(experiment)
+    # if experiment_slug is not None:
+    #     # run analysis for specific experiment
+    #     active_experiments = active_experiments.with_slug(experiment_slug)
 
-            if config_file:
-                # secret CLI configs overwrite external configs
-                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-                spec.merge(custom_spec)
-            else:
-                external_experiment_config = external_configs.spec_for_experiment(
-                    experiment.normandy_slug
-                )
+    # # get experiment-specific external configs
+    # external_configs = ExternalConfigCollection.from_github_repo()
 
-                if external_experiment_config:
-                    spec.merge(external_experiment_config)
+    # # calculate metrics for experiments and write to BigQuery
+    # for experiment in active_experiments.experiments:
+    #     try:
+    #         spec = default_spec_for_experiment(experiment)
 
-            config = spec.resolve(experiment)
+    #         if config_file:
+    #             # secret CLI configs overwrite external configs
+    #             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+    #             spec.merge(custom_spec)
+    #         else:
+    #             external_experiment_config = external_configs.spec_for_experiment(
+    #                 experiment.normandy_slug
+    #             )
 
-            Analysis(project_id, dataset_id, config).run(date)
-        except Exception as e:
-            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+    #             if external_experiment_config:
+    #                 spec.merge(external_experiment_config)
+
+    #         config = spec.resolve(experiment)
+
+    #         Analysis(project_id, dataset_id, config).run(date)
+    #     except Exception as e:
+    #         logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
 
 
 @cli.command("rerun")
