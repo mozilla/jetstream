@@ -8,6 +8,7 @@ spec:
   arguments:
     parameters:
     - name: date  # set date dynamically when worklfow gets deployed
+      value: "2020-01-01"
   templates:
   - name: jetstream
     steps:
@@ -24,7 +25,7 @@ spec:
   - name: active-experiments
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, get-active-experiments, --date={{inputs.parameters.date}}]
+      command: [bin/entrypoint, get-active-experiments, "--date={{workflow.parameters.date}}"]
 
   - name: analyse-experiment
     inputs:
