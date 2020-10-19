@@ -37,7 +37,7 @@ spec:
       command: [bin/entrypoint, analyse-experiment, "--experiment_json={{inputs.parameters.experiment}}"]
       resources:
         requests:
-          memory: 1Gi
+          memory: 10Gi
 
   - name: export-statistics
     container:

@@ -5,7 +5,8 @@
 #    update_deps
 #
 appdirs==1.4.4            # via black
-attrs==20.2.0             # via cattrs, jsonschema, mozanalysis, mozilla-jetstream, pytest
+argo-workflows==3.5.0     # via mozilla-jetstream
+attrs==20.2.0             # via cattrs, mozanalysis, mozilla-jetstream, pytest
 black==20.8b1             # via pytest-black
 cachetools==4.1.1         # via google-auth
 cattrs==1.0.0             # via mozilla-jetstream
@@ -15,12 +16,12 @@ chardet==3.0.4            # via requests
 click==7.1.2              # via black, mozilla-jetstream
 coverage==5.3             # via mozilla-jetstream, pytest-cov
 flake8==3.8.4             # via pytest-flake8
-gitdb==4.0.5              # via gitpython
-gitpython==3.1.11         # via mozilla-jetstream
-google-api-core[grpc]==1.23.0  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
-google-auth==1.23.0       # via google-api-core, google-cloud-storage
-google-cloud-bigquery-storage==2.0.1  # via mozilla-jetstream
-google-cloud-bigquery==2.2.0  # via mozanalysis, mozilla-jetstream
+GitPython==3.1.9          # via mozilla-jetstream
+google-api-core[grpc]==1.22.4  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
+google-auth==1.22.1       # via google-api-core, google-cloud-storage
+google-cloud-bigquery-storage==2.0.0  # via mozilla-jetstream
+google-cloud-bigquery==2.1.0  # via mozanalysis, mozilla-jetstream
+google-cloud-container==2.1.0 # via mozilla-jetstream
 google-cloud-core==1.4.3  # via google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.32.0  # via mozilla-jetstream, smart-open
 google-crc32c==1.0.0      # via google-resumable-media
@@ -60,9 +61,9 @@ pytest-cov==2.10.1        # via mozilla-jetstream
 pytest-flake8==1.0.6      # via mozilla-jetstream
 pytest==6.1.2             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via pandas
-pytz==2020.4              # via google-api-core, mozilla-jetstream, pandas
-pyyaml==5.3.1             # via libcst
-regex==2020.10.28         # via black
+pytz==2020.1              # via google-api-core, mozilla-jetstream, pandas
+PyYAML==5.3.1             # via mozilla-jetstream  
+regex==2020.10.15         # via black
 requests==2.24.0          # via google-api-core, google-cloud-storage, mozilla-jetstream, smart-open
 rsa==4.6                  # via google-auth
 scipy==1.5.3              # via mozanalysis, statsmodels

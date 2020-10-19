@@ -33,15 +33,18 @@ setup(
         "jetstream.tests",
         "jetstream.tests.integration",
         "jetstream.logging",
+        "jetstream.workflows"
     ],
-    package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"]},
+    package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"], "jetstream.workflows": ["*.yaml"]},
     install_requires=[
         "attrs",
+        "argo-workflows",
         "cattrs<1.1",
         "Click",
         "GitPython",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
+        "google-cloud-container",
         "google-cloud-storage",
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "incremental",
@@ -49,6 +52,7 @@ setup(
         "mozanalysis",
         "pyarrow",
         "pytz",
+        "PyYAML",
         "requests",
         "smart_open[gcp]",
         "statsmodels",
