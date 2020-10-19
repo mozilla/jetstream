@@ -114,8 +114,8 @@ class ExperimentV1:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class ExperimentV4:
-    """Represents a v4 experiment from Experimenter."""
+class ExperimentV6:
+    """Represents a v6 experiment from Experimenter."""
 
     slug: str  # Normandy slug
     active: bool
@@ -127,7 +127,7 @@ class ExperimentV4:
     referenceBranch: Optional[str]
 
     @classmethod
-    def from_dict(cls, d) -> "ExperimentV4":
+    def from_dict(cls, d) -> "ExperimentV6":
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime,
@@ -159,7 +159,7 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     # for nimbus experiments
-    EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v4/experiments/"
+    EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
 
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
@@ -179,13 +179,9 @@ class ExperimentCollection:
 
         for experiment in nimbus_experiments_json:
             try:
-                nimbus_experiments.append(
-                    ExperimentV4.from_dict(experiment["arguments"]).to_experiment()
-                )
+                nimbus_experiments.append(ExperimentV6.from_dict(experiment).to_experiment())
             except Exception as e:
-                logger.exception(
-                    str(e), exc_info=e, extra={"experiment": experiment["arguments"]["slug"]}
-                )
+                logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
         return cls(nimbus_experiments + legacy_experiments)
 

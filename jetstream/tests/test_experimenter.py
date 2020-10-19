@@ -10,7 +10,7 @@ from jetstream.experimenter import (
     Experiment,
     Branch,
     ExperimentV1,
-    ExperimentV4,
+    ExperimentV6,
     Variant,
 )
 
@@ -170,47 +170,43 @@ EXPERIMENTER_FIXTURE_V1 = r"""
 ]
 """  # noqa
 
-EXPERIMENTER_FIXTURE_V4 = r"""
+EXPERIMENTER_FIXTURE_V6 = r"""
 [
 {
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
-  "arguments":{ 
-    "slug":"bug-1629098-rapid-please-reject-me-beta-86",
-    "userFacingName":"",
-    "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
-    "isEnrollmentPaused":false,
-    "features":[],
-    "proposedEnrollment":7,
-    "bucketConfig": {
-      "randomizationUnit":"userId",
-      "namespace":"bug-1629098-rapid-please-reject-me-beta-86",
-      "start":0,
-      "count":100,
-      "total":10000 
-    },
-    "startDate":"2020-07-29",
-    "endDate":null,
-    "branches":[{
-        "slug":"treatment",
-        "ratio":1,
-        "value":null    
-      },
-      {
-        "slug":"control",
-        "ratio":1,
-        "value":null    
-      }
-    ],
-    "referenceBranch":"control"
+  "slug":"bug-1629098-rapid-please-reject-me-beta-86",
+  "userFacingName":"",
+  "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
+  "active":true,
+  "isEnrollmentPaused":false,
+  "features":[],
+  "proposedEnrollment":7,
+  "bucketConfig": {
+    "randomizationUnit":"userId",
+    "namespace":"bug-1629098-rapid-please-reject-me-beta-86",
+    "start":0,
+    "count":100,
+    "total":10000 
   },
+  "startDate":"2020-07-29",
+  "endDate":null,
+  "branches":[{
+      "slug":"treatment",
+      "ratio":1,
+      "feature":null    
+    },
+    {
+      "slug":"control",
+      "ratio":1,
+      "feature":null    
+    }
+  ],
+  "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('86.0') >= 0",
-  "enabled":true,
   "targeting":"[userId, \"bug-1629098-rapid-please-reject-me-beta-86\"]|bucketSample(0, 100, 10000) && localeLanguageCode == 'en' && region == 'US' && browserSettings.update.channel == 'beta'"
 },
 {   
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
-  "arguments":{      
     "slug":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
     "userFacingName":"testing rapido intake 1",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
@@ -220,6 +216,7 @@ EXPERIMENTER_FIXTURE_V4 = r"""
       "fake_feature"
     ],
     "proposedEnrollment":14,
+    "proposedDuration":30,
     "bucketConfig":{
       "randomizationUnit":"normandy_id",
       "namespace":"",
@@ -232,22 +229,19 @@ EXPERIMENTER_FIXTURE_V4 = r"""
     "branches":[{
       "slug":"treatment",
       "ratio":1,
-      "value":null     
+      "feature":null     
       },
       {
         "slug":"control",
         "ratio":1,
-        "value":null   
+        "feature":null   
     }],
-  "referenceBranch":"control" 
-  },
+  "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('79.0') >= 0",
-  "enabled":true,
   "targeting":null
 },
 {   
   "id":null,
-  "arguments":{      
     "slug":null,
     "userFacingName":"some invalid experiment",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
@@ -264,8 +258,7 @@ EXPERIMENTER_FIXTURE_V4 = r"""
     "startDate":null,
     "endDate":null,
     "branches":[],
-  "referenceBranch":"control" 
-  },
+  "referenceBranch":"control",
   "enabled":true,
   "targeting":null
 }
@@ -280,7 +273,7 @@ def mock_session():
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
         elif url == ExperimentCollection.EXPERIMENTER_API_URL_V4:
-            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V4)
+            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
         else:
             raise Exception("Invalid Experimenter API call.")
 
@@ -373,8 +366,8 @@ def test_convert_experiment_v1_to_experiment():
     assert experiment.is_high_population is False
 
 
-def test_convert_experiment_v4_to_experiment():
-    experiment_v4 = ExperimentV4(
+def test_convert_experiment_v6_to_experiment():
+    experiment_v6 = ExperimentV6(
         slug="test_slug",
         active=True,
         startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
@@ -385,7 +378,7 @@ def test_convert_experiment_v4_to_experiment():
         features=["fake_feature"],
     )
 
-    experiment = experiment_v4.to_experiment()
+    experiment = experiment_v6.to_experiment()
 
     assert experiment.experimenter_slug is None
     assert experiment.normandy_slug == "test_slug"
