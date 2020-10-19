@@ -28,7 +28,7 @@ googleapis-common-protos==1.52.0  # via google-api-core
 grpcio==1.32.0            # via google-api-core, mozilla-jetstream
 idna==2.10                # via requests
 incremental==17.5.0       # via mozilla-jetstream
-iniconfig==1.0.1          # via pytest
+iniconfig==1.1.1          # via pytest
 jinja2==2.11.2            # via mozilla-jetstream
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
