@@ -30,6 +30,7 @@ CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 WORKLFOW_DIR = Path(__file__).parent / "workflows"
 RERUN_WORKFLOW = WORKLFOW_DIR / "rerun.yaml"
 RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
+RERUN_CONFIG_CHANGED_WORKFLOW = WORKLFOW_DIR / "rerun_config_changed.yaml"
 
 
 def setup_logger(
@@ -163,7 +164,14 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
 
     if argo:
         # use Argo
-        submit_workflow(project_id, zone, cluster_id, RUN_WORKFLOW, monitor_status=True)
+        submit_workflow(
+            project_id,
+            zone,
+            cluster_id,
+            RUN_WORKFLOW,
+            {"date": date.strftime("%Y-%m-%d")},
+            monitor_status=True,
+        )
         click.echo("Submitted workflow to Argo")
         return
 
@@ -212,7 +220,10 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
 @project_id_option
 @dataset_id_option
 @secret_config_file_option
-def rerun(project_id, dataset_id, experiment_slug, config_file):
+@argo_option
+@zone_option
+@cluster_id_option
+def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id):
     """
     Rerun all available analyses for a specific experiment.
 
@@ -221,13 +232,32 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
+    if experiment_slug is None:
+        click.echo("experiment_slug is required.", err=True)
+        sys.exit(1)
+
+    if argo:
+        # use Argo
+        submit_workflow(
+            project_id,
+            zone,
+            cluster_id,
+            RERUN_WORKFLOW,
+            {"experiment_slug": experiment_slug},
+            monitor_status=True,
+        )
+        click.echo("Submitted workflow to Argo")
+        return
+
+    # run locally
+
     collection = ExperimentCollection.from_experimenter()
     exceptions = []
 
     try:
         experiments = collection.with_slug(experiment_slug)
 
-        if experiment_slug is None or len(experiments.experiments) == 0:
+        if len(experiments.experiments) == 0:
             raise Exception(f"No experiment with slug {experiment_slug} found.")
 
         experiment = experiments.experiments[0]
@@ -282,6 +312,9 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
 @project_id_option
 @dataset_id_option
 @bucket_option
+@argo_option
+@zone_option
+@cluster_id_option
 def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)
@@ -291,8 +324,26 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @project_id_option
 @dataset_id_option
 @click.pass_context
-def rerun_config_changed(ctx, project_id, dataset_id):
+@argo_option
+@zone_option
+@cluster_id_option
+def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
     """Rerun all available analyses for experiments with new or updated config files."""
+    if argo:
+        # use Argo
+        submit_workflow(
+            project_id,
+            zone,
+            cluster_id,
+            RERUN_CONFIG_CHANGED_WORKFLOW,
+            {},
+            monitor_status=True,
+        )
+        click.echo("Submitted workflow to Argo")
+        return
+
+    # run locally
+
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
 
