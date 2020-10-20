@@ -27,6 +27,7 @@ CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 WORKLFOW_DIR = Path(__file__).parent / "workflows"
 RERUN_WORKFLOW = WORKLFOW_DIR / "rerun.yaml"
 RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
+RERUN_CONFIG_CHANGED_WORKFLOW = WORKLFOW_DIR / "rerun_config_changed.yaml"
 
 
 def setup_logger(
@@ -292,7 +293,10 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
 @project_id_option
 @dataset_id_option
 @secret_config_file_option
-def rerun(project_id, dataset_id, experiment_slug, config_file):
+@argo_option
+@zone_option
+@cluster_id_option
+def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id):
     """
     Rerun all available analyses for a specific experiment.
 
@@ -301,23 +305,89 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    AnalysisExecutor(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        date=All,
-        experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else {},
-    ).execute()
+    if experiment_slug is None:
+        click.echo("experiment_slug is required.", err=True)
+        sys.exit(1)
 
-    BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
+    if argo:
+        # use Argo
+        submit_workflow(
+            project_id,
+            zone,
+            cluster_id,
+            RERUN_WORKFLOW,
+            {"experiment_slug": experiment_slug},
+            monitor_status=True,
+        )
+        click.echo("Submitted workflow to Argo")
+        return
 
-    # sys.exit(0 if success else 1)
+    # run locally
+
+    collection = ExperimentCollection.from_experimenter()
+    exceptions = []
+
+    try:
+        experiments = collection.with_slug(experiment_slug)
+
+        if len(experiments.experiments) == 0:
+            raise Exception(f"No experiment with slug {experiment_slug} found.")
+
+        experiment = experiments.experiments[0]
+
+        if experiment.end_date is None:
+            raise Exception(f"End date is missing for experiment {experiment_slug}")
+
+        end_date = min(
+            experiment.end_date,
+            datetime.combine(
+                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=pytz.utc,
+            ),
+        )
+        spec = default_spec_for_experiment(experiment)
+        if config_file:
+            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+            spec.merge(custom_spec)
+        else:
+            # get experiment-specific external configs
+            external_configs = ExternalConfigCollection.from_github_repo()
+            external_experiment_config = external_configs.spec_for_experiment(
+                experiment.normandy_slug
+            )
+
+            if external_experiment_config:
+                spec.merge(external_experiment_config)
+
+        config = spec.resolve(experiment)
+
+        # delete all tables previously created when this experiment was analysed
+        client = BigQueryClient(project_id, dataset_id)
+        normalized_slug = bq_normalize_name(experiment.normandy_slug)
+        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
+        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+        client.delete_tables_matching_regex(table_name_re)
+
+        for date in inclusive_date_range(experiment.start_date, end_date):
+            logger.info(f"*** {date}")
+            Analysis(project_id, dataset_id, config).run(date)
+    except Exception as e:
+        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
+        exceptions.append(e)
+
+    if len(exceptions) > 0:
+        # return error status code for instances triggered via jetstream-config
+        sys.exit(1)
 
 
 @cli.command()
 @project_id_option
 @dataset_id_option
 @bucket_option
+@argo_option
+@zone_option
+@cluster_id_option
 def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)
@@ -326,8 +396,27 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cli.command()
 @project_id_option
 @dataset_id_option
-def rerun_config_changed(project_id, dataset_id):
+@click.pass_context
+@argo_option
+@zone_option
+@cluster_id_option
+def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
     """Rerun all available analyses for experiments with new or updated config files."""
+    if argo:
+        # use Argo
+        submit_workflow(
+            project_id,
+            zone,
+            cluster_id,
+            RERUN_CONFIG_CHANGED_WORKFLOW,
+            {},
+            monitor_status=True,
+        )
+        click.echo("Submitted workflow to Argo")
+        return
+
+    # run locally
+
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)

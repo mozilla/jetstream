@@ -7,7 +7,7 @@ spec:
   onExit: export-statistics   # export statistics after all analyses 
   arguments:
     parameters:
-    - name: experiment_slug   # set slug dynamically when workflow gets deployed
+    - name: experiment_slug   # set dynamically when workflow gets deployed
   templates:
   - name: jetstream
     steps:
@@ -42,4 +42,4 @@ spec:
   - name: export-statistics
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, export_statistics_to_json]
+      command: [bin/entrypoint, export-statistics-to-json]
