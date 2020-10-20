@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import timedelta
 from pathlib import Path
 import shutil
 import tempfile
@@ -13,3 +14,9 @@ def TemporaryDirectory():
         yield name
     finally:
         shutil.rmtree(name)
+
+
+def inclusive_date_range(start_date, end_date):
+    """Generator for a range of dates, includes end_date."""
+    for n in range(int((end_date - start_date).days) + 1):
+        yield start_date + timedelta(n)
