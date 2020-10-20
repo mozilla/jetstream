@@ -46,7 +46,7 @@ class TestExternalConfigIntegration:
         client.client.create_table(f"{temporary_dataset}.new_table_day1")
         client.add_labels_to_table(
             "new_table_day1",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
@@ -65,12 +65,12 @@ class TestExternalConfigIntegration:
         client.client.create_table(f"{temporary_dataset}.old_table_day1")
         client.add_labels_to_table(
             "old_table_day1",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.old_table_day2")
         client.add_labels_to_table(
             "old_table_day2",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
 
         config_collection = ExternalConfigCollection([config])
@@ -83,12 +83,12 @@ class TestExternalConfigIntegration:
         client.client.create_table(f"{temporary_dataset}.active_table_day0")
         client.add_labels_to_table(
             "active_table_day0",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.active_table_day1")
         client.add_labels_to_table(
             "active_table_day1",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
 
         config = ExternalConfig(
@@ -100,12 +100,12 @@ class TestExternalConfigIntegration:
         client.client.create_table(f"{temporary_dataset}.active_table_day2")
         client.add_labels_to_table(
             "active_table_day2",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.active_table_weekly")
         client.add_labels_to_table(
             "active_table_weekly",
-            {"last_updated": client._current_timestamp_label()},
+            {"last_updated": client.current_timestamp_label()},
         )
 
         config_collection = ExternalConfigCollection([config])
