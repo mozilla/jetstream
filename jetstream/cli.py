@@ -164,7 +164,8 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
 
     if argo:
         # use Argo
-        submit_workflow(
+        click.echo("Submitted workflow to Argo")
+        return submit_workflow(
             project_id,
             zone,
             cluster_id,
@@ -172,8 +173,6 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
             {"date": date.strftime("%Y-%m-%d")},
             monitor_status=True,
         )
-        click.echo("Submitted workflow to Argo")
-        return
 
     # run locally
 
@@ -238,7 +237,8 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
 
     if argo:
         # use Argo
-        submit_workflow(
+        click.echo("Submitted workflow to Argo")
+        return submit_workflow(
             project_id,
             zone,
             cluster_id,
@@ -246,8 +246,6 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
             {"experiment_slug": experiment_slug},
             monitor_status=True,
         )
-        click.echo("Submitted workflow to Argo")
-        return
 
     # run locally
 
@@ -331,7 +329,8 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
     """Rerun all available analyses for experiments with new or updated config files."""
     if argo:
         # use Argo
-        submit_workflow(
+        click.echo("Submitted workflow to Argo")
+        return submit_workflow(
             project_id,
             zone,
             cluster_id,
@@ -339,8 +338,6 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
             {},
             monitor_status=True,
         )
-        click.echo("Submitted workflow to Argo")
-        return
 
     # run locally
 
