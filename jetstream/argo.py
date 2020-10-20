@@ -4,6 +4,7 @@ from google.cloud.container_v1 import ClusterManagerClient
 import google.auth
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+import time
 from typing import Dict, Any
 import yaml
 
@@ -42,11 +43,25 @@ def submit_workflow(
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
 
-    api.create_namespaced_workflow("argo", manifest)
+    workflow = api.create_namespaced_workflow("argo", manifest)
 
     if monitor_status:
-        pass
-        # todo
+        finished = False
+
+        print("Worflow running")
+        print(workflow.status)
+
+        while not finished:
+            workflow = api.get_namespaced_workflow(
+                workflow.metadata.namespace, workflow.metadata.name
+            )
+
+            if workflow.status.finished_at is not None:
+                finished = True
+                if workflow.status.phase == "Failed":
+                    raise Exception(f"Workflow execution failed: {workflow.status}")
+
+            time.sleep(1)
 
 
 def get_config(project_id: str, zone: str, cluster_id: str):
