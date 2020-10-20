@@ -7,8 +7,7 @@ spec:
   onExit: export-statistics # export statistics after all analyses 
   arguments:
     parameters:
-    - name: date  # set date dynamically when worklfow gets deployed
-      value: "2020-01-01"
+    - name: date  # set dynamically when worklfow gets deployed
   templates:
   - name: jetstream
     steps:

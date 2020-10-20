@@ -4,11 +4,35 @@ from google.cloud.container_v1 import ClusterManagerClient
 import google.auth
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Dict, Any
 import yaml
 
 
+def apply_parameters(manifest: Dict[Any, Any], parameters: Dict[str, Any]) -> Dict[Any, Any]:
+    """Apply custom parameters to the workflow manifest."""
+    workflow_parameters = manifest["spec"]["arguments"]["parameters"]
+    for key, value in parameters.items():
+        exists = False
+        for workflow_param in workflow_parameters:
+            # overwrite existing
+            if workflow_param["name"] == key:
+                workflow_param["value"] = value
+                exists = True
+
+        if not exists:
+            # append non-existing parameters
+            workflow_parameters.append({"name": key, "value": value})
+
+    return manifest
+
+
 def submit_workflow(
-    project_id: str, zone: str, cluster_id: str, workflow_file: Path, monitor_status: bool = False
+    project_id: str,
+    zone: str,
+    cluster_id: str,
+    workflow_file: Path,
+    parameters: Dict[str, Any],
+    monitor_status: bool = False,
 ):
     """Submit a workflow to Argo."""
 
@@ -16,6 +40,7 @@ def submit_workflow(
     api_client = ApiClient(configuration=config)
     api = V1alpha1Api(api_client=api_client)
     manifest = yaml.safe_load(workflow_file.read_text())
+    manifest = apply_parameters(manifest, parameters)
 
     api.create_namespaced_workflow("argo", manifest)
 
