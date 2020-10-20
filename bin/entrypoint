@@ -2,14 +2,20 @@
 
 set -e
 
-if [ "$1" = "export_statistics_to_json" ]; then
+if [ "$1" = "export-statistics-to-json" ]; then
     # this is triggered by Airflow
-    jetstream export-statistics-to-json
-elif [ "$1" = "rerun_config_changed" ]; then
+    jetstream export-statistics-to-json "$@"
+elif [ "$1" = "rerun-config-changed" ]; then
     # this is triggered by the jetstream-config repo
-    jetstream rerun_config_changed
+    jetstream rerun-config-changed "$@"
+elif [ "$1" = "get-active-experiments" ]; then
+    # argo
+    jetstream get-active-experiments "${@:2}"
+elif [ "$1" = "analyse-experiment" ]; then
+    # argo
+    jetstream analyse-experiment "${@:2}"
 else
     # this is triggered by Airflow
     jetstream --log_to_bigquery run "$@"
-    jetstream --log_to_bigquery rerun_config_changed
+    jetstream --log_to_bigquery rerun-config-changed "$@"
 fi

@@ -12,7 +12,6 @@ import toml
 import jetstream.analysis
 from jetstream.analysis import Analysis, AnalysisPeriod
 from jetstream.errors import NoEnrollmentPeriodException
-from jetstream.cli import default_spec_for_experiment
 from jetstream.config import AnalysisSpec
 from jetstream.experimenter import ExperimentV1
 from jetstream.errors import HighPopulationException
@@ -151,7 +150,7 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     m = Mock()
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
     x = experiments[0]
-    config = default_spec_for_experiment(x).resolve(x)
+    config = AnalysisSpec.default_for_experiment(x).resolve(x)
     Analysis("spam", "eggs", config).validate()
     m.assert_called_once()
 
@@ -173,7 +172,7 @@ def test_analysis_doesnt_choke_on_segments(experiments):
 
 def test_is_high_population_check(experiments):
     x = experiments[3]
-    config = default_spec_for_experiment(x).resolve(x)
+    config = AnalysisSpec.default_for_experiment(x).resolve(x)
 
     with pytest.raises(HighPopulationException):
         Analysis("spam", "eggs", config).check_runnable()

@@ -33,9 +33,13 @@ setup(
         "jetstream.tests",
         "jetstream.tests.integration",
         "jetstream.logging",
-        "jetstream.workflows"
+        "jetstream.workflows",
     ],
-    package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"], "jetstream.workflows": ["*.yaml"]},
+    package_data={
+        "jetstream.config": ["*.toml"],
+        "jetstream.tests": ["data/*"],
+        "jetstream.workflows": ["*.yaml"],
+    },
     install_requires=[
         "attrs",
         "argo-workflows",
