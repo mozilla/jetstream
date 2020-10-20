@@ -205,6 +205,17 @@ def default_spec_for_experiment(experiment: experimenter.Experiment) -> Analysis
     return default_metrics
 
 
+def update_tables_last_modified(project_id, dataset_id, normandy_slug):
+    client = BigQueryClient(project_id, dataset_id)
+    normalized_slug = bq_normalize_name(normandy_slug)
+    analysis_periods = "|".join([p.value for p in AnalysisPeriod])
+    table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+    tables = client.tables_matching_regex(table_name_re)
+
+    for table in tables:
+        client.add_labels_to_table({"last_updated": client.current_timestamp_label()})
+
+
 class ClickDate(click.ParamType):
     name = "date"
 
@@ -312,7 +323,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
     if argo:
         # use Argo
         click.echo("Submitted workflow to Argo")
-        return submit_workflow(
+        result = submit_workflow(
             project_id,
             zone,
             cluster_id,
@@ -320,11 +331,12 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
             {"experiment_slug": experiment_slug},
             monitor_status=True,
         )
+        update_tables_last_modified(project_id, dataset_id, experiment_slug)
+        return result
 
     # run locally
 
     collection = ExperimentCollection.from_experimenter()
-    exceptions = []
 
     try:
         experiments = collection.with_slug(experiment_slug)
@@ -361,23 +373,13 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
 
         config = spec.resolve(experiment)
 
-        # delete all tables previously created when this experiment was analysed
-        client = BigQueryClient(project_id, dataset_id)
-        normalized_slug = bq_normalize_name(experiment.normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
-        client.delete_tables_matching_regex(table_name_re)
-
         for date in inclusive_date_range(experiment.start_date, end_date):
             logger.info(f"*** {date}")
             Analysis(project_id, dataset_id, config).run(date)
+
+        update_tables_last_modified(project_id, dataset_id, experiment_slug)
     except Exception as e:
         logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
-        exceptions.append(e)
-
-    if len(exceptions) > 0:
-        # return error status code for instances triggered via jetstream-config
-        sys.exit(1)
 
 
 @cli.command()
@@ -401,10 +403,15 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cluster_id_option
 def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
     """Rerun all available analyses for experiments with new or updated config files."""
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+
+    updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
+
     if argo:
         # use Argo
         click.echo("Submitted workflow to Argo")
-        return submit_workflow(
+        result = submit_workflow(
             project_id,
             zone,
             cluster_id,
@@ -412,6 +419,11 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
             {},
             monitor_status=True,
         )
+
+        for external_config in updated_external_configs:
+            update_tables_last_modified(project_id, dataset_id, external_config.slug)
+
+        return result
 
     # run locally
 
