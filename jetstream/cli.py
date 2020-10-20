@@ -533,7 +533,8 @@ def get_active_experiments(
     for experiment in active_experiments.experiments:
         if experiment.start_date is None or experiment.end_date is None:
             click.echo(
-                f"Start date or end date undefined for experiment {experiment.slug}.", err=True
+                f"Start date or end date undefined for experiment {experiment.normandy_slug}.",
+                err=True,
             )
             continue
 

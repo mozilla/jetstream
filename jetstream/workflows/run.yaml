@@ -18,7 +18,6 @@ spec:
         duration: "2m"
         factor: 2
         maxDuration: "5m"
-    activeDeadlineSeconds: 600   # terminate container template after 10 minutes  
     steps:
     - - name: get-active-experiments
         template: active-experiments  # return active experiments for specific date
@@ -34,6 +33,7 @@ spec:
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
       command: [bin/entrypoint, get-active-experiments, "--start_date={{workflow.parameters.date}}", "--end_date={{workflow.parameters.date}}"]
+    activeDeadlineSeconds: 600   # terminate container template after 10 minutes  
 
   - name: analyse-experiment
     inputs:

@@ -49,6 +49,10 @@ def cli_experiments():
 
 
 class TestCli:
+    @pytest.fixture
+    def runner(self):
+        return CliRunner()
+
     def test_inclusive_date_range(self):
         start_date = dt.date(2020, 5, 1)
         end_date = dt.date(2020, 5, 1)
