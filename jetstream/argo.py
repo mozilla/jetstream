@@ -49,14 +49,13 @@ def submit_workflow(
         finished = False
 
         print("Worflow running")
-        print(workflow.status)
 
         while not finished:
             workflow = api.get_namespaced_workflow(
                 workflow.metadata.namespace, workflow.metadata.name
             )
 
-            if workflow.status.finished_at is not None:
+            if workflow.status and workflow.status.finished_at is not None:
                 finished = True
                 if workflow.status.phase == "Failed":
                     raise Exception(f"Workflow execution failed: {workflow.status}")
