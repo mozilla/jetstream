@@ -42,4 +42,4 @@ spec:
   - name: export-statistics
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, export_statistics_to_json]
+      command: [bin/entrypoint, export-statistics-to-json]
