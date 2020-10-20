@@ -4,28 +4,29 @@ metadata:
   generateName: jetstream-
 spec:
   entrypoint: jetstream
-  onExit: export-statistics # export statistics after all analyses 
+  onExit: export-statistics   # export statistics after all analyses 
   arguments:
     parameters:
-    - name: date  # set date dynamically when worklfow gets deployed
-      value: "2020-01-01"
+    - name: experiment_slug   # set slug dynamically when workflow gets deployed
   templates:
   - name: jetstream
     steps:
     - - name: get-active-experiments
-        template: active-experiments  # return active experiments for specific date
-    - - name: analyse-experiment      
-        template: analyse-experiment  
+        template: get-active-experiments
+    - - name: analyse-experiment
+        template: analyse-experiment
         arguments:
           parameters:
           - name: experiment
             value: "{{item}}"
         withParam: "{{steps.get-active-experiments.outputs.result}}"  # process active experiments in parallel
+    - - name: export-statistics
+        template: export-statistics # after all analyses are completed, export to GCS
 
-  - name: active-experiments
+  - name: get-active-experiments
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, get-active-experiments, "--start_date={{workflow.parameters.date}}", "--end_date={{workflow.parameters.date}}"]
+      command: [bin/entrypoint, get-active-experiments, --config_changed]
 
   - name: analyse-experiment
     inputs:
@@ -33,7 +34,10 @@ spec:
       - name: experiment
     container:
       image: gcr.io/ascholtz-dev/jetstream:latest
-      command: [bin/entrypoint, analyse-experiment, "--experiment_config={{inputs.parameters.experiment}}"]
+      command: [bin/entrypoint, analyse-experiment, "--experiment_json={{inputs.parameters.experiment}}"]
+      resources:
+        requests:
+          memory: 10Gi
 
   - name: export-statistics
     container:

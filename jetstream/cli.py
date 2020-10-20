@@ -162,46 +162,49 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
     """
 
     if argo:
+        # use Argo
         submit_workflow(project_id, zone, cluster_id, RUN_WORKFLOW, monitor_status=True)
         click.echo("Submitted workflow to Argo")
         return
 
-    # # fetch experiments that are still active
-    # collection = ExperimentCollection.from_experimenter()
+    # run locally
 
-    # active_experiments = collection.end_on_or_after(date).of_type(
-    #     ("pref", "addon", "message", "v4")
-    # )
+    # fetch experiments that are still active
+    collection = ExperimentCollection.from_experimenter()
 
-    # if experiment_slug is not None:
-    #     # run analysis for specific experiment
-    #     active_experiments = active_experiments.with_slug(experiment_slug)
+    active_experiments = collection.end_on_or_after(date).of_type(
+        ("pref", "addon", "message", "v4")
+    )
 
-    # # get experiment-specific external configs
-    # external_configs = ExternalConfigCollection.from_github_repo()
+    if experiment_slug is not None:
+        # run analysis for specific experiment
+        active_experiments = active_experiments.with_slug(experiment_slug)
 
-    # # calculate metrics for experiments and write to BigQuery
-    # for experiment in active_experiments.experiments:
-    #     try:
-    #         spec = default_spec_for_experiment(experiment)
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
 
-    #         if config_file:
-    #             # secret CLI configs overwrite external configs
-    #             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-    #             spec.merge(custom_spec)
-    #         else:
-    #             external_experiment_config = external_configs.spec_for_experiment(
-    #                 experiment.normandy_slug
-    #             )
+    # calculate metrics for experiments and write to BigQuery
+    for experiment in active_experiments.experiments:
+        try:
+            spec = default_spec_for_experiment(experiment)
 
-    #             if external_experiment_config:
-    #                 spec.merge(external_experiment_config)
+            if config_file:
+                # secret CLI configs overwrite external configs
+                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
+                spec.merge(custom_spec)
+            else:
+                external_experiment_config = external_configs.spec_for_experiment(
+                    experiment.normandy_slug
+                )
 
-    #         config = spec.resolve(experiment)
+                if external_experiment_config:
+                    spec.merge(external_experiment_config)
 
-    #         Analysis(project_id, dataset_id, config).run(date)
-    #     except Exception as e:
-    #         logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+            config = spec.resolve(experiment)
+
+            Analysis(project_id, dataset_id, config).run(date)
+        except Exception as e:
+            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
 
 
 @cli.command("rerun")
@@ -284,7 +287,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
     export_statistics_tables(project_id, dataset_id, bucket)
 
 
-@cli.command("rerun_config_changed")
+@cli.command()
 @project_id_option
 @dataset_id_option
 @click.pass_context
@@ -355,14 +358,31 @@ class AnalysisRunConfig:
 @project_id_option
 @dataset_id_option
 @click.option(
-    "--date",
+    "--start_date",
     type=ClickDate(),
-    help="Date for which experiments should be analyzed",
+    help="Start date for which experiments should be analyzed. "
+    "If not set, analyze for period experiments were active.",
     metavar="YYYY-MM-DD",
-    required=True,
 )
+@click.option(
+    "--end_date",
+    type=ClickDate(),
+    help="End date for which experiments should be analyzed. "
+    "If not set, analyze for period experiments were active.",
+    metavar="YYYY-MM-DD",
+)
+@click.option(
+    "--config_changed",
+    "--config_changed",
+    is_flag=True,
+    help="Only get experiments whose config has changed since the last run.",
+    default=False,
+)
+@experiment_slug_option
 @click.pass_context
-def get_active_experiments(ctx, project_id, dataset_id, date):
+def get_active_experiments(
+    ctx, project_id, dataset_id, start_date, end_date, config_changed, experiment_slug
+):
     """
     Get all active experiment, including their configurations as bse64 encoded JSON objects.
 
@@ -375,21 +395,48 @@ def get_active_experiments(ctx, project_id, dataset_id, date):
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
 
-    active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v4")
-    )
+    if experiment_slug:
+        collection = collection.with_slug(experiment_slug)
+
+    active_experiments = collection.of_type(("pref", "addon", "message", "v4"))
 
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
 
+    if config_changed:
+        updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
+        active_experiments = [
+            experiment
+            for external_config in updated_external_configs
+            for experiment in collection.with_slug(external_config.slug)
+        ]
+
     experiment_runs_configs = []
 
     for experiment in active_experiments.experiments:
+        if experiment.start_date is None or experiment.end_date is None:
+            click.echo(
+                f"Start date or end date undefined for experiment {experiment.slug}.", err=True
+            )
+            continue
+
         external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
 
-        experiment_runs_configs.append(
-            _base64_encode(AnalysisRunConfig(date, experiment, external_experiment_config))
+        start = max(start_date, experiment.start_date) if start_date else experiment.start_date
+        end = min(end_date, experiment.end_date) if end_date else experiment.end_date
+        end = min(
+            end,
+            datetime.combine(
+                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=pytz.utc,
+            ),
         )
+
+        for date in inclusive_date_range(start, end):
+            experiment_runs_configs.append(
+                _base64_encode(AnalysisRunConfig(date, experiment, external_experiment_config))
+            )
 
     # Write config to stdout which will be read by argo and then used to spawn analysis jobs
     json.dump(experiment_runs_configs, sys.stdout)
