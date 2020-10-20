@@ -39,7 +39,7 @@ class BigQueryClient:
 
         self.client.update_table(table, ["labels"])
 
-    def _current_timestamp_label(self):
+    def current_timestamp_label(self):
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.mktime(datetime.utcnow().timetuple())))
 
@@ -51,7 +51,7 @@ class BigQueryClient:
         # add a label with the current timestamp to the table
         self.add_labels_to_table(
             table,
-            {"last_updated": self._current_timestamp_label()},
+            {"last_updated": self.current_timestamp_label()},
         )
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
@@ -72,14 +72,13 @@ class BigQueryClient:
             # add a label with the current timestamp to the table
             self.add_labels_to_table(
                 destination_table,
-                {"last_updated": self._current_timestamp_label()},
+                {"last_updated": self.current_timestamp_label()},
             )
 
-    def delete_tables_matching_regex(self, regex: str):
-        """Delete all tables with names matching the specified pattern."""
+    def tables_matching_regex(self, regex: str):
+        """Return all tables matching the provided regex."""
         table_name_re = re.compile(regex)
-
         existing_tables = self.client.list_tables(self.dataset)
         for table in existing_tables:
             if table_name_re.match(table.table_id):
-                self.client.delete_table(table, not_found_ok=True)
+                return table
