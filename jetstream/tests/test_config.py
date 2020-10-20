@@ -7,7 +7,7 @@ import pytest
 import pytz
 
 from jetstream import AnalysisPeriod, config
-from jetstream.cli import DEFAULT_METRICS_CONFIG
+from jetstream.config import DEFAULT_METRICS_CONFIG
 from jetstream.nimbus import Feature, FeatureEventTelemetry, FeatureScalarTelemetry
 from jetstream.statistics import BootstrapMean
 from jetstream.pre_treatment import RemoveNulls, CensorHighestValues, Log

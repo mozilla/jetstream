@@ -11,7 +11,6 @@ import pytz
 import toml
 from typing import Optional
 
-from . import experimenter
 from .argo import submit_workflow
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection, Experiment
@@ -20,10 +19,10 @@ from .analysis import Analysis
 from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
 from .bigquery_client import BigQueryClient
+from .util import inclusive_date_range
+from . import bq_normalize_name, AnalysisPeriod
 
 
-DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
-CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 WORKLFOW_DIR = Path(__file__).parent / "workflows"
 RERUN_WORKFLOW = WORKLFOW_DIR / "rerun.yaml"
 RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
@@ -187,25 +186,8 @@ def cli(log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
     setup_logger(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
 
 
-def inclusive_date_range(start_date, end_date):
-    """Generator for a range of dates, includes end_date."""
-    for n in range(int((end_date - start_date).days) + 1):
-        yield start_date + timedelta(n)
-
-
-def default_spec_for_experiment(experiment: experimenter.Experiment) -> AnalysisSpec:
-    default_metrics = AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
-
-    if experiment.type == "message":
-        # CFR experiment
-        cfr_metrics = AnalysisSpec.from_dict(toml.load(CFR_METRICS_CONFIG))
-        default_metrics.merge(cfr_metrics)
-        return default_metrics
-
-    return default_metrics
-
-
-def update_tables_last_modified(project_id, dataset_id, normandy_slug):
+def _update_tables_last_modified(project_id, dataset_id, normandy_slug):
+    """Update the last_updated label of the tables matching the slug."""
     client = BigQueryClient(project_id, dataset_id)
     normalized_slug = bq_normalize_name(normandy_slug)
     analysis_periods = "|".join([p.value for p in AnalysisPeriod])
@@ -321,8 +303,6 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
         sys.exit(1)
 
     if argo:
-        # use Argo
-        click.echo("Submitted workflow to Argo")
         result = submit_workflow(
             project_id,
             zone,
@@ -331,7 +311,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
             {"experiment_slug": experiment_slug},
             monitor_status=True,
         )
-        update_tables_last_modified(project_id, dataset_id, experiment_slug)
+        _update_tables_last_modified(project_id, dataset_id, experiment_slug)
         return result
 
     # run locally
@@ -357,7 +337,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
                 tzinfo=pytz.utc,
             ),
         )
-        spec = default_spec_for_experiment(experiment)
+        spec = AnalysisSpec.default_for_experiment(experiment)
         if config_file:
             custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
             spec.merge(custom_spec)
@@ -377,7 +357,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
             logger.info(f"*** {date}")
             Analysis(project_id, dataset_id, config).run(date)
 
-        update_tables_last_modified(project_id, dataset_id, experiment_slug)
+        _update_tables_last_modified(project_id, dataset_id, experiment_slug)
     except Exception as e:
         logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
 
@@ -409,8 +389,6 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
     if argo:
-        # use Argo
-        click.echo("Submitted workflow to Argo")
         result = submit_workflow(
             project_id,
             zone,
@@ -421,7 +399,7 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
         )
 
         for external_config in updated_external_configs:
-            update_tables_last_modified(project_id, dataset_id, external_config.slug)
+            _update_tables_last_modified(project_id, dataset_id, external_config.slug)
 
         return result
 
@@ -464,7 +442,7 @@ def validate_config(path):
             click.echo(f"No experiment with slug {slug} in Experimenter.", err=True)
             sys.exit(1)
 
-        spec = default_spec_for_experiment(experiments[0])
+        spec = AnalysisSpec.default_for_experiment(experiments[0])
         spec.merge(custom_spec)
         conf = spec.resolve(experiments[0])
         Analysis("no project", "no dataset", conf).validate()
@@ -597,7 +575,7 @@ def analyse_experiment(project_id, dataset_id, experiment_config):
     )
     analysis_run_config = converter.structure(_base64_decode(experiment_config), AnalysisRunConfig)
 
-    spec = default_spec_for_experiment(analysis_run_config.experiment)
+    spec = AnalysisSpec.default_for_experiment(analysis_run_config.experiment)
 
     if analysis_run_config.external_config:
         spec.merge(analysis_run_config.external_config)

@@ -65,7 +65,7 @@ def submit_workflow(
 
 
 def get_config(project_id: str, zone: str, cluster_id: str):
-    """Get the kubernetes config."""
+    """Get the kubernetes cluster config."""
     cluster_manager_client = ClusterManagerClient()
     cluster = cluster_manager_client.get_cluster(
         name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"

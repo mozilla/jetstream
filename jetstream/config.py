@@ -20,6 +20,7 @@ which produce concrete mozanalysis classes when resolved.
 
 import datetime as dt
 from inspect import isabstract
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
 
@@ -31,6 +32,7 @@ import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.segments
 import mozanalysis.segments.desktop
+import toml
 import pytz
 
 from . import AnalysisPeriod, nimbus
@@ -40,6 +42,10 @@ from jetstream.pre_treatment import PreTreatment
 
 if TYPE_CHECKING:
     import jetstream.experimenter
+
+DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
+CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
+
 
 _converter = cattr.Converter()
 
@@ -597,6 +603,21 @@ class AnalysisSpec:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return _converter.structure(d, cls)
+
+    @classmethod
+    def default_for_experiment(
+        cls, experiment: "jetstream.experimenter.Experiment"
+    ) -> "AnalysisSpec":
+        """Return the default spec based on the experiment type."""
+        default_metrics = cls.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+
+        if experiment.type == "message":
+            # CFR experiment
+            cfr_metrics = cls.from_dict(toml.load(CFR_METRICS_CONFIG))
+            default_metrics.merge(cfr_metrics)
+            return default_metrics
+
+        return default_metrics
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
         experiment = self.experiment.resolve(self, experimenter, nimbus.FeatureResolver)
