@@ -128,6 +128,13 @@ argo_option = click.option(
     "--argo", is_flag=True, default=False, help="Run on Kubernetes with Argo"
 )
 
+monitor_status_option = click.option(
+    "--monitor_status",
+    "--monitor-status",
+    default=True,
+    help="Monitor the status of the Argo workflow",
+)
+
 
 @cli.command()
 @project_id_option
@@ -144,7 +151,18 @@ argo_option = click.option(
 @argo_option
 @zone_option
 @cluster_id_option
-def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, cluster_id):
+@monitor_status_option
+def run(
+    project_id,
+    dataset_id,
+    date,
+    experiment_slug,
+    config_file,
+    argo,
+    zone,
+    cluster_id,
+    monitor_status,
+):
     """
     Runs analysis on active experiments for the provided date.
 
@@ -160,7 +178,7 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
             cluster_id,
             RUN_WORKFLOW,
             {"date": date.strftime("%Y-%m-%d")},
-            monitor_status=True,
+            monitor_status=monitor_status,
         )
 
     # run locally
@@ -211,7 +229,10 @@ def run(project_id, dataset_id, date, experiment_slug, config_file, argo, zone, 
 @argo_option
 @zone_option
 @cluster_id_option
-def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id):
+@monitor_status_option
+def rerun(
+    project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id, monitor_status
+):
     """
     Rerun all available analyses for a specific experiment.
 
@@ -231,7 +252,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file, argo, zone, clus
             cluster_id,
             RERUN_WORKFLOW,
             {"experiment_slug": experiment_slug},
-            monitor_status=True,
+            monitor_status=monitor_status,
         )
         _update_tables_last_modified(project_id, dataset_id, experiment_slug)
         return result
@@ -303,7 +324,8 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @argo_option
 @zone_option
 @cluster_id_option
-def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
+@monitor_status_option
+def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id, monitor_status):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
@@ -317,7 +339,7 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id):
             cluster_id,
             RERUN_CONFIG_CHANGED_WORKFLOW,
             {},
-            monitor_status=True,
+            monitor_status=monitor_status,
         )
 
         for external_config in updated_external_configs:
@@ -378,7 +400,7 @@ def _base64_decode(d):
 
 @attr.s(auto_attribs=True)
 class AnalysisRunConfig:
-    """Run config used to defined what should be executed in a experiment analysis step."""
+    """Run config used to define what should be executed in a experiment analysis step."""
 
     date: datetime
     experiment: Experiment
