@@ -1,9 +1,11 @@
 import datetime as dt
 import json
-import pytz
+from pathlib import Path
 from unittest.mock import MagicMock
 
+import jsonschema
 import pytest
+import pytz
 
 from jetstream.experimenter import (
     ExperimentCollection,
@@ -173,13 +175,14 @@ EXPERIMENTER_FIXTURE_V1 = r"""
 EXPERIMENTER_FIXTURE_V6 = r"""
 [
 {
+  "schemaVersion": "1",
+  "application": "firefox-desktop",
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
   "slug":"bug-1629098-rapid-please-reject-me-beta-86",
   "userFacingName":"",
   "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-  "active":true,
   "isEnrollmentPaused":false,
-  "features":[],
+  "probeSets":[],
   "proposedEnrollment":7,
   "bucketConfig": {
     "randomizationUnit":"userId",
@@ -193,26 +196,27 @@ EXPERIMENTER_FIXTURE_V6 = r"""
   "branches":[{
       "slug":"treatment",
       "ratio":1,
-      "feature":null    
+      "feature": {"featureId": "foo", "enabled": false, "value": null}    
     },
     {
       "slug":"control",
       "ratio":1,
-      "feature":null    
+      "feature": {"featureId": "foo", "enabled": false, "value": null}    
     }
   ],
   "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('86.0') >= 0",
   "targeting":"[userId, \"bug-1629098-rapid-please-reject-me-beta-86\"]|bucketSample(0, 100, 10000) && localeLanguageCode == 'en' && region == 'US' && browserSettings.update.channel == 'beta'"
 },
-{   
+{
+  "schemaVersion": "1",
+  "application": "firefox-desktop",   
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
     "slug":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
     "userFacingName":"testing rapido intake 1",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
     "isEnrollmentPaused":false,
-    "features":[
+    "probeSets":[
       "fake_feature"
     ],
     "proposedEnrollment":14,
@@ -229,16 +233,16 @@ EXPERIMENTER_FIXTURE_V6 = r"""
     "branches":[{
       "slug":"treatment",
       "ratio":1,
-      "feature":null     
+      "feature": {"featureId": "foo", "enabled": false, "value": null}     
       },
       {
         "slug":"control",
         "ratio":1,
-        "feature":null   
+        "feature": {"featureId": "foo", "enabled": false, "value": null}   
     }],
   "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('79.0') >= 0",
-  "targeting":null
+  "targeting":""
 },
 {   
   "id":null,
@@ -388,3 +392,9 @@ def test_convert_experiment_v6_to_experiment():
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
+
+
+def test_fixture_validates():
+    schema = json.loads((Path(__file__).parent / "data/NimbusExperiment_v1.0.json").read_text())
+    experiments = json.loads(EXPERIMENTER_FIXTURE_V6)
+    [jsonschema.validate(e, schema) for e in experiments if e["slug"]]
