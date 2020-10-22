@@ -21,7 +21,7 @@ which produce concrete mozanalysis classes when resolved.
 import datetime as dt
 from inspect import isabstract
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Set, Type, TYPE_CHECKING, TypeVar
+from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
 
 import attr
 import cattr
@@ -195,12 +195,10 @@ class ExperimentConfiguration:
         )
 
     @property
-    def features(self) -> Set[nimbus.Feature]:
-        return {
-            self.feature_resolver.resolve(branch.feature.featureId)
-            for branch in self.experimenter_experiment.branches
-            if branch.feature and branch.feature.enabled
-        }
+    def features(self) -> List[nimbus.Feature]:
+        return [
+            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.probe_sets
+        ]
 
     @property
     def proposed_enrollment(self) -> int:

@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Any, List, Iterable, Optional, Union
+from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
@@ -22,17 +22,9 @@ def _coerce_none_to_zero(x: Optional[int]) -> int:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Feature:
-    featureId: str
-    enabled: bool
-    value: Any
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Branch:
     slug: str
     ratio: int
-    feature: Optional[Feature] = attr.ib(None)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -59,6 +51,7 @@ class Experiment:
     type: str
     status: Optional[str]
     branches: List[Branch]
+    probe_sets: List[str]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     proposed_enrollment: Optional[int]
@@ -97,10 +90,7 @@ class ExperimentV1:
 
     def to_experiment(self) -> "Experiment":
         """Convert to Experiment."""
-        branches = [
-            Branch(slug=variant.slug, ratio=variant.ratio, feature=None)
-            for variant in self.variants
-        ]
+        branches = [Branch(slug=variant.slug, ratio=variant.ratio) for variant in self.variants]
         control_slug = None
 
         control_slugs = [variant.slug for variant in self.variants if variant.is_control]
@@ -116,6 +106,7 @@ class ExperimentV1:
             end_date=self.end_date,
             proposed_enrollment=self.proposed_enrollment,
             branches=branches,
+            probe_sets=[],
             reference_branch=control_slug,
             is_high_population=self.is_high_population or False,
         )
@@ -131,6 +122,7 @@ class ExperimentV6:
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
     referenceBranch: Optional[str]
+    probeSets: List[str]
 
     @classmethod
     def from_dict(cls, d) -> "ExperimentV6":
@@ -154,6 +146,7 @@ class ExperimentV6:
             end_date=self.endDate,
             proposed_enrollment=self.proposedEnrollment,
             branches=self.branches,
+            probe_sets=self.probeSets,
             reference_branch=self.referenceBranch,
             is_high_population=False,
         )

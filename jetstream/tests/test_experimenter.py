@@ -297,7 +297,7 @@ def test_from_experimenter(mock_session):
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
     print(collection.experiments)
-    assert len(collection.experiments) == 6
+    assert len(collection.experiments) == 5
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
     assert len(collection.experiments[0].branches) == 2
@@ -377,6 +377,7 @@ def test_convert_experiment_v6_to_experiment():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
+        probeSets=[],
     )
 
     experiment = experiment_v6.to_experiment()
