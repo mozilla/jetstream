@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import List, Iterable, Optional, Union
+from typing import Any, List, Iterable, Optional, Union
 
 import attr
 import cattr
@@ -22,9 +22,17 @@ def _coerce_none_to_zero(x: Optional[int]) -> int:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Feature:
+    featureId: str
+    enabled: bool
+    value: Any
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Branch:
     slug: str
     ratio: int
+    feature: Optional[Feature] = attr.ib(None)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -38,7 +46,6 @@ class Experiment:
         type: V1 experiment type; always "v4" for V4 experiments
         status: V1 experiment status; "Live" for active V4 experiments,
             "Complete" for inactive V4 experiments
-        features: empty list for V1 experiments; slugs for V4 experiment features
         branches: V1 experiment variants converted to branches; V4 experiment branches
         start_date: experiment start_date
         end_date: experiment end_date
@@ -51,7 +58,6 @@ class Experiment:
     normandy_slug: Optional[str]
     type: str
     status: Optional[str]
-    features: List[str]
     branches: List[Branch]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
@@ -91,7 +97,10 @@ class ExperimentV1:
 
     def to_experiment(self) -> "Experiment":
         """Convert to Experiment."""
-        branches = [Branch(slug=variant.slug, ratio=variant.ratio) for variant in self.variants]
+        branches = [
+            Branch(slug=variant.slug, ratio=variant.ratio, feature=None)
+            for variant in self.variants
+        ]
         control_slug = None
 
         control_slugs = [variant.slug for variant in self.variants if variant.is_control]
@@ -106,7 +115,6 @@ class ExperimentV1:
             start_date=self.start_date,
             end_date=self.end_date,
             proposed_enrollment=self.proposed_enrollment,
-            features=[],
             branches=branches,
             reference_branch=control_slug,
             is_high_population=self.is_high_population or False,
@@ -118,8 +126,6 @@ class ExperimentV6:
     """Represents a v6 experiment from Experimenter."""
 
     slug: str  # Normandy slug
-    active: bool
-    features: List[str]
     branches: List[Branch]
     startDate: Optional[dt.datetime]
     endDate: Optional[dt.datetime]
@@ -141,11 +147,12 @@ class ExperimentV6:
             normandy_slug=self.slug,
             experimenter_slug=None,
             type="v4",
-            status="Live" if self.active else "Complete",
+            status="Live"
+            if self.endDate and self.endDate <= pytz.utc.localize(dt.datetime.now())
+            else "Complete",
             start_date=self.startDate,
             end_date=self.endDate,
             proposed_enrollment=self.proposedEnrollment,
-            features=self.features,
             branches=self.branches,
             reference_branch=self.referenceBranch,
             is_high_population=False,
@@ -159,7 +166,7 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     # for nimbus experiments
-    EXPERIMENTER_API_URL_V4 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
+    EXPERIMENTER_API_URL_V6 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
 
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
@@ -174,7 +181,7 @@ class ExperimentCollection:
                 except Exception as e:
                     logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
-        nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V4).json()
+        nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V6).json()
         nimbus_experiments = []
 
         for experiment in nimbus_experiments_json:

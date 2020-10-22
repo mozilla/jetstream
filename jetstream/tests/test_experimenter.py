@@ -249,7 +249,6 @@ EXPERIMENTER_FIXTURE_V6 = r"""
     "slug":null,
     "userFacingName":"some invalid experiment",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
     "isEnrollmentPaused":false,
     "proposedEnrollment":14,
     "bucketConfig":{
@@ -276,7 +275,7 @@ def mock_session():
         mocked_value = MagicMock()
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
-        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V4:
+        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V6:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
         else:
             raise Exception("Invalid Experimenter API call.")
@@ -296,8 +295,9 @@ def experiment_collection(mock_session):
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
-    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V4)
-    assert len(collection.experiments) == 5
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
+    print(collection.experiments)
+    assert len(collection.experiments) == 6
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
     assert len(collection.experiments[0].branches) == 2
@@ -364,7 +364,6 @@ def test_convert_experiment_v1_to_experiment():
 
     assert experiment.experimenter_slug == "test-slug"
     assert experiment.normandy_slug == "test_slug"
-    assert experiment.features == []
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
@@ -373,13 +372,11 @@ def test_convert_experiment_v1_to_experiment():
 def test_convert_experiment_v6_to_experiment():
     experiment_v6 = ExperimentV6(
         slug="test_slug",
-        active=True,
         startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
         endDate=dt.datetime(2019, 1, 10, tzinfo=pytz.utc),
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        features=["fake_feature"],
     )
 
     experiment = experiment_v6.to_experiment()
@@ -388,7 +385,6 @@ def test_convert_experiment_v6_to_experiment():
     assert experiment.normandy_slug == "test_slug"
     assert experiment.status == "Live"
     assert experiment.type == "v4"
-    assert len(experiment.features) == 1
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
