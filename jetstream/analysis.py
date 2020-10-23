@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import logging
 from textwrap import dedent
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 
 import attr
 import dask
@@ -9,12 +9,13 @@ from google.cloud import bigquery
 import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
+from pandas import DataFrame
 
 from . import AnalysisPeriod, bq_normalize_name
 from jetstream.config import AnalysisConfiguration, MetricsConfigurationType
 from jetstream.dryrun import dry_run_query
 import jetstream.errors as errors
-from jetstream.statistics import Count, StatisticResult, StatisticResultCollection
+from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
 from jetstream.bigquery_client import BigQueryClient
 from jetstream.experimenter import Branch
 
@@ -186,79 +187,73 @@ class Analysis:
 
     def _calculate_statistics(
         self,
-        metrics_table: str,
-        period: AnalysisPeriod,
-        normandy_slug: str,
-        segments: List[mozanalysis.segments.Segment],
-        branches: List[Branch],
-        metrics: MetricsConfigurationType,
+        metric: Summary,
+        segment_data: DataFrame,
         reference_branch: str,
+        normandy_slug: str,
+        segment: str,
     ):
         """
-        Run statistics on metrics.
+        Run statistics on metric.
         """
+        stats = metric.run(segment_data, reference_branch, normandy_slug).set_segment(segment)
+        return stats.to_dict()["data"]
 
-        metrics_data = self.bigquery.table_to_dataframe(metrics_table)
-
-        results = []
-
-        segment_labels = ["all"] + [s.name for s in segments]
-        for segment in segment_labels:
-            if segment != "all":
-                if segment not in metrics_data.columns:
-                    logger.error(
-                        f"Segment {segment} not in metrics table",
-                        extra={"experiment": normandy_slug},
-                    )
-                    continue
-                segment_data = metrics_data[metrics_data[segment]]
-            else:
-                segment_data = metrics_data
-            for m in metrics[period]:
-                stats = m.run(segment_data, reference_branch, normandy_slug).set_segment(segment)
-                results += stats.to_dict()["data"]
-
-            counts = (
-                Count()
-                .transform(segment_data, "*", "*", normandy_slug)
-                .set_segment(segment)
-                .to_dict()["data"]
-            )
-            results += counts
-
-            # add count=0 row to statistics table for missing branches
-            missing_counts = StatisticResultCollection(
-                [
-                    StatisticResult(
-                        metric="identity",
-                        statistic="count",
-                        parameter=None,
-                        branch=b.slug,
-                        comparison=None,
-                        comparison_to_branch=None,
-                        ci_width=None,
-                        point=0,
-                        lower=None,
-                        upper=None,
-                        segment=segment,
-                    )
-                    for b in branches
-                    if b.slug not in {c["branch"] for c in counts}
-                ]
-            )
-
-            results += missing_counts.to_dict()["data"]
-
-        job_config = bigquery.LoadJobConfig()
-        job_config.schema = StatisticResult.bq_schema
-        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
-
-        # wait for the job to complete
-        self.bigquery.load_table_from_json(
-            results, f"statistics_{metrics_table}", job_config=job_config
+    def _counts(self, segment_data: DataFrame, normandy_slug: str, segment: str):
+        """Count statistic."""
+        return (
+            Count()
+            .transform(segment_data, "*", "*", normandy_slug)
+            .set_segment(segment)
+            .to_dict()["data"]
         )
 
-        self._publish_view(period, normandy_slug=normandy_slug, table_prefix="statistics")
+    def _missing_counts(
+        self,
+        counts: List[Dict[str, Any]],
+        segment_data: DataFrame,
+        normandy_slug: str,
+        segment: str,
+        branches: List[Branch],
+    ):
+        """Missing count statistic."""
+        # add count=0 row to statistics table for missing branches
+        missing_counts = StatisticResultCollection(
+            [
+                StatisticResult(
+                    metric="identity",
+                    statistic="count",
+                    parameter=None,
+                    branch=b.slug,
+                    comparison=None,
+                    comparison_to_branch=None,
+                    ci_width=None,
+                    point=0,
+                    lower=None,
+                    upper=None,
+                    segment=segment,
+                )
+                for b in branches
+                if b.slug not in {c["branch"] for c in counts}
+            ]
+        )
+
+        return missing_counts.to_dict()["data"]
+
+    def _segment_metrics(self, segment: str, metrics_data: DataFrame, normandy_slug):
+        """Return metrics data for segment"""
+        if segment != "all":
+            if segment not in metrics_data.columns:
+                logger.error(
+                    f"Segment {segment} not in metrics table",
+                    extra={"experiment": normandy_slug},
+                )
+                return
+            segment_data = metrics_data[metrics_data[segment]]
+        else:
+            segment_data = metrics_data
+
+        return segment_data
 
     def check_runnable(
         self, config: AnalysisConfiguration, current_date: Optional[datetime] = None
@@ -334,6 +329,25 @@ class Analysis:
 
         dry_run_query(sql)
 
+    def _save_statistics(
+        self,
+        period: AnalysisPeriod,
+        segment_results: List[Dict[str, Any]],
+        metrics_table: str,
+        normandy_slug: str,
+    ):
+        """Write statistics to BigQuery."""
+        job_config = bigquery.LoadJobConfig()
+        job_config.schema = StatisticResult.bq_schema
+        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
+        # wait for the job to complete
+        self.bigquery.load_table_from_json(
+            segment_results, f"statistics_{metrics_table}", job_config=job_config
+        )
+
+        self._publish_view(period, normandy_slug=normandy_slug, table_prefix="statistics")
+
     def run(
         self, current_date: datetime, config: AnalysisConfiguration, dry_run: bool = False
     ) -> None:
@@ -348,6 +362,11 @@ class Analysis:
         results = []
         calculate_metrics = dask.delayed(self._calculate_metrics)
         calculate_statistics = dask.delayed(self._calculate_statistics)
+        segment_metrics = dask.delayed(self._segment_metrics)
+        missing_counts = dask.delayed(self._missing_counts)
+        counts = dask.delayed(self._counts)
+        table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
+        save_statistics = dask.delayed(self._save_statistics)
 
         for period in config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date, config)
@@ -384,16 +403,38 @@ class Analysis:
                 )
                 continue
 
-            results.append(
-                calculate_statistics(
-                    metrics_table,
-                    period,
+            metrics_data = table_to_dataframe(metrics_table)
+
+            segment_results = []
+
+            segment_labels = ["all"] + [s.name for s in config.experiment.segments]
+            for segment in segment_labels:
+                segment_data = segment_metrics(
+                    segment, metrics_data, config.experiment.normandy_slug
+                )
+                for m in config.metrics[period]:
+                    segment_results += calculate_statistics(
+                        m,
+                        segment_data,
+                        config.experiment.reference_branch,
+                        config.experiment.normandy_slug,
+                        segment,
+                    )
+
+                c = counts(segment_data, config.experiment.normandy_slug, segment)
+                segment_results += c
+                segment_results += missing_counts(
+                    c,
+                    segment_data,
                     config.experiment.normandy_slug,
-                    config.experiment.segments,
+                    segment,
                     config.experiment.branches,
-                    config.metrics,
-                    config.experiment.reference_branch,
+                )
+
+            results.append(
+                save_statistics(
+                    period, segment_results, metrics_table, config.experiment.normandy_slug
                 )
             )
 
-        results = dask.persist(*results)
+        dask.persist(*results)
