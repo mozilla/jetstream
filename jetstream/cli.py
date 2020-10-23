@@ -4,6 +4,7 @@ import attr
 import base64
 import cattr
 import click
+from dask.distributed import Client
 import json
 import os
 import logging
@@ -216,7 +217,8 @@ def run(
 
             config = spec.resolve(experiment)
 
-            Analysis(project_id, dataset_id, config).run(date)
+            Client(threads_per_worker=2, n_workers=4)
+            Analysis(project_id, dataset_id).run(date, config)
         except Exception as e:
             logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
 
@@ -298,7 +300,8 @@ def rerun(
 
         for date in inclusive_date_range(experiment.start_date, end_date):
             logger.info(f"*** {date}")
-            Analysis(project_id, dataset_id, config).run(date)
+            Client(threads_per_worker=2, n_workers=4)
+            Analysis(project_id, dataset_id).run(date, config)
 
         _update_tables_last_modified(project_id, dataset_id, experiment_slug)
     except Exception as e:
@@ -521,7 +524,8 @@ def analyse_experiment(project_id, dataset_id, experiment_config):
 
     # calculate metrics for experiments and write to BigQuery
     try:
-        Analysis(project_id, dataset_id, config).run(analysis_run_config.date)
+        Client(threads_per_worker=2, n_workers=4)
+        Analysis(project_id, dataset_id).run(analysis_run_config.date, config)
     except Exception as e:
         logger.exception(
             str(e), exc_info=e, extra={"experiment": analysis_run_config.experiment.normandy_slug}

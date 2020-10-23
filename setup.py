@@ -44,6 +44,7 @@ setup(
         "argo-workflows",
         "cattrs",
         "Click",
+        "dask[distributed]",
         "GitPython",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
