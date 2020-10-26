@@ -7,7 +7,11 @@ spec:
   onExit: export-statistics # export statistics after all analyses
   arguments:
     parameters:
-    - name: date  # set dynamically when worklfow gets deployed
+    - name: date  # set dynamically when workflow gets deployed
+    - name: n_threads
+      value: 2
+    - name: n_workers
+      value: 4
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -34,7 +38,10 @@ spec:
       - name: experiment
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
-      command: [bin/entrypoint, analyse-experiment, "--experiment_config={{inputs.parameters.experiment}}"]
+      command: [bin/entrypoint, analyse-experiment, 
+        "--experiment_config={{inputs.parameters.experiment}}",
+        "--n_threads={{input.parameters.n_threads}}", 
+        "--n_workers={{input.parameters.n_workers}}"]
       resources:
         requests:
           memory: 2Gi

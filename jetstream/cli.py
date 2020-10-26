@@ -136,6 +136,13 @@ monitor_status_option = click.option(
     help="Monitor the status of the Argo workflow",
 )
 
+n_threads_option = click.option(
+    "--n_threads", help="Number of dask threads per worker", default=2, required=True
+)
+n_workers_option = click.option(
+    "--n_workers", help="Number of dask workers", default=4, required=True
+)
+
 
 @cli.command()
 @project_id_option
@@ -153,6 +160,8 @@ monitor_status_option = click.option(
 @zone_option
 @cluster_id_option
 @monitor_status_option
+@n_threads_option
+@n_workers_option
 def run(
     project_id,
     dataset_id,
@@ -163,6 +172,8 @@ def run(
     zone,
     cluster_id,
     monitor_status,
+    n_threads,
+    n_workers,
 ):
     """
     Runs analysis on active experiments for the provided date.
@@ -178,7 +189,7 @@ def run(
             zone,
             cluster_id,
             RUN_WORKFLOW,
-            {"date": date.strftime("%Y-%m-%d")},
+            {"date": date.strftime("%Y-%m-%d"), "n_threads": n_threads, "n_workers": n_workers},
             monitor_status=monitor_status,
         )
 
@@ -232,8 +243,19 @@ def run(
 @zone_option
 @cluster_id_option
 @monitor_status_option
+@n_threads_option
+@n_workers_option
 def rerun(
-    project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id, monitor_status
+    project_id,
+    dataset_id,
+    experiment_slug,
+    config_file,
+    argo,
+    zone,
+    cluster_id,
+    monitor_status,
+    n_threads,
+    n_workers,
 ):
     """
     Rerun all available analyses for a specific experiment.
@@ -253,7 +275,7 @@ def rerun(
             zone,
             cluster_id,
             RERUN_WORKFLOW,
-            {"experiment_slug": experiment_slug},
+            {"experiment_slug": experiment_slug, "n_threads": n_threads, "n_workers": n_workers},
             monitor_status=monitor_status,
         )
         _update_tables_last_modified(project_id, dataset_id, experiment_slug)
@@ -328,7 +350,11 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @zone_option
 @cluster_id_option
 @monitor_status_option
-def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id, monitor_status):
+@n_threads_option
+@n_workers_option
+def rerun_config_changed(
+    ctx, project_id, dataset_id, argo, zone, cluster_id, monitor_status, n_threads, n_workers
+):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
@@ -341,7 +367,7 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id, mo
             zone,
             cluster_id,
             RERUN_CONFIG_CHANGED_WORKFLOW,
-            {},
+            {"n_threads": n_threads, "n_workers": n_workers},
             monitor_status=monitor_status,
         )
 
@@ -507,7 +533,9 @@ def get_active_experiments(
     help="Experiment config as base64 encoded JSON",
     required=True,
 )
-def analyse_experiment(project_id, dataset_id, experiment_config):
+@n_threads_option
+@n_workers_option
+def analyse_experiment(project_id, dataset_id, experiment_config, n_threads, n_workers):
     converter = cattr.Converter()
     converter.register_structure_hook(
         datetime,
@@ -524,7 +552,7 @@ def analyse_experiment(project_id, dataset_id, experiment_config):
 
     # calculate metrics for experiments and write to BigQuery
     try:
-        Client(threads_per_worker=2, n_workers=4)
+        Client(threads_per_worker=n_threads, n_workers=n_workers)
         Analysis(project_id, dataset_id).run(analysis_run_config.date, config)
     except Exception as e:
         logger.exception(
