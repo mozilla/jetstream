@@ -385,7 +385,7 @@ def test_convert_experiment_v6_to_experiment():
     assert experiment.experimenter_slug is None
     assert experiment.normandy_slug == "test_slug"
     assert experiment.status == "Live"
-    assert experiment.type == "v4"
+    assert experiment.type == "v6"
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
