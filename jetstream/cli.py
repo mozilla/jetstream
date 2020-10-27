@@ -137,10 +137,10 @@ monitor_status_option = click.option(
 )
 
 n_threads_option = click.option(
-    "--n_threads", help="Number of dask threads per worker", default=2, required=True
+    "--n_threads", help="Number of dask threads per worker", default=2, required=True, type=int
 )
 n_workers_option = click.option(
-    "--n_workers", help="Number of dask workers", default=4, required=True
+    "--n_workers", help="Number of dask workers", default=2, required=True, type=int
 )
 
 
@@ -189,7 +189,11 @@ def run(
             zone,
             cluster_id,
             RUN_WORKFLOW,
-            {"date": date.strftime("%Y-%m-%d"), "n_threads": n_threads, "n_workers": n_workers},
+            {
+                "date": date.strftime("%Y-%m-%d"),
+                "n_threads": str(n_threads),    # the argo python client currently does not support int
+                "n_workers": str(n_workers),
+            },
             monitor_status=monitor_status,
         )
 
@@ -228,7 +232,7 @@ def run(
 
             config = spec.resolve(experiment)
 
-            Client(threads_per_worker=2, n_workers=4)
+            Client(threads_per_worker=int(n_threads), n_workers=int(n_workers))
             Analysis(project_id, dataset_id).run(date, config)
         except Exception as e:
             logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
@@ -322,7 +326,7 @@ def rerun(
 
         for date in inclusive_date_range(experiment.start_date, end_date):
             logger.info(f"*** {date}")
-            Client(threads_per_worker=2, n_workers=4)
+            Client(threads_per_worker=int(n_threads), n_workers=int(n_workers))
             Analysis(project_id, dataset_id).run(date, config)
 
         _update_tables_last_modified(project_id, dataset_id, experiment_slug)
@@ -334,9 +338,6 @@ def rerun(
 @project_id_option
 @dataset_id_option
 @bucket_option
-@argo_option
-@zone_option
-@cluster_id_option
 def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)
@@ -552,7 +553,7 @@ def analyse_experiment(project_id, dataset_id, experiment_config, n_threads, n_w
 
     # calculate metrics for experiments and write to BigQuery
     try:
-        Client(threads_per_worker=n_threads, n_workers=n_workers)
+        Client(threads_per_worker=int(n_threads), n_workers=int(n_workers))
         Analysis(project_id, dataset_id).run(analysis_run_config.date, config)
     except Exception as e:
         logger.exception(

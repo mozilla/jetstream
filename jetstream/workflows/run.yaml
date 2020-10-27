@@ -8,13 +8,14 @@ spec:
   arguments:
     parameters:
     - name: date  # set dynamically when workflow gets deployed
+      value: "2020-10-25"
     - name: n_threads
-      value: 2
+      value: "2"
     - name: n_workers
-      value: 4
+      value: "2"
   templates:
   - name: jetstream
-    parallelism: 5  # run up to 5 containers in parallel at the same time
+    parallelism: 4  # run up to 4 containers in parallel at the same time
     steps:
     - - name: get-active-experiments
         template: get-active-experiments  # return active experiments for specific date
@@ -28,7 +29,7 @@ spec:
 
   - name: get-active-experiments
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/ascholtz-dev/jetstream-dask:latest
       command: [bin/entrypoint, get-active-experiments, "--start_date={{workflow.parameters.date}}", "--end_date={{workflow.parameters.date}}"]
     activeDeadlineSeconds: 600   # terminate container after 10 minutes  
 
@@ -37,16 +38,16 @@ spec:
       parameters:
       - name: experiment
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/ascholtz-dev/jetstream-dask:latest
       command: [bin/entrypoint, analyse-experiment, 
         "--experiment_config={{inputs.parameters.experiment}}",
-        "--n_threads={{input.parameters.n_threads}}", 
-        "--n_workers={{input.parameters.n_workers}}"]
+        "--n_threads={{workflow.parameters.n_threads}}", 
+        "--n_workers={{workflow.parameters.n_workers}}"]
       resources:
         requests:
-          memory: 2Gi
+          memory: 10Gi
         limits:
-          memory: 10Gi  
+          memory: 16Gi
     retryStrategy:
       limit: 3  # execute a container max. twice; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
@@ -57,6 +58,6 @@ spec:
 
   - name: export-statistics
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/ascholtz-dev/jetstream-dask:latest
       command: [bin/entrypoint, export-statistics-to-json]
     activeDeadlineSeconds: 600   # terminate container template after 10 minutes  

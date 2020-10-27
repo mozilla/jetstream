@@ -41,8 +41,8 @@ spec:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, analyse-experiment, 
         "--experiment_config={{inputs.parameters.experiment}}",
-        "--n_threads={{input.parameters.n_threads}}", 
-        "--n_workers={{input.parameters.n_workers}}"]
+        "--n_threads={{workflow.parameters.n_threads}}", 
+        "--n_workers={{workflow.parameters.n_workers}}"]
       resources:
         requests:
           memory: 2Gi

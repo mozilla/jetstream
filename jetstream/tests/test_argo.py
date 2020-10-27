@@ -63,8 +63,12 @@ class TestArgo:
         )
 
         manifest = yaml.safe_load(config_str)
-        updated_manifest = argo.apply_parameters(manifest, {"date": "2020-01-01", "slug": "test"})
+        updated_manifest = argo.apply_parameters(
+            manifest, {"date": "2020-01-01", "slug": "test", "num": 1}
+        )
         assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "date"
         assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == "2020-01-01"
         assert updated_manifest["spec"]["arguments"]["parameters"][1]["name"] == "slug"
         assert updated_manifest["spec"]["arguments"]["parameters"][1]["value"] == "test"
+        assert updated_manifest["spec"]["arguments"]["parameters"][2]["name"] == "num"
+        assert updated_manifest["spec"]["arguments"]["parameters"][2]["value"] == 1

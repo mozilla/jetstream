@@ -358,6 +358,8 @@ class Analysis:
 
         self.check_runnable(config, current_date)
 
+        client = dask.distributed.Client(threads_per_worker=2, n_workers=4)
+
         # dask config
         results = []
         calculate_metrics = dask.delayed(self._calculate_metrics)
@@ -437,4 +439,4 @@ class Analysis:
                 )
             )
 
-        dask.persist(*results)
+        dask.compute(*results)
