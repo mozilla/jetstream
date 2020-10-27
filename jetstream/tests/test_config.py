@@ -251,8 +251,9 @@ class TestAnalysisSpec:
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
-
-            [metrics.spam.statistics.bootstrap_mean.pre_treatments.remove_nulls]
+            pre_treatments = [
+                {name = "remove_nulls"}
+            ]
             """
         )
 
@@ -277,8 +278,9 @@ class TestAnalysisSpec:
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
-
-            [metrics.spam.statistics.bootstrap_mean.pre_treatments.not_existing]
+            pre_treatments = [
+                {name = "not_existing"}
+            ]
             """
         )
 
@@ -470,14 +472,11 @@ class TestExperimentSpec:
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
-
-            [metrics.spam.statistics.bootstrap_mean.pre_treatments.remove_nulls]
-
-            [metrics.spam.statistics.bootstrap_mean.pre_treatments.log]
-            base = 20.0
-
-            [metrics.spam.statistics.bootstrap_mean.pre_treatments.censor_highest_values]
-            fraction = 0.9
+            pre_treatments = [
+                {name = "remove_nulls"},
+                {name = "log", base = 20.0},
+                {name = "censor_highest_values", fraction = 0.9}
+            ]
             """
         )
 
