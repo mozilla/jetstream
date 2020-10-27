@@ -325,9 +325,11 @@ class MetricDefinition:
 
             pre_treatments = []
             for pt in params.pop("pre_treatments", []):
-                ref = PreTreatmentReference(
-                    pt["name"], {k: v for k, v in pt.items() if k != "name"}
-                )
+                if isinstance(pt, str):
+                    ref = PreTreatmentReference(pt, {})
+                else:
+                    name = pt.pop("name")
+                    ref = PreTreatmentReference(name, pt)
                 pre_treatments.append(ref.resolve(spec))
 
             metrics_with_treatments.append(
