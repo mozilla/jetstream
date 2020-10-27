@@ -251,9 +251,7 @@ class TestAnalysisSpec:
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
-            pre_treatments = [
-                {name = "remove_nulls"}
-            ]
+            pre_treatments = ["remove_nulls"]
             """
         )
 
