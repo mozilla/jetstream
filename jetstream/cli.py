@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+from typing import Callable, Class, Iterable, Mapping, TextIO, Tuple, Union
 
+import attr
 import click
 import os
 import logging
@@ -40,6 +42,113 @@ def setup_logger(
 
 
 logger = logging.getLogger(__name__)
+
+
+RECOGNIZED_EXPERIMENT_TYPES = ("pref", "addon", "message", "v6")
+
+
+@attr.s
+class AllType:
+    """Sentinel value for AnalysisExecutor"""
+
+    pass
+
+
+All = AllType()
+
+
+class ExecutorStrategy:
+    def execute(worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
+        ...
+
+
+@attr.s
+class SerialExecutorStrategy(ExecutorStrategy):
+    analysis_class: Class = Analysis
+    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+
+    def execute(self, worklist):
+        failed = False
+        experiments = self.experiment_getter()
+        for slug, spec, date in worklist:
+            try:
+                experiment = experiments.with_slug(slug).experiments[0]
+                config = spec.resolve(experiment)
+                self.analysis_class(self.project_id, self.dataset_id, config).run(date)
+            except Exception as e:
+                failed = True
+                logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+        return not failed
+
+
+@attr.s(auto_attribs=True)
+class AnalysisExecutor:
+    project_id: str
+    dataset_id: str
+    date: Union[datetime, AllType]
+    experiment_slugs: Union[Iterable[str], AllType]
+    configuration_map: Mapping[str, TextIO] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _today() -> datetime:
+        return datetime.combine(
+            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=pytz.utc,
+        )
+
+    def execute(
+        self,
+        *,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+        analysis_class: Class = Analysis,
+        today: datetime = _today(),
+        strategy: ExecutorStrategy = SerialExecutorStrategy(),
+    ) -> bool:
+        experiments = experiment_getter()
+        external_configs = None
+
+        if self.experiment_slugs == All:
+            if self.date == All:
+                raise ValueError("Declining to re-run all experiments for all time.")
+            run_experiments = [
+                e.slug
+                for e in experiments.end_on_or_after(self.date).of_type(RECOGNIZED_EXPERIMENT_TYPES)
+            ]
+        else:
+            run_experiments = self.experiment_slugs
+
+        worklist = []
+
+        for slug in run_experiments:
+            experiment = experiments.with_slug(slug).experiments[0]
+            spec = default_spec_for_experiment(experiment)
+            if slug in self.configuration_map:
+                config_dict = toml.load(self.configuration_map[slug])
+                spec.merge(AnalysisSpec.from_dict(config_dict))
+            else:
+                external_configs = external_configs or config_getter()
+                if external_spec := external_configs.spec_for_experiment(slug):
+                    spec.merge(external_spec)
+
+            if self.date == All:
+                end_date = min(
+                    experiment.end_date,
+                    today,
+                )
+                run_dates = inclusive_date_range(experiment.start_date, end_date)
+            else:
+                run_dates = [self.date]
+
+            for run_date in run_dates:
+                worklist.append((slug, spec, run_date))
+
+        return strategy.execute(worklist)
 
 
 @click.group()
@@ -129,42 +238,13 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     thrown during some experiment analyses. This ensures that the Airflow task will
     not retry the task and run all of the analyses again.
     """
-    # fetch experiments that are still active
-    collection = ExperimentCollection.from_experimenter()
-
-    active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v6")
-    )
-
-    if experiment_slug is not None:
-        # run analysis for specific experiment
-        active_experiments = active_experiments.with_slug(experiment_slug)
-
-    # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
-
-    # calculate metrics for experiments and write to BigQuery
-    for experiment in active_experiments.experiments:
-        try:
-            spec = default_spec_for_experiment(experiment)
-
-            if config_file:
-                # secret CLI configs overwrite external configs
-                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-                spec.merge(custom_spec)
-            else:
-                external_experiment_config = external_configs.spec_for_experiment(
-                    experiment.normandy_slug
-                )
-
-                if external_experiment_config:
-                    spec.merge(external_experiment_config)
-
-            config = spec.resolve(experiment)
-
-            Analysis(project_id, dataset_id, config).run(date)
-        except Exception as e:
-            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=date,
+        experiment_slugs=[experiment_slug] if experiment_slug else All,
+        configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
+    ).execute()
 
 
 @cli.command("rerun")
@@ -181,61 +261,21 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    collection = ExperimentCollection.from_experimenter()
-    exceptions = []
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=All,
+        experiment_slugs=[experiment_slug],
+        configuration_map={experiment_slug: config_file} if config_file else {},
+    ).execute()
 
-    try:
-        experiments = collection.with_slug(experiment_slug)
-
-        if experiment_slug is None or len(experiments.experiments) == 0:
-            raise Exception(f"No experiment with slug {experiment_slug} found.")
-
-        experiment = experiments.experiments[0]
-
-        if experiment.end_date is None:
-            raise Exception(f"End date is missing for experiment {experiment_slug}")
-
-        end_date = min(
-            experiment.end_date,
-            datetime.combine(
-                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
-                datetime.min.time(),
-                tzinfo=pytz.utc,
-            ),
-        )
-        spec = default_spec_for_experiment(experiment)
-        if config_file:
-            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-            spec.merge(custom_spec)
-        else:
-            # get experiment-specific external configs
-            external_configs = ExternalConfigCollection.from_github_repo()
-            external_experiment_config = external_configs.spec_for_experiment(
-                experiment.normandy_slug
-            )
-
-            if external_experiment_config:
-                spec.merge(external_experiment_config)
-
-        config = spec.resolve(experiment)
-
-        # delete all tables previously created when this experiment was analysed
-        client = BigQueryClient(project_id, dataset_id)
-        normalized_slug = bq_normalize_name(experiment.normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
-        client.delete_tables_matching_regex(table_name_re)
-
-        for date in inclusive_date_range(experiment.start_date, end_date):
-            logger.info(f"*** {date}")
-            Analysis(project_id, dataset_id, config).run(date)
-    except Exception as e:
-        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
-        exceptions.append(e)
-
-    if len(exceptions) > 0:
-        # return error status code for instances triggered via jetstream-config
-        sys.exit(1)
+    # todo: do something reasonable here
+    # # delete all tables previously created when this experiment was analysed
+    # client = BigQueryClient(project_id, dataset_id)
+    # normalized_slug = bq_normalize_name(experiment.normandy_slug)
+    # analysis_periods = "|".join([p.value for p in AnalysisPeriod])
+    # table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+    # client.delete_tables_matching_regex(table_name_re)
 
 
 @cli.command()
