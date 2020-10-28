@@ -133,7 +133,7 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     collection = ExperimentCollection.from_experimenter()
 
     active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v4")
+        ("pref", "addon", "message", "v6")
     )
 
     if experiment_slug is not None:

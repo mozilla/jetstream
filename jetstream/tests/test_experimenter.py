@@ -1,16 +1,18 @@
 import datetime as dt
 import json
-import pytz
+from pathlib import Path
 from unittest.mock import MagicMock
 
+import jsonschema
 import pytest
+import pytz
 
 from jetstream.experimenter import (
     ExperimentCollection,
     Experiment,
     Branch,
     ExperimentV1,
-    ExperimentV4,
+    ExperimentV6,
     Variant,
 )
 
@@ -170,56 +172,55 @@ EXPERIMENTER_FIXTURE_V1 = r"""
 ]
 """  # noqa
 
-EXPERIMENTER_FIXTURE_V4 = r"""
+EXPERIMENTER_FIXTURE_V6 = r"""
 [
 {
+  "schemaVersion": "1",
+  "application": "firefox-desktop",
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
-  "arguments":{ 
-    "slug":"bug-1629098-rapid-please-reject-me-beta-86",
-    "userFacingName":"",
-    "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
-    "isEnrollmentPaused":false,
-    "features":[],
-    "proposedEnrollment":7,
-    "bucketConfig": {
-      "randomizationUnit":"userId",
-      "namespace":"bug-1629098-rapid-please-reject-me-beta-86",
-      "start":0,
-      "count":100,
-      "total":10000 
-    },
-    "startDate":"2020-07-29",
-    "endDate":null,
-    "branches":[{
-        "slug":"treatment",
-        "ratio":1,
-        "value":null    
-      },
-      {
-        "slug":"control",
-        "ratio":1,
-        "value":null    
-      }
-    ],
-    "referenceBranch":"control"
+  "slug":"bug-1629098-rapid-please-reject-me-beta-86",
+  "userFacingName":"",
+  "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
+  "isEnrollmentPaused":false,
+  "probeSets":[],
+  "proposedEnrollment":7,
+  "bucketConfig": {
+    "randomizationUnit":"userId",
+    "namespace":"bug-1629098-rapid-please-reject-me-beta-86",
+    "start":0,
+    "count":100,
+    "total":10000 
   },
+  "startDate":"2020-07-29",
+  "endDate":null,
+  "branches":[{
+      "slug":"treatment",
+      "ratio":1,
+      "feature": {"featureId": "foo", "enabled": false, "value": null}    
+    },
+    {
+      "slug":"control",
+      "ratio":1,
+      "feature": {"featureId": "foo", "enabled": false, "value": null}    
+    }
+  ],
+  "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('86.0') >= 0",
-  "enabled":true,
   "targeting":"[userId, \"bug-1629098-rapid-please-reject-me-beta-86\"]|bucketSample(0, 100, 10000) && localeLanguageCode == 'en' && region == 'US' && browserSettings.update.channel == 'beta'"
 },
-{   
+{
+  "schemaVersion": "1",
+  "application": "firefox-desktop",   
   "id":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
-  "arguments":{      
     "slug":"bug-1629000-rapid-testing-rapido-intake-1-release-79",
     "userFacingName":"testing rapido intake 1",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
     "isEnrollmentPaused":false,
-    "features":[
+    "probeSets":[
       "fake_feature"
     ],
     "proposedEnrollment":14,
+    "proposedDuration":30,
     "bucketConfig":{
       "randomizationUnit":"normandy_id",
       "namespace":"",
@@ -232,26 +233,22 @@ EXPERIMENTER_FIXTURE_V4 = r"""
     "branches":[{
       "slug":"treatment",
       "ratio":1,
-      "value":null     
+      "feature": {"featureId": "foo", "enabled": false, "value": null}     
       },
       {
         "slug":"control",
         "ratio":1,
-        "value":null   
+        "feature": {"featureId": "foo", "enabled": false, "value": null}   
     }],
-  "referenceBranch":"control" 
-  },
+  "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('79.0') >= 0",
-  "enabled":true,
-  "targeting":null
+  "targeting":""
 },
 {   
   "id":null,
-  "arguments":{      
     "slug":null,
     "userFacingName":"some invalid experiment",
     "userFacingDescription":" This is an empty CFR A/A experiment. The A/A experiment is being run to test the automation, effectiveness, and accuracy of the rapid experiments platform.\n    The experiment is an internal test, and Firefox users will not see any noticeable change and there will be no user impact.",
-    "active":true,
     "isEnrollmentPaused":false,
     "proposedEnrollment":14,
     "bucketConfig":{
@@ -264,8 +261,7 @@ EXPERIMENTER_FIXTURE_V4 = r"""
     "startDate":null,
     "endDate":null,
     "branches":[],
-  "referenceBranch":"control" 
-  },
+  "referenceBranch":"control",
   "enabled":true,
   "targeting":null
 }
@@ -279,8 +275,8 @@ def mock_session():
         mocked_value = MagicMock()
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
-        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V4:
-            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V4)
+        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V6:
+            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
         else:
             raise Exception("Invalid Experimenter API call.")
 
@@ -299,7 +295,8 @@ def experiment_collection(mock_session):
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
-    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V4)
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
+    print(collection.experiments)
     assert len(collection.experiments) == 5
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
@@ -367,31 +364,34 @@ def test_convert_experiment_v1_to_experiment():
 
     assert experiment.experimenter_slug == "test-slug"
     assert experiment.normandy_slug == "test_slug"
-    assert experiment.features == []
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
 
 
-def test_convert_experiment_v4_to_experiment():
-    experiment_v4 = ExperimentV4(
+def test_convert_experiment_v6_to_experiment():
+    experiment_v6 = ExperimentV6(
         slug="test_slug",
-        active=True,
         startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
         endDate=dt.datetime(2019, 1, 10, tzinfo=pytz.utc),
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        features=["fake_feature"],
+        probeSets=[],
     )
 
-    experiment = experiment_v4.to_experiment()
+    experiment = experiment_v6.to_experiment()
 
     assert experiment.experimenter_slug is None
     assert experiment.normandy_slug == "test_slug"
     assert experiment.status == "Live"
-    assert experiment.type == "v4"
-    assert len(experiment.features) == 1
+    assert experiment.type == "v6"
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
+
+
+def test_fixture_validates():
+    schema = json.loads((Path(__file__).parent / "data/NimbusExperiment_v1.0.json").read_text())
+    experiments = json.loads(EXPERIMENTER_FIXTURE_V6)
+    [jsonschema.validate(e, schema) for e in experiments if e["slug"]]

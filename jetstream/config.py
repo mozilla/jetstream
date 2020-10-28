@@ -193,7 +193,7 @@ class ExperimentConfiguration:
     @property
     def features(self) -> List[nimbus.Feature]:
         return [
-            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.features
+            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.probe_sets
         ]
 
     @property
