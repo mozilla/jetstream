@@ -240,13 +240,15 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     thrown during some experiment analyses. This ensures that the Airflow task will
     not retry the task and run all of the analyses again.
     """
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
     ).execute()
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command("rerun")
@@ -263,7 +265,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -272,6 +274,8 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     ).execute()
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command()
