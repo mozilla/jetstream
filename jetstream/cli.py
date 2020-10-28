@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
-from typing import Callable, Class, Iterable, Mapping, TextIO, Tuple, Union
+import os
+from pathlib import Path
+import logging
+import sys
+from typing import Callable, Iterable, Mapping, Optional, TextIO, Tuple, Type, Union
 
 import attr
 import click
-import os
-import logging
-from pathlib import Path
 import pytz
-import sys
 import toml
 
 from . import experimenter
@@ -51,8 +51,6 @@ RECOGNIZED_EXPERIMENT_TYPES = ("pref", "addon", "message", "v6")
 class AllType:
     """Sentinel value for AnalysisExecutor"""
 
-    pass
-
 
 All = AllType()
 
@@ -64,7 +62,7 @@ class ExecutorStrategy:
 
 @attr.s
 class SerialExecutorStrategy(ExecutorStrategy):
-    analysis_class: Class = Analysis
+    analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
 
     def execute(self, worklist):
@@ -106,22 +104,26 @@ class AnalysisExecutor:
         config_getter: Callable[
             [], ExternalConfigCollection
         ] = ExternalConfigCollection.from_github_repo,
-        analysis_class: Class = Analysis,
-        today: datetime = _today(),
+        today: Optional[datetime] = None,
         strategy: ExecutorStrategy = SerialExecutorStrategy(),
     ) -> bool:
         experiments = experiment_getter()
         external_configs = None
 
-        if self.experiment_slugs == All:
-            if self.date == All:
+        if isinstance(self.experiment_slugs, AllType):
+            if isinstance(self.date, AllType):
                 raise ValueError("Declining to re-run all experiments for all time.")
             run_experiments = [
-                e.slug
-                for e in experiments.end_on_or_after(self.date).of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                e.normandy_slug
+                for e in (
+                    experiments.end_on_or_after(self.date)
+                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                    .experiments
+                )
+                if e.normandy_slug is not None
             ]
         else:
-            run_experiments = self.experiment_slugs
+            run_experiments = list(self.experiment_slugs)
 
         worklist = []
 
@@ -137,8 +139,9 @@ class AnalysisExecutor:
                     spec.merge(external_spec)
 
             if self.date == All:
+                today = today or self._today()
                 end_date = min(
-                    experiment.end_date,
+                    experiment.end_date or today,
                     today,
                 )
                 run_dates = inclusive_date_range(experiment.start_date, end_date)
