@@ -58,7 +58,7 @@ All = AllType()
 
 
 class ExecutorStrategy:
-    def execute(worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
+    def execute(self, worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
         ...
 
 
