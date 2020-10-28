@@ -10,6 +10,8 @@ import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 from google.cloud.bigquery_storage import BigQueryReadClient
 
+from . import AnalysisPeriod, bq_normalize_name
+
 
 @attr.s(auto_attribs=True, slots=True)
 class BigQueryClient:
@@ -75,11 +77,21 @@ class BigQueryClient:
                 {"last_updated": self._current_timestamp_label()},
             )
 
-    def delete_tables_matching_regex(self, regex: str):
-        """Delete all tables with names matching the specified pattern."""
+    def tables_matching_regex(self, regex: str):
+        """Returns a list of tables with names matching the specified pattern."""
         table_name_re = re.compile(regex)
-
         existing_tables = self.client.list_tables(self.dataset)
-        for table in existing_tables:
-            if table_name_re.match(table.table_id):
-                self.client.delete_table(table, not_found_ok=True)
+        return [table.table_id for table in existing_tables if table_name_re.match(table.table_id)]
+
+    def touch_tables(self, normandy_slug: str):
+        """Updates the last_updated timestamp on tables for a given experiment.
+
+        Useful to prevent tables that we _didn't_ already touch from causing an experiment to look
+        perpetually stale."""
+        normalized_slug = bq_normalize_name(normandy_slug)
+        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
+        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+        tables = self.tables_matching_regex(table_name_re)
+        timestamp = self._current_timestamp_label()
+        for table in tables:
+            self.add_labels_to_table(table, {"last_updated": timestamp})
