@@ -5,6 +5,7 @@ from typing import Optional, List, Any, Dict
 
 import attr
 import dask
+from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 import mozanalysis
 from mozanalysis.experiment import TimeLimits
@@ -358,9 +359,10 @@ class Analysis:
 
         self.check_runnable(config, current_date)
 
-        client = dask.distributed.Client(threads_per_worker=2, n_workers=4)
+        cluster = LocalCluster(dashboard_address='127.0.0.1:8782')
 
-        # dask config
+        client = Client(cluster)
+
         results = []
         calculate_metrics = dask.delayed(self._calculate_metrics)
         calculate_statistics = dask.delayed(self._calculate_statistics)
@@ -439,4 +441,5 @@ class Analysis:
                 )
             )
 
-        dask.compute(*results)
+        r = client.compute(results)
+        client.gather(r)
