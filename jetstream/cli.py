@@ -273,8 +273,6 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
-    sys.exit(0 if success else 1)
-
 
 @cli.command()
 @project_id_option
@@ -288,20 +286,24 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
-@click.pass_context
-def rerun_config_changed(ctx, project_id, dataset_id):
+def rerun_config_changed(project_id, dataset_id):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
-
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-    for external_config in updated_external_configs:
-        ctx.invoke(
-            rerun,
-            project_id=project_id,
-            dataset_id=dataset_id,
-            experiment_slug=external_config.slug,
-        )
+
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=All,
+        experiment_slugs=[config.slug for config in updated_external_configs],
+    ).execute()
+
+    client = BigQueryClient(project_id, dataset_id)
+    for config in updated_external_configs:
+        client.touch_tables(config.slug)
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")
