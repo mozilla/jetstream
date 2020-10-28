@@ -1,14 +1,16 @@
 from datetime import datetime
 import re
 import time
-from typing import Optional
+from typing import Dict, Iterable, Mapping, Optional
 
 import attr
+import google.cloud.bigquery
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 from google.cloud.bigquery_storage import BigQueryReadClient
+import pandas as pd
 
 from . import AnalysisPeriod, bq_normalize_name
 
@@ -25,7 +27,7 @@ class BigQueryClient:
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
 
-    def table_to_dataframe(self, table: str):
+    def table_to_dataframe(self, table: str) -> pd.DataFrame:
         """Return all rows of the specified table as a dataframe."""
         self._storage_client = self._storage_client or BigQueryReadClient()
 
@@ -33,19 +35,21 @@ class BigQueryClient:
         rows = self.client.list_rows(table_ref)
         return rows.to_dataframe(bqstorage_client=self._storage_client)
 
-    def add_labels_to_table(self, table, labels):
+    def add_labels_to_table(self, table_name: str, labels: Mapping[str, str]) -> None:
         """Adds the provided labels to the table."""
-        table_ref = self.client.dataset(self.dataset).table(table)
+        table_ref = self.client.dataset(self.dataset).table(table_name)
         table = self.client.get_table(table_ref)
         table.labels = labels
 
         self.client.update_table(table, ["labels"])
 
-    def _current_timestamp_label(self):
+    def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.mktime(datetime.utcnow().timetuple())))
 
-    def load_table_from_json(self, results, table, job_config):
+    def load_table_from_json(
+        self, results: Iterable[Dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
+    ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
