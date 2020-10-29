@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import logging
 import sys
-from typing import Callable, Iterable, Mapping, Optional, TextIO, Tuple, Type, Union
+from typing import Callable, Iterable, Mapping, Optional, TextIO, Tuple, Union
 
 import attr
 import click
@@ -54,14 +54,18 @@ class AllType:
 All = AllType()
 
 
+@attr.s(auto_attribs=True)
 class ExecutorStrategy:
+    project_id: str
+    dataset_id: str
+
     def execute(self, worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
         ...
 
 
-@attr.s
+@attr.s(auto_attribs=True)
 class SerialExecutorStrategy(ExecutorStrategy):
-    analysis_class: Type = Analysis
+    analysis_class: Callable[[], Analysis] = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
 
     def execute(self, worklist):
@@ -104,7 +108,7 @@ class AnalysisExecutor:
             [], ExternalConfigCollection
         ] = ExternalConfigCollection.from_github_repo,
         today: Optional[datetime] = None,
-        strategy: ExecutorStrategy = SerialExecutorStrategy(),
+        strategy: Callable[[str, str], [ExecutorStrategy]] = SerialExecutorStrategy,
     ) -> bool:
         experiments = experiment_getter()
         external_configs = None
@@ -150,7 +154,7 @@ class AnalysisExecutor:
             for run_date in run_dates:
                 worklist.append((slug, spec, run_date))
 
-        return strategy.execute(worklist)
+        return strategy(project_id=self.project_id, dataset_id=self.dataset_id).execute(worklist)
 
 
 @click.group()
