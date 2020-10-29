@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import logging
 import sys
-from typing import Callable, Iterable, Mapping, Optional, TextIO, Tuple, Union
+from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
 import attr
 import click
@@ -54,18 +54,22 @@ class AllType:
 All = AllType()
 
 
-@attr.s(auto_attribs=True)
-class ExecutorStrategy:
+class ExecutorStrategy(Protocol):
     project_id: str
     dataset_id: str
+
+    def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
+        ...
 
     def execute(self, worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
         ...
 
 
 @attr.s(auto_attribs=True)
-class SerialExecutorStrategy(ExecutorStrategy):
-    analysis_class: Callable[[], Analysis] = Analysis
+class SerialExecutorStrategy:
+    project_id: str
+    dataset_id: str
+    analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
 
     def execute(self, worklist):
@@ -108,7 +112,7 @@ class AnalysisExecutor:
             [], ExternalConfigCollection
         ] = ExternalConfigCollection.from_github_repo,
         today: Optional[datetime] = None,
-        strategy: Callable[[str, str], [ExecutorStrategy]] = SerialExecutorStrategy,
+        strategy: Callable[[str, str], ExecutorStrategy] = SerialExecutorStrategy,
     ) -> bool:
         experiments = experiment_getter()
         external_configs = None
@@ -154,7 +158,7 @@ class AnalysisExecutor:
             for run_date in run_dates:
                 worklist.append((slug, spec, run_date))
 
-        return strategy(project_id=self.project_id, dataset_id=self.dataset_id).execute(worklist)
+        return strategy(self.project_id, self.dataset_id).execute(worklist)
 
 
 @click.group()
