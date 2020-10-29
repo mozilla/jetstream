@@ -23,7 +23,9 @@ class TestCli:
 
 
 @attr.s(auto_attribs=True)
-class DummyExecutorStrategy(cli.ExecutorStrategy):
+class DummyExecutorStrategy:
+    project_id: str
+    dataset_id: str
     return_value: bool = True
 
     def execute(self, worklist):
@@ -39,11 +41,119 @@ class TestAnalysisExecutor:
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=[],
         )
-        strategy = DummyExecutorStrategy
+        strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=experimenter.ExperimentCollection,
             config_getter=external_config.ExternalConfigCollection,
-            strategy=strategy,
+            strategy=lambda *args, **kwargs: strategy,
         )
         assert success
         assert strategy.worklist == []
+
+    def test_single_date(self):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            date=dt.datetime(2020, 10, 28, tzinfo=UTC),
+            experiment_slugs=["my_cool_experiment"],
+        )
+        experiments = experimenter.ExperimentCollection(
+            [
+                experimenter.Experiment(
+                    experimenter_slug=None,
+                    normandy_slug="my_cool_experiment",
+                    type="v6",
+                    status="Live",
+                    branches=[
+                        experimenter.Branch(slug="treatment", ratio=1),
+                        experimenter.Branch(slug="control", ratio=1),
+                    ],
+                    probe_sets=[],
+                    start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+                    end_date=dt.datetime(2020, 12, 31, tzinfo=UTC),
+                    proposed_enrollment=None,
+                    reference_branch="control",
+                    is_high_population=False,
+                ),
+                experimenter.Experiment(
+                    experimenter_slug=None,
+                    normandy_slug="distracting_experiment",
+                    type="v6",
+                    status="Live",
+                    branches=[
+                        experimenter.Branch(slug="treatment", ratio=1),
+                        experimenter.Branch(slug="control", ratio=1),
+                    ],
+                    probe_sets=[],
+                    start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+                    end_date=dt.datetime(2020, 12, 31, tzinfo=UTC),
+                    proposed_enrollment=None,
+                    reference_branch="control",
+                    is_high_population=False,
+                ),
+            ]
+        )
+        strategy = DummyExecutorStrategy("project", "dataset")
+        success = executor.execute(
+            experiment_getter=lambda: experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=lambda *args, **kwargs: strategy,
+        )
+        assert success
+        assert len(strategy.worklist) == 1
+        assert strategy.worklist[0][0] == "my_cool_experiment"
+        assert strategy.worklist[0][2] == dt.datetime(2020, 10, 28, tzinfo=UTC)
+
+    def test_any_date(self):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            date=cli.All,
+            experiment_slugs=["my_cool_experiment"],
+        )
+        experiments = experimenter.ExperimentCollection(
+            [
+                experimenter.Experiment(
+                    experimenter_slug=None,
+                    normandy_slug="my_cool_experiment",
+                    type="v6",
+                    status="Live",
+                    branches=[
+                        experimenter.Branch(slug="treatment", ratio=1),
+                        experimenter.Branch(slug="control", ratio=1),
+                    ],
+                    probe_sets=[],
+                    start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+                    end_date=dt.datetime(2021, 2, 1, tzinfo=UTC),
+                    proposed_enrollment=None,
+                    reference_branch="control",
+                    is_high_population=False,
+                ),
+                experimenter.Experiment(
+                    experimenter_slug=None,
+                    normandy_slug="distracting_experiment",
+                    type="v6",
+                    status="Live",
+                    branches=[
+                        experimenter.Branch(slug="treatment", ratio=1),
+                        experimenter.Branch(slug="control", ratio=1),
+                    ],
+                    probe_sets=[],
+                    start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+                    end_date=dt.datetime(2020, 12, 31, tzinfo=UTC),
+                    proposed_enrollment=None,
+                    reference_branch="control",
+                    is_high_population=False,
+                ),
+            ]
+        )
+        strategy = DummyExecutorStrategy("project", "dataset")
+        success = executor.execute(
+            experiment_getter=lambda: experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=lambda *args, **kwargs: strategy,
+            today=dt.datetime(2020, 12, 31, tzinfo=UTC),
+        )
+        assert success
+        assert len(strategy.worklist) == 366
+        assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
