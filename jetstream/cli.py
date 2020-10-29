@@ -4,7 +4,6 @@ import attr
 import base64
 import cattr
 import click
-from dask.distributed import Client, LocalCluster
 import json
 import os
 import logging
@@ -136,13 +135,6 @@ monitor_status_option = click.option(
     help="Monitor the status of the Argo workflow",
 )
 
-n_threads_option = click.option(
-    "--n_threads", help="Number of dask threads per worker", default=2, required=True, type=int
-)
-n_workers_option = click.option(
-    "--n_workers", help="Number of dask workers", default=2, required=True, type=int
-)
-
 
 @cli.command()
 @project_id_option
@@ -160,8 +152,6 @@ n_workers_option = click.option(
 @zone_option
 @cluster_id_option
 @monitor_status_option
-@n_threads_option
-@n_workers_option
 def run(
     project_id,
     dataset_id,
@@ -172,8 +162,6 @@ def run(
     zone,
     cluster_id,
     monitor_status,
-    n_threads,
-    n_workers,
 ):
     """
     Runs analysis on active experiments for the provided date.
@@ -191,8 +179,6 @@ def run(
             RUN_WORKFLOW,
             {
                 "date": date.strftime("%Y-%m-%d"),
-                "n_threads": str(n_threads),    # the argo python client currently does not support int
-                "n_workers": str(n_workers),
             },
             monitor_status=monitor_status,
         )
@@ -246,8 +232,6 @@ def run(
 @zone_option
 @cluster_id_option
 @monitor_status_option
-@n_threads_option
-@n_workers_option
 def rerun(
     project_id,
     dataset_id,
@@ -257,8 +241,6 @@ def rerun(
     zone,
     cluster_id,
     monitor_status,
-    n_threads,
-    n_workers,
 ):
     """
     Rerun all available analyses for a specific experiment.
@@ -278,7 +260,7 @@ def rerun(
             zone,
             cluster_id,
             RERUN_WORKFLOW,
-            {"experiment_slug": experiment_slug, "n_threads": n_threads, "n_workers": n_workers},
+            {"experiment_slug": experiment_slug},
             monitor_status=monitor_status,
         )
         _update_tables_last_modified(project_id, dataset_id, experiment_slug)
@@ -349,11 +331,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @zone_option
 @cluster_id_option
 @monitor_status_option
-@n_threads_option
-@n_workers_option
-def rerun_config_changed(
-    ctx, project_id, dataset_id, argo, zone, cluster_id, monitor_status, n_threads, n_workers
-):
+def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id, monitor_status):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
@@ -366,7 +344,7 @@ def rerun_config_changed(
             zone,
             cluster_id,
             RERUN_CONFIG_CHANGED_WORKFLOW,
-            {"n_threads": n_threads, "n_workers": n_workers},
+            {},
             monitor_status=monitor_status,
         )
 
@@ -532,9 +510,7 @@ def get_active_experiments(
     help="Experiment config as base64 encoded JSON",
     required=True,
 )
-@n_threads_option
-@n_workers_option
-def analyse_experiment(project_id, dataset_id, experiment_config, n_threads, n_workers):
+def analyse_experiment(project_id, dataset_id, experiment_config):
     converter = cattr.Converter()
     converter.register_structure_hook(
         datetime,

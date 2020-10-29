@@ -8,11 +8,6 @@ spec:
   arguments:
     parameters:
     - name: date  # set dynamically when workflow gets deployed
-      value: "2020-10-25"
-    - name: n_threads
-      value: "2"
-    - name: n_workers
-      value: "2"
   templates:
   - name: jetstream
     parallelism: 4  # run up to 4 containers in parallel at the same time
@@ -29,7 +24,7 @@ spec:
 
   - name: get-active-experiments
     container:
-      image: gcr.io/ascholtz-dev/jetstream-dask:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, get-active-experiments, "--start_date={{workflow.parameters.date}}", "--end_date={{workflow.parameters.date}}"]
     activeDeadlineSeconds: 600   # terminate container after 10 minutes  
 
@@ -38,18 +33,14 @@ spec:
       parameters:
       - name: experiment
     container:
-      image: gcr.io/ascholtz-dev/jetstream-dask:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, analyse-experiment, 
-        "--experiment_config={{inputs.parameters.experiment}}",
-        "--n_threads={{workflow.parameters.n_threads}}", 
-        "--n_workers={{workflow.parameters.n_workers}}"]
+        "--experiment_config={{inputs.parameters.experiment}}"]
       resources:
         requests:
           memory: 10Gi
-        limits:
-          memory: 16Gi
     retryStrategy:
-      limit: 3  # execute a container max. twice; sometimes a container run might fail due to limited resources
+      limit: 3  # execute a container max. 3x; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
       backoff:
         duration: "10m"
@@ -58,6 +49,6 @@ spec:
 
   - name: export-statistics
     container:
-      image: gcr.io/ascholtz-dev/jetstream-dask:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, export-statistics-to-json]
-    activeDeadlineSeconds: 600   # terminate container template after 10 minutes  
+    activeDeadlineSeconds: 600   # terminate container template after 10 minutes

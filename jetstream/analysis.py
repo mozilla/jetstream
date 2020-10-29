@@ -359,10 +359,13 @@ class Analysis:
 
         self.check_runnable(config, current_date)
 
-        cluster = LocalCluster(dashboard_address='127.0.0.1:8782')
-
+        # set up dask
+        cluster = LocalCluster(
+            dashboard_address="127.0.0.1:8782", processes=True, threads_per_worker=1
+        )
         client = Client(cluster)
 
+        # prepare dask tasks
         results = []
         calculate_metrics = dask.delayed(self._calculate_metrics)
         calculate_statistics = dask.delayed(self._calculate_statistics)
@@ -441,5 +444,5 @@ class Analysis:
                 )
             )
 
-        r = client.compute(results)
-        client.gather(r)
+        result_futures = client.compute(results)
+        client.gather(result_futures)  # block until futures have finished

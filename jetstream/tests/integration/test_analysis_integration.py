@@ -1,5 +1,6 @@
 import datetime as dt
 from pathlib import Path
+import dask
 import datetime
 from unittest import mock
 
@@ -30,11 +31,24 @@ class TestAnalysisIntegration:
             query = query.replace("telemetry", static_dataset)
             return query
 
+        orig_cluster = dask.distributed.LocalCluster.__init__
+
+        def mock_local_cluster(instance, dashboard_address, processes, threads_per_worker):
+            return orig_cluster(
+                instance,
+                dashboard_address=dashboard_address,
+                processes=False,
+                threads_per_worker=threads_per_worker,
+            )
+
         analysis = Analysis(project_id, temporary_dataset)
         with mock.patch.object(
             mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
         ):
-            analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), config, dry_run=False)
+            with mock.patch.object(
+                dask.distributed.LocalCluster, "__init__", new=mock_local_cluster
+            ):
+                analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), config, dry_run=False)
 
     def test_metrics(self, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(
