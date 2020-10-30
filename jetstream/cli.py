@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta
-
-import click
 import os
-import logging
 from pathlib import Path
-import pytz
+import logging
 import sys
+from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+
+import attr
+import click
+import pytz
 import toml
 
 from . import experimenter
@@ -16,7 +18,6 @@ from .analysis import Analysis
 from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
 from .bigquery_client import BigQueryClient
-from . import bq_normalize_name, AnalysisPeriod
 
 DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
 CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
@@ -40,6 +41,124 @@ def setup_logger(
 
 
 logger = logging.getLogger(__name__)
+
+
+RECOGNIZED_EXPERIMENT_TYPES = ("pref", "addon", "message", "v6")
+
+
+@attr.s
+class AllType:
+    """Sentinel value for AnalysisExecutor"""
+
+
+All = AllType()
+
+
+class ExecutorStrategy(Protocol):
+    project_id: str
+    dataset_id: str
+
+    def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
+        ...
+
+    def execute(self, worklist: Iterable[Tuple[str, AnalysisSpec, datetime]]) -> bool:
+        ...
+
+
+@attr.s(auto_attribs=True)
+class SerialExecutorStrategy:
+    project_id: str
+    dataset_id: str
+    analysis_class: Type = Analysis
+    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+
+    def execute(self, worklist):
+        failed = False
+        experiments = self.experiment_getter()
+        for slug, spec, date in worklist:
+            try:
+                experiment = experiments.with_slug(slug).experiments[0]
+                config = spec.resolve(experiment)
+                self.analysis_class(self.project_id, self.dataset_id, config).run(date)
+            except Exception as e:
+                failed = True
+                logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+        return not failed
+
+
+@attr.s(auto_attribs=True)
+class AnalysisExecutor:
+    project_id: str
+    dataset_id: str
+    date: Union[datetime, AllType]
+    experiment_slugs: Union[Iterable[str], AllType]
+    configuration_map: Mapping[str, TextIO] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _today() -> datetime:
+        return datetime.combine(
+            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=pytz.utc,
+        )
+
+    def execute(
+        self,
+        *,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+        today: Optional[datetime] = None,
+        strategy: Callable[[str, str], ExecutorStrategy] = SerialExecutorStrategy,
+    ) -> bool:
+        experiments = experiment_getter()
+        external_configs = None
+
+        if isinstance(self.experiment_slugs, AllType):
+            if isinstance(self.date, AllType):
+                raise ValueError("Declining to re-run all experiments for all time.")
+            run_experiments = [
+                e.normandy_slug
+                for e in (
+                    experiments.end_on_or_after(self.date)
+                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                    .experiments
+                )
+                if e.normandy_slug is not None
+            ]
+        else:
+            run_experiments = list(self.experiment_slugs)
+
+        worklist = []
+
+        for slug in run_experiments:
+            experiment = experiments.with_slug(slug).experiments[0]
+            spec = default_spec_for_experiment(experiment)
+            if slug in self.configuration_map:
+                config_dict = toml.load(self.configuration_map[slug])
+                spec.merge(AnalysisSpec.from_dict(config_dict))
+            else:
+                external_configs = external_configs or config_getter()
+                if external_spec := external_configs.spec_for_experiment(slug):
+                    spec.merge(external_spec)
+
+            if self.date == All:
+                today = today or self._today()
+                end_date = min(
+                    experiment.end_date or today,
+                    today,
+                )
+                run_dates = inclusive_date_range(experiment.start_date, end_date)
+            else:
+                run_dates = [self.date]
+
+            for run_date in run_dates:
+                worklist.append((slug, spec, run_date))
+
+        return strategy(self.project_id, self.dataset_id).execute(worklist)
 
 
 @click.group()
@@ -129,42 +248,15 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     thrown during some experiment analyses. This ensures that the Airflow task will
     not retry the task and run all of the analyses again.
     """
-    # fetch experiments that are still active
-    collection = ExperimentCollection.from_experimenter()
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=date,
+        experiment_slugs=[experiment_slug] if experiment_slug else All,
+        configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
+    ).execute()
 
-    active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v6")
-    )
-
-    if experiment_slug is not None:
-        # run analysis for specific experiment
-        active_experiments = active_experiments.with_slug(experiment_slug)
-
-    # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
-
-    # calculate metrics for experiments and write to BigQuery
-    for experiment in active_experiments.experiments:
-        try:
-            spec = default_spec_for_experiment(experiment)
-
-            if config_file:
-                # secret CLI configs overwrite external configs
-                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-                spec.merge(custom_spec)
-            else:
-                external_experiment_config = external_configs.spec_for_experiment(
-                    experiment.normandy_slug
-                )
-
-                if external_experiment_config:
-                    spec.merge(external_experiment_config)
-
-            config = spec.resolve(experiment)
-
-            Analysis(project_id, dataset_id, config).run(date)
-        except Exception as e:
-            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+    sys.exit(0 if success else 1)
 
 
 @cli.command("rerun")
@@ -181,61 +273,17 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    collection = ExperimentCollection.from_experimenter()
-    exceptions = []
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=All,
+        experiment_slugs=[experiment_slug],
+        configuration_map={experiment_slug: config_file} if config_file else {},
+    ).execute()
 
-    try:
-        experiments = collection.with_slug(experiment_slug)
+    BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
-        if experiment_slug is None or len(experiments.experiments) == 0:
-            raise Exception(f"No experiment with slug {experiment_slug} found.")
-
-        experiment = experiments.experiments[0]
-
-        if experiment.end_date is None:
-            raise Exception(f"End date is missing for experiment {experiment_slug}")
-
-        end_date = min(
-            experiment.end_date,
-            datetime.combine(
-                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
-                datetime.min.time(),
-                tzinfo=pytz.utc,
-            ),
-        )
-        spec = default_spec_for_experiment(experiment)
-        if config_file:
-            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-            spec.merge(custom_spec)
-        else:
-            # get experiment-specific external configs
-            external_configs = ExternalConfigCollection.from_github_repo()
-            external_experiment_config = external_configs.spec_for_experiment(
-                experiment.normandy_slug
-            )
-
-            if external_experiment_config:
-                spec.merge(external_experiment_config)
-
-        config = spec.resolve(experiment)
-
-        # delete all tables previously created when this experiment was analysed
-        client = BigQueryClient(project_id, dataset_id)
-        normalized_slug = bq_normalize_name(experiment.normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
-        client.delete_tables_matching_regex(table_name_re)
-
-        for date in inclusive_date_range(experiment.start_date, end_date):
-            logger.info(f"*** {date}")
-            Analysis(project_id, dataset_id, config).run(date)
-    except Exception as e:
-        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
-        exceptions.append(e)
-
-    if len(exceptions) > 0:
-        # return error status code for instances triggered via jetstream-config
-        sys.exit(1)
+    sys.exit(0 if success else 1)
 
 
 @cli.command()
@@ -250,20 +298,24 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @cli.command("rerun_config_changed")
 @project_id_option
 @dataset_id_option
-@click.pass_context
-def rerun_config_changed(ctx, project_id, dataset_id):
+def rerun_config_changed(project_id, dataset_id):
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
-
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-    for external_config in updated_external_configs:
-        ctx.invoke(
-            rerun,
-            project_id=project_id,
-            dataset_id=dataset_id,
-            experiment_slug=external_config.slug,
-        )
+
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=All,
+        experiment_slugs=[config.slug for config in updated_external_configs],
+    ).execute()
+
+    client = BigQueryClient(project_id, dataset_id)
+    for config in updated_external_configs:
+        client.touch_tables(config.slug)
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")
