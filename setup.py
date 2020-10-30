@@ -8,6 +8,7 @@ def text_from_file(path):
 
 test_dependencies = [
     "coverage",
+    "jsonschema",
     "pytest",
     "pytest-black",
     "pytest-cov",

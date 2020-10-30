@@ -8,6 +8,7 @@ spec:
   arguments:
     parameters:
     - name: date  # set dynamically when worklfow gets deployed
+    - name: experiment_slug  # set dynamically when worklfow gets deployed
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -18,8 +19,10 @@ spec:
         template: analyse-experiment  
         arguments:
           parameters:
-          - name: experiment
-            value: "{{item}}"
+          - name: date
+            value: "{{item.date}}"
+          - name: slug
+            value: "{{item.slug}}"
         withParam: "{{steps.get-active-experiments.outputs.result}}"  # process active experiments in parallel
 
   - name: get-active-experiments
@@ -31,15 +34,11 @@ spec:
   - name: analyse-experiment
     inputs:
       parameters:
-      - name: experiment
+      - name: date
+      - name: slug
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
-      command: [bin/entrypoint, analyse-experiment, "--experiment_config={{inputs.parameters.experiment}}"]
-      resources:
-        requests:
-          memory: 2Gi
-        limits:
-          memory: 10Gi  
+      command: [bin/entrypoint, run, "--date={{inputs.parameters.date}}", "--experiment_slug={{inputs.parameters.slug}}"]
     retryStrategy:
       limit: 3  # execute a container max. twice; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"

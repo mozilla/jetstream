@@ -10,7 +10,7 @@ from jetstream import AnalysisPeriod, config
 from jetstream.config import DEFAULT_METRICS_CONFIG
 from jetstream.nimbus import Feature, FeatureEventTelemetry, FeatureScalarTelemetry
 from jetstream.statistics import BootstrapMean
-from jetstream.pre_treatment import RemoveNulls
+from jetstream.pre_treatment import RemoveNulls, CensorHighestValues, Log
 
 
 @pytest.fixture
@@ -276,7 +276,9 @@ class TestAnalysisSpec:
 
             [metrics.spam.statistics.bootstrap_mean]
             num_samples = 10
-            pre_treatments = ["not_existing"]
+            pre_treatments = [
+                {name = "not_existing"}
+            ]
             """
         )
 
@@ -455,6 +457,40 @@ class TestExperimentSpec:
         assert "1970" not in configured.experiment.segments[1].data_source.from_expr
         assert "{{" not in configured.experiment.segments[1].data_source.from_expr
         assert "2019-12-01" in configured.experiment.segments[1].data_source.from_expr
+
+    def test_pre_treatment_config(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            pre_treatments = [
+                {name = "remove_nulls"},
+                {name = "log", base = 20.0},
+                {name = "censor_highest_values", fraction = 0.9}
+            ]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        pre_treatments = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+            0
+        ].pre_treatments
+
+        assert len(pre_treatments) == 3
+        assert pre_treatments[0].__class__ == RemoveNulls
+        assert pre_treatments[1].__class__ == Log
+        assert pre_treatments[2].__class__ == CensorHighestValues
+
+        assert pre_treatments[1].base == 20.0
+        assert pre_treatments[2].fraction == 0.9
 
 
 class TestExperimentConf:

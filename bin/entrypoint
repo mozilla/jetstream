@@ -11,9 +11,6 @@ elif [ "$1" = "rerun-config-changed" ]; then
 elif [ "$1" = "get-active-experiments" ]; then
     # argo
     jetstream get-active-experiments "${@:2}"
-elif [ "$1" = "analyse-experiment" ]; then
-    # argo
-    jetstream analyse-experiment "${@:2}"
 else
     # this is triggered by Airflow
     jetstream --log_to_bigquery run "$@"

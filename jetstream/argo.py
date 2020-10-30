@@ -62,6 +62,8 @@ def submit_workflow(
 
             time.sleep(1)
 
+        return True
+
 
 def get_config(project_id: str, zone: str, cluster_id: str):
     """Get the kubernetes cluster config."""

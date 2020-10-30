@@ -6,10 +6,14 @@ import cattr
 import click
 import json
 import os
-import logging
 from pathlib import Path
-import pytz
+import logging
 import sys
+from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+
+import attr
+import click
+import pytz
 import toml
 from typing import Optional
 
@@ -23,12 +27,6 @@ from .logging.bigquery_log_handler import BigQueryLogHandler
 from .bigquery_client import BigQueryClient
 from .util import inclusive_date_range
 from . import bq_normalize_name, AnalysisPeriod
-
-
-WORKLFOW_DIR = Path(__file__).parent / "workflows"
-RERUN_WORKFLOW = WORKLFOW_DIR / "rerun.yaml"
-RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
-RERUN_CONFIG_CHANGED_WORKFLOW = WORKLFOW_DIR / "rerun_config_changed.yaml"
 
 
 def setup_logger(
@@ -51,6 +49,122 @@ def setup_logger(
 logger = logging.getLogger(__name__)
 
 
+RECOGNIZED_EXPERIMENT_TYPES = ("pref", "addon", "message", "v6")
+
+
+@attr.s
+class AllType:
+    """Sentinel value for AnalysisExecutor"""
+
+
+All = AllType()
+
+
+@attr.s(auto_attribs=True)
+class AnalysisExecutor:
+    project_id: str
+    dataset_id: str
+    date: Union[datetime, AllType]
+    experiment_slugs: Union[Iterable[str], AllType]
+    configuration_map: Mapping[str, TextIO] = attr.ib(factory=dict)
+    analysis_class: Type = Analysis
+
+    @staticmethod
+    def _today() -> datetime:
+        return datetime.combine(
+            datetime.now(tz=pytz.utc).date() - timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=pytz.utc,
+        )
+
+    def execute(
+        self,
+        *,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+        today: Optional[datetime] = None,
+    ) -> bool:
+        experiments = experiment_getter()
+        external_configs = None
+
+        if isinstance(self.experiment_slugs, AllType):
+            if isinstance(self.date, AllType):
+                raise ValueError("Declining to re-run all experiments for all time.")
+            run_experiments = [
+                e.normandy_slug
+                for e in (
+                    experiments.end_on_or_after(self.date)
+                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                    .experiments
+                )
+                if e.normandy_slug is not None
+            ]
+        else:
+            run_experiments = list(self.experiment_slugs)
+
+        failed = False
+
+        for slug in run_experiments:
+            experiment = experiments.with_slug(slug).experiments[0]
+            spec = AnalysisSpec.default_for_experiment(experiment)
+            if slug in self.configuration_map:
+                config_dict = toml.load(self.configuration_map[slug])
+                spec.merge(AnalysisSpec.from_dict(config_dict))
+            else:
+                external_configs = external_configs or config_getter()
+                if external_spec := external_configs.spec_for_experiment(slug):
+                    spec.merge(external_spec)
+
+            if self.date == All:
+                today = today or self._today()
+                end_date = min(
+                    experiment.end_date or today,
+                    today,
+                )
+                run_dates = inclusive_date_range(experiment.start_date, end_date)
+            else:
+                run_dates = [self.date]
+
+            for run_date in run_dates:
+                try:
+                    experiment = experiments.with_slug(slug).experiments[0]
+                    config = spec.resolve(experiment)
+                    self.analysis_class(self.project_id, self.dataset_id, config).run(run_date)
+                except Exception as e:
+                    failed = True
+                    logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+        return not failed
+
+
+@attr.s(auto_attribs=True)
+class ArgoExecutor:
+    project_id: str
+    zone: str
+    cluster_id: str
+    monitor_status: bool
+    date: Union[datetime, AllType]
+    experiment_slugs: Union[Iterable[str], AllType]
+
+    WORKLFOW_DIR = Path(__file__).parent / "workflows"
+    RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
+
+    def execute(self) -> bool:
+        # todo: handle specific experiment_slug
+        # todo: handle date all
+        return submit_workflow(
+            self.project_id,
+            self.zone,
+            self.cluster_id,
+            RUN_WORKFLOW,
+            {"date": self.date.strftime("%Y-%m-%d")},
+            monitor_status=self.monitor_status,
+        )
+
+
 @click.group()
 @click.option(
     "--log_project_id",
@@ -68,18 +182,6 @@ logger = logging.getLogger(__name__)
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 def cli(log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
     setup_logger(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
-
-
-def _update_tables_last_modified(project_id, dataset_id, normandy_slug):
-    """Update the last_updated label of the tables matching the slug."""
-    client = BigQueryClient(project_id, dataset_id)
-    normalized_slug = bq_normalize_name(normandy_slug)
-    analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-    table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
-    tables = client.tables_matching_regex(table_name_re)
-
-    for table in tables:
-        client.add_labels_to_table({"last_updated": client.current_timestamp_label()})
 
 
 class ClickDate(click.ParamType):
@@ -167,58 +269,31 @@ def run(
     Runs analysis on active experiments for the provided date.
 
     This command is invoked by Airflow. All errors are written to the console and
-    BigQuery. Runs will always return a success code, even if exceptions were
-    thrown during some experiment analyses. This ensures that the Airflow task will
-    not retry the task and run all of the analyses again.
+    BigQuery.
     """
     if argo:
-        return submit_workflow(
-            project_id,
-            zone,
-            cluster_id,
-            RUN_WORKFLOW,
-            {"date": date.strftime("%Y-%m-%d")},
+        success = ArgoExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=date,
+            zone=zone,
+            cluster_id=cluster_id,
             monitor_status=monitor_status,
-        )
+            experiment_slugs=[experiment_slug] if experiment_slug else All,
+        ).execute()
+    else:
+        # run locally
+        success = AnalysisExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=date,
+            experiment_slugs=[experiment_slug] if experiment_slug else All,
+            configuration_map={experiment_slug: config_file}
+            if experiment_slug and config_file
+            else {},
+        ).execute()
 
-    # run locally
-
-    # fetch experiments that are still active
-    collection = ExperimentCollection.from_experimenter()
-
-    active_experiments = collection.end_on_or_after(date).of_type(
-        ("pref", "addon", "message", "v4")
-    )
-
-    if experiment_slug is not None:
-        # run analysis for specific experiment
-        active_experiments = active_experiments.with_slug(experiment_slug)
-
-    # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
-
-    # calculate metrics for experiments and write to BigQuery
-    for experiment in active_experiments.experiments:
-        try:
-            spec = AnalysisSpec.default_for_experiment(experiment)
-
-            if config_file:
-                # secret CLI configs overwrite external configs
-                custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-                spec.merge(custom_spec)
-            else:
-                external_experiment_config = external_configs.spec_for_experiment(
-                    experiment.normandy_slug
-                )
-
-                if external_experiment_config:
-                    spec.merge(external_experiment_config)
-
-            config = spec.resolve(experiment)
-
-            Analysis(project_id, dataset_id, config).run(date)
-        except Exception as e:
-            logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+    sys.exit(0 if success else 1)
 
 
 @cli.command("rerun")
@@ -241,77 +316,34 @@ def rerun(
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    if experiment_slug is None:
-        click.echo("experiment_slug is required.", err=True)
-        sys.exit(1)
-
     if argo:
-        result = submit_workflow(
-            project_id,
-            zone,
-            cluster_id,
-            RERUN_WORKFLOW,
-            {"experiment_slug": experiment_slug},
+        success = ArgoExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=All,
+            zone=zone,
+            cluster_id=cluster_id,
             monitor_status=monitor_status,
-        )
-        _update_tables_last_modified(project_id, dataset_id, experiment_slug)
-        return result
+            experiment_slugs=[experiment_slug] if experiment_slug else All,
+        ).execute()
+    else:
+        success = AnalysisExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=All,
+            experiment_slugs=[experiment_slug],
+            configuration_map={experiment_slug: config_file} if config_file else {},
+        ).execute()
 
-    # run locally
+    BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
-    collection = ExperimentCollection.from_experimenter()
-
-    try:
-        experiments = collection.with_slug(experiment_slug)
-
-        if len(experiments.experiments) == 0:
-            raise Exception(f"No experiment with slug {experiment_slug} found.")
-
-        experiment = experiments.experiments[0]
-
-        if experiment.end_date is None:
-            raise Exception(f"End date is missing for experiment {experiment_slug}")
-
-        end_date = min(
-            experiment.end_date,
-            datetime.combine(
-                datetime.now(tz=pytz.utc).date() - timedelta(days=1),
-                datetime.min.time(),
-                tzinfo=pytz.utc,
-            ),
-        )
-        spec = AnalysisSpec.default_for_experiment(experiment)
-        if config_file:
-            custom_spec = AnalysisSpec.from_dict(toml.load(config_file))
-            spec.merge(custom_spec)
-        else:
-            # get experiment-specific external configs
-            external_configs = ExternalConfigCollection.from_github_repo()
-            external_experiment_config = external_configs.spec_for_experiment(
-                experiment.normandy_slug
-            )
-
-            if external_experiment_config:
-                spec.merge(external_experiment_config)
-
-        config = spec.resolve(experiment)
-
-        for date in inclusive_date_range(experiment.start_date, end_date):
-            logger.info(f"*** {date}")
-            Analysis(project_id, dataset_id, config).run(date)
-
-        _update_tables_last_modified(project_id, dataset_id, experiment_slug)
-    except Exception as e:
-        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
+    sys.exit(0 if success else 1)
 
 
 @cli.command()
 @project_id_option
 @dataset_id_option
 @bucket_option
-@argo_option
-@zone_option
-@cluster_id_option
 def export_statistics_to_json(project_id, dataset_id, bucket):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket)
@@ -329,34 +361,31 @@ def rerun_config_changed(ctx, project_id, dataset_id, argo, zone, cluster_id, mo
     """Rerun all available analyses for experiments with new or updated config files."""
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
-
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
     if argo:
-        result = submit_workflow(
-            project_id,
-            zone,
-            cluster_id,
-            RERUN_CONFIG_CHANGED_WORKFLOW,
-            {},
-            monitor_status=monitor_status,
-        )
-
-        for external_config in updated_external_configs:
-            _update_tables_last_modified(project_id, dataset_id, external_config.slug)
-
-        return result
-
-    # run locally
-
-    for external_config in updated_external_configs:
-        ctx.invoke(
-            rerun,
+        success = ArgoExecutor(
             project_id=project_id,
             dataset_id=dataset_id,
-            experiment_slug=external_config.slug,
-        )
-        _update_tables_last_modified(project_id, dataset_id, external_config.slug)
+            date=All,
+            zone=zone,
+            cluster_id=cluster_id,
+            monitor_status=monitor_status,
+            experiment_slugs=[config.slug for config in updated_external_configs],
+        ).execute()
+    else:
+        success = AnalysisExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=All,
+            experiment_slugs=[config.slug for config in updated_external_configs],
+        ).execute()
+
+    client = BigQueryClient(project_id, dataset_id)
+    for config in updated_external_configs:
+        client.touch_tables(config.slug)
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command()
@@ -386,25 +415,12 @@ def validate_config(path):
         click.echo(f"Config file at {file} is valid.", err=False)
 
 
-def _base64_encode(d):
-    """Base64 encodes an object."""
-    converter = cattr.Converter()
-    converter.register_unstructure_hook(datetime, lambda d: str(d.date()))
-    return base64.b64encode(json.dumps(converter.unstructure(d)).encode()).decode("utf-8")
-
-
-def _base64_decode(d):
-    """Decodes Base64 to a dict."""
-    return json.loads(base64.b64decode(d.encode()).decode("utf-8"))
-
-
 @attr.s(auto_attribs=True)
 class AnalysisRunConfig:
     """Run config used to define what should be executed in a experiment analysis step."""
 
     date: datetime
-    experiment: Experiment
-    external_config: Optional[AnalysisSpec]
+    slug: str
 
 
 @cli.command()
@@ -412,6 +428,7 @@ class AnalysisRunConfig:
 @dataset_id_option
 @click.option(
     "--start_date",
+    "--start-date",
     type=ClickDate(),
     help="Start date for which experiments should be analyzed. "
     "If not set, analyze for period experiments were active.",
@@ -419,6 +436,7 @@ class AnalysisRunConfig:
 )
 @click.option(
     "--end_date",
+    "--end-date",
     type=ClickDate(),
     help="End date for which experiments should be analyzed. "
     "If not set, analyze for period experiments were active.",
@@ -437,13 +455,8 @@ def get_active_experiments(
     ctx, project_id, dataset_id, start_date, end_date, config_changed, experiment_slug
 ):
     """
-    Get all active experiment, including their configurations as bse64 encoded JSON objects.
-
-    We need to encode/decode the config dict to pass it between Argo workflow steps.
-    The configs include some Jinja templates, Argo also uses Jinja templates for defining
-    workflows, so when passing config dicts to a step in the workflow it tries to evaluate
-    the template and will fail. To work around this, instead of passing the config dict as is,
-    it is base64 encoded instead, and decoded within the step.
+    Get active experiments and their run dates and print them out as JSON. Argo will
+    use the JSON as input for running experiment analyses.
     """
     # fetch experiments that are still active
     collection = ExperimentCollection.from_experimenter()
@@ -474,8 +487,6 @@ def get_active_experiments(
             )
             continue
 
-        external_experiment_config = external_configs.spec_for_experiment(experiment.normandy_slug)
-
         start = max(start_date, experiment.start_date) if start_date else experiment.start_date
         end = min(end_date, experiment.end_date) if end_date else experiment.end_date
         end = min(
@@ -488,41 +499,9 @@ def get_active_experiments(
         )
 
         for date in inclusive_date_range(start, end):
-            experiment_runs_configs.append(
-                _base64_encode(AnalysisRunConfig(date, experiment, external_experiment_config))
-            )
+            experiment_runs_configs.append(AnalysisRunConfig(date, experiment.normandy_slug))
 
     # Write config to stdout which will be read by argo and then used to spawn analysis jobs
-    json.dump(experiment_runs_configs, sys.stdout)
-
-
-@cli.command()
-@project_id_option
-@dataset_id_option
-@click.option(
-    "--experiment_config",
-    help="Experiment config as base64 encoded JSON",
-    required=True,
-)
-def analyse_experiment(project_id, dataset_id, experiment_config):
     converter = cattr.Converter()
-    converter.register_structure_hook(
-        datetime,
-        lambda num, _: pytz.utc.localize(datetime.strptime(num, "%Y-%m-%d")),
-    )
-    analysis_run_config = converter.structure(_base64_decode(experiment_config), AnalysisRunConfig)
-
-    spec = AnalysisSpec.default_for_experiment(analysis_run_config.experiment)
-
-    if analysis_run_config.external_config:
-        spec.merge(analysis_run_config.external_config)
-
-    config = spec.resolve(analysis_run_config.experiment)
-
-    # calculate metrics for experiments and write to BigQuery
-    try:
-        Analysis(project_id, dataset_id, config).run(analysis_run_config.date)
-    except Exception as e:
-        logger.exception(
-            str(e), exc_info=e, extra={"experiment": analysis_run_config.experiment.normandy_slug}
-        )
+    converter.register_unstructure_hook(datetime, lambda d: str(d.date()))
+    json.dump(converter.unstructure(experiment_runs_configs), sys.stdout)
