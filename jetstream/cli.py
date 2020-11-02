@@ -248,7 +248,7 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
     thrown during some experiment analyses. This ensures that the Airflow task will
     not retry the task and run all of the analyses again.
     """
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=date,
@@ -256,7 +256,8 @@ def run(project_id, dataset_id, date, experiment_slug, config_file):
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
     ).execute()
 
-    sys.exit(0 if success else 1)
+    # todo: uncomment for Argo
+    # sys.exit(0 if success else 1)
 
 
 @cli.command("rerun")
@@ -273,7 +274,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
     jetstream-config launches Jetstream on a separate Kubernetes cluster which needs to
     report back to CircleCI whether or not the run was successful.
     """
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -283,7 +284,7 @@ def rerun(project_id, dataset_id, experiment_slug, config_file):
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
-    sys.exit(0 if success else 1)
+    # sys.exit(0 if success else 1)
 
 
 @cli.command()
@@ -304,7 +305,7 @@ def rerun_config_changed(project_id, dataset_id):
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -315,7 +316,7 @@ def rerun_config_changed(project_id, dataset_id):
     for config in updated_external_configs:
         client.touch_tables(config.slug)
 
-    sys.exit(0 if success else 1)
+    # sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")
