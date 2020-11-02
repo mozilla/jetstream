@@ -37,7 +37,7 @@ setup(
     package_data={"jetstream.config": ["*.toml"], "jetstream.tests": ["data/*"]},
     install_requires=[
         "attrs",
-        "cattrs",
+        "cattrs<1.1",
         "Click",
         "GitPython",
         "google-cloud-bigquery",
