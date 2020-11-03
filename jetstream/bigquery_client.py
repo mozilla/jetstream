@@ -57,7 +57,7 @@ class BigQueryClient:
         # add a label with the current timestamp to the table
         self.add_labels_to_table(
             table,
-            {"last_updated": self.current_timestamp_label()},
+            {"last_updated": self._current_timestamp_label()},
         )
 
     def execute(self, query: str, destination_table: Optional[str] = None) -> None:
@@ -78,7 +78,7 @@ class BigQueryClient:
             # add a label with the current timestamp to the table
             self.add_labels_to_table(
                 destination_table,
-                {"last_updated": self.current_timestamp_label()},
+                {"last_updated": self._current_timestamp_label()},
             )
 
     def tables_matching_regex(self, regex: str):

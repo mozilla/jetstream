@@ -6,6 +6,7 @@ from pytz import UTC
 from unittest.mock import Mock
 
 from jetstream import cli, experimenter, external_config
+from jetstream.config import AnalysisSpec
 
 
 @pytest.fixture
@@ -49,10 +50,6 @@ def cli_experiments():
 
 
 class TestCli:
-    @pytest.fixture
-    def runner(self):
-        return CliRunner()
-
     def test_inclusive_date_range(self):
         start_date = dt.date(2020, 5, 1)
         end_date = dt.date(2020, 5, 1)
@@ -74,7 +71,7 @@ class DummyExecutorStrategy:
     dataset_id: str
     return_value: bool = True
 
-    def execute(self, worklist):
+    def execute(self, worklist, configuration_map={}):
         self.worklist = worklist
         return self.return_value
 
@@ -91,7 +88,7 @@ class TestAnalysisExecutor:
         success = executor.execute(
             experiment_getter=experimenter.ExperimentCollection,
             config_getter=external_config.ExternalConfigCollection,
-            strategy=lambda *args, **kwargs: strategy,
+            strategy=strategy,
         )
         assert success
         assert strategy.worklist == []
@@ -107,12 +104,12 @@ class TestAnalysisExecutor:
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
-            strategy=lambda *args, **kwargs: strategy,
+            strategy=strategy,
         )
         assert success
         assert len(strategy.worklist) == 1
         assert strategy.worklist[0][0] == "my_cool_experiment"
-        assert strategy.worklist[0][2] == dt.datetime(2020, 10, 28, tzinfo=UTC)
+        assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
 
     def test_all_single_date(self, cli_experiments):
         executor = cli.AnalysisExecutor(
@@ -125,11 +122,11 @@ class TestAnalysisExecutor:
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
-            strategy=lambda *args, **kwargs: strategy,
+            strategy=strategy,
         )
         assert success
         assert len(strategy.worklist) == 2
-        assert {slug for slug, _, _ in strategy.worklist} == {
+        assert {slug for slug, _ in strategy.worklist} == {
             x.normandy_slug for x in cli_experiments.experiments
         }
 
@@ -144,7 +141,7 @@ class TestAnalysisExecutor:
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
-            strategy=lambda *args, **kwargs: strategy,
+            strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
         assert success
@@ -164,7 +161,7 @@ class TestAnalysisExecutor:
             executor.execute(
                 experiment_getter=lambda: cli_experiments,
                 config_getter=external_config.ExternalConfigCollection,
-                strategy=lambda *args, **kwargs: strategy,
+                strategy=strategy,
                 today=dt.datetime(2020, 12, 31, tzinfo=UTC),
             )
 
@@ -181,11 +178,11 @@ class TestSerialExecutorStrategy:
     def test_simple_workflow(self, cli_experiments):
         fake_analysis = Mock()
         experiment = cli_experiments.experiments[0]
-        spec = cli.default_spec_for_experiment(experiment)
+        spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
             "spam", "eggs", fake_analysis, lambda: cli_experiments
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
-        strategy.execute([(experiment.normandy_slug, spec, run_date)])
+        strategy.execute([(experiment.normandy_slug, run_date)])
         fake_analysis.assert_called_once_with("spam", "eggs", spec.resolve(experiment))
         fake_analysis().run.assert_called_once_with(run_date)

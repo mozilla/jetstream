@@ -34,9 +34,8 @@ def submit_workflow(
     workflow_file: Path,
     parameters: Dict[str, Any],
     monitor_status: bool = False,
-):
-    """Submit a workflow to Argo."""
-
+) -> bool:
+    """Submit a workflow to Argo and return if it failed."""
     config = get_config(project_id, zone, cluster_id)
     api_client = ApiClient(configuration=config)
     api = V1alpha1Api(api_client=api_client)
@@ -48,7 +47,8 @@ def submit_workflow(
     if monitor_status:
         finished = False
 
-        print("Worflow running")
+        # todo: get and print logs instead, or link to logs
+        print("Workflow running")
 
         while not finished:
             workflow = api.get_namespaced_workflow(
@@ -59,8 +59,10 @@ def submit_workflow(
                 finished = True
                 if workflow.status.phase == "Failed":
                     raise Exception(f"Workflow execution failed: {workflow.status}")
+                    return True
 
             time.sleep(1)
+    return False
 
 
 def get_config(project_id: str, zone: str, cluster_id: str):
