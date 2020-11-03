@@ -2,22 +2,30 @@ from argo.workflows.client import ApiClient, Configuration, V1alpha1Api
 import base64
 from google.cloud.container_v1 import ClusterManagerClient
 import google.auth
+import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import time
 from typing import Dict, Any
 import yaml
 
+logger = logging.getLogger(__name__)
+
 
 def apply_parameters(manifest: Dict[Any, Any], parameters: Dict[str, Any]) -> Dict[Any, Any]:
     """Apply custom parameters to the workflow manifest."""
+    # Currently, there is no option for providing custom parameters for workflows.
+    # apply_parameters works around this limitation by modifying the parsed manifest
+    # and injecting custom parameters.
     workflow_parameters = manifest["spec"]["arguments"]["parameters"]
     for key, value in parameters.items():
         exists = False
         for workflow_param in workflow_parameters:
             # overwrite existing
             if workflow_param["name"] == key:
-                workflow_param["value"] = value
+                # the array needs to be encoded as string
+                # Argo doesn't support ' in it's configuration so replace with "
+                workflow_param["value"] = str(value).replace("'", '"')
                 exists = True
 
         if not exists:
@@ -47,8 +55,17 @@ def submit_workflow(
     if monitor_status:
         finished = False
 
-        # todo: get and print logs instead, or link to logs
-        print("Workflow running")
+        logger.info("Argo workflow is running")
+        # link to logs
+        logger.info(
+            "To connect to Argo dashboard forward port by running: "
+            + f"gcloud container clusters get-credentials jetstream --zone {zone} "
+            + f"--project {project_id} && "
+            + "kubectl port-forward --namespace argo $(kubectl get pod --namespace argo "
+            + "--selector='app=argo-server' --output jsonpath='{.items[0].metadata.name}') "
+            + "8080:2746"
+        )
+        logger.info("The dashboard can be accessed via 127.0.0.1:8080")
 
         while not finished:
             workflow = api.get_namespaced_workflow(
