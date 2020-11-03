@@ -8,14 +8,11 @@ if [ "$1" = "export-statistics-to-json" ]; then
 elif [ "$1" = "rerun-config-changed" ]; then
     # this is triggered by the jetstream-config repo
     jetstream rerun-config-changed --argo
-elif [ "$1" = "get-active-experiments" ]; then
+elif [ "$1" = "run" ]; then
     # argo
-    jetstream get-active-experiments "${@:2}"
-elif [ "$1" = "analyse-experiment" ]; then
-    # argo
-    jetstream analyse-experiment "${@:2}"
+    jetstream --log_to_bigquery run "${@:2}"
 else
     # this is triggered by Airflow
-    jetstream --log_to_bigquery run "$@"
+    jetstream --log_to_bigquery run "$@" --argo
     jetstream --log_to_bigquery rerun-config-changed --argo
 fi
