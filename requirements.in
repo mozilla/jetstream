@@ -19,8 +19,8 @@ flake8==3.8.4             # via pytest-flake8
 GitPython==3.1.9          # via mozilla-jetstream
 google-api-core[grpc]==1.22.4  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-core
 google-auth==1.22.1       # via google-api-core, google-cloud-storage
-google-cloud-bigquery-storage==2.0.0  # via mozilla-jetstream
-google-cloud-bigquery==2.1.0  # via mozanalysis, mozilla-jetstream
+google-cloud-bigquery-storage==2.0.1  # via mozilla-jetstream
+google-cloud-bigquery==2.2.0  # via mozanalysis, mozilla-jetstream
 google-cloud-container==2.1.0 # via mozilla-jetstream
 google-cloud-core==1.4.3  # via google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.32.0  # via mozilla-jetstream, smart-open
