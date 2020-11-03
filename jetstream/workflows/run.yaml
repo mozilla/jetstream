@@ -7,26 +7,20 @@ spec:
   onExit: export-statistics # export statistics after all analyses
   arguments:
     parameters:
-    - name: date  # set dynamically when worklfow gets deployed
+    - name: experiments  # set dynamically when worklfow gets deployed
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
     steps:
-    - - name: get-active-experiments
-        template: get-active-experiments  # return active experiments for specific date
     - - name: analyse-experiment      
         template: analyse-experiment  
         arguments:
           parameters:
-          - name: experiment
-            value: "{{item}}"
-        withParam: "{{steps.get-active-experiments.outputs.result}}"  # process active experiments in parallel
-
-  - name: get-active-experiments
-    container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
-      command: [bin/entrypoint, get-active-experiments, "--start_date={{workflow.parameters.date}}", "--end_date={{workflow.parameters.date}}"]
-    activeDeadlineSeconds: 600   # terminate container after 10 minutes  
+          - name: slug
+            value: "{{item.slug}}"
+          - name: date
+            value: "{{item.date}}"
+        withParam: "{{workflow.parameters.experiments}}"  # process these experiments in parallel
 
   - name: analyse-experiment
     inputs:
@@ -34,12 +28,7 @@ spec:
       - name: experiment
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
-      command: [bin/entrypoint, analyse-experiment, "--experiment_config={{inputs.parameters.experiment}}"]
-      resources:
-        requests:
-          memory: 2Gi
-        limits:
-          memory: 10Gi  
+      command: [bin/entrypoint, run, "--date={{inputs.parameters.date}}", "--experiment_slug={{inputs.parameters.slug}}"]
     retryStrategy:
       limit: 3  # execute a container max. twice; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
@@ -52,4 +41,4 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, export-statistics-to-json]
-    activeDeadlineSeconds: 600   # terminate container template after 10 minutes  
+    activeDeadlineSeconds: 600   # terminate container template after 10 minutes
