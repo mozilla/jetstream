@@ -3,9 +3,11 @@ from typing import List, Iterable, Optional, Union
 
 import attr
 import cattr
+import json
 import logging
 import requests
 import pytz
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -157,6 +159,7 @@ class ExperimentV6:
 class ExperimentCollection:
     experiments: List[Experiment] = attr.Factory(list)
 
+    MAX_RETRIES = 3
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     # for nimbus experiments
@@ -165,24 +168,55 @@ class ExperimentCollection:
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
-        legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
-        legacy_experiments = []
 
-        for experiment in legacy_experiments_json:
-            if experiment["type"] != "rapid":
-                try:
-                    legacy_experiments.append(ExperimentV1.from_dict(experiment).to_experiment())
-                except Exception as e:
-                    logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
+        v1_retries = 0
+        success_v1 = False
+        v6_retries = 0
+        success_v6 = False
 
-        nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V6).json()
-        nimbus_experiments = []
-
-        for experiment in nimbus_experiments_json:
+        while v1_retries < cls.MAX_RETRIES and not success_v1:
             try:
-                nimbus_experiments.append(ExperimentV6.from_dict(experiment).to_experiment())
-            except Exception as e:
-                logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
+                legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
+                legacy_experiments = []
+                success_v1 = True
+
+                for experiment in legacy_experiments_json:
+                    if experiment["type"] != "rapid":
+                        try:
+                            legacy_experiments.append(
+                                ExperimentV1.from_dict(experiment).to_experiment()
+                            )
+                        except Exception as e:
+                            logger.exception(
+                                str(e), exc_info=e, extra={"experiment": experiment["slug"]}
+                            )
+            except json.JSONDecodeError:
+                logger.info(f"Retry: {cls.EXPERIMENTER_API_URL_V1}")
+                v1_retries += 1
+                time.sleep(1)
+
+        while v6_retries < cls.MAX_RETRIES and not success_v6:
+            try:
+                nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V6).json()
+                nimbus_experiments = []
+                success_v6 = True
+
+                for experiment in nimbus_experiments_json:
+                    try:
+                        nimbus_experiments.append(
+                            ExperimentV6.from_dict(experiment).to_experiment()
+                        )
+                    except Exception as e:
+                        logger.exception(
+                            str(e), exc_info=e, extra={"experiment": experiment["slug"]}
+                        )
+            except json.JSONDecodeError:
+                logger.info(f"Retry: {cls.EXPERIMENTER_API_URL_V6}")
+                v6_retries += 1
+                time.sleep(1)
+
+        if not success_v6 or not success_v1:
+            raise (Exception("Unable to fetch data from Experimenter API"))
 
         return cls(nimbus_experiments + legacy_experiments)
 

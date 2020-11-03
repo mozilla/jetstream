@@ -11,6 +11,9 @@ spec:
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
+    inputs:
+      parameters:
+        - name: experiments
     steps:
     - - name: analyse-experiment      
         template: analyse-experiment  
@@ -20,22 +23,23 @@ spec:
             value: "{{item.slug}}"
           - name: date
             value: "{{item.date}}"
-        withParam: "{{workflow.parameters.experiments}}"  # process these experiments in parallel
+        withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
 
   - name: analyse-experiment
     inputs:
       parameters:
-      - name: experiment
+      - name: date
+      - name: slug
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [bin/entrypoint, run, "--date={{inputs.parameters.date}}", "--experiment_slug={{inputs.parameters.slug}}"]
     retryStrategy:
-      limit: 3  # execute a container max. twice; sometimes a container run might fail due to limited resources
+      limit: 3  # execute a container max. 3x; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
       backoff:
-        duration: "10m"
+        duration: "1m"
         factor: 2
-        maxDuration: "30m"
+        maxDuration: "5m"
 
   - name: export-statistics
     container:

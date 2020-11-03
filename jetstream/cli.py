@@ -79,7 +79,7 @@ class ArgoExecutorStrategy:
 
     def execute(self, worklist, _configuration_map: Mapping[str, TextIO] = {}):
         experiments_config = [
-            {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (date, slug) in worklist
+            {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (slug, date) in worklist
         ]
 
         return submit_workflow(

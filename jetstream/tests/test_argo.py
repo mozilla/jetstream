@@ -77,26 +77,14 @@ class TestArgo:
                 manifest,
                 {
                     "experiments": [
-                        {"date": "2020-01-01", "slug": "test1"},
-                        {"date": "2020-01-02", "slug": "test2"},
+                        {"date": "2020-01-01", "slug": "a"},
+                        {"date": "2020-01-02", "slug": "b"},
                     ]
                 },
             )
 
             assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "experiments"
             assert (
-                updated_manifest["spec"]["arguments"]["parameters"][0]["value"][0]["slug"]
-                == "test1"
-            )
-            assert (
-                updated_manifest["spec"]["arguments"]["parameters"][0]["value"][0]["date"]
-                == "2020-01-01"
-            )
-            assert (
-                updated_manifest["spec"]["arguments"]["parameters"][0]["value"][1]["slug"]
-                == "test2"
-            )
-            assert (
-                updated_manifest["spec"]["arguments"]["parameters"][0]["value"][1]["date"]
-                == "2020-01-02"
+                updated_manifest["spec"]["arguments"]["parameters"][0]["value"]
+                == '[{"date": "2020-01-01", "slug": "a"}, {"date": "2020-01-02", "slug": "b"}]'
             )
