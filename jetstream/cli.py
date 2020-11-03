@@ -305,8 +305,7 @@ def run(
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
     ).execute(strategy=strategy)
 
-    # todo: uncomment for Argo
-    # sys.exit(0 if success else 1)
+    sys.exit(0 if success else 1)
 
 
 @cli.command("rerun")
@@ -357,37 +356,16 @@ def export_statistics_to_json(project_id, dataset_id, bucket):
 @monitor_status_option
 def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor_status):
     """Rerun all available analyses for experiments with new or updated config files."""
-    # get experiment-specific external configs
+
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
         strategy = ArgoExecutorStrategy(project_id, zone, cluster_id, monitor_status)
 
-    external_configs = ExternalConfigCollection.from_github_repo()
-
-    updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-
-    if argo:
-        result = submit_workflow(
-            project_id,
-            zone,
-            cluster_id,
-            RERUN_CONFIG_CHANGED_WORKFLOW,
-            {},
-            monitor_status=monitor_status,
-        )
-
-        for external_config in updated_external_configs:
-            _update_tables_last_modified(project_id, dataset_id, external_config.slug)
-
-        return result
-
-    # run locally
-
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -398,7 +376,7 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
     for config in updated_external_configs:
         client.touch_tables(config.slug)
 
-    # sys.exit(0 if success else 1)
+    sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")
