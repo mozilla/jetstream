@@ -61,7 +61,7 @@ class ExecutorStrategy(Protocol):
     def execute(
         self,
         worklist: Iterable[Tuple[str, datetime]],
-        configuration_map: Mapping[str, TextIO] = {},
+        configuration_map: Mapping[str, TextIO] = None,
     ) -> bool:
         ...
 
@@ -69,6 +69,7 @@ class ExecutorStrategy(Protocol):
 @attr.s(auto_attribs=True)
 class ArgoExecutorStrategy:
     project_id: str
+    dataset_id: str
     zone: str
     cluster_id: str
     monitor_status: bool
@@ -77,7 +78,10 @@ class ArgoExecutorStrategy:
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
 
-    def execute(self, worklist, _configuration_map: Mapping[str, TextIO] = {}):
+    def execute(self, worklist, configuration_map: Mapping[str, TextIO]):
+        if configuration_map is not None:
+            raise Exception("Custom configurations are not supported when running with Argo")
+
         experiments_config = [
             {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (slug, date) in worklist
         ]
@@ -87,7 +91,11 @@ class ArgoExecutorStrategy:
             zone=self.zone,
             cluster_id=self.cluster_id,
             workflow_file=self.RUN_WORKFLOW,
-            parameters={"experiments": experiments_config},
+            parameters={
+                "experiments": experiments_config,
+                "project_id": self.project_id,
+                "dataset_id": self.dataset_id,
+            },
             monitor_status=self.monitor_status,
         )
 
@@ -103,7 +111,7 @@ class SerialExecutorStrategy:
     ] = ExternalConfigCollection.from_github_repo
 
     def execute(
-        self, worklist: List[Tuple[str, datetime]], configuration_map: Mapping[str, TextIO] = {}
+        self, worklist: List[Tuple[str, datetime]], configuration_map: Mapping[str, TextIO] = None
     ):
         failed = False
         experiments = self.experiment_getter()
@@ -111,7 +119,7 @@ class SerialExecutorStrategy:
             try:
                 experiment = experiments.with_slug(slug).experiments[0]
                 spec = AnalysisSpec.default_for_experiment(experiment)
-                if slug in configuration_map:
+                if configuration_map and slug in configuration_map:
                     config_dict = toml.load(configuration_map[slug])
                     spec.merge(AnalysisSpec.from_dict(config_dict))
                 else:
@@ -225,7 +233,6 @@ project_id_option = click.option(
     "--project-id",
     default="moz-fx-data-experiments",
     help="Project to write to",
-    required=True,
 )
 dataset_id_option = click.option(
     "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to", required=True
@@ -277,35 +284,55 @@ monitor_status_option = click.option(
 )
 @experiment_slug_option
 @secret_config_file_option
-@argo_option
-@zone_option
-@cluster_id_option
-@monitor_status_option
 def run(
     project_id,
     dataset_id,
     date,
     experiment_slug,
     config_file,
-    argo,
-    zone,
-    cluster_id,
-    monitor_status,
 ):
     """Runs analysis for the provided date."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id)
-    if argo:
-        strategy = ArgoExecutorStrategy(project_id, zone, cluster_id, monitor_status)
-
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
-    ).execute(strategy=strategy)
+    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id))
 
-    sys.exit(0 if success else 1)
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@click.option(
+    "--date",
+    type=ClickDate(),
+    help="Date for which experiments should be analyzed",
+    metavar="YYYY-MM-DD",
+    required=True,
+)
+@experiment_slug_option
+@zone_option
+@cluster_id_option
+@monitor_status_option
+def run_argo(
+    project_id,
+    dataset_id,
+    date,
+    experiment_slug,
+    zone,
+    cluster_id,
+    monitor_status,
+):
+    """Runs analysis for the provided date using Argo."""
+    strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
+
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        date=date,
+        experiment_slugs=[experiment_slug] if experiment_slug else All,
+    ).execute(strategy=strategy)
 
 
 @cli.command("rerun")
@@ -325,7 +352,7 @@ def rerun(
     if argo:
         strategy = ArgoExecutorStrategy(project_id, zone, cluster_id, monitor_status)
 
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -334,8 +361,6 @@ def rerun(
     ).execute(strategy=strategy)
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
-
-    sys.exit(0 if success else 1)
 
 
 @cli.command()
@@ -365,7 +390,7 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
-    success = AnalysisExecutor(
+    AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -375,8 +400,6 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
     client = BigQueryClient(project_id, dataset_id)
     for config in updated_external_configs:
         client.touch_tables(config.slug)
-
-    sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")

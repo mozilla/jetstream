@@ -1,9 +1,8 @@
 import datetime as dt
-from typing import List, Iterable, Optional, Union
+from typing import Any, List, Iterable, Mapping, Optional, Union
 
 import attr
 import cattr
-import json
 import logging
 import requests
 import pytz
@@ -169,56 +168,39 @@ class ExperimentCollection:
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
 
-        v1_retries = 0
-        success_v1 = False
-        v6_retries = 0
-        success_v6 = False
+        legacy_experiments_json = cls._retry_get(session, cls.EXPERIMENTER_API_URL_V1)
+        legacy_experiments = []
 
-        while v1_retries < cls.MAX_RETRIES and not success_v1:
+        for experiment in legacy_experiments_json:
+            if experiment["type"] != "rapid":
+                try:
+                    legacy_experiments.append(ExperimentV1.from_dict(experiment).to_experiment())
+                except Exception as e:
+                    logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
+
+        nimbus_experiments_json = cls._retry_get(session, cls.EXPERIMENTER_API_URL_V6)
+        nimbus_experiments = []
+
+        for experiment in nimbus_experiments_json:
             try:
-                legacy_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V1).json()
-                legacy_experiments = []
-                success_v1 = True
-
-                for experiment in legacy_experiments_json:
-                    if experiment["type"] != "rapid":
-                        try:
-                            legacy_experiments.append(
-                                ExperimentV1.from_dict(experiment).to_experiment()
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                str(e), exc_info=e, extra={"experiment": experiment["slug"]}
-                            )
-            except json.JSONDecodeError:
-                logger.info(f"Retry: {cls.EXPERIMENTER_API_URL_V1}")
-                v1_retries += 1
-                time.sleep(1)
-
-        while v6_retries < cls.MAX_RETRIES and not success_v6:
-            try:
-                nimbus_experiments_json = session.get(cls.EXPERIMENTER_API_URL_V6).json()
-                nimbus_experiments = []
-                success_v6 = True
-
-                for experiment in nimbus_experiments_json:
-                    try:
-                        nimbus_experiments.append(
-                            ExperimentV6.from_dict(experiment).to_experiment()
-                        )
-                    except Exception as e:
-                        logger.exception(
-                            str(e), exc_info=e, extra={"experiment": experiment["slug"]}
-                        )
-            except json.JSONDecodeError:
-                logger.info(f"Retry: {cls.EXPERIMENTER_API_URL_V6}")
-                v6_retries += 1
-                time.sleep(1)
-
-        if not success_v6 or not success_v1:
-            raise (Exception("Unable to fetch data from Experimenter API"))
+                nimbus_experiments.append(ExperimentV6.from_dict(experiment).to_experiment())
+            except Exception as e:
+                logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
         return cls(nimbus_experiments + legacy_experiments)
+
+    @staticmethod
+    def _retry_get(session, url) -> Iterable[Mapping[str, Any]]:
+        for _i in range(ExperimentCollection.MAX_RETRIES):
+            try:
+                blob = session.get(url).json()
+                break
+            except Exception:
+                logger.info(f"Error fetching from {url}. Retrying...")
+                time.sleep(1)
+        else:
+            raise Exception(f"Too many retries for {url}")
+        return blob
 
     def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
