@@ -396,7 +396,7 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
 
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=All,
@@ -406,6 +406,8 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
     client = BigQueryClient(project_id, dataset_id)
     for config in updated_external_configs:
         client.touch_tables(config.slug)
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")

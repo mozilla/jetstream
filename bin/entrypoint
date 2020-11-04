@@ -11,6 +11,7 @@ elif [ "$1" = "rerun-config-changed" ]; then
 elif [ "$1" = "run-argo" ]; then
     # argo
     jetstream --log_to_bigquery run-argo "${@:2}"
+    jetstream --log_to_bigquery rerun-config-changed --argo
 elif [ "$1" = "run" ]; then
     # argo
     jetstream --log_to_bigquery run "${@:2}"
