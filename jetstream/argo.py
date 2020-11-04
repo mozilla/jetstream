@@ -43,7 +43,7 @@ def submit_workflow(
     parameters: Dict[str, Any],
     monitor_status: bool = False,
 ) -> bool:
-    """Submit a workflow to Argo and return if it failed."""
+    """Submit a workflow to Argo and return success."""
     config = get_config(project_id, zone, cluster_id)
     api_client = ApiClient(configuration=config)
     api = V1alpha1Api(api_client=api_client)
@@ -52,6 +52,7 @@ def submit_workflow(
 
     workflow = api.create_namespaced_workflow("argo", manifest)
 
+    failed = False
     if monitor_status:
         finished = False
 
@@ -76,10 +77,10 @@ def submit_workflow(
                 finished = True
                 if workflow.status.phase == "Failed":
                     raise Exception(f"Workflow execution failed: {workflow.status}")
-                    return True
+                    failed = True
 
             time.sleep(1)
-    return False
+    return not failed
 
 
 def get_config(project_id: str, zone: str, cluster_id: str):
