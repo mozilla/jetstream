@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import logging
 import sys
-from typing import Callable, Iterable, List, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
 import attr
 import click
@@ -55,13 +55,13 @@ All = AllType()
 class ExecutorStrategy(Protocol):
     project_id: str
 
-    def __init__(self, project_id: str, *args, **kwargs) -> None:
+    def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
         ...
 
     def execute(
         self,
         worklist: Iterable[Tuple[str, datetime]],
-        configuration_map: Mapping[str, TextIO] = None,
+        configuration_map: Optional[Mapping[str, TextIO]] = None,
     ) -> bool:
         ...
 
@@ -78,7 +78,11 @@ class ArgoExecutorStrategy:
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
 
-    def execute(self, worklist, configuration_map: Mapping[str, TextIO]):
+    def execute(
+        self,
+        worklist: Iterable[Tuple[str, datetime]],
+        configuration_map: Optional[Mapping[str, TextIO]] = None,
+    ):
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
@@ -111,7 +115,9 @@ class SerialExecutorStrategy:
     ] = ExternalConfigCollection.from_github_repo
 
     def execute(
-        self, worklist: List[Tuple[str, datetime]], configuration_map: Mapping[str, TextIO] = None
+        self,
+        worklist: Iterable[Tuple[str, datetime]],
+        configuration_map: Optional[Mapping[str, TextIO]] = None,
     ):
         failed = False
         experiments = self.experiment_getter()
@@ -141,7 +147,7 @@ class AnalysisExecutor:
     dataset_id: str
     date: Union[datetime, AllType]
     experiment_slugs: Union[Iterable[str], AllType]
-    configuration_map: Mapping[str, TextIO] = attr.ib(factory=dict)
+    configuration_map: Optional[Mapping[str, TextIO]] = attr.ib(None)
 
     @staticmethod
     def _today() -> datetime:
