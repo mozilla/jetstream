@@ -356,7 +356,7 @@ def rerun(
     """Rerun all available analyses for a specific experiment."""
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
-        strategy = ArgoExecutorStrategy(project_id, zone, cluster_id, monitor_status)
+        strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
 
     AnalysisExecutor(
         project_id=project_id,
@@ -390,7 +390,7 @@ def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor
 
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
-        strategy = ArgoExecutorStrategy(project_id, zone, cluster_id, monitor_status)
+        strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
 
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
