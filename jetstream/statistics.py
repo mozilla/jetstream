@@ -506,6 +506,21 @@ class KernelDensityEstimate(Statistic):
                     extra={"experiment": experiment.normandy_slug},
                 )
             result = kde.evaluate(grid.grid)
+            if group[metric].min() == 0 and grid.geometric:
+                results.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="kernel_density_estimate",
+                        parameter=0,
+                        branch=branch,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=kde.evaluate(0),
+                        lower=None,
+                        upper=None,
+                    )
+                )
             for x, y in zip(grid.grid, result):
                 results.append(
                     StatisticResult(
