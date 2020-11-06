@@ -1,10 +1,7 @@
-FROM python:3.8-slim
+FROM python:3.8
 
 RUN mkdir -p /app
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y git
-RUN apt-get install -y gcc
 
 COPY . .
 RUN pip install -r requirements.txt
