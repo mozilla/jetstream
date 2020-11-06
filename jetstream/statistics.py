@@ -486,6 +486,7 @@ class KernelDensityEstimate(Statistic):
     adjust: float = 1.0
     kernel: str = "gau"
     grid_size: int = 256
+    log_space: bool = False
 
     def transform(
         self,
@@ -497,10 +498,15 @@ class KernelDensityEstimate(Statistic):
         results = []
         for branch, group in df.groupby("branch"):
             kde = sm.nonparametric.KDEUnivariate(group[metric])
-            kde.fit(
-                bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel, gridsize=self.grid_size
-            )
-            for x, y in zip(kde.support, kde.density):
+            kde.fit(bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel)
+            grid = _make_grid(group[metric], self.grid_size, self.log_space)
+            if grid.message:
+                logger.warning(
+                    f"KernelDensityEstimate for metric {metric}, branch {branch}: {grid.message}",
+                    extra={"experiment": experiment.normandy_slug},
+                )
+            result = kde.evaluate(grid.grid)
+            for x, y in zip(grid.grid, result):
                 results.append(
                     StatisticResult(
                         metric=metric,
