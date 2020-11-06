@@ -3,7 +3,7 @@ from decimal import Decimal
 import logging
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import attr
 import cattr
@@ -11,6 +11,7 @@ from google.cloud import bigquery
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.frequentist_stats.bootstrap
+import mozanalysis.metrics
 import numpy as np
 from pandas import DataFrame, Series
 import statsmodels.api as sm
@@ -18,7 +19,9 @@ from statsmodels.distributions.empirical_distribution import ECDF
 
 
 from .pre_treatment import PreTreatment
-import jetstream.config as config
+
+if TYPE_CHECKING:
+    import jetstream.config as config
 
 logger = logging.getLogger(__name__)
 
