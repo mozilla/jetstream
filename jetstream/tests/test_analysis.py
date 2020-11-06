@@ -20,6 +20,7 @@ from jetstream.errors import HighPopulationException
 def test_get_timelimits_if_ready(experiments):
     config = AnalysisSpec().resolve(experiments[0])
     config2 = AnalysisSpec().resolve(experiments[2])
+
     analysis = Analysis("test", "test", config)
     analysis2 = Analysis("test", "test", config2)
 
@@ -82,7 +83,7 @@ def test_regression_20200320():
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
     with pytest.raises(NoEnrollmentPeriodException):
-        analysis.run(dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
+        analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
 
 
 def test_regression_20200316():
@@ -142,7 +143,7 @@ def test_regression_20200316():
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
     analysis = Analysis("test", "test", config)
-    analysis.run(dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
+    analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
@@ -164,7 +165,9 @@ def test_analysis_doesnt_choke_on_segments(experiments):
     spec = AnalysisSpec.from_dict(toml.loads(conf))
     configured = spec.resolve(experiments[0])
     assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
-    Analysis("test", "test", configured).run(dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True)
+    Analysis("test", "test", configured).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+    )
 
 
 def test_is_high_population_check(experiments):

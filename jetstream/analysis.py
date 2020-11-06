@@ -21,6 +21,8 @@ from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
+DASK_DASHBOARD_ADDRESS = "127.0.0.1:8782"
+
 
 @attr.s(auto_attribs=True)
 class Analysis:
@@ -353,7 +355,7 @@ class Analysis:
 
         # set up dask
         cluster = LocalCluster(
-            dashboard_address="127.0.0.1:8782", processes=True, threads_per_worker=1
+            dashboard_address=DASK_DASHBOARD_ADDRESS, processes=True, threads_per_worker=1
         )
         client = Client(cluster)
 

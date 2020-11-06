@@ -59,8 +59,8 @@ class TestAnalysisIntegration:
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
             branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
-            reference_branch="branch2",
             probe_sets=[],
+            reference_branch="branch2",
             normandy_slug="test-experiment",
             is_high_population=False,
         )
@@ -149,8 +149,8 @@ class TestAnalysisIntegration:
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
             branches=[Branch(slug="a", ratio=0.5), Branch(slug="b", ratio=0.5)],
-            reference_branch="a",
             probe_sets=[],
+            reference_branch="a",
             normandy_slug="test-experiment-2",
             is_high_population=False,
         )
@@ -194,8 +194,8 @@ class TestAnalysisIntegration:
             end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
             branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
-            reference_branch="branch2",
             probe_sets=[],
+            reference_branch="branch2",
             normandy_slug="test-experiment",
             is_high_population=False,
         )
