@@ -21,31 +21,30 @@ def test_get_timelimits_if_ready(experiments):
     config = AnalysisSpec().resolve(experiments[0])
     config2 = AnalysisSpec().resolve(experiments[2])
 
-    analysis = Analysis("test", "test", config)
-    analysis2 = Analysis("test", "test", config2)
+    analysis = Analysis("test", "test")
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(0)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date) is None
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date, config) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date, config) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(2)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date) is None
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date, config) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date, config) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(7)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date, config)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date, config) is None
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date, config)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date, config)
 
     date = dt.datetime(2020, 2, 29, tzinfo=pytz.utc)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date, config) is None
 
     date = dt.datetime(2020, 3, 1, tzinfo=pytz.utc)
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
-    assert analysis2._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date, config)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date, config2) is None
 
 
 def test_regression_20200320():
@@ -81,9 +80,9 @@ def test_regression_20200320():
     """  # noqa
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
-    analysis = Analysis("test", "test", config)
+    analysis = Analysis("test", "test")
     with pytest.raises(NoEnrollmentPeriodException):
-        analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
+        analysis.run(dt.datetime(2020, 3, 19, tzinfo=pytz.utc), config, dry_run=True)
 
 
 def test_regression_20200316():
@@ -142,8 +141,8 @@ def test_regression_20200316():
     """
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
-    analysis = Analysis("test", "test", config)
-    analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
+    analysis = Analysis("test", "test")
+    analysis.run(dt.datetime(2020, 3, 16, tzinfo=pytz.utc), config, dry_run=True)
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
@@ -151,7 +150,7 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
     x = experiments[0]
     config = AnalysisSpec.default_for_experiment(x).resolve(x)
-    Analysis("spam", "eggs", config).validate()
+    Analysis("spam", "eggs").validate(config)
     m.assert_called_once()
 
 
@@ -165,9 +164,7 @@ def test_analysis_doesnt_choke_on_segments(experiments):
     spec = AnalysisSpec.from_dict(toml.loads(conf))
     configured = spec.resolve(experiments[0])
     assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
-    Analysis("test", "test", configured).run(
-        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
-    )
+    Analysis("test", "test").run(dt.datetime(2020, 1, 1, tzinfo=pytz.utc), configured, dry_run=True)
 
 
 def test_is_high_population_check(experiments):
@@ -175,4 +172,4 @@ def test_is_high_population_check(experiments):
     config = AnalysisSpec.default_for_experiment(x).resolve(x)
 
     with pytest.raises(HighPopulationException):
-        Analysis("spam", "eggs", config).check_runnable()
+        Analysis("spam", "eggs").check_runnable(config)

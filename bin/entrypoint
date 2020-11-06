@@ -17,6 +17,6 @@ elif [ "$1" = "run" ]; then
     jetstream --log_to_bigquery run "${@:2}"
 else
     # this is triggered by Airflow
-    jetstream --log_to_bigquery run "$@" --argo
+    jetstream --log_to_bigquery run "$@"
     jetstream --log_to_bigquery rerun-config-changed --argo
 fi
