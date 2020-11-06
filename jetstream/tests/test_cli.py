@@ -184,5 +184,5 @@ class TestSerialExecutorStrategy:
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])
-        fake_analysis.assert_called_once_with("spam", "eggs")
-        fake_analysis().run.assert_called_once_with(run_date, spec.resolve(experiment))
+        fake_analysis.assert_called_once_with("spam", "eggs", spec.resolve(experiment))
+        fake_analysis().run.assert_called_once_with(run_date)

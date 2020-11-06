@@ -138,7 +138,7 @@ class SerialExecutorStrategy:
                         spec.merge(external_spec)
 
                 config = spec.resolve(experiment)
-                self.analysis_class(self.project_id, self.dataset_id).run(date, config)
+                self.analysis_class(self.project_id, self.dataset_id, config).run(date)
             except Exception as e:
                 failed = True
                 logger.exception(str(e), exc_info=e, extra={"experiment": slug})

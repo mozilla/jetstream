@@ -75,9 +75,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(
-            test_data, "value", experiments[1].reference_branch, experiments[1].normandy_slug
-        )
+        result = stat.apply(test_data, "value", experiments[1])
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
