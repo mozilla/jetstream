@@ -41,14 +41,14 @@ class TestAnalysisIntegration:
                 threads_per_worker=threads_per_worker,
             )
 
-        analysis = Analysis(project_id, temporary_dataset)
+        analysis = Analysis(project_id, temporary_dataset, config)
         with mock.patch.object(
             mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
         ):
             with mock.patch.object(
                 dask.distributed.LocalCluster, "__init__", new=mock_local_cluster
             ):
-                analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), config, dry_run=False)
+                analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
 
     def test_metrics(self, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(

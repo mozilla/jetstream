@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import logging
 from textwrap import dedent
-from typing import Optional, List, Any, Dict
+from typing import Any, Dict, List, Optional
 
 import attr
 import dask
@@ -10,15 +10,14 @@ from google.cloud import bigquery
 import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
-from pandas import DataFrame
 
 from . import AnalysisPeriod, bq_normalize_name
-from jetstream.config import AnalysisConfiguration, MetricsConfigurationType
+from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 import jetstream.errors as errors
 from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
 from jetstream.bigquery_client import BigQueryClient
-from jetstream.experimenter import Branch
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +30,14 @@ class Analysis:
 
     project: str
     dataset: str
+    config: AnalysisConfiguration
 
     @property
     def bigquery(self):
         return BigQueryClient(project=self.project, dataset=self.dataset)
 
     def _get_timelimits_if_ready(
-        self, period: AnalysisPeriod, current_date: datetime, config: AnalysisConfiguration
+        self, period: AnalysisPeriod, current_date: datetime
     ) -> Optional[TimeLimits]:
         """
         Returns a TimeLimits instance if experiment is due for analysis.
@@ -47,13 +47,13 @@ class Analysis:
         prior_date_str = prior_date.strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        dates_enrollment = config.experiment.proposed_enrollment + 1
+        dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
-        if config.experiment.start_date is None:
+        if self.config.experiment.start_date is None:
             return None
 
         time_limits_args = {
-            "first_enrollment_date": config.experiment.start_date.strftime("%Y-%m-%d"),
+            "first_enrollment_date": self.config.experiment.start_date.strftime("%Y-%m-%d"),
             "num_dates_enrollment": dates_enrollment,
         }
 
@@ -87,15 +87,20 @@ class Analysis:
             return current_time_limits
 
         assert period == AnalysisPeriod.OVERALL
-        if config.experiment.end_date != current_date or config.experiment.status != "Complete":
+        if (
+            self.config.experiment.end_date != current_date
+            or self.config.experiment.status != "Complete"
+        ):
             return None
 
         analysis_length_dates = (
-            (config.experiment.end_date - config.experiment.start_date).days - dates_enrollment + 1
+            (self.config.experiment.end_date - self.config.experiment.start_date).days
+            - dates_enrollment
+            + 1
         )
 
         if analysis_length_dates < 0:
-            raise errors.EnrollmentLongerThanAnalysisException(config.experiment.normandy_slug)
+            raise errors.EnrollmentLongerThanAnalysisException(self.config.experiment.normandy_slug)
 
         return TimeLimits.for_single_analysis_window(
             last_date_full_data=prior_date_str,
@@ -104,14 +109,14 @@ class Analysis:
             **time_limits_args,
         )
 
-    def _table_name(self, window_period: str, window_index: int, normandy_slug: str) -> str:
-        assert normandy_slug is not None
-        normalized_slug = bq_normalize_name(normandy_slug)
+    def _table_name(self, window_period: str, window_index: int) -> str:
+        assert self.config.experiment.normandy_slug is not None
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         return "_".join([normalized_slug, window_period, str(window_index)])
 
-    def _publish_view(self, window_period: AnalysisPeriod, normandy_slug: str, table_prefix=None):
-        assert normandy_slug is not None
-        normalized_slug = bq_normalize_name(normandy_slug)
+    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
+        assert self.config.experiment.normandy_slug is not None
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.adjective])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
@@ -138,10 +143,6 @@ class Analysis:
         time_limits: TimeLimits,
         period: AnalysisPeriod,
         dry_run: bool,
-        enrollment_query: str,
-        segments: List[mozanalysis.segments.Segment],
-        normandy_slug: str,
-        metrics: MetricsConfigurationType,
     ):
         """
         Calculate metrics for a specific experiment.
@@ -159,30 +160,30 @@ class Analysis:
             ),
         )
 
-        res_table_name = self._table_name(period.value, window, normandy_slug)
+        res_table_name = self._table_name(period.value, window)
 
         sql = exp.build_query(
-            {m.metric for m in metrics[period]},
+            {m.metric for m in self.config.metrics[period]},
             last_window_limits,
             "normandy",
-            enrollment_query,
-            segments,
+            self.config.experiment.enrollment_query,
+            self.config.experiment.segments,
         )
 
         if dry_run:
             logger.info(
                 "Dry run; not actually calculating %s metrics for %s",
                 period.value,
-                normandy_slug,
+                self.config.experiment.normandy_slug,
             )
         else:
             logger.info(
                 "Executing query for %s (%s)",
-                normandy_slug,
+                self.config.experiment.normandy_slug,
                 period.value,
             )
             self.bigquery.execute(sql, res_table_name)
-            self._publish_view(period, normandy_slug)
+            self._publish_view(period)
 
         return res_table_name
 
@@ -190,21 +191,19 @@ class Analysis:
         self,
         metric: Summary,
         segment_data: DataFrame,
-        reference_branch: str,
-        normandy_slug: str,
         segment: str,
     ):
         """
         Run statistics on metric.
         """
-        stats = metric.run(segment_data, reference_branch, normandy_slug).set_segment(segment)
+        stats = metric.run(segment_data, self.config.experiment).set_segment(segment)
         return stats.to_dict()["data"]
 
-    def _counts(self, segment_data: DataFrame, normandy_slug: str, segment: str):
+    def _counts(self, segment_data: DataFrame, segment: str):
         """Count statistic."""
         return (
             Count()
-            .transform(segment_data, "*", "*", normandy_slug)
+            .transform(segment_data, "*", "*", self.config.experiment.normandy_slug)
             .set_segment(segment)
             .to_dict()["data"]
         )
@@ -213,9 +212,7 @@ class Analysis:
         self,
         counts: List[Dict[str, Any]],
         segment_data: DataFrame,
-        normandy_slug: str,
         segment: str,
-        branches: List[Branch],
     ):
         """Missing count statistic."""
         # add count=0 row to statistics table for missing branches
@@ -234,20 +231,20 @@ class Analysis:
                     upper=None,
                     segment=segment,
                 )
-                for b in branches
+                for b in self.config.experiment.branches
                 if b.slug not in {c["branch"] for c in counts}
             ]
         )
 
         return missing_counts.to_dict()["data"]
 
-    def _segment_metrics(self, segment: str, metrics_data: DataFrame, normandy_slug):
+    def _segment_metrics(self, segment: str, metrics_data: DataFrame):
         """Return metrics data for segment"""
         if segment != "all":
             if segment not in metrics_data.columns:
                 logger.error(
                     f"Segment {segment} not in metrics table",
-                    extra={"experiment": normandy_slug},
+                    extra={"experiment": self.config.experiment.normandy_slug},
                 )
                 return
             segment_data = metrics_data[metrics_data[segment]]
@@ -256,51 +253,49 @@ class Analysis:
 
         return segment_data
 
-    def check_runnable(
-        self, config: AnalysisConfiguration, current_date: Optional[datetime] = None
-    ) -> bool:
-        if config.experiment.normandy_slug is None:
+    def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
+        if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
             raise errors.NoSlugException()
 
-        if config.experiment.is_high_population:
-            raise errors.HighPopulationException(config.experiment.normandy_slug)
+        if self.config.experiment.is_high_population:
+            raise errors.HighPopulationException(self.config.experiment.normandy_slug)
 
-        if not config.experiment.proposed_enrollment:
-            raise errors.NoEnrollmentPeriodException(config.experiment.normandy_slug)
+        if not self.config.experiment.proposed_enrollment:
+            raise errors.NoEnrollmentPeriodException(self.config.experiment.normandy_slug)
 
-        if config.experiment.start_date is None:
-            raise errors.NoStartDateException(config.experiment.normandy_slug)
+        if self.config.experiment.start_date is None:
+            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
         if (
             current_date
-            and config.experiment.end_date
-            and config.experiment.end_date < current_date
+            and self.config.experiment.end_date
+            and self.config.experiment.end_date < current_date
         ):
-            raise errors.EndedException(config.experiment.normandy_slug)
+            raise errors.EndedException(self.config.experiment.normandy_slug)
 
         return True
 
-    def validate(self, config: AnalysisConfiguration) -> None:
-        self.check_runnable(config)
+    def validate(self) -> None:
+        self.check_runnable()
 
-        dates_enrollment = config.experiment.proposed_enrollment + 1
+        dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
-        if config.experiment.end_date is not None:
-            end_date = config.experiment.end_date
+        if self.config.experiment.end_date is not None:
+            end_date = self.config.experiment.end_date
             analysis_length_dates = (
-                (end_date - config.experiment.start_date).days - dates_enrollment + 1
+                (end_date - self.config.experiment.start_date).days - dates_enrollment + 1
             )
         else:
             analysis_length_dates = 21  # arbitrary
-            end_date = config.experiment.start_date + timedelta(
+            end_date = self.config.experiment.start_date + timedelta(
                 days=analysis_length_dates + dates_enrollment - 1
             )
 
         if analysis_length_dates < 0:
             logging.error(
                 "Proposed enrollment longer than analysis dates length:"
-                + f"{config.experiment.normandy_slug}"
+                + f"{self.config.experiment.normandy_slug}"
             )
             raise Exception("Cannot validate experiment")
 
@@ -308,24 +303,24 @@ class Analysis:
             last_date_full_data=end_date.strftime("%Y-%m-%d"),
             analysis_start_days=0,
             analysis_length_dates=analysis_length_dates,
-            first_enrollment_date=config.experiment.start_date.strftime("%Y-%m-%d"),
+            first_enrollment_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             num_dates_enrollment=dates_enrollment,
         )
 
         exp = mozanalysis.experiment.Experiment(
-            experiment_slug=config.experiment.normandy_slug,
-            start_date=config.experiment.start_date.strftime("%Y-%m-%d"),
+            experiment_slug=self.config.experiment.normandy_slug,
+            start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
         )
 
         metrics = set()
-        for v in config.metrics.values():
+        for v in self.config.metrics.values():
             metrics |= {m.metric for m in v}
 
         sql = exp.build_query(
             metrics,
             limits,
             "normandy",
-            config.experiment.enrollment_query,
+            self.config.experiment.enrollment_query,
         )
 
         dry_run_query(sql)
@@ -335,7 +330,6 @@ class Analysis:
         period: AnalysisPeriod,
         segment_results: List[Dict[str, Any]],
         metrics_table: str,
-        normandy_slug: str,
     ):
         """Write statistics to BigQuery."""
         job_config = bigquery.LoadJobConfig()
@@ -347,17 +341,15 @@ class Analysis:
             segment_results, f"statistics_{metrics_table}", job_config=job_config
         )
 
-        self._publish_view(period, normandy_slug=normandy_slug, table_prefix="statistics")
+        self._publish_view(period, table_prefix="statistics")
 
-    def run(
-        self, current_date: datetime, config: AnalysisConfiguration, dry_run: bool = False
-    ) -> None:
+    def run(self, current_date: datetime, dry_run: bool = False) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        logger.info("Analysis.run invoked for experiment %s", config.experiment.normandy_slug)
+        logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
-        self.check_runnable(config, current_date)
+        self.check_runnable(current_date)
 
         # set up dask
         cluster = LocalCluster(
@@ -375,37 +367,28 @@ class Analysis:
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
         save_statistics = dask.delayed(self._save_statistics)
 
-        for period in config.metrics:
-            time_limits = self._get_timelimits_if_ready(period, current_date, config)
+        for period in self.config.metrics:
+            time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
                 logger.info(
                     "Skipping %s (%s); not ready",
-                    config.experiment.normandy_slug,
+                    self.config.experiment.normandy_slug,
                     period.value,
                 )
                 continue
 
             exp = mozanalysis.experiment.Experiment(
-                experiment_slug=config.experiment.normandy_slug,
-                start_date=config.experiment.start_date.strftime("%Y-%m-%d"),
+                experiment_slug=self.config.experiment.normandy_slug,
+                start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             )
 
-            metrics_table = calculate_metrics(
-                exp,
-                time_limits,
-                period,
-                dry_run,
-                config.experiment.enrollment_query,
-                config.experiment.segments,
-                config.experiment.normandy_slug,
-                config.metrics,
-            )
+            metrics_table = calculate_metrics(exp, time_limits, period, dry_run)
 
             if dry_run:
                 logger.info(
                     "Not calculating statistics %s (%s); dry run",
-                    config.experiment.normandy_slug,
+                    self.config.experiment.normandy_slug,
                     period.value,
                 )
                 continue
@@ -414,35 +397,25 @@ class Analysis:
 
             segment_results = []
 
-            segment_labels = ["all"] + [s.name for s in config.experiment.segments]
+            segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
             for segment in segment_labels:
-                segment_data = segment_metrics(
-                    segment, metrics_data, config.experiment.normandy_slug
-                )
-                for m in config.metrics[period]:
+                segment_data = segment_metrics(segment, metrics_data)
+                for m in self.config.metrics[period]:
                     segment_results += calculate_statistics(
                         m,
                         segment_data,
-                        config.experiment.reference_branch,
-                        config.experiment.normandy_slug,
                         segment,
                     )
 
-                c = counts(segment_data, config.experiment.normandy_slug, segment)
+                c = counts(segment_data, segment)
                 segment_results += c
                 segment_results += missing_counts(
                     c,
                     segment_data,
-                    config.experiment.normandy_slug,
                     segment,
-                    config.experiment.branches,
                 )
 
-            results.append(
-                save_statistics(
-                    period, segment_results, metrics_table, config.experiment.normandy_slug
-                )
-            )
+            results.append(save_statistics(period, segment_results, metrics_table))
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished

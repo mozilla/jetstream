@@ -242,7 +242,17 @@ class ExperimentConfiguration:
             raise NoStartDateException(self.normandy_slug)
         return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
 
+    # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
+    # python-returns-typeerror-object-no
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, state):
+        vars(self).update(state)
+
     def __getattr__(self, name: str) -> Any:
+        if "experimenter_experiment" not in vars(self):
+            raise AttributeError
         return getattr(self.experimenter_experiment, name)
 
 
