@@ -3,7 +3,14 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from jetstream.statistics import BootstrapMean, Binomial, Count, KernelDensityEstimate, EmpiricalCDF
+from jetstream.statistics import (
+    _make_grid,
+    BootstrapMean,
+    Binomial,
+    Count,
+    KernelDensityEstimate,
+    EmpiricalCDF,
+)
 
 
 @pytest.fixture()
@@ -91,10 +98,56 @@ class TestStatistics:
         assert ("control", "foo", "difference") in comparison_branches
         assert ("control", "foo", "relative_uplift") in comparison_branches
 
+    @pytest.mark.parametrize("geometric", [True, False])
+    def test_make_grid_makes_a_grid(self, wine, geometric):
+        result = _make_grid(wine["ash"], 256, geometric)
+        assert result.grid.shape == (256,)
+        assert result.geometric is geometric
+        assert result.message is None
+
+    def test_make_grid_handles_negatives(self, wine):
+        ash = wine["ash"].copy()
+        ash.iloc[0] = -1
+        result = _make_grid(ash, 256, True)
+        assert result.geometric is False
+        assert result.grid.shape == (256,)
+        assert result.message is not None
+
+        result = _make_grid(ash, 256, False)
+        assert result.geometric is False
+        assert result.grid.shape == (256,)
+        assert result.message is None
+        assert result.grid.max() == ash.max()
+        assert result.grid.min() == -1
+
+    def test_make_grid_handles_zeros(self, wine):
+        ash = wine["ash"].copy()
+        ash.iloc[0] = 0
+        result = _make_grid(ash, 256, True)
+        assert result.geometric is True
+        assert result.grid.shape == (256,)
+        assert result.message is None
+        assert result.grid.min() > 0
+
+        result = _make_grid(ash, 256, False)
+        assert result.geometric is False
+        assert result.grid.shape == (256,)
+        assert result.message is None
+        assert result.grid.max() == ash.max()
+        assert result.grid.min() == 0
+
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
         result = stat.transform(wine, "ash", "*", None).data
         assert len(result) > 0
+
+    def test_kde_with_geom_zero(self, wine):
+        wine = wine.copy()
+        wine.loc[0, "ash"] = 0
+        stat = KernelDensityEstimate(log_space=True)
+        result = stat.transform(wine, "ash", "*", None).to_dict()["data"]
+        df = pd.DataFrame(result).astype({"parameter": float})
+        assert df["parameter"].min() == 0
 
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()

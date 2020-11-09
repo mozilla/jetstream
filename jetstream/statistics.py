@@ -3,7 +3,7 @@ from decimal import Decimal
 import logging
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import attr
 import cattr
@@ -11,6 +11,7 @@ from google.cloud import bigquery
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.frequentist_stats.bootstrap
+import mozanalysis.metrics
 import numpy as np
 from pandas import DataFrame, Series
 import statsmodels.api as sm
@@ -18,7 +19,9 @@ from statsmodels.distributions.empirical_distribution import ECDF
 
 
 from .pre_treatment import PreTreatment
-import jetstream.config as config
+
+if TYPE_CHECKING:
+    import jetstream.config as config
 
 logger = logging.getLogger(__name__)
 
@@ -451,11 +454,39 @@ class Count(Statistic):
 
 
 @attr.s(auto_attribs=True)
+class MakeGridResult:
+    grid: np.ndarray
+    geometric: bool
+    message: Optional[str]
+
+
+def _make_grid(values: Series, size: int, attempt_geometric: bool) -> MakeGridResult:
+    start, stop = values.min(), values.max()
+    message = None
+    geometric = attempt_geometric
+    if geometric and (start < 0 or stop <= 0):
+        message = (
+            "Refusing to create a geometric grid for a series with negative or all-zero values"
+        )
+        geometric = False
+    if geometric and start == 0:
+        start = values.drop_duplicates().nsmallest(2).iloc[1]
+        assert start != 0
+    f = np.geomspace if geometric else np.linspace
+    return MakeGridResult(
+        grid=f(start, stop, size),
+        geometric=geometric,
+        message=message,
+    )
+
+
+@attr.s(auto_attribs=True)
 class KernelDensityEstimate(Statistic):
     bandwidth: str = "normal_reference"
     adjust: float = 1.0
     kernel: str = "gau"
     grid_size: int = 256
+    log_space: bool = False
 
     def transform(
         self,
@@ -467,10 +498,30 @@ class KernelDensityEstimate(Statistic):
         results = []
         for branch, group in df.groupby("branch"):
             kde = sm.nonparametric.KDEUnivariate(group[metric])
-            kde.fit(
-                bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel, gridsize=self.grid_size
-            )
-            for x, y in zip(kde.support, kde.density):
+            kde.fit(bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel)
+            grid = _make_grid(group[metric], self.grid_size, self.log_space)
+            if grid.message:
+                logger.warning(
+                    f"KernelDensityEstimate for metric {metric}, branch {branch}: {grid.message}",
+                    extra={"experiment": experiment.normandy_slug},
+                )
+            result = kde.evaluate(grid.grid)
+            if group[metric].min() == 0 and grid.geometric:
+                results.append(
+                    StatisticResult(
+                        metric=metric,
+                        statistic="kernel_density_estimate",
+                        parameter=0,
+                        branch=branch,
+                        comparison=None,
+                        comparison_to_branch=None,
+                        ci_width=None,
+                        point=kde.evaluate(0),
+                        lower=None,
+                        upper=None,
+                    )
+                )
+            for x, y in zip(grid.grid, result):
                 results.append(
                     StatisticResult(
                         metric=metric,
@@ -503,41 +554,13 @@ class EmpiricalCDF(Statistic):
         results = []
         for branch, group in df.groupby("branch"):
             f = ECDF(group[metric])
-            start, stop = group[metric].min(), group[metric].max()
-            zero = None
-            log_space = self.log_space
-            if log_space and start < 0:
+            grid = _make_grid(group[metric], self.grid_size, self.log_space)
+            if grid.message:
                 logger.warning(
-                    f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
-                    f"in branch {branch}, which has negative values",
+                    f"EmpiricalCDF for metric {metric}, branch {branch}: {grid.message}",
                     extra={"experiment": experiment.normandy_slug},
                 )
-                log_space = False
-            if log_space and stop <= 0:
-                logger.warning(
-                    f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
-                    f"in branch {branch}, which has nonpositive highest value",
-                    extra={"experiment": experiment.normandy_slug},
-                )
-                log_space = False
-            if log_space and start == 0:
-                try:
-                    start = group[metric].drop_duplicates().nsmallest(2).iloc[1]
-                    if start == 0:
-                        raise ValueError
-                    zero = f(0)
-                except Exception:
-                    logger.warning(
-                        f"EmpiricalCDF: Refusing to create a geometric grid for metric {metric} "
-                        f"in branch {branch}, which has only zero values",
-                        extra={"experiment": experiment.normandy_slug},
-                    )
-                    log_space = False
-            if log_space:
-                grid = np.geomspace(start, stop, self.grid_size)
-            else:
-                grid = np.linspace(start, stop, self.grid_size)
-            if zero is not None:
+            if group[metric].min() == 0 and grid.geometric:
                 results.append(
                     StatisticResult(
                         metric=metric,
@@ -547,13 +570,13 @@ class EmpiricalCDF(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=zero,
+                        point=f(0),
                         lower=None,
                         upper=None,
                     )
                 )
-            cdf = f(grid)
-            for x, y in zip(grid, cdf):
+            cdf = f(grid.grid)
+            for x, y in zip(grid.grid, cdf):
                 results.append(
                     StatisticResult(
                         metric=metric,
