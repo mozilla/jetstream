@@ -90,10 +90,8 @@ def get_config(project_id: str, zone: str, cluster_id: str):
         name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"
     )
 
-    credentials, project = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/cloud-platform"]
-    )
-    creds, projects = google.auth.default()
+    creds, projects = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+
     auth_req = google.auth.transport.requests.Request()
     creds.refresh(auth_req)
 
