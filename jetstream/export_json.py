@@ -1,22 +1,25 @@
 from datetime import datetime
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from google.cloud import bigquery
 from google.cloud import storage
 import smart_open
 
-from jetstream import AnalysisPeriod
+from jetstream import AnalysisPeriod, bq_normalize_name
 
 logger = logging.getLogger(__name__)
 
 
 def _get_statistics_tables_last_modified(
-    client: bigquery.Client, bq_dataset: str
+    client: bigquery.Client, bq_dataset: str, experiment_slug: Optional[str]
 ) -> Dict[str, datetime]:
     """Returns statistics table names and their last modified timestamp as datetime object."""
+    experiment_table = "%"
+    if experiment_slug:
+        experiment_table = bq_normalize_name(experiment_slug)
 
-    periods = [f"'statistics_%_{p.adjective}'" for p in AnalysisPeriod]
+    periods = [f"'statistics_{experiment_table}_{p.adjective}'" for p in AnalysisPeriod]
     expression = " OR table_id LIKE ".join(periods)
 
     job = client.query(
@@ -106,12 +109,14 @@ def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storag
     blob.delete()
 
 
-def export_statistics_tables(project_id: str, dataset_id: str, bucket: str):
+def export_statistics_tables(
+    project_id: str, dataset_id: str, bucket: str, experiment_slug: Optional[str] = None
+):
     """Export statistics tables that have been modified or added to GCS as JSON."""
     bigquery_client = bigquery.Client(project_id)
     storage_client = storage.Client()
 
-    tables = _get_statistics_tables_last_modified(bigquery_client, dataset_id)
+    tables = _get_statistics_tables_last_modified(bigquery_client, dataset_id, experiment_slug)
     exported_json = _get_gcs_blobs(storage_client, bucket)
 
     for table, table_updated in tables.items():

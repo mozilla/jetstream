@@ -4,7 +4,7 @@ set -e
 
 if [ "$1" = "export-statistics-to-json" ]; then
     # this is triggered by Airflow
-    jetstream export-statistics-to-json
+    jetstream export-statistics-to-json "${@:2}"
 elif [ "$1" = "rerun-config-changed" ]; then
     # this is triggered by the jetstream-config repo
     jetstream rerun-config-changed --argo
