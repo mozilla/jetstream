@@ -373,9 +373,10 @@ def rerun(
 @project_id_option
 @dataset_id_option
 @bucket_option
-def export_statistics_to_json(project_id, dataset_id, bucket):
+@experiment_slug_option
+def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
     """Export all tables as JSON to a GCS bucket."""
-    export_statistics_tables(project_id, dataset_id, bucket)
+    export_statistics_tables(project_id, dataset_id, bucket, experiment_slug)
 
 
 @cli.command()

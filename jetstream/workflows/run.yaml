@@ -4,7 +4,6 @@ metadata:
   generateName: jetstream-
 spec:
   entrypoint: jetstream
-  onExit: export-statistics # export statistics after all analyses
   arguments:
     parameters:
     - name: experiments  # set dynamically when worklfow gets deployed
@@ -17,7 +16,7 @@ spec:
       parameters:
         - name: experiments
     steps:
-    - - name: analyse-experiment      
+    - - name: analyse-experiment
         template: analyse-experiment  
         arguments:
           parameters:
@@ -26,6 +25,15 @@ spec:
           - name: date
             value: "{{item.date}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
+        continueOn:
+          failed: true
+    - - name: export-statistics
+        template: export-statistics
+        arguments:
+          parameters:
+          - name: slug
+            value: "{{item.slug}}"
+        withParam: "{{inputs.parameters.experiments}}" 
 
   - name: analyse-experiment
     inputs:
@@ -49,11 +57,15 @@ spec:
         maxDuration: "5m"
 
   - name: export-statistics
+    inputs:
+      parameters:
+        - name: slug
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
         bin/entrypoint, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
-        "--project_id={{workflow.parameters.project_id}}"
+        "--project_id={{workflow.parameters.project_id}}",
+        "--experiment_slug={{inputs.parameters.slug}}"
       ]
     activeDeadlineSeconds: 600   # terminate container template after 10 minutes
