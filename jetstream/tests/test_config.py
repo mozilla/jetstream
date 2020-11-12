@@ -492,6 +492,38 @@ class TestExperimentSpec:
         assert pre_treatments[1].base == 20.0
         assert pre_treatments[2].fraction == 0.9
 
+    def test_pre_treatment_config_multiple_periods(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+            overall = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.binomial]
+            pre_treatments = ["remove_nulls"]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        pre_treatments = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][
+            0
+        ].pre_treatments
+
+        assert len(pre_treatments) == 1
+        assert pre_treatments[0].__class__ == RemoveNulls
+
+        overall_pre_treatments = [
+            m for m in cfg.metrics[AnalysisPeriod.OVERALL] if m.metric.name == "spam"
+        ][0].pre_treatments
+
+        assert len(overall_pre_treatments) == 1
+        assert overall_pre_treatments[0].__class__ == RemoveNulls
+
 
 class TestExperimentConf:
     def test_bad_end_date(self, experiments):
