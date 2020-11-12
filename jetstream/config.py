@@ -329,8 +329,9 @@ class MetricDefinition:
             else:
                 raise ValueError(f"Statistic {statistic_name} does not exist.")
 
+            stats_params = params.copy()
             pre_treatments = []
-            for pt in params.pop("pre_treatments", []):
+            for pt in stats_params.pop("pre_treatments", []):
                 if isinstance(pt, str):
                     ref = PreTreatmentReference(pt, {})
                 else:
@@ -341,7 +342,7 @@ class MetricDefinition:
             metrics_with_treatments.append(
                 Summary(
                     metric=metric,
-                    statistic=statistic.from_dict(params),
+                    statistic=statistic.from_dict(stats_params),
                     pre_treatments=pre_treatments,
                 )
             )
