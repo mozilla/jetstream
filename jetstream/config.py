@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, Type
 
 import attr
 import cattr
+import copy
 import jinja2
 from jinja2 import StrictUndefined
 import mozanalysis.metrics
@@ -329,7 +330,7 @@ class MetricDefinition:
             else:
                 raise ValueError(f"Statistic {statistic_name} does not exist.")
 
-            stats_params = params.copy()
+            stats_params = copy.deepcopy(params)
             pre_treatments = []
             for pt in stats_params.pop("pre_treatments", []):
                 if isinstance(pt, str):
