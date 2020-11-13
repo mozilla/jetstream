@@ -93,13 +93,19 @@ def get_config(
     cluster_cert: Optional[str] = None,
 ):
     """Get the kubernetes cluster config."""
-    if not cluster_ip or not cluster_cert:
+
+    if not cluster_ip and not cluster_cert:
         cluster_manager_client = ClusterManagerClient()
         cluster = cluster_manager_client.get_cluster(
             name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"
         )
         cluster_ip = cluster.endpoint
         cluster_cert = str(cluster.master_auth.cluster_ca_certificate)
+    elif not (cluster_ip and cluster_cert):
+        raise Exception(
+            "Cluster IP and cluster certificate required when cluster configuration "
+            "is provided explicitly."
+        )
 
     creds, projects = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
