@@ -46,9 +46,7 @@ def submit_workflow(
     cluster_cert: Optional[str] = None,
 ) -> bool:
     """Submit a workflow to Argo and return success."""
-    config = get_config(project_id, zone, cluster_id, cluster_ip, cluster_cert)
-    api_client = ApiClient(configuration=config)
-    api = V1alpha1Api(api_client=api_client)
+    api = get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert)
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
 
@@ -71,9 +69,17 @@ def submit_workflow(
         logger.info("The dashboard can be accessed via 127.0.0.1:8080")
 
         while not finished:
-            workflow = api.get_namespaced_workflow(
-                workflow.metadata.namespace, workflow.metadata.name
-            )
+            try:
+                workflow = api.get_namespaced_workflow(
+                    workflow.metadata.namespace, workflow.metadata.name
+                )
+            except Exception:
+                # Unauthorized status gets returned when the access token expires (after ca. 1h)
+                # Refresh the access token and try again
+                api = get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert)
+                workflow = api.get_namespaced_workflow(
+                    workflow.metadata.namespace, workflow.metadata.name
+                )
 
             if workflow.status and workflow.status.finished_at is not None:
                 finished = True
@@ -83,6 +89,13 @@ def submit_workflow(
 
             time.sleep(1)
     return not failed
+
+
+def get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert):
+    """Get Argo API handle."""
+    config = get_config(project_id, zone, cluster_id, cluster_ip, cluster_cert)
+    api_client = ApiClient(configuration=config)
+    return V1alpha1Api(api_client=api_client)
 
 
 def get_config(
@@ -110,7 +123,7 @@ def get_config(
     creds, projects = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
     auth_req = google.auth.transport.requests.Request()
-    creds.refresh(auth_req)
+    creds.refresh(auth_req)  # refresh token
 
     configuration = Configuration()
     configuration.host = f"https://{cluster_ip}"
@@ -118,6 +131,6 @@ def get_config(
         ca_cert.write(base64.b64decode(cluster_cert))
     configuration.ssl_ca_cert = ca_cert.name
     configuration.api_key_prefix["authorization"] = "Bearer"
-    configuration.api_key["authorization"] = creds.token
+    configuration.api_key["authorization"] = creds.token  # valid for one hour
 
     return configuration
