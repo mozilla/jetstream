@@ -73,6 +73,8 @@ class ArgoExecutorStrategy:
     zone: str
     cluster_id: str
     monitor_status: bool
+    cluster_ip: Optional[str] = None
+    cluster_cert: Optional[str] = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
@@ -101,6 +103,8 @@ class ArgoExecutorStrategy:
                 "dataset_id": self.dataset_id,
             },
             monitor_status=self.monitor_status,
+            cluster_ip=self.cluster_ip,
+            cluster_cert=self.cluster_cert,
         )
 
 
@@ -277,6 +281,18 @@ monitor_status_option = click.option(
     help="Monitor the status of the Argo workflow",
 )
 
+cluster_ip_option = click.option(
+    "--cluster_ip",
+    "--cluster-ip",
+    help="Kubernetes cluster IP address",
+)
+
+cluster_cert_option = click.option(
+    "--cluster_cert",
+    "--cluster-cert",
+    help="Kubernetes cluster certificate used for authenticating to the cluster",
+)
+
 
 @cli.command()
 @project_id_option
@@ -321,6 +337,8 @@ def run(
 @zone_option
 @cluster_id_option
 @monitor_status_option
+@cluster_ip_option
+@cluster_cert_option
 def run_argo(
     project_id,
     dataset_id,
@@ -329,9 +347,13 @@ def run_argo(
     zone,
     cluster_id,
     monitor_status,
+    cluster_ip,
+    cluster_cert,
 ):
     """Runs analysis for the provided date using Argo."""
-    strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
+    strategy = ArgoExecutorStrategy(
+        project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+    )
 
     AnalysisExecutor(
         project_id=project_id,
@@ -350,13 +372,26 @@ def run_argo(
 @zone_option
 @cluster_id_option
 @monitor_status_option
+@cluster_ip_option
+@cluster_cert_option
 def rerun(
-    project_id, dataset_id, experiment_slug, config_file, argo, zone, cluster_id, monitor_status
+    project_id,
+    dataset_id,
+    experiment_slug,
+    config_file,
+    argo,
+    zone,
+    cluster_id,
+    monitor_status,
+    cluster_ip,
+    cluster_cert,
 ):
     """Rerun all available analyses for a specific experiment."""
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
-        strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
+        strategy = ArgoExecutorStrategy(
+            project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+        )
 
     AnalysisExecutor(
         project_id=project_id,
@@ -386,12 +421,18 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @zone_option
 @cluster_id_option
 @monitor_status_option
-def rerun_config_changed(project_id, dataset_id, argo, zone, cluster_id, monitor_status):
+@cluster_ip_option
+@cluster_cert_option
+def rerun_config_changed(
+    project_id, dataset_id, argo, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+):
     """Rerun all available analyses for experiments with new or updated config files."""
 
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
-        strategy = ArgoExecutorStrategy(project_id, dataset_id, zone, cluster_id, monitor_status)
+        strategy = ArgoExecutorStrategy(
+            project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+        )
 
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
