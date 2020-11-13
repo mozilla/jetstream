@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 import time
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -42,9 +42,11 @@ def submit_workflow(
     workflow_file: Path,
     parameters: Dict[str, Any],
     monitor_status: bool = False,
+    cluster_ip: Optional[str] = None,
+    cluster_cert: Optional[str] = None,
 ) -> bool:
     """Submit a workflow to Argo and return success."""
-    config = get_config(project_id, zone, cluster_id)
+    config = get_config(project_id, zone, cluster_id, cluster_ip, cluster_cert)
     api_client = ApiClient(configuration=config)
     api = V1alpha1Api(api_client=api_client)
     manifest = yaml.safe_load(workflow_file.read_text())
@@ -83,12 +85,21 @@ def submit_workflow(
     return not failed
 
 
-def get_config(project_id: str, zone: str, cluster_id: str):
+def get_config(
+    project_id: str,
+    zone: str,
+    cluster_id: str,
+    cluster_ip: Optional[str] = None,
+    cluster_cert: Optional[str] = None,
+):
     """Get the kubernetes cluster config."""
-    cluster_manager_client = ClusterManagerClient()
-    cluster = cluster_manager_client.get_cluster(
-        name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"
-    )
+    if not cluster_ip or not cluster_cert:
+        cluster_manager_client = ClusterManagerClient()
+        cluster = cluster_manager_client.get_cluster(
+            name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"
+        )
+        cluster_ip = cluster.endpoint
+        cluster_cert = str(cluster.master_auth.cluster_ca_certificate)
 
     creds, projects = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
@@ -96,9 +107,9 @@ def get_config(project_id: str, zone: str, cluster_id: str):
     creds.refresh(auth_req)
 
     configuration = Configuration()
-    configuration.host = f"https://{cluster.endpoint}"
+    configuration.host = f"https://{cluster_ip}"
     with NamedTemporaryFile(delete=False) as ca_cert:
-        ca_cert.write(base64.b64decode(cluster.master_auth.cluster_ca_certificate))
+        ca_cert.write(base64.b64decode(cluster_cert))
     configuration.ssl_ca_cert = ca_cert.name
     configuration.api_key_prefix["authorization"] = "Bearer"
     configuration.api_key["authorization"] = creds.token
