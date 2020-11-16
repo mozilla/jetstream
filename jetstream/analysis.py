@@ -210,10 +210,10 @@ class Analysis:
             Count()
             .transform(segment_data, "*", "*", self.config.experiment.normandy_slug)
             .set_segment(segment)
-        )
+        ).to_dict()["data"]
 
         return StatisticResultCollection(
-            counts.to_dict()["data"]
+            counts
             + [
                 StatisticResult(
                     metric="identity",
@@ -229,7 +229,7 @@ class Analysis:
                     segment=segment,
                 )
                 for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts.to_dict()["data"]}
+                if b.slug not in {c["branch"] for c in counts}
             ]
         )
 

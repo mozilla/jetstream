@@ -111,10 +111,8 @@ class TestAnalysisIntegration:
         ]
 
         r = query_job.result()
-        print(r)
 
         for i, row in enumerate(r):
-            print(row)
             for k, v in expected_metrics_results[i].items():
                 assert row[k] == v
 
@@ -132,8 +130,6 @@ class TestAnalysisIntegration:
         stats = client.client.list_rows(
             f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
         ).to_dataframe()
-
-        print(stats)
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
         assert count_by_branch.loc["branch1", "point"] == 1.0
