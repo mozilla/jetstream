@@ -11,9 +11,10 @@ accidentally running queries during tests, leaking and overwriting production
 data, we proxy the queries through the dry run service endpoint.
 """
 
-import requests
 import json
 import logging
+
+import requests
 
 logger = logging.getLogger(__name__)
 

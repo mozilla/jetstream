@@ -1,12 +1,12 @@
 import datetime as dt
-from typing import Any, List, Iterable, Mapping, Optional, Union
+import logging
+import time
+from typing import Any, Iterable, List, Mapping, Optional, Union
 
 import attr
 import cattr
-import logging
-import requests
 import pytz
-import time
+import requests
 
 logger = logging.getLogger(__name__)
 

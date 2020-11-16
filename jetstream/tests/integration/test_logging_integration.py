@@ -1,6 +1,7 @@
-from google.cloud import bigquery
-import pytest
 import logging
+
+import pytest
+from google.cloud import bigquery
 
 from jetstream.cli import setup_logger
 

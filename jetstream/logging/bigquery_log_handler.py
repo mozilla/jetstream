@@ -1,7 +1,8 @@
 import datetime
-from google.cloud import bigquery
 from logging.handlers import BufferingHandler
 from typing import Optional
+
+from google.cloud import bigquery
 
 
 class BigQueryLogHandler(BufferingHandler):

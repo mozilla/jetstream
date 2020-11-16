@@ -1,24 +1,14 @@
 import re
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Protocol,
-    Union,
-)
+from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Protocol, Union
 
 import attr
 import cattr
+import mozanalysis.metrics.desktop
+import toml
 from git import Repo
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField
 from mozanalysis.metrics import Metric
-import mozanalysis.metrics.desktop
-import toml
 
 from . import statistics
 from .util import TemporaryDirectory

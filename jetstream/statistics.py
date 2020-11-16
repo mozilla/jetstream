@@ -1,20 +1,20 @@
-from abc import ABC, abstractmethod
-from decimal import Decimal
 import logging
 import math
 import re
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import attr
 import cattr
-from google.cloud import bigquery
-import mozanalysis.bayesian_stats.binary
 import mozanalysis.bayesian_stats.bayesian_bootstrap
+import mozanalysis.bayesian_stats.binary
 import mozanalysis.frequentist_stats.bootstrap
 import mozanalysis.metrics
 import numpy as np
-from pandas import DataFrame, Series
 import statsmodels.api as sm
+from google.cloud import bigquery
+from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .pre_treatment import PreTreatment

@@ -18,28 +18,29 @@ Definition and Reference classes are also direct representations of the configur
 which produce concrete mozanalysis classes when resolved.
 """
 
+import copy
 import datetime as dt
 from inspect import isabstract
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Type, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
 
 import attr
 import cattr
-import copy
 import jinja2
-from jinja2 import StrictUndefined
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.segments
 import mozanalysis.segments.desktop
-import toml
 import pytz
+import toml
+from jinja2 import StrictUndefined
+
+from jetstream.errors import NoStartDateException
+from jetstream.pre_treatment import PreTreatment
+from jetstream.statistics import Statistic, Summary
 
 from . import AnalysisPeriod, nimbus
-from jetstream.errors import NoStartDateException
-from jetstream.statistics import Summary, Statistic
-from jetstream.pre_treatment import PreTreatment
 
 if TYPE_CHECKING:
     import jetstream.experimenter
