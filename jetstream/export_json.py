@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -59,7 +61,10 @@ def _export_table(
 
     job.result()
 
-    destination_uri = f"gs://{bucket}/{table}.ndjson"
+    # add a random string to the identifier to prevent collision errors if there
+    # happen to be multiple instances running that export data for the same experiment
+    tmp = "".join(random.choices(string.ascii_lowercase, k=8))
+    destination_uri = f"gs://{bucket}/{table}-{tmp}.ndjson"
     dataset_ref = bigquery.DatasetReference(project_id, job.destination.dataset_id)
     table_ref = dataset_ref.table(job.destination.table_id)
 
@@ -73,13 +78,13 @@ def _export_table(
     extract_job.result()
 
     # convert ndjson to json
-    _convert_ndjson_to_json(bucket, table, storage_client)
+    _convert_ndjson_to_json(bucket, table, storage_client, tmp)
 
 
-def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storage.Client):
+def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storage.Client, tmp: str):
     """Converts the provided ndjson file on GCS to json."""
-    ndjson_blob_path = f"gs://{bucket_name}/{table}.ndjson"
-    json_blob_path = f"gs://{bucket_name}/{table}.json"
+    ndjson_blob_path = f"gs://{bucket_name}/{table}-{tmp}.ndjson"
+    json_blob_path = f"gs://{bucket_name}/{table}-{tmp}.json"
 
     logger.info(f"Convert {ndjson_blob_path} to {json_blob_path}")
 
@@ -102,10 +107,12 @@ def _convert_ndjson_to_json(bucket_name: str, table: str, storage_client: storag
             fin.close()
 
     # delete ndjson file from bucket
-    logger.info(f"Remove file {table}.ndjson")
+    logger.info(f"Remove file {table}-{tmp}.ndjson")
     bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(f"{table}.ndjson")
+    blob = bucket.blob(f"{table}-{tmp}.ndjson")
     blob.delete()
+    logger.info(f"Rename file {table}-{tmp}.json to {table}.json")
+    bucket.rename_blob(bucket.blob(f"{table}-{tmp}.json"), f"{table}.json")
 
 
 def export_statistics_tables(
