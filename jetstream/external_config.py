@@ -8,14 +8,15 @@ import datetime as dt
 from typing import List, Optional
 
 import attr
+import toml
 from git import Repo
 from google.cloud import bigquery
 from pytz import UTC
-import toml
 
-from . import bq_normalize_name
 from jetstream.config import AnalysisSpec
 from jetstream.util import TemporaryDirectory
+
+from . import bq_normalize_name
 
 
 @attr.s(auto_attribs=True)

@@ -4,12 +4,12 @@ import pandas as pd
 import pytest
 
 from jetstream.statistics import (
-    _make_grid,
-    BootstrapMean,
     Binomial,
+    BootstrapMean,
     Count,
-    KernelDensityEstimate,
     EmpiricalCDF,
+    KernelDensityEstimate,
+    _make_grid,
 )
 
 

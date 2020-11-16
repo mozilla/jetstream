@@ -1,23 +1,24 @@
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
 import attr
 import dask
+import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
-import mozanalysis
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
+from pandas import DataFrame
 
-from . import AnalysisPeriod, bq_normalize_name
+import jetstream.errors as errors
+from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
-import jetstream.errors as errors
 from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
-from jetstream.bigquery_client import BigQueryClient
-from pandas import DataFrame
+
+from . import AnalysisPeriod, bq_normalize_name
 
 logger = logging.getLogger(__name__)
 

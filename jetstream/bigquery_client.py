@@ -1,6 +1,6 @@
-from datetime import datetime
 import re
 import time
+from datetime import datetime
 from typing import Dict, Iterable, Mapping, Optional
 
 import attr
@@ -9,8 +9,8 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
-from google.cloud.bigquery_storage import BigQueryReadClient
 import pandas as pd
+from google.cloud.bigquery_storage import BigQueryReadClient
 
 from . import AnalysisPeriod, bq_normalize_name
 

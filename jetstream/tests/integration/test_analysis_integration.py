@@ -1,20 +1,19 @@
+import datetime
 import datetime as dt
 from pathlib import Path
-import dask
-import datetime
 from unittest import mock
 
+import dask
 import mozanalysis
-from mozanalysis.segments import Segment, SegmentDataSource
-from mozanalysis.metrics import Metric, DataSource, agg_sum
 import pytz
+from mozanalysis.metrics import DataSource, Metric, agg_sum
+from mozanalysis.segments import Segment, SegmentDataSource
 
 from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec, Summary
-from jetstream.experimenter import Experiment, Branch
+from jetstream.experimenter import Branch, Experiment
 from jetstream.statistics import BootstrapMean
-
 
 TEST_DIR = Path(__file__).parent.parent
 

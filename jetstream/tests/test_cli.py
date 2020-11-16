@@ -1,9 +1,9 @@
-import attr
 import datetime as dt
+from unittest.mock import Mock
 
+import attr
 import pytest
 from pytz import UTC
-from unittest.mock import Mock
 
 from jetstream import cli, experimenter, external_config
 from jetstream.config import AnalysisSpec

@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
-import os
-from pathlib import Path
 import logging
+import os
 import sys
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
 import attr
@@ -10,14 +10,14 @@ import click
 import pytz
 import toml
 
+from .analysis import Analysis
 from .argo import submit_workflow
+from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
-from .analysis import Analysis
 from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
-from .bigquery_client import BigQueryClient
 from .util import inclusive_date_range
 
 

@@ -1,10 +1,9 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 from typing import Dict, Optional
 
-from google.cloud import bigquery
-from google.cloud import storage
 import smart_open
+from google.cloud import bigquery, storage
 
 from jetstream import AnalysisPeriod, bq_normalize_name
 

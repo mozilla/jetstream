@@ -1,12 +1,12 @@
-from pathlib import Path
 import datetime
-import pytz
+from pathlib import Path
 from textwrap import dedent
+
+import pytz
 import toml
 
-
-from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 from jetstream.config import AnalysisSpec
+from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 
 TEST_DIR = Path(__file__).parent.parent
 

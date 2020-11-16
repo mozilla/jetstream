@@ -1,9 +1,10 @@
-from google.cloud import bigquery
-from google.api_core.exceptions import NotFound
-from pathlib import Path
-import pytest
 import random
 import string
+from pathlib import Path
+
+import pytest
+from google.api_core.exceptions import NotFound
+from google.cloud import bigquery
 
 from jetstream.bigquery_client import BigQueryClient
 

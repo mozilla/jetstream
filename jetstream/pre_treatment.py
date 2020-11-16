@@ -1,8 +1,8 @@
-from abc import ABC, abstractmethod
-import attr
 import re
-from typing import Optional, Dict, Any
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
 
+import attr
 import numpy as np
 import pandas as pd
 from pandas import DataFrame

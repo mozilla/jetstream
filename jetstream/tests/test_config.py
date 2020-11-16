@@ -2,15 +2,15 @@ import datetime as dt
 from textwrap import dedent
 
 import mozanalysis.segments
-import toml
 import pytest
 import pytz
+import toml
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import DEFAULT_METRICS_CONFIG
 from jetstream.nimbus import Feature, FeatureEventTelemetry, FeatureScalarTelemetry
+from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
-from jetstream.pre_treatment import RemoveNulls, CensorHighestValues, Log
 
 
 @pytest.fixture

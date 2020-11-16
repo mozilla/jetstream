@@ -8,9 +8,9 @@ import pytest
 import pytz
 
 from jetstream.experimenter import (
-    ExperimentCollection,
-    Experiment,
     Branch,
+    Experiment,
+    ExperimentCollection,
     ExperimentV1,
     ExperimentV6,
     Variant,

@@ -1,20 +1,19 @@
 import datetime as dt
-from datetime import timedelta
 import json
-import pytest
-from unittest.mock import Mock
+from datetime import timedelta
 from textwrap import dedent
+from unittest.mock import Mock
 
 import mozanalysis.segments
+import pytest
 import pytz
 import toml
 
 import jetstream.analysis
 from jetstream.analysis import Analysis, AnalysisPeriod
-from jetstream.errors import NoEnrollmentPeriodException
 from jetstream.config import AnalysisSpec
+from jetstream.errors import HighPopulationException, NoEnrollmentPeriodException
 from jetstream.experimenter import ExperimentV1
-from jetstream.errors import HighPopulationException
 
 
 def test_get_timelimits_if_ready(experiments):
