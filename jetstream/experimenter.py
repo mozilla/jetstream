@@ -131,7 +131,7 @@ class ExperimentV6:
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime,
-            lambda num, _: pytz.utc.localize(dt.datetime.strptime(num, "%Y-%m-%d")),
+            lambda num, _: dt.datetime.fromisoformat(num.replace("Z", "+00:00")),
         )
         return converter.structure(d, cls)
 

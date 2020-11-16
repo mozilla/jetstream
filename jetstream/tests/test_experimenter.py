@@ -191,7 +191,7 @@ EXPERIMENTER_FIXTURE_V6 = r"""
     "count":100,
     "total":10000 
   },
-  "startDate":"2020-07-29",
+  "startDate":"2020-07-29T20:05:16.271480Z",
   "endDate":null,
   "branches":[{
       "slug":"treatment",
@@ -228,7 +228,7 @@ EXPERIMENTER_FIXTURE_V6 = r"""
       "count":0,
       "total":10000
     },
-    "startDate":"2020-07-28",
+    "startDate":"2020-07-28T20:05:16.271480Z",
     "endDate":null,
     "branches":[{
       "slug":"treatment",
