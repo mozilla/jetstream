@@ -17,7 +17,6 @@ from pandas import DataFrame, Series
 import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
 
-from . import config
 from .pre_treatment import PreTreatment
 
 if TYPE_CHECKING:

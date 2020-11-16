@@ -139,7 +139,8 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
-    def _calculate_metrics(
+    @dask.delayed
+    def calculate_metrics(
         self,
         exp: mozanalysis.experiment.Experiment,
         time_limits: TimeLimits,
@@ -189,37 +190,30 @@ class Analysis:
 
         return res_table_name
 
-    def _calculate_statistics(
+    @dask.delayed
+    def calculate_statistics(
         self,
         metric: Summary,
         segment_data: DataFrame,
         segment: str,
-    ):
+    ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
-        stats = metric.run(segment_data, self.config.experiment).set_segment(segment)
-        return stats.to_dict()["data"]
+        return metric.run(segment_data, self.config.experiment).set_segment(segment)
 
-    def _counts(self, segment_data: DataFrame, segment: str):
-        """Count statistic."""
-        return (
+    @dask.delayed
+    def counts(self, segment_data: DataFrame, segment: str) -> StatisticResultCollection:
+        """Count and missing count statistics."""
+        counts = (
             Count()
             .transform(segment_data, "*", "*", self.config.experiment.normandy_slug)
             .set_segment(segment)
-            .to_dict()["data"]
         )
 
-    def _missing_counts(
-        self,
-        counts: List[Dict[str, Any]],
-        segment_data: DataFrame,
-        segment: str,
-    ):
-        """Missing count statistic."""
-        # add count=0 row to statistics table for missing branches
-        missing_counts = StatisticResultCollection(
-            [
+        return StatisticResultCollection(
+            counts.to_dict()["data"]
+            + [
                 StatisticResult(
                     metric="identity",
                     statistic="count",
@@ -234,21 +228,16 @@ class Analysis:
                     segment=segment,
                 )
                 for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts}
+                if b.slug not in {c["branch"] for c in counts.to_dict()["data"]}
             ]
         )
 
-        return missing_counts.to_dict()["data"]
-
-    def _segment_metrics(self, segment: str, metrics_data: DataFrame):
+    @dask.delayed
+    def subset_to_segment(self, segment: str, metrics_data: DataFrame) -> DataFrame:
         """Return metrics data for segment"""
         if segment != "all":
             if segment not in metrics_data.columns:
-                logger.error(
-                    f"Segment {segment} not in metrics table",
-                    extra={"experiment": self.config.experiment.normandy_slug},
-                )
-                return
+                raise ValueError(f"Segment {segment} not in metrics table")
             segment_data = metrics_data[metrics_data[segment]]
         else:
             segment_data = metrics_data
@@ -327,7 +316,8 @@ class Analysis:
 
         dry_run_query(sql)
 
-    def _save_statistics(
+    @dask.delayed
+    def save_statistics(
         self,
         period: AnalysisPeriod,
         segment_results: List[Dict[str, Any]],
@@ -361,13 +351,7 @@ class Analysis:
 
         # prepare dask tasks
         results = []
-        calculate_metrics = dask.delayed(self._calculate_metrics)
-        calculate_statistics = dask.delayed(self._calculate_statistics)
-        segment_metrics = dask.delayed(self._segment_metrics)
-        missing_counts = dask.delayed(self._missing_counts)
-        counts = dask.delayed(self._counts)
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
-        save_statistics = dask.delayed(self._save_statistics)
 
         for period in self.config.metrics:
             time_limits = self._get_timelimits_if_ready(period, current_date)
@@ -385,7 +369,7 @@ class Analysis:
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             )
 
-            metrics_table = calculate_metrics(exp, time_limits, period, dry_run)
+            metrics_table = self.calculate_metrics(exp, time_limits, period, dry_run)
 
             if dry_run:
                 logger.info(
@@ -393,6 +377,7 @@ class Analysis:
                     self.config.experiment.normandy_slug,
                     period.value,
                 )
+                results.append(metrics_table)
                 continue
 
             metrics_data = table_to_dataframe(metrics_table)
@@ -401,23 +386,17 @@ class Analysis:
 
             segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
             for segment in segment_labels:
-                segment_data = segment_metrics(segment, metrics_data)
+                segment_data = self.subset_to_segment(segment, metrics_data)
                 for m in self.config.metrics[period]:
-                    segment_results += calculate_statistics(
+                    segment_results += self.calculate_statistics(
                         m,
                         segment_data,
                         segment,
-                    )
+                    ).to_dict()["data"]
 
-                c = counts(segment_data, segment)
-                segment_results += c
-                segment_results += missing_counts(
-                    c,
-                    segment_data,
-                    segment,
-                )
+                segment_results += self.counts(segment_data, segment).to_dict()["data"]
 
-            results.append(save_statistics(period, segment_results, metrics_table))
+            results.append(self.save_statistics(period, segment_results, metrics_table))
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
