@@ -101,7 +101,7 @@ class ExternalConfigCollection:
                 if not len(row.last_updated):
                     continue
                 table_last_updated = UTC.localize(
-                    dt.datetime.fromtimestamp(int(row.last_updated[0]))
+                    dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
                 )
                 if table_last_updated < config.last_modified:
                     updated_configs.append(config)
