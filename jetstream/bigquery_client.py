@@ -1,6 +1,5 @@
 import re
 import time
-from datetime import datetime
 from typing import Dict, Iterable, Mapping, Optional
 
 import attr
@@ -45,7 +44,7 @@ class BigQueryClient:
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
-        return str(int(time.mktime(datetime.utcnow().timetuple())))
+        return str(int(time.time()))
 
     def load_table_from_json(
         self, results: Iterable[Dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
