@@ -32,7 +32,9 @@ class TestAnalysisIntegration:
 
         orig_cluster = dask.distributed.LocalCluster.__init__
 
-        def mock_local_cluster(instance, dashboard_address, processes, threads_per_worker):
+        def mock_local_cluster(
+            instance, dashboard_address, processes, threads_per_worker, *args, **kwargs
+        ):
             # if processes are used then `build_query_test_project` gets ignored
             return orig_cluster(
                 instance,
