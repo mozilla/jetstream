@@ -398,7 +398,7 @@ def rerun(
         dataset_id=dataset_id,
         date=All,
         experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else {},
+        configuration_map={experiment_slug: config_file} if config_file else None,
     ).execute(strategy=strategy)
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
