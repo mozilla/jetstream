@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
@@ -23,6 +24,9 @@ from . import AnalysisPeriod, bq_normalize_name
 logger = logging.getLogger(__name__)
 
 DASK_DASHBOARD_ADDRESS = "127.0.0.1:8782"
+DASK_N_PROCESSES = int(os.getenv("JETSTREAM_PROCESSES", 0)) or None  # Defaults to number of CPUs
+
+_dask_cluster = None
 
 
 @attr.s(auto_attribs=True)
@@ -341,15 +345,19 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
+        global _dask_cluster
         logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
         self.check_runnable(current_date)
 
         # set up dask
-        cluster = LocalCluster(
-            dashboard_address=DASK_DASHBOARD_ADDRESS, processes=True, threads_per_worker=1
+        _dask_cluster = _dask_cluster or LocalCluster(
+            dashboard_address=DASK_DASHBOARD_ADDRESS,
+            processes=True,
+            threads_per_worker=1,
+            n_workers=DASK_N_PROCESSES,
         )
-        client = Client(cluster)
+        client = Client(_dask_cluster)
 
         # prepare dask tasks
         results = []
