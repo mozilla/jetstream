@@ -313,6 +313,7 @@ class Analysis:
             limits,
             "normandy",
             self.config.experiment.enrollment_query,
+            self.config.experiment.segments,
         )
 
         dry_run_query(sql)
