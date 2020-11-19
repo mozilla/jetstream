@@ -165,6 +165,22 @@ class TestAnalysisExecutor:
                 today=dt.datetime(2020, 12, 31, tzinfo=UTC),
             )
 
+    def test_bogus_experiment(self, cli_experiments):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            date=cli.All,
+            experiment_slugs=["bogus_experiment", "my_cool_experiment"],
+        )
+        strategy = DummyExecutorStrategy("project", "dataset")
+        executor.execute(
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=strategy,
+            today=dt.datetime(2020, 12, 31, tzinfo=UTC),
+        )
+        assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
+
 
 class TestSerialExecutorStrategy:
     def test_trivial_workflow(self, cli_experiments):
