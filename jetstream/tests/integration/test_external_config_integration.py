@@ -22,17 +22,6 @@ class TestExternalConfigIntegration:
     )
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
 
-    def test_new_config(self, client, project_id, temporary_dataset):
-        config = ExternalConfig(
-            slug="new_experiment",
-            spec=self.spec,
-            last_modified=datetime.datetime.utcnow(),
-        )
-        config_collection = ExternalConfigCollection([config])
-        updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
-
-        assert len(updated_configs) == 0
-
     def test_old_config(self, client, project_id, temporary_dataset):
         config = ExternalConfig(
             slug="new_table",
