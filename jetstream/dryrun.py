@@ -25,7 +25,8 @@ DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/je
 class DryRunFailedError(Exception):
     """Exception raised when dry run fails."""
 
-    def __init__(self, error):
+    def __init__(self, error: str, sql: str):
+        self.sql = sql
         super().__init__(error)
 
 
@@ -62,4 +63,4 @@ def dry_run_query(sql: str) -> None:
         logger.info("Dry run OK")
         return
 
-    raise DryRunFailedError((error and error.get("message", None)) or response["errors"])
+    raise DryRunFailedError((error and error.get("message", None)) or response["errors"], sql=sql)
