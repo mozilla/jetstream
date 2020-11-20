@@ -94,10 +94,12 @@ class ExternalConfigCollection:
         updated_configs = []
 
         for config in self.configs:
+            seen = False
             table_prefix = bq_normalize_name(config.slug)
             for row in result:
                 if not row.table_name.startswith(table_prefix):
                     continue
+                seen = True
                 if not len(row.last_updated):
                     continue
                 table_last_updated = UTC.localize(
@@ -106,5 +108,7 @@ class ExternalConfigCollection:
                 if table_last_updated < config.last_modified:
                     updated_configs.append(config)
                     break
+            if not seen:
+                updated_configs.append(config)
 
         return updated_configs

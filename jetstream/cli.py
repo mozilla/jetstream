@@ -179,7 +179,7 @@ class AnalysisExecutor:
             if isinstance(self.date, AllType):
                 raise ValueError("Declining to re-run all experiments for all time.")
             run_experiments = [
-                e.normandy_slug
+                e
                 for e in (
                     experiments.end_on_or_after(self.date)
                     .of_type(RECOGNIZED_EXPERIMENT_TYPES)
@@ -188,12 +188,19 @@ class AnalysisExecutor:
                 if e.normandy_slug is not None
             ]
         else:
-            run_experiments = list(self.experiment_slugs)
+            run_experiments = []
+            for slug in self.experiment_slugs:
+                if e := experiments.with_slug(slug).experiments:
+                    run_experiments.append(e[0])
+                else:
+                    logger.warning(
+                        f"Slug {slug} provided but not found in Experimenter; skipping.",
+                        extra={"experiment": slug},
+                    )
 
         worklist = []
 
-        for slug in run_experiments:
-            experiment = experiments.with_slug(slug).experiments[0]
+        for experiment in run_experiments:
             if self.date == All:
                 today = today or self._today()
                 end_date = min(
@@ -205,7 +212,8 @@ class AnalysisExecutor:
                 run_dates = [self.date]
 
             for run_date in run_dates:
-                worklist.append((slug, run_date))
+                assert experiment.normandy_slug
+                worklist.append((experiment.normandy_slug, run_date))
 
         return strategy.execute(worklist, self.configuration_map)
 
@@ -398,7 +406,7 @@ def rerun(
         dataset_id=dataset_id,
         date=All,
         experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else {},
+        configuration_map={experiment_slug: config_file} if config_file else None,
     ).execute(strategy=strategy)
 
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
