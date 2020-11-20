@@ -48,6 +48,11 @@ spec:
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}"
       ]
+      resources:
+        requests:
+          memory: 10Gi   # make sure there is at least 10Gb of memory available for the task
+        limits:
+          cpu: 4  # limit to 4 cores
     retryStrategy:
       limit: 3  # execute a container max. 3x; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
