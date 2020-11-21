@@ -13,6 +13,7 @@ data, we proxy the queries through the dry run service endpoint.
 
 import json
 import logging
+from typing import Any
 
 import requests
 
@@ -25,7 +26,8 @@ DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/je
 class DryRunFailedError(Exception):
     """Exception raised when dry run fails."""
 
-    def __init__(self, error):
+    def __init__(self, error: Any, sql: str):
+        self.sql = sql
         super().__init__(error)
 
 
@@ -38,7 +40,7 @@ def dry_run_query(sql: str) -> None:
             data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
         )
     except Exception as e:
-        raise DryRunFailedError(e)
+        raise DryRunFailedError(e, sql)
     response = r.json()
 
     if response["valid"]:
@@ -62,4 +64,4 @@ def dry_run_query(sql: str) -> None:
         logger.info("Dry run OK")
         return
 
-    raise DryRunFailedError((error and error.get("message", None)) or response["errors"])
+    raise DryRunFailedError((error and error.get("message", None)) or response["errors"], sql=sql)
