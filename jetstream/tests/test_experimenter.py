@@ -296,7 +296,6 @@ def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
-    print(collection.experiments)
     assert len(collection.experiments) == 5
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
