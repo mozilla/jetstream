@@ -268,9 +268,10 @@ class Analysis:
         if self.config.experiment.start_date is None:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
-        if current_date and (
-            self.config.experiment.end_date is None
-            or (self.config.experiment.end_date and self.config.experiment.end_date < current_date)
+        if (
+            current_date
+            and self.config.experiment.end_date
+            and self.config.experiment.end_date < current_date
         ):
             raise errors.EndedException(self.config.experiment.normandy_slug)
 
