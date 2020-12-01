@@ -193,7 +193,7 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 period.value,
             )
-            self.bigquery.execute(sql, res_table_name)
+            self.bigquery.execute(sql)
             self._publish_view(period)
 
         return res_table_name
