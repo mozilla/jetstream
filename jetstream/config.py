@@ -40,7 +40,7 @@ from jetstream.errors import NoStartDateException
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
-from . import AnalysisPeriod, nimbus
+from . import AnalysisPeriod, probe_sets
 
 if TYPE_CHECKING:
     import jetstream.experimenter
@@ -169,13 +169,13 @@ class ExperimentConfiguration:
 
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: "jetstream.experimenter.Experiment"
-    feature_resolver: nimbus.ResolvesFeatures
+    probe_sets_resolver: probe_sets.ResolvesProbeSets
     segments: List[mozanalysis.segments.Segment]
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
         self._enrollment_query = self.enrollment_query
-        self._features = self.features
+        self._probe_sets = self.probe_sets
 
     @property
     def enrollment_query(self) -> Optional[str]:
@@ -199,9 +199,10 @@ class ExperimentConfiguration:
         )
 
     @property
-    def features(self) -> List[nimbus.Feature]:
+    def probe_sets(self) -> List[probe_sets.ProbeSet]:
         return [
-            self.feature_resolver.resolve(slug) for slug in self.experimenter_experiment.probe_sets
+            self.probe_sets_resolver.resolve(slug)
+            for slug in self.experimenter_experiment.probe_sets
         ]
 
     @property
@@ -281,9 +282,9 @@ class ExperimentSpec:
         self,
         spec: "AnalysisSpec",
         experimenter: "jetstream.experimenter.Experiment",
-        feature_resolver: nimbus.ResolvesFeatures,
+        probe_sets_resolver: probe_sets.ResolvesProbeSets,
     ) -> ExperimentConfiguration:
-        experiment = ExperimentConfiguration(self, experimenter, feature_resolver, [])
+        experiment = ExperimentConfiguration(self, experimenter, probe_sets_resolver, [])
         # Segment data sources may need to know the enrollment dates of the experiment,
         # so we'll forward the Experiment we know about so far.
         experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
@@ -403,7 +404,7 @@ class MetricsSpec:
             # these summaries might contain duplicates
             summaries = []
             if period in (AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL):
-                for feature in experiment.features:
+                for feature in experiment.probe_sets:
                     summaries.extend(feature.to_summaries())
             summaries.extend(
                 [
@@ -633,7 +634,7 @@ class AnalysisSpec:
         return default_metrics
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(self, experimenter, nimbus.FeatureResolver)
+        experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 

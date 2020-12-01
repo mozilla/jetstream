@@ -40,7 +40,7 @@ class Experiment:
         status: V1 experiment status; "Live" for active V6 experiments,
             "Complete" for V6 experiments with endDate in the past
         branches: V1 experiment variants converted to branches; V6 experiment branches
-        probe_sets: List of labels for probesets
+        probe_sets: List of labels for probe_sets
         start_date: experiment start_date
         end_date: experiment end_date
         proposed_enrollment: experiment proposed_enrollment

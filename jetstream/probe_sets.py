@@ -4,14 +4,12 @@ from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Proto
 import attr
 import cattr
 import mozanalysis.metrics.desktop
-import toml
-from git import Repo
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField
 from mozanalysis.metrics import Metric
+import requests
 
 from . import statistics
-from .util import TemporaryDirectory
 
 
 class _ProbeLister:
@@ -46,9 +44,13 @@ ProbeLister = _ProbeLister()
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureScalarTelemetry:
+class ScalarProbe:
     kind: ClassVar[str] = "scalar"
     name: str
+    event_category: str
+    event_method: Optional[str] = None
+    event_object: Optional[str] = None
+    event_value: Optional[str] = None
 
     def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         column_names = ProbeLister.columns_for_scalar(self.name)
@@ -79,8 +81,9 @@ class FeatureScalarTelemetry:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class FeatureEventTelemetry:
+class EventProbe:
     kind: ClassVar[str] = "event"
+    name: str
     event_category: str
     event_method: Optional[str] = None
     event_object: Optional[str] = None
@@ -114,15 +117,14 @@ class FeatureEventTelemetry:
         return [ever_used, used_mean, used_deciles]
 
 
-FeatureTelemetryType = Union[FeatureEventTelemetry, FeatureScalarTelemetry]
+ProbeType = Union[EventProbe, ScalarProbe]
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class Feature:
+class ProbeSet:
     slug: str
     name: str
-    description: str
-    telemetry: List[FeatureTelemetryType]
+    probes: List[ProbeType]
 
     def to_summaries(self) -> List[statistics.Summary]:
         summaries = []
@@ -139,55 +141,41 @@ class Feature:
             for klass in type.__args__:
                 if kind == klass.kind:
                     return klass(**d)
-            raise ValueError(f"Could not discriminate telemetry kind {kind}")
+            raise ValueError(f"Could not discriminate probe kind {kind}")
 
-        converter.register_structure_hook(FeatureTelemetryType, discriminate_telemetry)
+        converter.register_structure_hook(ProbeType, discriminate_telemetry)
         return converter.structure(d, cls)
 
 
-class ResolvesFeatures(Protocol):
-    def resolve(self, slug: str) -> Feature:
+class ResolvesProbeSets(Protocol):
+    def resolve(self, slug: str) -> ProbeSet:
         ...
 
 
-class _FeatureResolver:
-    """Consume Features from the nimbus-shared repository.
+class _ProbeSetsResolver:
+    """Consume probe_sets from the Experimenter probe_sets API."""
 
-    This document describes how data is represented in nimbus-shared:
-    https://github.com/mozilla/nimbus-shared/blob/29526cb13c3b12ed6870ebd042261273a6e02785/docs/pages/dev/data.md
-
-    The Feature data adopts the described convention of using a __nimbusMeta.toml
-    file in the same path as our data to describe the type of the data, so we avoid
-    consuming files with leading underscores.
-    """
-
-    FEATURE_DEFINITION_REPO = "https://github.com/mozilla/nimbus-shared"
-    FEATURE_PATH = "data/features"
+    EXPERIMENTER_API_URL_PROBESETS = "https://experimenter.services.mozilla.com/api/v6/probe_sets/"
 
     @property
-    def data(self) -> Dict[str, Feature]:
+    def data(self) -> Dict[str, ProbeSet]:
         if data := getattr(self, "_data", None):
             return data
 
-        with TemporaryDirectory() as tmp_dir:
-            Repo.clone_from(self.FEATURE_DEFINITION_REPO, tmp_dir)
+        session = requests.Session()
+        blob = session.get(self.EXPERIMENTER_API_URL_PROBESETS).json()
 
-            data = {}
+        probe_sets = {}
 
-            for spec in tmp_dir.glob(self.FEATURE_PATH + "/**/*.toml"):
-                slug = spec.stem
-                if slug.startswith("_"):
-                    continue
-                contents = toml.load(spec)
-                contents["slug"] = slug
-                feature = Feature.from_dict(contents)
-                data[slug] = feature
+        for probe_set_blob in blob:
+            probe_set = ProbeSet.from_dict(probe_set_blob)
+            probe_sets[probe_set.slug] = probe_set
 
-        self._data = data
+        self._data = probe_sets
         return self._data
 
-    def resolve(self, slug: str) -> Feature:
+    def resolve(self, slug: str) -> ProbeSet:
         return self.data[slug]
 
 
-FeatureResolver = _FeatureResolver()
+ProbeSetsResolver = _ProbeSetsResolver()
