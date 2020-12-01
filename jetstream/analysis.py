@@ -100,15 +100,13 @@ class Analysis:
         ):
             return None
 
-        # some experiments do not have and end date set yet
-        # set an arbitrary end date that is some time in the future
-        end_date = self.config.experiment.end_date
-        if end_date is None:
-            dates_enrollment = self.config.experiment.proposed_enrollment + 1
-            end_date = current_date + timedelta(days=dates_enrollment + 1)
+        if self.config.experiment.end_date is None:
+            return None
 
         analysis_length_dates = (
-            (end_date - self.config.experiment.start_date).days - dates_enrollment + 1
+            (self.config.experiment.end_date - self.config.experiment.start_date).days
+            - dates_enrollment
+            + 1
         )
 
         if analysis_length_dates < 0:
