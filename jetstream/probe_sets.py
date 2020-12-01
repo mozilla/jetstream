@@ -48,9 +48,6 @@ class ScalarProbe:
     kind: ClassVar[str] = "scalar"
     name: str
     event_category: str
-    event_method: Optional[str] = None
-    event_object: Optional[str] = None
-    event_value: Optional[str] = None
 
     def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         column_names = ProbeLister.columns_for_scalar(self.name)

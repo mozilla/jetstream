@@ -2,10 +2,10 @@ import os
 
 import pytest
 
-from jetstream.nimbus import ProbeLister
+from jetstream.probe_sets import ProbeLister
 
 
-class TestNimbusIntegration:
+class TestProbeSetsIntegration:
     @pytest.mark.skipif("CI" in os.environ, reason="CI doesn't have permissions for this table")
     def test_probelister(self):
         columns = ProbeLister.columns_for_scalar("telemetry.discarded.accumulations")
