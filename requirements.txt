@@ -316,9 +316,9 @@ mock==4.0.2 \
     --hash=sha256:3f9b2c0196c60d21838f307f5825a7b86b678cedc58ab9e50a8988187b4d81e0 \
     --hash=sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72 \
     # via -r requirements.in, argo-workflows
-mozanalysis==2020.12.1 \
-    --hash=sha256:099e406f2cf4a28818c4400ffc3de68aecba8c45ab5f4643a891dc71abcc6f9c \
-    --hash=sha256:19e66a3bd7879e3924cfb8ee9c873f353a4f6238a2bdb2b03702c5b3de0bfe31 \
+mozanalysis==2020.12.2 \
+    --hash=sha256:1e4d83b9a3178ca08baef0a35c53d42290926bb982afa84b8520f3eee85d20e9 \
+    --hash=sha256:4d42bf6a20296e78856b01eb0ea919dd25ed514f5ba1986d9e3e56ae73c9c56e \
     # via -r requirements.in
 msgpack==1.0.0 \
     --hash=sha256:002a0d813e1f7b60da599bdf969e632074f9eec1b96cbed8fb0973a63160a408 \

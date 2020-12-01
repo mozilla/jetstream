@@ -44,7 +44,7 @@ libcst==0.3.15            # via google-cloud-bigquery-storage, google-cloud-cont
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
 mock==4.0.2               # via argo-workflows
-mozanalysis==2020.12.1    # via mozilla-jetstream
+mozanalysis==2020.12.2    # via mozilla-jetstream
 msgpack==1.0.0            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.790               # via mozilla-jetstream
