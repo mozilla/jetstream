@@ -20,7 +20,7 @@ TEST_DIR = Path(__file__).parent.parent
 
 class TestAnalysisIntegration:
     def analysis_mock_run(self, config, static_dataset, temporary_dataset, project_id):
-        orig = mozanalysis.experiment.Experiment.build_query
+        orig = mozanalysis.experiment.Experiment.build_query_template
 
         def build_query_test_project(instance, *args, **kwargs):
             # to use the test project and dataset, we need to change the SQL query
@@ -45,7 +45,7 @@ class TestAnalysisIntegration:
 
         analysis = Analysis(project_id, temporary_dataset, config)
         with mock.patch.object(
-            mozanalysis.experiment.Experiment, "build_query", new=build_query_test_project
+            mozanalysis.experiment.Experiment, "build_query_template", new=build_query_test_project
         ):
             with mock.patch.object(
                 dask.distributed.LocalCluster, "__init__", new=mock_local_cluster
