@@ -8,27 +8,27 @@ import toml
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import DEFAULT_METRICS_CONFIG
-from jetstream.nimbus import Feature, FeatureEventTelemetry, FeatureScalarTelemetry
+from jetstream.probe_sets import ProbeSet, EventProbe
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
 
 @pytest.fixture
 def fake_feature_resolver(monkeypatch):
-    class FakeFeatureResolver:
-        def resolve(self, slug: str) -> Feature:
-            return Feature(
+    class FakeProbeSetsResolver:
+        def resolve(self, slug: str) -> ProbeSet:
+            return ProbeSet(
                 slug="fake_feature",
                 name="Fake feature",
                 description="A fake feature for testing.",
                 telemetry=[
-                    FeatureEventTelemetry(event_category="fake"),
-                    FeatureScalarTelemetry(name="fake.scalar"),
+                    EventProbe(event_category="fake"),
+                    DEFAULT_METRICS_CONFIG(name="fake.scalar"),
                 ],
             )
 
-    fake = FakeFeatureResolver()
-    monkeypatch.setattr("jetstream.nimbus.FeatureResolver", fake)
+    fake = FakeProbeSetsResolver()
+    monkeypatch.setattr("jetstream.probe_sets.ProbeSetsResolver", fake)
     yield fake
 
 
