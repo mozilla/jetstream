@@ -14,6 +14,7 @@ from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
+from .dryrun import DryRunFailedError
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
@@ -482,6 +483,15 @@ def validate_config(path):
         spec = AnalysisSpec.default_for_experiment(experiments[0])
         spec.merge(custom_spec)
         conf = spec.resolve(experiments[0])
-        Analysis("no project", "no dataset", conf).validate()
+
+        try:
+            Analysis("no project", "no dataset", conf).validate()
+        except DryRunFailedError as e:
+            click.echo("Error evaluating SQL:")
+            for i, line in enumerate(e.sql.split("\n")):
+                click.echo(f"{i+1: 4d} {line.rstrip()}")
+            click.echo()
+            click.echo(str(e))
+            sys.exit(1)
 
         click.echo(f"Config file at {file} is valid.", err=False)

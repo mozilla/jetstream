@@ -142,7 +142,8 @@ class ExperimentV6:
             experimenter_slug=None,
             type="v6",
             status="Live"
-            if self.endDate and self.endDate <= pytz.utc.localize(dt.datetime.now())
+            if (self.endDate and self.endDate >= pytz.utc.localize(dt.datetime.now()))
+            or self.endDate is None
             else "Complete",
             start_date=self.startDate,
             end_date=self.endDate,
@@ -246,6 +247,11 @@ class ExperimentCollection:
 
         after should be a tz-aware datetime."""
         cls = type(self)
+        # V6 experiments might not have an endDate set yet
         return cls(
-            [ex for ex in self.ever_launched().experiments if ex.end_date and ex.end_date >= after]
+            [
+                ex
+                for ex in self.ever_launched().experiments
+                if (ex.end_date and ex.end_date >= after) or ex.end_date is None
+            ]
         )

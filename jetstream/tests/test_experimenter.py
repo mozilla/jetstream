@@ -314,8 +314,23 @@ def test_end_on_or_after(experiment_collection):
     active_experiments = experiment_collection.end_on_or_after(
         dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
     )
-    assert len(active_experiments.experiments) == 1
-    assert active_experiments.experiments[0].experimenter_slug == "doh-us-engagement-study-v2"
+    assert len(active_experiments.experiments) == 4
+    assert (
+        active_experiments.experiments[0].normandy_slug
+        == "bug-1629098-rapid-please-reject-me-beta-86"
+    )
+    assert (
+        active_experiments.experiments[1].normandy_slug
+        == "bug-1629000-rapid-testing-rapido-intake-1-release-79"
+    )
+    assert (
+        active_experiments.experiments[2].experimenter_slug
+        == "impact-of-level-2-etp-on-a-custom-distribution"
+    )
+    assert (
+        active_experiments.experiments[3].normandy_slug
+        == "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831"
+    )
 
 
 def test_normandy_experiment_slug(experiment_collection):
@@ -383,7 +398,7 @@ def test_convert_experiment_v6_to_experiment():
 
     assert experiment.experimenter_slug is None
     assert experiment.normandy_slug == "test_slug"
-    assert experiment.status == "Live"
+    assert experiment.status == "Complete"
     assert experiment.type == "v6"
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
