@@ -47,7 +47,6 @@ ProbeLister = _ProbeLister()
 class TelemetryScalarProbe:
     kind: ClassVar[str] = "scalar"
     name: str
-    event_category: str
 
     def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         column_names = ProbeLister.columns_for_scalar(self.name)
@@ -80,7 +79,6 @@ class TelemetryScalarProbe:
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class TelemetryEventProbe:
     kind: ClassVar[str] = "event"
-    name: str
     event_category: str
     event_method: Optional[str] = None
     event_object: Optional[str] = None
@@ -137,7 +135,7 @@ class ProbeSet:
             kind = d.pop("kind")
             for klass in type.__args__:
                 if kind == klass.kind:
-                    return klass(**d)
+                    return converter.structure(d, klass)
             raise ValueError(f"Could not discriminate probe kind {kind}")
 
         converter.register_structure_hook(ProbeType, discriminate_telemetry)
