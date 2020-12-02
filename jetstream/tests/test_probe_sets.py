@@ -58,14 +58,14 @@ def fake_probe_lister(monkeypatch):
 @pytest.mark.usefixtures("fake_probe_lister")
 class TestProbe:
     def test_feature_event_telemetry(self):
-        et = TelemetryEventProbe(name="a", event_category="a", event_method="b")
+        et = TelemetryEventProbe(event_category="a", event_method="b")
         summaries = et.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
             assert isinstance(s.metric, mozanalysis.metrics.Metric)
 
     def test_scalar_event_telemetry(self):
-        st = TelemetryScalarProbe(name="definitely.not.real", event_category="b")
+        st = TelemetryScalarProbe(name="definitely.not.real")
         summaries = st.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
