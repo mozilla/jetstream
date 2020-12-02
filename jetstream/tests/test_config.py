@@ -8,7 +8,7 @@ import toml
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import DEFAULT_METRICS_CONFIG
-from jetstream.probe_sets import ProbeSet, EventProbe, ScalarProbe
+from jetstream.probe_sets import ProbeSet, TelemetryEventProbe, TelemetryScalarProbe
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
@@ -21,8 +21,8 @@ def fake_feature_resolver(monkeypatch):
                 slug="fake_feature",
                 name="Fake feature",
                 probes=[
-                    EventProbe(name="Fake", event_category="fake"),
-                    ScalarProbe(name="fake.scalar", event_category="fake"),
+                    TelemetryEventProbe(name="Fake", event_category="fake"),
+                    TelemetryScalarProbe(name="fake.scalar", event_category="fake"),
                 ],
             )
 
