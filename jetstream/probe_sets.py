@@ -44,13 +44,10 @@ ProbeLister = _ProbeLister()
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class ScalarProbe:
+class TelemetryScalarProbe:
     kind: ClassVar[str] = "scalar"
     name: str
     event_category: str
-    event_method: Optional[str] = None
-    event_object: Optional[str] = None
-    event_value: Optional[str] = None
 
     def to_summaries(self, feature_slug: str) -> List[statistics.Summary]:
         column_names = ProbeLister.columns_for_scalar(self.name)
@@ -81,7 +78,7 @@ class ScalarProbe:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class EventProbe:
+class TelemetryEventProbe:
     kind: ClassVar[str] = "event"
     name: str
     event_category: str
@@ -117,7 +114,7 @@ class EventProbe:
         return [ever_used, used_mean, used_deciles]
 
 
-ProbeType = Union[EventProbe, ScalarProbe]
+ProbeType = Union[TelemetryEventProbe, TelemetryScalarProbe]
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -157,22 +154,25 @@ class _ProbeSetsResolver:
     """Consume probe_sets from the Experimenter probesets API."""
 
     EXPERIMENTER_API_URL_PROBESETS = "https://experimenter.services.mozilla.com/api/v6/probesets/"
-    data: Dict[str, ProbeSet] = attr.Factory(dict)
 
-    @classmethod
-    def from_experimenter(cls, session: requests.Session = None) -> "_ProbeSetsResolver":
-        session = session or requests.Session()
-        blob = session.get(cls.EXPERIMENTER_API_URL_PROBESETS).json()
+    @property
+    def data(self) -> Dict[str, ProbeSet]:
+        if data := getattr(self, "_data", None):
+            return data
+
+        session = requests.Session()
+        blob = session.get(self.EXPERIMENTER_API_URL_PROBESETS).json()
         probe_sets = {}
 
         for probe_set_blob in blob:
             probe_set = ProbeSet.from_dict(probe_set_blob)
             probe_sets[probe_set.slug] = probe_set
 
-        return cls(probe_sets)
+        self._data = probe_sets
+        return self._data
 
     def resolve(self, slug: str) -> ProbeSet:
         return self.data[slug]
 
 
-ProbeSetsResolver = _ProbeSetsResolver.from_experimenter()
+ProbeSetsResolver = _ProbeSetsResolver()
