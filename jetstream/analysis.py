@@ -173,13 +173,13 @@ class Analysis:
 
         res_table_name = self._table_name(period.value, window)
 
-        sql = exp.build_query(
+        sql = exp.build_query_template(
             {m.metric for m in self.config.metrics[period]},
             last_window_limits,
             "normandy",
             self.config.experiment.enrollment_query,
             self.config.experiment.segments,
-        )
+        ).format(results_table=res_table_name)
 
         if dry_run:
             logger.info(
@@ -193,7 +193,7 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 period.value,
             )
-            self.bigquery.execute(sql, res_table_name)
+            self.bigquery.execute_script(sql, res_table_name)
             self._publish_view(period)
 
         return res_table_name
@@ -315,13 +315,13 @@ class Analysis:
         for v in self.config.metrics.values():
             metrics |= {m.metric for m in v}
 
-        sql = exp.build_query(
+        sql = exp.build_query_template(
             metrics,
             limits,
             "normandy",
             self.config.experiment.enrollment_query,
             self.config.experiment.segments,
-        )
+        ).format(results_table="results_table")
 
         dry_run_query(sql)
 
