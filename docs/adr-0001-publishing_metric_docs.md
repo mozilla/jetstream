@@ -1,12 +1,20 @@
-# Publishing documentation for metrics
+# Publishing metadata about experiment analyses
 
 * Status: proposed <!-- [proposed | rejected | accepted | deprecated | … | superseded by [ADR-0005](0005-example.md)] optional -->
-* Deciders: emtwo, scholtzan, tdsmith, TBD
-* Date: 2020-11-19
+* Deciders: emtwo, scholtzan, tdsmith
+* Date: 2020-12-03
 
 Technical Story: https://github.com/mozilla/jetstream/issues/296
 
 ## Context and Problem Statement
+
+We have a couple of use cases for informing consumers of Jetstream data
+— specifically the experiment console —
+about the structure of the data that Jetstream produces.
+
+These include:
+
+** Descriptions for metrics and segments **
 
 We need to present some context for our metrics on dashboards and use friendlier names than the column labels we have in our output today.
 We've already decided that this context should live next to the metric definitions, either in mozanalysis or in jetstream-config.
@@ -16,6 +24,13 @@ Jetstream is the point in the system that understands which metrics will be incl
 and has access to the context defined with the metrics,
 so it makes sense for Jetstream to be responsible for collating those definitions.
 
+** Context for which metrics were produced from probe sets **
+
+There is currently no supported way to infer which metrics were produced from probe sets.
+The visualization layer should know this because anointing primary and secondary probe sets
+are part of the experiment specification UX and we should strive for the results presentation
+to be symmetrical.
+
 ## Decision Drivers
 
 * We should minimize the number of systems that downstream consumers have to contend with.
@@ -23,7 +38,7 @@ so it makes sense for Jetstream to be responsible for collating those definition
 
 ## Considered Options
 
-* dictionary.json
+* "metadata.json"
 * Google Data Catalog
 * Something else
 
@@ -47,29 +62,69 @@ TK
 
 ## Pros and Cons of the Options <!-- optional -->
 
-### "dictionary.json": Save some JSON to GCS
+### "metadata.json": Save some JSON to GCS
 
-Imagine a file named something like `dictionary_<experiment_slug>.json` containing objects that look like:
+Imagine a file named something like `metadata_<experiment_slug>.json` containing objects that look like:
 
 ```json
 {
-    "active_hours": {
-        "friendly_name": "Active hours",
-        "description": "Measures the amount of time (in 5-second increments) during which Firefox received user input from a keyboard or mouse. The Firefox window does not need to be focused.",
-        "bigger_is_better": true
+    "metrics": {
+        "active_hours": {
+            "friendly_name": "Active hours",
+            "description": "Measures the amount of time (in 5-second increments) during which Firefox received user input from a keyboard or mouse. The Firefox window does not need to be focused.",
+            "bigger_is_better": true
+        },
+        "uri_count": {
+            "friendly_name": "URIs visited",
+            "description": "Counts the total number of URIs visited. Includes within-page navigation events (e.g. to anchors).",
+            "bigger_is_better": true
+        },
+        "ever_used_picture_in_picture": {
+            "friendly_name": "Ever used PiP",
+            "description": "Whether each client ever used Picture in Picture during the measurement window.",
+            "bigger_is_better": true
+        },
+        "picture_in_picture_count": {
+            "friendly_name": "PiP use count",
+            "description": "How many times each client used Picture in Picture during the measurement window.",
+            "bigger_is_better": true
+        }
     },
-    "uri_count": {
-        "friendly_name": "URIs visited",
-        "description": "Counts the total number of URIs visited. Includes within-page navigation events (e.g. to anchors).",
-        "bigger_is_better": true
+    "probesets": {
+        "picture_in_picture": [
+            "ever_used_picture_in_picture",
+            "uses_of_picture_in_picture"
+        ]
     }
 }
 ```
+
+Each member of the `probesets` object is an ordered list.
+The first metric in the list is assumed to be the most interesting metric to display.
+It will typically be a conversion metric.
 
 We'll put it in the mozanalysis GCS bucket next to the json files containing the statistical summaries for the experiment.
 
 * +: One-stop shopping; Jetstream's consumers are already looking for data in this GCS bucket.
 * +: Seems easy and complete
+
+### A single metadata database
+
+Many metrics appear identically in more than one experiment.
+Instead of producing a separate file for each experiment,
+we could produce a shared database that describes all experiments.
+
+This has some disadvantages associated with the need to ensure that this information is consistent:
+
+* Metrics can be changed or removed from mozanalysis --
+  if the dashboard presents a definition that was updated since the experiment was analyzed,
+  it could be incorrect, which I think is worse than making it hard to fix typos or stale information.
+* Regenerating the list of all known metrics requires comprehending all experiment configurations that have ever been processed;
+  without some extra work, it also implies a new requirement that experiment configurations should never use a metric name
+  that has been used before with a different definition, which is too constraining.
+
+The chief advantage of a shared metadata file (or a database) is that it avoids some redundancy,
+but the storage costs are not important for this low volume of data.
 
 ### Google Data Catalog
 
