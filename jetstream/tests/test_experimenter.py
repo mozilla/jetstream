@@ -1,4 +1,5 @@
 import datetime as dt
+from datetime import timedelta
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -409,3 +410,29 @@ def test_fixture_validates():
     schema = json.loads((Path(__file__).parent / "data/NimbusExperiment_v1.0.json").read_text())
     experiments = json.loads(EXPERIMENTER_FIXTURE_V6)
     [jsonschema.validate(e, schema) for e in experiments if e["slug"]]
+
+
+def test_experiment_v6_status():
+    experiment_live = ExperimentV6(
+        slug="test_slug",
+        startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
+        endDate=pytz.utc.localize(dt.datetime.now() + timedelta(days=1)),
+        proposedEnrollment=14,
+        branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
+        referenceBranch="control",
+        probeSets=[],
+    )
+
+    assert experiment_live.to_experiment().status == "Live"
+
+    experiment_complete = ExperimentV6(
+        slug="test_slug",
+        startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
+        endDate=pytz.utc.localize(dt.datetime.now() - timedelta(minutes=1)),
+        proposedEnrollment=14,
+        branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
+        referenceBranch="control",
+        probeSets=[],
+    )
+
+    assert experiment_complete.to_experiment().status == "Complete"

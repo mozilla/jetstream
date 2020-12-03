@@ -95,7 +95,8 @@ class Analysis:
 
         assert period == AnalysisPeriod.OVERALL
         if (
-            self.config.experiment.end_date != current_date
+            self.config.experiment.end_date is None
+            or self.config.experiment.end_date.date() != current_date.date()
             or self.config.experiment.status != "Complete"
         ):
             return None
