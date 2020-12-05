@@ -278,6 +278,7 @@ class Analysis:
 
     def validate(self) -> None:
         self.check_runnable()
+        assert self.config.experiment.start_date is not None  # for mypy
 
         dates_enrollment = self.config.experiment.proposed_enrollment + 1
 
@@ -353,6 +354,7 @@ class Analysis:
         logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
         self.check_runnable(current_date)
+        assert self.config.experiment.start_date is not None  # for mypy
 
         # set up dask
         _dask_cluster = _dask_cluster or LocalCluster(
