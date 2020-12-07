@@ -525,11 +525,20 @@ class TestExperimentSpec:
 
 
 class TestExperimentConf:
-    def test_bad_end_date(self, experiments):
+    def test_bad_dates(self, experiments):
         conf = dedent(
             """
             [experiment]
             end_date = "Christmas"
+            """
+        )
+        with pytest.raises(ValueError):
+            config.AnalysisSpec.from_dict(toml.loads(conf))
+
+        conf = dedent(
+            """
+            [experiment]
+            start_date = "My birthday"
             """
         )
         with pytest.raises(ValueError):
@@ -547,6 +556,19 @@ class TestExperimentConf:
         cfg = spec.resolve(live_experiment)
         assert cfg.experiment.end_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
         assert cfg.experiment.status == "Complete"
+
+    def test_good_start_date(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            start_date = "2020-12-31"
+            end_date = "2021-02-01"
+            """
+        )
+        spec = config.AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[0])
+        assert cfg.experiment.start_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
+        assert cfg.experiment.end_date == dt.datetime(2021, 2, 1, tzinfo=pytz.utc)
 
 
 class TestDefaultConfiguration:

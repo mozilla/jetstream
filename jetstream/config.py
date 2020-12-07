@@ -220,8 +220,18 @@ class ExperimentConfiguration:
         )
 
     @property
+    def start_date(self) -> Optional[dt.datetime]:
+        return (
+            ExperimentSpec.parse_date(self.experiment_spec.start_date)
+            or self.experimenter_experiment.start_date
+        )
+
+    @property
     def end_date(self) -> Optional[dt.datetime]:
-        return self.experiment_spec.parse_end_date() or self.experimenter_experiment.end_date
+        return (
+            ExperimentSpec.parse_date(self.experiment_spec.end_date)
+            or self.experimenter_experiment.end_date
+        )
 
     @property
     def status(self) -> Optional[str]:
@@ -258,6 +268,10 @@ class ExperimentConfiguration:
         return getattr(self.experimenter_experiment, name)
 
 
+def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
+    instance.parse_date(value)
+
+
 @attr.s(auto_attribs=True)
 class ExperimentSpec:
     """Describes the interface for overriding experiment details."""
@@ -266,17 +280,15 @@ class ExperimentSpec:
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
-    end_date: Optional[str] = attr.ib(default=None)  # YYYY-MM-DD
+    start_date: Optional[str] = attr.ib(default=None, validator=_validate_yyyy_mm_dd)
+    end_date: Optional[str] = attr.ib(default=None, validator=_validate_yyyy_mm_dd)
     segments: List[SegmentReference] = attr.Factory(list)
 
-    @end_date.validator
-    def _validate_date(self, attribute, value):
-        self.parse_end_date()
-
-    def parse_end_date(self) -> Optional[dt.datetime]:
-        if not self.end_date:
+    @staticmethod
+    def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
+        if not yyyy_mm_dd:
             return None
-        return dt.datetime.strptime(self.end_date, "%Y-%m-%d").replace(tzinfo=pytz.utc)
+        return dt.datetime.strptime(yyyy_mm_dd, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
     def resolve(
         self,
