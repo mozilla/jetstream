@@ -6,6 +6,7 @@ daily = ["retained", "unenroll"]
 weekly = [
   "active_hours",
   "ad_clicks",
+  "days_of_use",
   "retained",
   "uri_count",
   "search_count",
@@ -14,6 +15,7 @@ weekly = [
 overall = [
   "active_hours",
   "ad_clicks",
+  "days_of_use",
   "organic_search_count",
   "search_count",
   "searches_with_ads",
@@ -28,6 +30,10 @@ overall = [
 
 [metrics.ad_clicks.statistics.bootstrap_mean]
 [metrics.ad_clicks.statistics.deciles]
+
+[metrics.days_of_use.statistics.bootstrap_mean]
+[metrics.days_of_use.statistics.deciles]
+[metrics.days_of_use.statistics.empirical_cdf]
 
 [metrics.organic_search_count.statistics.bootstrap_mean]
 [metrics.organic_search_count.statistics.deciles]
