@@ -444,8 +444,8 @@ pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
     --hash=sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d \
     # via -r requirements.in, pytest
-proto-plus==1.11.0 \
-    --hash=sha256:416a0f13987789333cd8760a0ee998f8eccd6d7165ee9f283d64ca2de3e8774d \
+proto-plus==1.13.0 \
+    --hash=sha256:61b57c5257ca583af2ea1ad40e2b8f251988806eea9f01d119088976b995b2c4 \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container
 protobuf==3.14.0 \
     --hash=sha256:0e247612fadda953047f53301a7b0407cb0c3cb4ae25a6fde661597a04039b3c \
