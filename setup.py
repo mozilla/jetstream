@@ -43,7 +43,7 @@ setup(
     install_requires=[
         "attrs",
         "argo-workflows<4.0",
-        "cattrs<1.1",
+        "cattrs<1.2",
         "Click",
         "dask[distributed]",
         "GitPython",
