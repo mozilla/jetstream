@@ -89,7 +89,20 @@ def submit_workflow(
                     failed = True
 
             time.sleep(1)
-    return not failed
+
+    # check status of pods
+    all_pods_succeeded = True
+
+    if workflow.status and workflow.status.nodes:
+        all_pods_succeeded = all(
+            [
+                node.phase == "Succeeded"
+                for _, node in workflow.status.nodes.items()
+                if node.type == "Pod"
+            ]
+        )
+
+    return not failed and all_pods_succeeded
 
 
 def get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert):

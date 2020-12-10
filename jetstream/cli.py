@@ -323,13 +323,15 @@ def run(
     config_file,
 ):
     """Runs analysis for the provided date."""
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
     ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id))
+
+    sys.exit(0 if success else 1)
 
 
 @cli.command()
