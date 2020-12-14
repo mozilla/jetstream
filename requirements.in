@@ -24,7 +24,7 @@ gitpython==3.1.11         # via mozilla-jetstream
 google-api-core[grpc]==1.23.0  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
 google-auth==1.23.0       # via google-api-core, google-cloud-storage, kubernetes
 google-cloud-bigquery-storage==2.1.0  # via mozanalysis, mozilla-jetstream
-google-cloud-bigquery==2.5.0  # via mozanalysis, mozilla-jetstream
+google-cloud-bigquery==2.6.1  # via mozanalysis, mozilla-jetstream
 google-cloud-container==2.3.0  # via mozilla-jetstream
 google-cloud-core==1.4.4  # via google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.33.0  # via mozilla-jetstream, smart-open
