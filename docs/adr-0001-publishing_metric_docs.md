@@ -1,8 +1,8 @@
 # Publishing metadata about experiment analyses
 
-* Status: proposed <!-- [proposed | rejected | accepted | deprecated | … | superseded by [ADR-0005](0005-example.md)] optional -->
+* Status: accepted
 * Deciders: emtwo, scholtzan, tdsmith
-* Date: 2020-12-03
+* Date: 2020-12-14
 
 Technical Story: https://github.com/mozilla/jetstream/issues/296
 
@@ -34,35 +34,21 @@ to be symmetrical.
 ## Decision Drivers
 
 * We should minimize the number of systems that downstream consumers have to contend with.
-* ?
+* We should minimize the load on operations.
 
 ## Considered Options
 
-* "metadata.json"
+* "metadata.json" for each experiment
+* A shared metadata repository
 * Google Data Catalog
-* Something else
 
 ## Decision Outcome
 
-TK
+"metadata.json" wins for its low cost and flexibility.
 
-<!-- Chosen option: "[option 1]", because [justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force force | … | comes out best (see below)].
+## Pros and Cons of the Options
 
-### Positive Consequences
-
-* [e.g., improvement of quality attribute satisfaction, follow-up decisions required, …]
-* …
-
-### Negative Consequences
-
-* [e.g., compromising quality attribute, follow-up decisions required, …]
-* …
-
--->
-
-## Pros and Cons of the Options <!-- optional -->
-
-### "metadata.json": Save some JSON to GCS
+### "metadata.json" for each experiment: Save some JSON to GCS
 
 Imagine a file named something like `metadata_<experiment_slug>.json` containing objects that look like:
 
@@ -125,6 +111,7 @@ This has some disadvantages associated with the need to ensure that this informa
 
 The chief advantage of a shared metadata file (or a database) is that it avoids some redundancy,
 but the storage costs are not important for this low volume of data.
+A literal database would also need support from an operator.
 
 ### Google Data Catalog
 
@@ -133,7 +120,3 @@ but the storage costs are not important for this low volume of data.
 * +: This seems like GCP's supported solution for describing data in BigQuery, which is definitely a place our data goes.
 * -: This is a step removed from how our consumers actually consume experiment data, which is GCS, not BigQuery.
 * -: Nobody else at Mozilla uses this today so we're unlikely to observe serendipity if we start using it.
-
-### Something else
-
-?
