@@ -45,7 +45,7 @@ markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
 mock==4.0.2               # via argo-workflows
 mozanalysis==2020.12.2    # via mozilla-jetstream
-msgpack==1.0.0            # via distributed
+msgpack==1.0.1            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.790               # via mozilla-jetstream
 numpy==1.19.4             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
