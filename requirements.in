@@ -43,7 +43,7 @@ kubernetes==12.0.1        # via argo-workflows
 libcst==0.3.15            # via google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
-mock==4.0.2               # via argo-workflows
+mock==4.0.3               # via argo-workflows
 mozanalysis==2020.12.2    # via mozilla-jetstream
 msgpack==1.0.0            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
