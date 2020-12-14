@@ -116,9 +116,9 @@ coverage==5.3 \
     --hash=sha256:cedb2f9e1f990918ea061f28a0f0077a07702e3819602d3507e2ff98c8d20636 \
     --hash=sha256:e8caf961e1b1a945db76f1b5fa9c91498d15f545ac0ababbe575cfab185d3bd8 \
     # via -r requirements.in, pytest-cov
-dask[distributed]==2.30.0 \
-    --hash=sha256:4c215aa55951f570b5a294b2ce964ed801c6efd766231c53447460e60f73ea14 \
-    --hash=sha256:a1669022e25de99b227c3d83da4801f032415962dac431099bf0534648e41a54 \
+dask[distributed]==2020.12.0 \
+    --hash=sha256:43e745afd4b464e6c0113131e430a16dce6ac42460b06e24d799093d098f7ab0 \
+    --hash=sha256:5741db6e2426c001cecd374cba3bba8fea16a2da081089376ebcad9f8cf32aca \
     # via -r requirements.in, distributed
 distributed==2.30.1 \
     --hash=sha256:1421d3b84a0885aeb2c4bdc9e8896729c0f053a9375596c9de8864e055e2ac8e \
