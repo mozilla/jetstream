@@ -31,9 +31,7 @@ _dask_cluster = None
 
 @attr.s(auto_attribs=True)
 class Analysis:
-    """
-    Wrapper for analysing experiments.
-    """
+    """Wrapper for analysing experiments."""
 
     project: str
     dataset: str
