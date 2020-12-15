@@ -443,7 +443,7 @@ def rerun(
     AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
-        bcuket=bucket,
+        bucket=bucket,
         date=All,
         experiment_slugs=[experiment_slug],
         configuration_map={experiment_slug: config_file} if config_file else None,

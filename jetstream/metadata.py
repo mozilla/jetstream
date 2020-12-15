@@ -3,6 +3,7 @@ from typing import Dict, List
 
 import attr
 import cattr
+import json
 import logging
 
 from jetstream import bq_normalize_name
@@ -42,7 +43,7 @@ class ExperimentMetadata:
         }
 
         probesets_metadata = {
-            probe_set.name: [probes.name for probes in probe_set.probes]
+            probe_set.slug: [probes.name for probes in probe_set.probes]
             for probe_set in config.experiment.probe_sets
         }
 
@@ -65,4 +66,6 @@ def export_metadata(config: AnalysisConfiguration, bucket_name: str):
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
     converter = cattr.Converter()
-    blob.upload_from_string(data=converter.unstructure(metadata), content_type="application/json")
+    blob.upload_from_string(
+        data=json.dumps(converter.unstructure(metadata)), content_type="application/json"
+    )
