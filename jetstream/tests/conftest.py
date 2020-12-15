@@ -69,4 +69,17 @@ def experiments():
             reference_branch=None,
             is_high_population=True,
         ),
+        Experiment(
+            experimenter_slug="test_slug",
+            type="pref",
+            status="Complete",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+            probe_sets=["test-probe-set"],
+            normandy_slug="normandy-test-slug",
+            reference_branch="b",
+            is_high_population=False,
+        ),
     ]

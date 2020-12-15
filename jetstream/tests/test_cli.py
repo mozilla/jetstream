@@ -81,6 +81,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=[],
         )
@@ -97,6 +98,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=["my_cool_experiment"],
         )
@@ -115,6 +117,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=cli.All,
         )
@@ -134,6 +137,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=cli.All,
             experiment_slugs=["my_cool_experiment"],
         )
@@ -153,6 +157,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=cli.All,
             experiment_slugs=cli.All,
         )
@@ -169,6 +174,7 @@ class TestAnalysisExecutor:
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
+            bucket="bucket",
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
@@ -196,7 +202,7 @@ class TestSerialExecutorStrategy:
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", fake_analysis, lambda: cli_experiments
+            "spam", "eggs", "bucket", fake_analysis, lambda: cli_experiments
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])

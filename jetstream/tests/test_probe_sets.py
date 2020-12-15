@@ -21,7 +21,7 @@ EXPERIMENTER_FIXTURE_PROBESETS = r"""
     "probes": [
       {
         "kind": "scalar",
-        "name": "Test Probe 1",
+        "name": "test-probe-1",
         "event_category": "test"
       }
     ]
@@ -32,7 +32,7 @@ EXPERIMENTER_FIXTURE_PROBESETS = r"""
     "probes": [
       {
         "kind": "event",
-        "name": "Test Probe",
+        "name": "test-probe-2",
         "event_category": "test",
         "event_method": null,
         "event_object": null,
@@ -58,7 +58,7 @@ def fake_probe_lister(monkeypatch):
 @pytest.mark.usefixtures("fake_probe_lister")
 class TestProbe:
     def test_feature_event_telemetry(self):
-        et = TelemetryEventProbe(event_category="a", event_method="b")
+        et = TelemetryEventProbe(name="event", event_category="a", event_method="b")
         summaries = et.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
