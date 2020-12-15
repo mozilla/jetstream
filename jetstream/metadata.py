@@ -50,14 +50,14 @@ class ExperimentMetadata:
         return cls(metrics=metrics_metadata, probesets=probesets_metadata)
 
 
-def export_metadata(config: AnalysisConfiguration, bucket_name: str):
+def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
     """Export experiment metadata to GCS."""
     if config.experiment.normandy_slug is None:
         return
 
     metadata = ExperimentMetadata.from_config(config)
 
-    storage_client = storage.Client()
+    storage_client = storage.Client(project_id)
     bucket = storage_client.get_bucket(bucket_name)
     target_file = f"metadata_{bq_normalize_name(config.experiment.normandy_slug)}"
     target_path = "metadata"

@@ -77,7 +77,7 @@ def experiments():
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
             branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
-            probe_sets=["test-probe-set"],
+            probe_sets=["pinned_tabs"],
             normandy_slug="normandy-test-slug",
             reference_branch="b",
             is_high_population=False,

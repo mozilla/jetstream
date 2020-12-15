@@ -144,7 +144,7 @@ class SerialExecutorStrategy:
 
                 config = spec.resolve(experiment)
                 self.analysis_class(self.project_id, self.dataset_id, config).run(date)
-                export_metadata(config, self.bucket)
+                export_metadata(config, self.bucket, self.project_id)
             except Exception as e:
                 failed = True
                 logger.exception(str(e), exc_info=e, extra={"experiment": slug})

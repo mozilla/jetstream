@@ -8,7 +8,25 @@ import toml
 
 from jetstream.config import AnalysisSpec
 from jetstream.metadata import ExperimentMetadata, export_metadata
-from jetstream.tests.test_probe_sets import EXPERIMENTER_FIXTURE_PROBESETS
+
+EXPERIMENTER_FIXTURE_PROBESETS = r"""
+[
+  {
+    "name": "Pinned Tabs",
+    "slug": "pinned_tabs",
+    "probes": [
+      {
+        "kind": "event",
+        "name": "test-probe-2",
+        "event_category": "test",
+        "event_method": null,
+        "event_object": null,
+        "event_value": null
+      }
+    ]
+  }
+]
+"""
 
 
 @patch.object(requests.Session, "get")
@@ -46,8 +64,8 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
 
-    assert "test-probe-set" in metadata.probesets
-    assert "test-probe-1" in metadata.probesets["test-probe-set"]
+    assert "pinned_tabs" in metadata.probesets
+    assert "test-probe-2" in metadata.probesets["pinned_tabs"]
 
 
 @mock.patch("google.cloud.storage.Client")
@@ -72,7 +90,7 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
 
-    export_metadata(config, "test_bucket")
+    export_metadata(config, "test_bucket", "project")
 
     mock_client.get_bucket.assert_called_once()
     mock_bucket.blob.assert_called_once()
