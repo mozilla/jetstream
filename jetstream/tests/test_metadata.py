@@ -68,12 +68,46 @@ def test_metadata_from_config(mock_get, experiments):
     assert "test-probe-2" in metadata.probesets["pinned_tabs"]
 
 
+@patch.object(requests.Session, "get")
+def test_metadata_from_config_missing_metadata(mock_get, experiments):
+    config_str = dedent(
+        """
+        [metrics]
+        weekly = ["view_about_logins", "my_cool_metric"]
+        daily = ["my_cool_metric"]
+
+        [metrics.my_cool_metric]
+        data_source = "main"
+        select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+
+        [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+        [metrics.view_about_logins.statistics.bootstrap_mean]
+        """
+    )
+
+    spec = AnalysisSpec.from_dict(toml.loads(config_str))
+    config = spec.resolve(experiments[0])
+    metadata = ExperimentMetadata.from_config(config)
+
+    assert "my_cool_metric" in metadata.metrics
+    assert metadata.metrics["my_cool_metric"].bigger_is_better
+    assert metadata.metrics["my_cool_metric"].friendly_name is None
+    assert metadata.metrics["my_cool_metric"].description is None
+
+
 @mock.patch("google.cloud.storage.Client")
 def test_export_metadata(mock_storage_client, experiments):
     config_str = dedent(
         """
         [metrics]
-        weekly = ["view_about_logins"]
+        weekly = ["view_about_logins", "my_cool_metric"]
+
+        [metrics.my_cool_metric]
+        data_source = "main"
+        select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+
+        [metrics.my_cool_metric.statistics.bootstrap_mean]
 
         [metrics.view_about_logins.statistics.bootstrap_mean]
         """
@@ -102,6 +136,11 @@ def test_export_metadata(mock_storage_client, experiments):
                 "view_about_logins": {
                     "friendly_name": "about:logins viewers",
                     "description": "Counts the number of clients that viewed about:logins.\n",
+                    "bigger_is_better": true
+                },
+                "my_cool_metric": {
+                    "friendly_name": null,
+                    "description": null,
                     "bigger_is_better": true
                 }
             },
