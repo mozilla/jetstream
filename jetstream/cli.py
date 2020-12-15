@@ -19,6 +19,7 @@ from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
+from .metadata import export_metadata
 from .util import inclusive_date_range
 
 
@@ -71,6 +72,7 @@ class ExecutorStrategy(Protocol):
 class ArgoExecutorStrategy:
     project_id: str
     dataset_id: str
+    bucket: str
     zone: str
     cluster_id: str
     monitor_status: bool
@@ -102,6 +104,7 @@ class ArgoExecutorStrategy:
                 "experiments": experiments_config,
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
+                "bucket": self.bucket,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -113,6 +116,7 @@ class ArgoExecutorStrategy:
 class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
+    bucket: str
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: Callable[
@@ -140,6 +144,7 @@ class SerialExecutorStrategy:
 
                 config = spec.resolve(experiment)
                 self.analysis_class(self.project_id, self.dataset_id, config).run(date)
+                export_metadata(config, self.bucket)
             except Exception as e:
                 failed = True
                 logger.exception(str(e), exc_info=e, extra={"experiment": slug})
@@ -150,6 +155,7 @@ class SerialExecutorStrategy:
 class AnalysisExecutor:
     project_id: str
     dataset_id: str
+    bucket: str
     date: Union[datetime, AllType]
     experiment_slugs: Union[Iterable[str], AllType]
     configuration_map: Optional[Mapping[str, TextIO]] = attr.ib(None)
@@ -322,18 +328,21 @@ cluster_cert_option = click.option(
     required=True,
 )
 @experiment_slug_option
+@bucket_option
 @secret_config_file_option
 def run(
     project_id,
     dataset_id,
     date,
     experiment_slug,
+    bucket,
     config_file,
 ):
     """Runs analysis for the provided date."""
     success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
+        bucket=bucket,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
@@ -353,6 +362,7 @@ def run(
     required=True,
 )
 @experiment_slug_option
+@bucket_option
 @zone_option
 @cluster_id_option
 @monitor_status_option
@@ -363,6 +373,7 @@ def run_argo(
     dataset_id,
     date,
     experiment_slug,
+    bucket,
     zone,
     cluster_id,
     monitor_status,
@@ -371,12 +382,20 @@ def run_argo(
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
-        project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        zone=zone,
+        cluster_id=cluster_id,
+        monitor_status=monitor_status,
+        cluster_ip=cluster_ip,
+        cluster_cert=cluster_cert,
     )
 
     AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
+        bucket=bucket,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
     ).execute(strategy=strategy)
@@ -386,6 +405,7 @@ def run_argo(
 @experiment_slug_option
 @project_id_option
 @dataset_id_option
+@bucket_option
 @secret_config_file_option
 @argo_option
 @zone_option
@@ -397,6 +417,7 @@ def rerun(
     project_id,
     dataset_id,
     experiment_slug,
+    bucket,
     config_file,
     argo,
     zone,
@@ -409,12 +430,20 @@ def rerun(
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
         strategy = ArgoExecutorStrategy(
-            project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+            project_id=project_id,
+            dataset_id=dataset_id,
+            bucket=bucket,
+            zone=zone,
+            cluster_id=cluster_id,
+            monitor_status=monitor_status,
+            cluster_ip=cluster_ip,
+            cluster_cert=cluster_cert,
         )
 
     AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
+        bcuket=bucket,
         date=All,
         experiment_slugs=[experiment_slug],
         configuration_map={experiment_slug: config_file} if config_file else None,
@@ -436,6 +465,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @cli.command()
 @project_id_option
 @dataset_id_option
+@bucket_option
 @argo_option
 @zone_option
 @cluster_id_option
@@ -446,6 +476,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 def rerun_config_changed(
     project_id,
     dataset_id,
+    bucket,
     argo,
     zone,
     cluster_id,
@@ -459,7 +490,14 @@ def rerun_config_changed(
     strategy = SerialExecutorStrategy(project_id, dataset_id)
     if argo:
         strategy = ArgoExecutorStrategy(
-            project_id, dataset_id, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+            project_id=project_id,
+            dataset_id=dataset_id,
+            bucket=bucket,
+            zone=zone,
+            cluster_id=cluster_id,
+            monitor_status=monitor_status,
+            cluster_ip=cluster_ip,
+            cluster_cert=cluster_cert,
         )
 
     # get experiment-specific external configs
@@ -469,6 +507,7 @@ def rerun_config_changed(
     success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
+        bucket=bucket,
         date=All,
         experiment_slugs=[config.slug for config in updated_external_configs],
     ).execute(strategy=strategy)

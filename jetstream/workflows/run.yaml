@@ -9,6 +9,7 @@ spec:
     - name: experiments  # set dynamically when worklfow gets deployed
     - name: project_id
     - name: dataset_id
+    - name: bucket
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -46,7 +47,8 @@ spec:
         bin/entrypoint, run, "--date={{inputs.parameters.date}}", 
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
-        "--project_id={{workflow.parameters.project_id}}"
+        "--project_id={{workflow.parameters.project_id}}",
+        "--bucket={{workflow.parameters.bucket}}"
       ]
       resources:
         requests:
@@ -71,6 +73,7 @@ spec:
         bin/entrypoint, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
-        "--experiment_slug={{inputs.parameters.slug}}"
+        "--experiment_slug={{inputs.parameters.slug}}",
+        "--bucket={{workflow.parameters.bucket}}"
       ]
     activeDeadlineSeconds: 600   # terminate container template after 10 minutes

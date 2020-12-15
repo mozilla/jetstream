@@ -21,7 +21,7 @@ def fake_feature_resolver(monkeypatch):
                 slug="fake_feature",
                 name="Fake feature",
                 probes=[
-                    TelemetryEventProbe(event_category="fake"),
+                    TelemetryEventProbe(name="fake.event", event_category="fake"),
                     TelemetryScalarProbe(name="fake.scalar"),
                 ],
             )
