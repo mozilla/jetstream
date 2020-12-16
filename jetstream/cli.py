@@ -283,6 +283,14 @@ argo_option = click.option(
     "--argo", is_flag=True, default=False, help="Run on Kubernetes with Argo"
 )
 
+return_status_option = click.option(
+    "--return_status",
+    "--return-status",
+    is_flag=True,
+    default=False,
+    help="Return success/failed status code",
+)
+
 monitor_status_option = click.option(
     "--monitor_status",
     "--monitor-status",
@@ -434,8 +442,17 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@return_status_option
 def rerun_config_changed(
-    project_id, dataset_id, argo, zone, cluster_id, monitor_status, cluster_ip, cluster_cert
+    project_id,
+    dataset_id,
+    argo,
+    zone,
+    cluster_id,
+    monitor_status,
+    cluster_ip,
+    cluster_cert,
+    return_status,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
@@ -460,7 +477,8 @@ def rerun_config_changed(
     for config in updated_external_configs:
         client.touch_tables(config.slug)
 
-    sys.exit(0 if success else 1)
+    if return_status:
+        sys.exit(0 if success else 1)
 
 
 @cli.command("validate_config")
