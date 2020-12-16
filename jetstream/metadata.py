@@ -43,7 +43,7 @@ class ExperimentMetadata:
         }
 
         probesets_metadata = {
-            probe_set.slug: [probes.name for probes in probe_set.probes]
+            probe_set.slug: list(set([summary.metric.name for summary in probe_set.to_summaries()]))
             for probe_set in config.experiment.probe_sets
         }
 
@@ -67,5 +67,6 @@ def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id:
 
     converter = cattr.Converter()
     blob.upload_from_string(
-        data=json.dumps(converter.unstructure(metadata)), content_type="application/json"
+        data=json.dumps(converter.unstructure(metadata), sort_keys=True, indent=4),
+        content_type="application/json",
     )
