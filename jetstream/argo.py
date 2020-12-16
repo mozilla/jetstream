@@ -53,7 +53,6 @@ def submit_workflow(
 
     workflow = api.create_namespaced_workflow("argo", manifest)
 
-    failed = False
     if monitor_status:
         finished = False
 
@@ -86,7 +85,6 @@ def submit_workflow(
                 finished = True
                 if workflow.status.phase == "Failed":
                     raise Exception(f"Workflow execution failed: {workflow.status}")
-                    failed = True
 
             time.sleep(1)
 
@@ -102,7 +100,7 @@ def submit_workflow(
             ]
         )
 
-    return not failed and all_pods_succeeded
+    return all_pods_succeeded
 
 
 def get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert):
