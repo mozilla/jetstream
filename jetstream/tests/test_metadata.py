@@ -65,7 +65,8 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
 
     assert "pinned_tabs" in metadata.probesets
-    assert "test-probe-2" in metadata.probesets["pinned_tabs"]
+    assert "pinned_tabs_ever_used" in metadata.probesets["pinned_tabs"]
+    assert "pinned_tabs_sum" in metadata.probesets["pinned_tabs"]
 
 
 @patch.object(requests.Session, "get")
@@ -149,5 +150,5 @@ def test_export_metadata(mock_storage_client, experiments):
     """
     )
     mock_blob.upload_from_string.assert_called_once_with(
-        data=json.dumps(expected), content_type="application/json"
+        data=json.dumps(expected, sort_keys=True, indent=4), content_type="application/json"
     )

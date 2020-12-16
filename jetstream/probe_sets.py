@@ -79,7 +79,6 @@ class TelemetryScalarProbe:
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class TelemetryEventProbe:
     kind: ClassVar[str] = "event"
-    name: str
     event_category: str
     event_method: Optional[str] = None
     event_object: Optional[str] = None

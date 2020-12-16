@@ -58,7 +58,7 @@ def fake_probe_lister(monkeypatch):
 @pytest.mark.usefixtures("fake_probe_lister")
 class TestProbe:
     def test_feature_event_telemetry(self):
-        et = TelemetryEventProbe(name="event", event_category="a", event_method="b")
+        et = TelemetryEventProbe(event_category="a", event_method="b")
         summaries = et.to_summaries("bonus_slug")
         assert len(summaries)
         for s in summaries:
