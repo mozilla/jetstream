@@ -146,6 +146,8 @@ class TestStatistics:
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
         result = stat.transform(wine, "ash", "*", None).to_dict()["data"]
+        for r in result:
+            assert isinstance(r["point"], float)
         df = pd.DataFrame(result).astype({"parameter": float})
         assert df["parameter"].min() == 0
 

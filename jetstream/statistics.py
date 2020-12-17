@@ -517,7 +517,7 @@ class KernelDensityEstimate(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=kde.evaluate(0),
+                        point=kde.evaluate(0)[0],
                         lower=None,
                         upper=None,
                     )
