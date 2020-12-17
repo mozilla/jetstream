@@ -1,5 +1,6 @@
 import logging
 import math
+import numbers
 import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
@@ -51,7 +52,7 @@ class Summary:
         return self.statistic.apply(data, self.metric.name, experiment)
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True)
 class StatisticResult:
     """
     Represents the resulting data after applying a statistic transformation
@@ -60,15 +61,23 @@ class StatisticResult:
 
     metric: str
     statistic: str
-    parameter: Optional[Decimal] = attr.ib(converter=_maybe_decimal)
     branch: str
+    parameter: Optional[Decimal] = attr.ib(converter=_maybe_decimal, default=None)
     comparison: Optional[str] = None
     comparison_to_branch: Optional[str] = None
-    ci_width: Optional[float] = 0.0
-    point: Optional[float] = 0.0
-    lower: Optional[float] = 0.0
-    upper: Optional[float] = 0.0
+    ci_width: Optional[float] = None
+    point: Optional[float] = None
+    lower: Optional[float] = None
+    upper: Optional[float] = None
     segment: Optional[str] = None
+
+    def __attrs_post_init__(self):
+        for k in ("ci_width", "point", "lower", "upper"):
+            v = getattr(self, k)
+            if v is None:
+                continue
+            if not isinstance(v, numbers.Number):
+                raise ValueError(f"Expected a number for {k}; got {repr(v)}")
 
     bq_schema = (
         bigquery.SchemaField("metric", "STRING"),
@@ -517,7 +526,7 @@ class KernelDensityEstimate(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=kde.evaluate(0),
+                        point=kde.evaluate(0)[0],
                         lower=None,
                         upper=None,
                     )
