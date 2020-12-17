@@ -32,7 +32,6 @@ EXPERIMENTER_FIXTURE_PROBESETS = r"""
     "probes": [
       {
         "kind": "event",
-        "name": "test-probe-2",
         "event_category": "test",
         "event_method": null,
         "event_object": null,

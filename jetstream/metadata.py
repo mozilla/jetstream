@@ -43,7 +43,9 @@ class ExperimentMetadata:
         }
 
         probesets_metadata = {
-            probe_set.slug: list(set([summary.metric.name for summary in probe_set.to_summaries()]))
+            probe_set.slug: list(
+                dict.fromkeys([summary.metric.name for summary in probe_set.to_summaries()])
+            )
             for probe_set in config.experiment.probe_sets
         }
 
