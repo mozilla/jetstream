@@ -283,7 +283,9 @@ secret_config_file_option = click.option(
     "--i-solemnly-swear-i-am-up-to-no-good", "config_file", type=click.File("rt"), hidden=True
 )
 
-bucket_option = click.option("--bucket", default="mozanalysis", help="GCS bucket to write to")
+bucket_option = click.option(
+    "--bucket", default="mozanalysis", help="GCS bucket to write to", required=True
+)
 
 argo_option = click.option(
     "--argo", is_flag=True, default=False, help="Run on Kubernetes with Argo"
@@ -346,7 +348,7 @@ def run(
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
-    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id))
+    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id, bucket))
 
     sys.exit(0 if success else 1)
 
@@ -427,7 +429,7 @@ def rerun(
     cluster_cert,
 ):
     """Rerun all available analyses for a specific experiment."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -487,7 +489,7 @@ def rerun_config_changed(
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
