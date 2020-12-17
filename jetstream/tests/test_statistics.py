@@ -9,6 +9,7 @@ from jetstream.statistics import (
     Count,
     EmpiricalCDF,
     KernelDensityEstimate,
+    StatisticResult,
     _make_grid,
 )
 
@@ -165,3 +166,9 @@ class TestStatistics:
         assert len(result) > 0
 
         assert stat.name() == "empirical_cdf"
+
+    def test_statistic_result_rejects_invalid_types(self):
+        args = {"metric": "foo", "statistic": "bar", "branch": "baz"}
+        StatisticResult(**args)
+        with pytest.raises(ValueError):
+            StatisticResult(point=[3], **args)
