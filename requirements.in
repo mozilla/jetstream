@@ -70,7 +70,7 @@ pyrsistent==0.17.3        # via jsonschema
 pytest-black==0.3.12      # via mozilla-jetstream
 pytest-cov==2.10.1        # via mozilla-jetstream
 pytest-flake8==1.0.6      # via mozilla-jetstream
-pytest==6.2.0             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
+pytest==6.2.1             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via kubernetes, pandas
 pytz==2020.4              # via google-api-core, mozilla-jetstream, pandas
 pyyaml==5.3.1             # via dask, distributed, kubernetes, libcst, mozilla-jetstream
