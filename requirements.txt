@@ -272,9 +272,9 @@ kubernetes==12.0.1 \
     --hash=sha256:23c85d8571df8f56e773f1a413bc081537536dc47e2b5e8dc2e6262edb2c57ca \
     --hash=sha256:ec52ea01d52e2ec3da255992f7e859f3a76f2bdb51cf65ba8cd71dfc309d8daa \
     # via -r requirements.in, argo-workflows
-libcst==0.3.15 \
-    --hash=sha256:73e94ac2e7a78960ddca4d4e5250dc2e02e7ba85b29e7b2ac1b1d2bce90b4cee \
-    --hash=sha256:786757e9eb05f0b3349d279eb27c9a371f24e849f0cc7be119c1e6b958cd85ed \
+libcst==0.3.16 \
+    --hash=sha256:2c9e40245b8cb49b5219c76b36fe7037effa7594b9e6d5a092be99f8083d2415 \
+    --hash=sha256:99c200004b6e845642eea7a433844d144994767f9ed50705171720b76d28cf7e \
     # via -r requirements.in, google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
