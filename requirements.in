@@ -12,24 +12,24 @@ cachetools==4.2.0         # via google-auth
 cattrs==1.1.2             # via mozilla-jetstream
 certifi==2020.12.5        # via kubernetes, requests
 cffi==1.14.4              # via google-crc32c
-chardet==3.0.4            # via requests
+chardet==4.0.0            # via requests
 click==7.1.2              # via black, distributed, mozilla-jetstream
 cloudpickle==1.6.0        # via distributed
-coverage==5.3             # via mozilla-jetstream, pytest-cov
+coverage==5.3.1           # via mozilla-jetstream, pytest-cov
 dask[distributed]==2020.12.0  # via distributed, mozilla-jetstream
 distributed==2020.12.0    # via dask
 flake8==3.8.4             # via pytest-flake8
 gitdb==4.0.5              # via gitpython
 gitpython==3.1.11         # via mozilla-jetstream
-google-api-core[grpc]==1.23.0  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
+google-api-core[grpc]==1.24.1  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
 google-auth==1.24.0       # via google-api-core, google-cloud-storage, kubernetes
 google-cloud-bigquery-storage==2.1.0  # via mozanalysis, mozilla-jetstream
 google-cloud-bigquery==2.6.1  # via mozanalysis, mozilla-jetstream
 google-cloud-container==2.3.0  # via mozilla-jetstream
-google-cloud-core==1.4.4  # via google-cloud-bigquery, google-cloud-storage
-google-cloud-storage==1.34.0  # via mozilla-jetstream, smart-open
-google-crc32c==1.0.0      # via google-resumable-media
-google-resumable-media==1.1.0  # via google-cloud-bigquery, google-cloud-storage
+google-cloud-core==1.5.0  # via google-cloud-bigquery, google-cloud-storage
+google-cloud-storage==1.35.0  # via mozilla-jetstream, smart-open
+google-crc32c==1.1.0      # via google-resumable-media
+google-resumable-media==1.2.0  # via google-cloud-bigquery, google-cloud-storage
 googleapis-common-protos[grpc]==1.52.0  # via google-api-core, grpc-google-iam-v1
 grpc-google-iam-v1==0.12.3  # via google-cloud-container
 grpcio==1.34.0            # via google-api-core, googleapis-common-protos, grpc-google-iam-v1, mozilla-jetstream
@@ -40,12 +40,12 @@ iniconfig==1.1.1          # via pytest
 jinja2==2.11.2            # via mozilla-jetstream
 jsonschema==3.2.0         # via mozilla-jetstream
 kubernetes==12.0.1        # via argo-workflows
-libcst==0.3.15            # via google-cloud-bigquery-storage, google-cloud-container
+libcst==0.3.16            # via google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
 mock==4.0.3               # via argo-workflows
 mozanalysis==2020.12.2    # via mozilla-jetstream
-msgpack==1.0.1            # via distributed
+msgpack==1.0.2            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.790               # via mozilla-jetstream
 numpy==1.19.4             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
@@ -57,7 +57,7 @@ patsy==0.5.1              # via statsmodels
 pluggy==0.13.1            # via pytest
 proto-plus==1.13.0        # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container
 protobuf==3.14.0          # via google-api-core, google-cloud-bigquery, googleapis-common-protos, proto-plus
-psutil==5.7.3             # via distributed
+psutil==5.8.0             # via distributed
 py==1.10.0                # via pytest
 pyarrow==2.0.0            # via mozanalysis, mozilla-jetstream
 pyasn1-modules==0.2.8     # via google-auth
@@ -69,14 +69,14 @@ pyparsing==2.4.7          # via packaging
 pyrsistent==0.17.3        # via jsonschema
 pytest-black==0.3.12      # via mozilla-jetstream
 pytest-cov==2.10.1        # via mozilla-jetstream
-pytest-flake8==1.0.6      # via mozilla-jetstream
-pytest==6.2.0             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
+pytest-flake8==1.0.7      # via mozilla-jetstream
+pytest==6.2.1             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via kubernetes, pandas
 pytz==2020.4              # via google-api-core, mozilla-jetstream, pandas
 pyyaml==5.3.1             # via dask, distributed, kubernetes, libcst, mozilla-jetstream
 regex==2020.11.13         # via black
 requests-oauthlib==1.3.0  # via kubernetes
-requests==2.25.0          # via google-api-core, google-cloud-storage, kubernetes, mozilla-jetstream, requests-oauthlib
+requests==2.25.1          # via google-api-core, google-cloud-storage, kubernetes, mozilla-jetstream, requests-oauthlib
 rsa==4.6                  # via google-auth
 scipy==1.5.4              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-cloud-core, google-resumable-media, grpcio, jsonschema, kubernetes, patsy, protobuf, python-dateutil, websocket-client
