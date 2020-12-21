@@ -21,7 +21,7 @@ distributed==2020.12.0    # via dask
 flake8==3.8.4             # via pytest-flake8
 gitdb==4.0.5              # via gitpython
 gitpython==3.1.11         # via mozilla-jetstream
-google-api-core[grpc]==1.23.0  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
+google-api-core[grpc]==1.24.1  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
 google-auth==1.24.0       # via google-api-core, google-cloud-storage, kubernetes
 google-cloud-bigquery-storage==2.1.0  # via mozanalysis, mozilla-jetstream
 google-cloud-bigquery==2.6.1  # via mozanalysis, mozilla-jetstream
