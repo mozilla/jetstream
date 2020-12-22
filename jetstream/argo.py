@@ -1,4 +1,6 @@
 import base64
+from kubernetes.client.rest import ApiException
+from kubernetes.stream import portforward
 import logging
 import time
 from pathlib import Path
@@ -6,8 +8,10 @@ from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
 import google.auth
+import kubernetes.client
+import socket
 import yaml
-from argo.workflows.client import ApiClient, Configuration, V1alpha1Api
+from argo.workflows.client import ApiClient, Configuration, WorkflowServiceApi, V1alpha1WorkflowCreateRequest
 from google.cloud.container_v1 import ClusterManagerClient
 
 logger = logging.getLogger(__name__)
@@ -51,7 +55,7 @@ def submit_workflow(
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
 
-    workflow = api.create_namespaced_workflow("argo", manifest)
+    workflow = api.create_workflow("argo", V1alpha1WorkflowCreateRequest(workflow=manifest))
 
     if monitor_status:
         finished = False
@@ -70,14 +74,14 @@ def submit_workflow(
 
         while not finished:
             try:
-                workflow = api.get_namespaced_workflow(
+                workflow = api.get_workflow(
                     workflow.metadata.namespace, workflow.metadata.name
                 )
             except Exception:
                 # Unauthorized status gets returned when the access token expires (after ca. 1h)
                 # Refresh the access token and try again
                 api = get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert)
-                workflow = api.get_namespaced_workflow(
+                workflow = api.get_workflow(
                     workflow.metadata.namespace, workflow.metadata.name
                 )
 
@@ -106,8 +110,8 @@ def submit_workflow(
 def get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert):
     """Get Argo API handle."""
     config = get_config(project_id, zone, cluster_id, cluster_ip, cluster_cert)
-    api_client = ApiClient(configuration=config)
-    return V1alpha1Api(api_client=api_client)
+    api_client = ApiClient(configuration=config, header_name="Authorization", header_value=config.api_key_prefix["authorization"] + " " + config.api_key["authorization"])
+    return WorkflowServiceApi(api_client=api_client)
 
 
 def get_config(
@@ -118,7 +122,6 @@ def get_config(
     cluster_cert: Optional[str] = None,
 ):
     """Get the kubernetes cluster config."""
-
     if not cluster_ip and not cluster_cert:
         cluster_manager_client = ClusterManagerClient()
         cluster = cluster_manager_client.get_cluster(
