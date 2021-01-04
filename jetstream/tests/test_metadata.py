@@ -41,7 +41,7 @@ def test_metadata_from_config(mock_get, experiments):
         select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
         friendly_name = "Cool metric"
         description = "Cool cool cool"
-        bigger_is_better = true
+        bigger_is_better = false
 
         [metrics.my_cool_metric.statistics.bootstrap_mean]
 
@@ -59,7 +59,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["view_about_logins"].bigger_is_better
     assert metadata.metrics["view_about_logins"].description != ""
     assert "my_cool_metric" in metadata.metrics
-    assert metadata.metrics["my_cool_metric"].bigger_is_better
+    assert metadata.metrics["my_cool_metric"].bigger_is_better is False
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
 
