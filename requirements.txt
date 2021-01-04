@@ -8,9 +8,9 @@ appdirs==1.4.4 \
     --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
     --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128 \
     # via -r requirements.in, black
-argo-workflows==3.6.1 \
-    --hash=sha256:56d77ad3e0053402f694760011fcfe5ab7de8cb52dfd7b21b9e98c30f6879161 \
-    --hash=sha256:f7705f212828712c869d17a1ff6bd39cf51af6c51a55e8f668c7f94601d09453 \
+argo-workflows==5.0.0 \
+    --hash=sha256:50aa8d9b1c9c54b457775a7d751a3c5c2fccdf91f28964834c6a597ebee69783 \
+    --hash=sha256:97ae1068ba61f493bad82633dda4035e71991db1ed0c4965a08d72efe3811243 \
     # via -r requirements.in
 attrs==20.3.0 \
     --hash=sha256:31b2eced602aa8423c2aea9c76a724617ed67cf9513173fd3a4f03e3a929c7e6 \
@@ -284,7 +284,7 @@ jsonschema==3.2.0 \
 kubernetes==12.0.1 \
     --hash=sha256:23c85d8571df8f56e773f1a413bc081537536dc47e2b5e8dc2e6262edb2c57ca \
     --hash=sha256:ec52ea01d52e2ec3da255992f7e859f3a76f2bdb51cf65ba8cd71dfc309d8daa \
-    # via -r requirements.in, argo-workflows
+    # via -r requirements.in
 libcst==0.3.16 \
     --hash=sha256:2c9e40245b8cb49b5219c76b36fe7037effa7594b9e6d5a092be99f8083d2415 \
     --hash=sha256:99c200004b6e845642eea7a433844d144994767f9ed50705171720b76d28cf7e \
@@ -331,7 +331,7 @@ mccabe==0.6.1 \
 mock==4.0.3 \
     --hash=sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62 \
     --hash=sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc \
-    # via -r requirements.in, argo-workflows
+    # via -r requirements.in
 mozanalysis==2020.12.2 \
     --hash=sha256:1e4d83b9a3178ca08baef0a35c53d42290926bb982afa84b8520f3eee85d20e9 \
     --hash=sha256:4d42bf6a20296e78856b01eb0ea919dd25ed514f5ba1986d9e3e56ae73c9c56e \
