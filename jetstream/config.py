@@ -322,6 +322,7 @@ class MetricDefinition:
     data_source: Optional[DataSourceReference] = None
     friendly_name: Optional[str] = None
     description: Optional[str] = None
+    bigger_is_better: bool = True
 
     def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
@@ -343,6 +344,7 @@ class MetricDefinition:
                 select_expr=select_expression,
                 friendly_name=self.friendly_name,
                 description=self.description,
+                bigger_is_better=self.bigger_is_better,
             )
 
         metrics_with_treatments = []
