@@ -591,9 +591,9 @@ python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
     --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a \
     # via -r requirements.in, kubernetes, pandas
-pytz==2020.4 \
-    --hash=sha256:3e6b7dd2d1e0a59084bcee14a17af60c5c562cdc16d828e8eba2e683d3a7e268 \
-    --hash=sha256:5c55e189b682d420be27c6995ba6edce0c0a77dd67bfbe2ae6607134d5851ffd \
+pytz==2020.5 \
+    --hash=sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4 \
+    --hash=sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5 \
     # via -r requirements.in, google-api-core, pandas
 pyyaml==5.3.1 \
     --hash=sha256:06a0d7ba600ce0b2d2fe2e78453a470b5a6e000a985dd4a4e54e436cc36b0e97 \
