@@ -88,7 +88,7 @@ tblib==1.7.0              # via distributed
 toml==0.10.2              # via black, mozilla-jetstream, pytest, pytest-black
 toolz==0.11.1             # via distributed
 tornado==6.1              # via distributed
-typed-ast==1.4.1          # via black, mypy
+typed-ast==1.4.2          # via black, mypy
 typing-extensions==3.7.4.3  # via black, libcst, mypy, typing-inspect
 typing-inspect==0.6.0     # via libcst
 urllib3==1.26.2           # via kubernetes, requests
