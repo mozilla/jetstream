@@ -1,14 +1,17 @@
 import base64
 import logging
 import time
+from google.cloud.container_v1 import ClusterManagerClient
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
+import attr
 import google.auth
+import json
+import requests
 import yaml
-from argo.workflows.client import ApiClient, Configuration, V1alpha1Api
-from google.cloud.container_v1 import ClusterManagerClient
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +50,11 @@ def submit_workflow(
     cluster_cert: Optional[str] = None,
 ) -> bool:
     """Submit a workflow to Argo and return success."""
-    api = get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert)
+    api = ArgoApi(project_id, zone, cluster_id, cluster_ip, cluster_cert)
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
 
-    workflow = api.create_namespaced_workflow("argo", manifest)
+    workflow = api.create_workflow("argo", manifest)
 
     if monitor_status:
         finished = False
@@ -69,80 +72,114 @@ def submit_workflow(
         logger.info("The dashboard can be accessed via 127.0.0.1:8080")
 
         while not finished:
-            try:
-                workflow = api.get_namespaced_workflow(
-                    workflow.metadata.namespace, workflow.metadata.name
-                )
-            except Exception:
-                # Unauthorized status gets returned when the access token expires (after ca. 1h)
-                # Refresh the access token and try again
-                api = get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert)
-                workflow = api.get_namespaced_workflow(
-                    workflow.metadata.namespace, workflow.metadata.name
-                )
+            workflow = api.get_workflow(
+                workflow["metadata"]["namespace"], workflow["metadata"]["name"]
+            )
 
-            if workflow.status and workflow.status.finished_at is not None:
+            if (
+                workflow["status"]
+                and "finishedAt" in workflow["status"]
+                and workflow["status"]["finishedAt"] is not None
+            ):
                 finished = True
-                if workflow.status.phase == "Failed":
-                    raise Exception(f"Workflow execution failed: {workflow.status}")
+                if workflow["status"]["phase"] == "Failed":
+                    raise Exception(f"Workflow execution failed: {workflow['status']}")
 
             time.sleep(1)
 
     # check status of pods
     all_pods_succeeded = True
-
-    if workflow.status and workflow.status.nodes:
+    if workflow["status"] and workflow["status"]["nodes"]:
         all_pods_succeeded = all(
             [
-                node.phase == "Succeeded"
-                for _, node in workflow.status.nodes.items()
-                if node.type == "Pod"
+                node["phase"] == "Succeeded"
+                for _, node in workflow["status"]["nodes"].items()
+                if node["type"] == "Pod"
             ]
         )
 
     return all_pods_succeeded
 
 
-def get_api(project_id, zone, cluster_id, cluster_ip, cluster_cert):
-    """Get Argo API handle."""
-    config = get_config(project_id, zone, cluster_id, cluster_ip, cluster_cert)
-    api_client = ApiClient(configuration=config)
-    return V1alpha1Api(api_client=api_client)
+@attr.s(auto_attribs=True)
+class Configuration:
+    host: str
+    ssl_ca_cert: str
+    authorization_key_prefix: str
+    authorization_key: str
 
 
-def get_config(
-    project_id: str,
-    zone: str,
-    cluster_id: str,
-    cluster_ip: Optional[str] = None,
-    cluster_cert: Optional[str] = None,
-):
-    """Get the kubernetes cluster config."""
+@attr.s(auto_attribs=True)
+class ArgoApi:
+    """
+    Argo Kubernetes API handler.
 
-    if not cluster_ip and not cluster_cert:
-        cluster_manager_client = ClusterManagerClient()
-        cluster = cluster_manager_client.get_cluster(
-            name=f"projects/{project_id}/locations/{zone}/clusters/{cluster_id}"
+    Argo exposes 2 REST APIs, a Kubernetes API that is also used by the
+    argo CLI (https://argoproj.github.io/argo/cli/argo/) and since v2.5 an
+    argo-server API. This handler sends requests to the Kubernetes API as this does
+    not require setting up a load balancer or port-forwarding to access the argo-server API.
+    """
+
+    project_id: str
+    zone: str
+    cluster_id: str
+    cluster_ip: Optional[str]
+    cluster_cert: Optional[str]
+
+    def _get_config(self) -> Configuration:
+        """Get the Kubernetes cluster config."""
+        if not self.cluster_ip and not self.cluster_cert:
+            cluster_manager_client = ClusterManagerClient()
+            cluster = cluster_manager_client.get_cluster(
+                name=f"projects/{self.project_id}/locations/{self.zone}/clusters/{self.cluster_id}"
+            )
+            self.cluster_ip = cluster.endpoint
+            self.cluster_cert = str(cluster.master_auth.cluster_ca_certificate)
+        elif not (self.cluster_ip and self.cluster_cert):
+            raise Exception(
+                "Cluster IP and cluster certificate required when cluster configuration "
+                "is provided explicitly."
+            )
+
+        creds, projects = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
-        cluster_ip = cluster.endpoint
-        cluster_cert = str(cluster.master_auth.cluster_ca_certificate)
-    elif not (cluster_ip and cluster_cert):
-        raise Exception(
-            "Cluster IP and cluster certificate required when cluster configuration "
-            "is provided explicitly."
+
+        auth_req = google.auth.transport.requests.Request()
+        creds.refresh(auth_req)  # refresh token
+
+        with NamedTemporaryFile(delete=False) as ca_cert:
+            ca_cert.write(base64.b64decode(self.cluster_cert))
+
+        return Configuration(
+            host=f"https://{self.cluster_ip}",
+            ssl_ca_cert=ca_cert.name,
+            authorization_key_prefix="Bearer",
+            authorization_key=creds.token,  # valid for one hour
         )
 
-    creds, projects = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    def create_workflow(self, namespace: str, manifest: str) -> Dict[str, Any]:
+        """Submit a new Argo workflow via the Kubernetes API."""
+        config = self._get_config()
+        response = requests.post(
+            f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows",
+            data=json.dumps(manifest),
+            verify=config.ssl_ca_cert,
+            headers={
+                "Authorization": f"{config.authorization_key_prefix} {config.authorization_key}",
+                "Content-type": "application/json",
+            },
+        )
+        return response.json()
 
-    auth_req = google.auth.transport.requests.Request()
-    creds.refresh(auth_req)  # refresh token
-
-    configuration = Configuration()
-    configuration.host = f"https://{cluster_ip}"
-    with NamedTemporaryFile(delete=False) as ca_cert:
-        ca_cert.write(base64.b64decode(cluster_cert))
-    configuration.ssl_ca_cert = ca_cert.name
-    configuration.api_key_prefix["authorization"] = "Bearer"
-    configuration.api_key["authorization"] = creds.token  # valid for one hour
-
-    return configuration
+    def get_workflow(self, namespace: str, name: str) -> Dict[str, Any]:
+        """Fetch the workflow status from the Argo Kubernetes API."""
+        config = self._get_config()
+        response = requests.get(
+            f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows/{name}",
+            verify=config.ssl_ca_cert,
+            headers={
+                "Authorization": f"{config.authorization_key_prefix} {config.authorization_key}"
+            },
+        )
+        return response.json()

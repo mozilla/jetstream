@@ -42,7 +42,6 @@ setup(
     },
     install_requires=[
         "attrs",
-        "argo-workflows<4.0",
         "cattrs",
         "Click",
         "dask[distributed]",
