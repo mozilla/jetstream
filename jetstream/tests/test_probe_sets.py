@@ -1,16 +1,16 @@
-from typing import List
-
 import json
+from typing import List
+from unittest.mock import patch
+
 import mozanalysis.metrics
 import pytest
 import requests
-from unittest.mock import patch
 
 from jetstream.probe_sets import (
+    ProbeSet,
     TelemetryEventProbe,
     TelemetryScalarProbe,
     _ProbeSetsResolver,
-    ProbeSet,
 )
 
 EXPERIMENTER_FIXTURE_PROBESETS = r"""

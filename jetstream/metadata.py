@@ -1,10 +1,10 @@
-from google.cloud import storage
+import json
+import logging
 from typing import Dict, List
 
 import attr
 import cattr
-import json
-import logging
+from google.cloud import storage
 
 from jetstream import bq_normalize_name
 from jetstream.config import AnalysisConfiguration
