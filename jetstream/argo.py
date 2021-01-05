@@ -1,17 +1,16 @@
 import base64
+import json
 import logging
 import time
-from google.cloud.container_v1 import ClusterManagerClient
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
 import attr
 import google.auth
-import json
 import requests
 import yaml
-
+from google.cloud.container_v1 import ClusterManagerClient
 
 logger = logging.getLogger(__name__)
 

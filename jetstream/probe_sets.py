@@ -4,10 +4,10 @@ from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Proto
 import attr
 import cattr
 import mozanalysis.metrics.desktop
+import requests
 from google.cloud import bigquery
 from google.cloud.bigquery.schema import SchemaField
 from mozanalysis.metrics import Metric
-import requests
 
 from . import statistics
 

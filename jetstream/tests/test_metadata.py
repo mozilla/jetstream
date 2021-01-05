@@ -1,8 +1,8 @@
+import json
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import json
 import requests
 import toml
 
