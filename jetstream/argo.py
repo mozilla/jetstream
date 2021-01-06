@@ -76,7 +76,8 @@ def submit_workflow(
             )
 
             if (
-                workflow["status"]
+                "status" in workflow
+                and workflow["status"]
                 and "finishedAt" in workflow["status"]
                 and workflow["status"]["finishedAt"] is not None
             ):
@@ -88,7 +89,7 @@ def submit_workflow(
 
     # check status of pods
     all_pods_succeeded = True
-    if workflow["status"] and workflow["status"]["nodes"]:
+    if "status" in workflow and workflow["status"] and workflow["status"]["nodes"]:
         all_pods_succeeded = all(
             [
                 node["phase"] == "Succeeded"
