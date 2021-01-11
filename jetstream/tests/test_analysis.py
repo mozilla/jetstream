@@ -151,7 +151,7 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     x = experiments[0]
     config = AnalysisSpec.default_for_experiment(x).resolve(x)
     Analysis("spam", "eggs", config).validate()
-    m.assert_called_once()
+    m.assert_called()
 
 
 def test_analysis_doesnt_choke_on_segments(experiments):
