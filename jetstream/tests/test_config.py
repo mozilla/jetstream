@@ -129,7 +129,7 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         spam = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
         assert spam.data_source.name == "eggs"
-        assert "camelot" in spam.data_source.from_expr
+        assert "camelot" in spam.data_source._from_expr
         assert "client_info" in spam.data_source.client_id_column
 
     def test_definitions_override_other_metrics(self, experiments):
@@ -453,9 +453,9 @@ class TestExperimentSpec:
         assert configured.experiment.segments[0].name == "regular_users_v3"
         assert configured.experiment.segments[1].name == "my_cool_segment"
         assert "agg_any" not in configured.experiment.segments[1].select_expr
-        assert "1970" not in configured.experiment.segments[1].data_source.from_expr
-        assert "{{" not in configured.experiment.segments[1].data_source.from_expr
-        assert "2019-12-01" in configured.experiment.segments[1].data_source.from_expr
+        assert "1970" not in configured.experiment.segments[1].data_source._from_expr
+        assert "{{" not in configured.experiment.segments[1].data_source._from_expr
+        assert "2019-12-01" in configured.experiment.segments[1].data_source._from_expr
 
     def test_pre_treatment_config(self, experiments):
         config_str = dedent(

@@ -80,21 +80,6 @@ class BigQueryClient:
                 {"last_updated": self._current_timestamp_label()},
             )
 
-    def execute_script(self, query: str, destination_table: str) -> None:
-        dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
-            self.dataset,
-            default_project=self.project,
-        )
-        config = google.cloud.bigquery.job.QueryJobConfig(default_dataset=dataset)
-        job = self.client.query(query, config)
-        # block on result
-        job.result(max_results=1)
-
-        self.add_labels_to_table(
-            destination_table,
-            {"last_updated": self._current_timestamp_label()},
-        )
-
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
         table_name_re = re.compile(regex)
