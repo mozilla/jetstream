@@ -328,9 +328,9 @@ mock==4.0.3 \
     --hash=sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62 \
     --hash=sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc \
     # via -r requirements.in
-mozanalysis==2020.12.2 \
-    --hash=sha256:1e4d83b9a3178ca08baef0a35c53d42290926bb982afa84b8520f3eee85d20e9 \
-    --hash=sha256:4d42bf6a20296e78856b01eb0ea919dd25ed514f5ba1986d9e3e56ae73c9c56e \
+mozanalysis==2021.1.1 \
+    --hash=sha256:dbf814569f95a9fbd2efead61ac2142f15946a2bc7100c730a2bd0557e9d4a8a \
+    --hash=sha256:eb1a5f069c6e8517198e05f6455468c2dad0eb3ec2fe8d7344738a79214e2fd0 \
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
