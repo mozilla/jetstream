@@ -10,6 +10,8 @@ spec:
     - name: project_id
     - name: dataset_id
     - name: bucket
+    - name: enrollments
+    - name: recreate_enrollments
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -17,6 +19,13 @@ spec:
       parameters:
         - name: experiments
     steps:
+    - - name: ensure-enrollments
+        template: ensure_enrollments
+        arguments:
+          parameters:
+          - name: experiment
+            value: "{{item}}"
+        withParam: "{{input.parameters.enrollments}}"
     - - name: analyse-experiment
         template: analyse-experiment  
         arguments:
@@ -36,6 +45,22 @@ spec:
             value: "{{item.slug}}"
         withParam: "{{inputs.parameters.experiments}}" 
 
+  - name: ensure-enrollments
+    inputs:
+      parameters:
+        - name: slug
+        - name: date
+    container:
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      command: [
+        bin/entrypoint, ensure_enrollments,
+        "--experiment_slug={{inputs.parameters.experiment}}",
+        "--dataset_id={{workflow.parameters.dataset_id}}", 
+        "--project_id={{workflow.parameters.project_id}}",
+        "--date={{inputs.parameters.date}}",
+        "--recreate={{workflow.parameters.recreate_enrollments}}"
+      ]
+
   - name: analyse-experiment
     inputs:
       parameters:
@@ -48,7 +73,8 @@ spec:
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
-        "--bucket={{workflow.parameters.bucket}}"
+        "--bucket={{workflow.parameters.bucket}}",
+        "--recreate=false"
       ]
       resources:
         requests:

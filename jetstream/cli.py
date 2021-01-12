@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
+from itertools import groupby
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
@@ -78,6 +79,7 @@ class ArgoExecutorStrategy:
     monitor_status: bool
     cluster_ip: Optional[str] = None
     cluster_cert: Optional[str] = None
+    recreate_enrollments: bool = False
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
@@ -95,16 +97,24 @@ class ArgoExecutorStrategy:
             {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (slug, date) in worklist
         ]
 
+        worklist_groups = groupby(worklist, lambda x: x[0])
+        experiment_enrollments = [
+            {"slug": slug, "date": max(group, key=lambda x: x[1])[1]}
+            for slug, group in worklist_groups
+        ]
+
         return submit_workflow(
             project_id=self.project_id,
             zone=self.zone,
             cluster_id=self.cluster_id,
             workflow_file=self.RUN_WORKFLOW,
             parameters={
+                "enrollments": experiment_enrollments,
                 "experiments": experiments_config,
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
+                "recreate_enrollments": self.recreate_enrollments,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -117,6 +127,7 @@ class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
     bucket: str
+    recreate_enrollments: bool = False
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: Callable[
@@ -130,7 +141,8 @@ class SerialExecutorStrategy:
     ):
         failed = False
         experiments = self.experiment_getter()
-        for slug, date in worklist:
+
+        for slug, worklist_group in groupby(worklist, lambda x: x[0]):
             try:
                 experiment = experiments.with_slug(slug).experiments[0]
                 spec = AnalysisSpec.default_for_experiment(experiment)
@@ -143,7 +155,14 @@ class SerialExecutorStrategy:
                         spec.merge(external_spec)
 
                 config = spec.resolve(experiment)
-                self.analysis_class(self.project_id, self.dataset_id, config).run(date)
+                analysis = self.analysis_class(self.project_id, self.dataset_id, config)
+
+                max_run_date = max(worklist_group, key=lambda x: x[1])[1]
+
+                analysis.ensure_enrollments(experiment, max_run_date, self.recreate_enrollments)
+
+                for item in worklist_group:
+                    analysis.run(item[1])
                 export_metadata(config, self.bucket, self.project_id)
             except Exception as e:
                 failed = True
@@ -318,6 +337,13 @@ cluster_cert_option = click.option(
     help="Kubernetes cluster certificate used for authenticating to the cluster",
 )
 
+recreate_enrollments_option = click.option(
+    "--recreate_enrollments",
+    "--recreate-enrollments",
+    help="Recreate the enrollments tables",
+    is_flag=True,
+)
+
 
 @cli.command()
 @project_id_option
@@ -332,14 +358,8 @@ cluster_cert_option = click.option(
 @experiment_slug_option
 @bucket_option
 @secret_config_file_option
-def run(
-    project_id,
-    dataset_id,
-    date,
-    experiment_slug,
-    bucket,
-    config_file,
-):
+@recreate_enrollments_option
+def run(project_id, dataset_id, date, experiment_slug, bucket, config_file, recreate_enrollments):
     """Runs analysis for the provided date."""
     success = AnalysisExecutor(
         project_id=project_id,
@@ -348,7 +368,7 @@ def run(
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
-    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id, bucket))
+    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments))
 
     sys.exit(0 if success else 1)
 
@@ -370,6 +390,7 @@ def run(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@recreate_enrollments_option
 def run_argo(
     project_id,
     dataset_id,
@@ -381,6 +402,7 @@ def run_argo(
     monitor_status,
     cluster_ip,
     cluster_cert,
+    recreate_enrollments,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -392,6 +414,7 @@ def run_argo(
         monitor_status=monitor_status,
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
+        recreate_enrollments=recreate_enrollments,
     )
 
     AnalysisExecutor(
@@ -415,6 +438,7 @@ def run_argo(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@recreate_enrollments_option
 def rerun(
     project_id,
     dataset_id,
@@ -427,9 +451,10 @@ def rerun(
     monitor_status,
     cluster_ip,
     cluster_cert,
+    recreate_enrollments,
 ):
     """Rerun all available analyses for a specific experiment."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -440,6 +465,7 @@ def rerun(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            recreate_enrollments=recreate_enrollments,
         )
 
     AnalysisExecutor(
@@ -475,6 +501,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @cluster_ip_option
 @cluster_cert_option
 @return_status_option
+@recreate_enrollments_option
 def rerun_config_changed(
     project_id,
     dataset_id,
@@ -486,10 +513,11 @@ def rerun_config_changed(
     cluster_ip,
     cluster_cert,
     return_status,
+    recreate_enrollments,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -500,6 +528,7 @@ def rerun_config_changed(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            recreate_enrollments=recreate_enrollments,
         )
 
     # get experiment-specific external configs
@@ -520,6 +549,47 @@ def rerun_config_changed(
 
     if return_status:
         sys.exit(0 if success else 1)
+
+
+@cli.command("ensure_enrollments")
+@project_id_option
+@dataset_id_option
+@click.option(
+    "--date",
+    type=ClickDate(),
+    help="Date for which experiments should be analyzed",
+    metavar="YYYY-MM-DD",
+    required=True,
+)
+@click.option(
+    "--experiment_slug",
+    "--experiment-slug",
+    help="Experimenter or Normandy slug of the experiment to create enrollments table for",
+    required=True,
+)
+@secret_config_file_option
+@recreate_enrollments_option
+def ensure_enrollments(
+    project_id, dataset_id, date, experiment_slug, config_file, recreate_enrollments
+):
+    """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+    try:
+        experiments = ExperimentCollection.from_experimenter()
+        experiment = experiments.with_slug(experiment_slug).experiments[0]
+        spec = AnalysisSpec.default_for_experiment(experiment)
+        if config_file:
+            config_dict = toml.load(config_file)
+            spec.merge(AnalysisSpec.from_dict(config_dict))
+        else:
+            external_configs = ExternalConfigCollection.from_github_repo()
+            if external_spec := external_configs.spec_for_experiment(experiment_slug):
+                spec.merge(external_spec)
+
+        config = spec.resolve(experiment)
+        analysis = Analysis(project_id, dataset_id, config)
+        analysis.ensure_enrollments(experiment_slug, date, recreate_enrollments)
+    except Exception as e:
+        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
 
 
 @cli.command("validate_config")

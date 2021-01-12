@@ -146,6 +146,37 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
+    def ensure_enrollments(
+        self, exp: mozanalysis.experiment.Experiment, current_date: datetime, recreate: bool = False
+    ) -> None:
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
+
+        if time_limits is None:
+            logger.info("Skipping %s (%s); not ready", self.config.experiment.normandy_slug)
+            return
+
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
+
+        if not recreate:
+            # check if enrollments table already exists and skip creation
+            if (
+                self.bigquery.client.get_table(f"{self.project}.{self.dataset}.{enrollments_table}")
+                is not None
+            ):
+                return
+
+        logger.info(f"Create {enrollments_table}")
+        enrollments_sql = exp.build_enrollments_query(
+            time_limits,
+            "normandy",
+            self.config.experiment.enrollment_query,
+            self.config.experiment.segments,
+        )
+
+        self.bigquery.execute(enrollments_sql, enrollments_table)
+
     @dask.delayed
     def calculate_metrics(
         self,
@@ -171,6 +202,8 @@ class Analysis:
         )
 
         res_table_name = self._table_name(period.value, window)
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
 
         if dry_run:
             logger.info(
@@ -184,16 +217,6 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 period.value,
             )
-
-            enrollments_sql = exp.build_enrollments_query(
-                last_window_limits,
-                "normandy",
-                self.config.experiment.enrollment_query,
-                self.config.experiment.segments,
-            )
-
-            enrollments_table = f"enrollments_{res_table_name}"
-            self.bigquery.execute(enrollments_sql, enrollments_table)
 
             metrics_sql = exp.build_metrics_query(
                 {m.metric for m in self.config.metrics[period]},

@@ -7,12 +7,15 @@ if [ "$1" = "export-statistics-to-json" ]; then
     jetstream export-statistics-to-json "${@:2}"
 elif [ "$1" = "rerun-config-changed" ]; then
     # this is triggered by the jetstream-config repo
-    jetstream rerun-config-changed --argo "${@:2}"
+    jetstream rerun-config-changed --argo "${@:2}" --recreate_enrollments
 elif [ "$1" = "run-argo" ]; then
     # argo
     jetstream --log_to_bigquery run-argo "${@:2}"
-    jetstream --log_to_bigquery rerun-config-changed --argo
+    jetstream --log_to_bigquery rerun-config-changed --argo --recreate_enrollments
 elif [ "$1" = "run" ]; then
     # argo
     jetstream --log_to_bigquery run "${@:2}"
+elif [ "$1" = "ensure_enrollments" ]; then
+    # ensure enrollments
+    jetstream --log_to_bigquery ensure_enrollments "${@:2}"
 fi
