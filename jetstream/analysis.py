@@ -336,7 +336,28 @@ class Analysis:
         metrics_sql = exp.build_metrics_query(
             metrics,
             limits,
-            "enrollments_table",  # todo: fails because table doesn't exist
+            "enrollments_table",
+        )
+
+        # enrollments_table doesn't get created when performing a dry run;
+        # the metrics SQL is modified to include a subquery for a mock enrollments_table
+        # A UNION ALL is required here otherwise the dry run fails with
+        # "cannot query over table without filter over columns"
+        metrics_sql = metrics_sql.replace(
+            "WITH enrollments AS (",
+            """WITH enrollments_table AS (
+                SELECT '00000' AS client_id,
+                    'test' AS branch,
+                    DATE('2020-01-01') AS enrollment_date,
+                    1 AS analysis_window_start,
+                    2 AS analysis_window_end
+                UNION ALL
+                SELECT '00000' AS client_id,
+                    'test' AS branch,
+                    DATE('2020-01-01') AS enrollment_date,
+                    1 AS analysis_window_start,
+                    2 AS analysis_window_end
+            ), enrollments AS (""",
         )
 
         dry_run_query(metrics_sql)
