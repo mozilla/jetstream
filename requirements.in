@@ -15,7 +15,7 @@ chardet==4.0.0            # via requests
 click==7.1.2              # via black, distributed, mozilla-jetstream
 cloudpickle==1.6.0        # via distributed
 coverage==5.3.1           # via mozilla-jetstream, pytest-cov
-dask[distributed]==2020.12.0  # via distributed, mozilla-jetstream
+dask[distributed]==2021.1.0  # via distributed, mozilla-jetstream
 distributed==2020.12.0    # via dask
 flake8==3.8.4             # via pytest-flake8
 gitdb==4.0.5              # via gitpython
