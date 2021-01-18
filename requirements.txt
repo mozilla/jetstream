@@ -148,9 +148,9 @@ gitpython==3.1.12 \
     --hash=sha256:42dbefd8d9e2576c496ed0059f3103dcef7125b9ce16f9d5f9c834aed44a1dac \
     --hash=sha256:867ec3dfb126aac0f8296b19fb63b8c4a399f32b4b6fafe84c4b10af5fa9f7b5 \
     # via -r requirements.in
-google-api-core[grpc]==1.24.1 \
-    --hash=sha256:0f1dee446db2685863c3c493a90fefa5fc7f4defaf8e1a320b50ccaddfb5d469 \
-    --hash=sha256:a7f5794446a22ff7d36764959ba5f319f37628faf4da04fdc0dedf1598b556c1 \
+google-api-core[grpc]==1.25.0 \
+    --hash=sha256:4656345cba9627ab1290eab51300a6397cc50370d99366133df1ae64b744e1eb \
+    --hash=sha256:d967beae8d8acdb88fb2f6f769e2ee0ee813042576a08891bded3b8e234150ae \
     # via -r requirements.in, google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
 google-auth==1.24.0 \
     --hash=sha256:0b0e026b412a0ad096e753907559e4bdb180d9ba9f68dd9036164db4fdc4ad2e \
