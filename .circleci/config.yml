@@ -2,7 +2,7 @@ version: 2.1
 
 # See https://circleci.com/orbs/registry/orb/circleci/gcp-gcr
 orbs:
-  gcp-gcr: circleci/gcp-gcr@0.6.1
+  gcp-gcr: circleci/gcp-gcr@0.11.0
 
 jobs:
   build:
@@ -65,7 +65,7 @@ jobs:
           venv/bin/pytest --black --flake8 --integration jetstream/tests/integration/
 
 workflows:
-  version: 2
+  version: 2.1
   build-and-deploy:
     jobs:
       - build
