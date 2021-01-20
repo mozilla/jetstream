@@ -1,7 +1,6 @@
 import datetime
 import datetime as dt
 from pathlib import Path
-from unittest import mock
 
 import dask
 import mozanalysis
@@ -19,7 +18,7 @@ TEST_DIR = Path(__file__).parent.parent
 
 
 class TestAnalysisIntegration:
-    def analysis_mock_run(self, config, static_dataset, temporary_dataset, project_id):
+    def analysis_mock_run(self, monkeypatch, config, static_dataset, temporary_dataset, project_id):
         orig_enrollments = mozanalysis.experiment.Experiment.build_enrollments_query
         orig_metrics = mozanalysis.experiment.Experiment.build_metrics_query
 
@@ -53,22 +52,22 @@ class TestAnalysisIntegration:
             )
 
         analysis = Analysis(project_id, temporary_dataset, config)
-        with mock.patch.object(
+
+        monkeypatch.setattr(
             mozanalysis.experiment.Experiment,
             "build_enrollments_query",
-            new=build_enrollments_query_test_project,
-        ):
-            with mock.patch.object(
-                mozanalysis.experiment.Experiment,
-                "build_metrics_query",
-                new=build_metrics_query_test_project,
-            ):
-                with mock.patch.object(
-                    dask.distributed.LocalCluster, "__init__", new=mock_local_cluster
-                ):
-                    analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
+            build_enrollments_query_test_project,
+        )
+        monkeypatch.setattr(
+            mozanalysis.experiment.Experiment,
+            "build_metrics_query",
+            build_metrics_query_test_project,
+        )
+        monkeypatch.setattr(dask.distributed.LocalCluster, "__init__", mock_local_cluster)
 
-    def test_metrics(self, client, project_id, static_dataset, temporary_dataset):
+        analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
+
+    def test_metrics(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(
             experimenter_slug="test-experiment",
             type="rollout",
@@ -98,7 +97,7 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
 
-        self.analysis_mock_run(config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
         query_job = client.client.query(
             f"""
@@ -160,7 +159,9 @@ class TestAnalysisIntegration:
             is not None
         )
 
-    def test_no_enrollments(self, client, project_id, static_dataset, temporary_dataset):
+    def test_no_enrollments(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
         experiment = Experiment(
             experimenter_slug="test-experiment-2",
             type="rollout",
@@ -177,7 +178,7 @@ class TestAnalysisIntegration:
 
         config = AnalysisSpec().resolve(experiment)
 
-        self.analysis_mock_run(config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
         query_job = client.client.query(
             f"""
@@ -205,7 +206,9 @@ class TestAnalysisIntegration:
             is not None
         )
 
-    def test_with_segments(self, client, project_id, static_dataset, temporary_dataset):
+    def test_with_segments(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
             type="rollout",
@@ -245,7 +248,7 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
 
-        self.analysis_mock_run(config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
         query_job = client.client.query(
             f"""
