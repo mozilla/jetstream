@@ -28,6 +28,8 @@ def cli_experiments():
                 proposed_enrollment=None,
                 reference_branch="control",
                 is_high_population=False,
+                app_name="firefox_desktop",
+                app_id="firefox-desktop",
             ),
             experimenter.Experiment(
                 experimenter_slug=None,
@@ -44,6 +46,8 @@ def cli_experiments():
                 proposed_enrollment=None,
                 reference_branch="control",
                 is_high_population=False,
+                app_name="firefox_desktop",
+                app_id="firefox-desktop",
             ),
         ]
     )

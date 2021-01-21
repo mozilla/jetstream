@@ -29,6 +29,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch="b",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -42,6 +44,8 @@ def experiments():
             normandy_slug=None,
             reference_branch=None,
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -55,6 +59,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -68,6 +74,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -81,5 +89,7 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch="b",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
     ]

@@ -80,6 +80,8 @@ class TestAnalysisIntegration:
             reference_branch="branch2",
             normandy_slug="test-experiment",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         )
 
         config = AnalysisSpec().resolve(experiment)
@@ -174,6 +176,8 @@ class TestAnalysisIntegration:
             reference_branch="a",
             normandy_slug="test-experiment-2",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         )
 
         config = AnalysisSpec().resolve(experiment)
@@ -221,6 +225,8 @@ class TestAnalysisIntegration:
             reference_branch="branch2",
             normandy_slug="test-experiment",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         )
 
         config = AnalysisSpec().resolve(experiment)
