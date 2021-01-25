@@ -80,7 +80,7 @@ rsa==4.7                  # via google-auth
 scipy==1.6.0              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-bigquery, google-cloud-core, google-resumable-media, grpcio, jsonschema, kubernetes, patsy, protobuf, python-dateutil, websocket-client
 smart-open[gcp]==4.1.0    # via mozilla-jetstream
-smmap==3.0.4              # via gitdb
+smmap==3.0.5              # via gitdb
 sortedcontainers==2.3.0   # via distributed
 statsmodels==0.12.1       # via mozilla-jetstream
 tblib==1.7.0              # via distributed
