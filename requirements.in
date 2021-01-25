@@ -72,7 +72,7 @@ pytest-flake8==1.0.7      # via mozilla-jetstream
 pytest==6.2.1             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via kubernetes, pandas
 pytz==2020.5              # via google-api-core, mozilla-jetstream, pandas
-pyyaml==5.3.1             # via dask, distributed, kubernetes, libcst, mozilla-jetstream
+pyyaml==5.4.1             # via dask, distributed, kubernetes, libcst, mozilla-jetstream
 regex==2020.11.13         # via black
 requests-oauthlib==1.3.0  # via kubernetes
 requests==2.25.1          # via google-api-core, google-cloud-storage, kubernetes, mozilla-jetstream, requests-oauthlib
