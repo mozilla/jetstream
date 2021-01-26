@@ -147,7 +147,6 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
-    @dask.delayed
     def ensure_enrollments(self, current_date: datetime, recreate: bool = False) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
@@ -159,6 +158,16 @@ class Analysis:
         if self.config.experiment.start_date is None:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
+        analysis_windows = []
+        for period in AnalysisPeriod:
+            tl = self._get_timelimits_if_ready(period, current_date)
+            if tl is not None:
+                analysis_windows += list(tl.analysis_windows)
+
+        time_limits = TimeLimits(tuple(set(analysis_windows)))
+
+        print(time_limits)
+
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         enrollments_table = f"enrollments_{normalized_slug}"
 
@@ -169,7 +178,6 @@ class Analysis:
                     self.bigquery.client.get_table(
                         f"{self.project}.{self.dataset}.{enrollments_table}"
                     )
-                    return
                 except NotFound:
                     # table not found, continue with creation
                     pass
