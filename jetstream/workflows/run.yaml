@@ -17,8 +17,8 @@ spec:
       parameters:
         - name: experiments
     steps:
-    - - name: analyse-experiment
-        template: analyse-experiment  
+    - - name: analyse-and-export
+        template: analyse-and-export
         arguments:
           parameters:
           - name: slug
@@ -26,8 +26,6 @@ spec:
           - name: date
             value: "{{item.date}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
-        continueOn:
-          failed: true
     - - name: export-statistics
         template: export-statistics
         arguments:
@@ -77,3 +75,24 @@ spec:
         "--bucket={{workflow.parameters.bucket}}"
       ]
     activeDeadlineSeconds: 600   # terminate container template after 10 minutes
+
+  - name: analyse-and-export
+    inputs:
+      parameters:
+        - name: slug
+        - name: date
+    steps:
+    - - name: analyse-experiment
+        template: analyse-experiment  
+        arguments:
+          parameters:
+          - name: slug
+            value: "{{inputs.parameters.slug}}"
+          - name: date
+            value: "{{inputs.parameters.date}}"
+    - - name: export-statistics
+        template: export-statistics
+        arguments:
+          parameters:
+          - name: slug
+            value: "{{inputs.parameters.slug}}"
