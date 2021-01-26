@@ -9,6 +9,7 @@ import dask
 import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -146,9 +147,8 @@ class Analysis:
         )
         self.bigquery.execute(sql)
 
-    def ensure_enrollments(
-        self, exp: mozanalysis.experiment.Experiment, current_date: datetime, recreate: bool = False
-    ) -> None:
+    @dask.delayed
+    def ensure_enrollments(self, current_date: datetime, recreate: bool = False) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
 
@@ -156,26 +156,41 @@ class Analysis:
             logger.info("Skipping %s (%s); not ready", self.config.experiment.normandy_slug)
             return
 
+        if self.config.experiment.start_date is None:
+            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
+
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         enrollments_table = f"enrollments_{normalized_slug}"
 
-        if not recreate:
-            # check if enrollments table already exists and skip creation
-            if (
-                self.bigquery.client.get_table(f"{self.project}.{self.dataset}.{enrollments_table}")
-                is not None
-            ):
-                return
+        try:
+            if not recreate:
+                # check if enrollments table already exists and skip creation
+                try:
+                    self.bigquery.client.get_table(
+                        f"{self.project}.{self.dataset}.{enrollments_table}"
+                    )
+                    return
+                except NotFound:
+                    # table not found, continue with creation
+                    pass
 
-        logger.info(f"Create {enrollments_table}")
-        enrollments_sql = exp.build_enrollments_query(
-            time_limits,
-            "normandy",
-            self.config.experiment.enrollment_query,
-            self.config.experiment.segments,
-        )
+            logger.info(f"Create {enrollments_table}")
+            exp = mozanalysis.experiment.Experiment(
+                experiment_slug=self.config.experiment.normandy_slug,
+                start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            )
+            enrollments_sql = exp.build_enrollments_query(
+                time_limits,
+                "normandy",
+                self.config.experiment.enrollment_query,
+                self.config.experiment.segments,
+            )
 
-        self.bigquery.execute(enrollments_sql, enrollments_table)
+            self.bigquery.execute(enrollments_sql, enrollments_table)
+        except Exception as e:
+            logger.exception(
+                str(e), exc_info=e, extra={"experiment": self.config.experiment.normandy_slug}
+            )
 
     @dask.delayed
     def calculate_metrics(

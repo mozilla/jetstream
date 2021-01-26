@@ -10,7 +10,6 @@ spec:
     - name: project_id
     - name: dataset_id
     - name: bucket
-    - name: enrollments
     - name: recreate_enrollments
   templates:
   - name: jetstream
@@ -26,8 +25,8 @@ spec:
           - name: experiment
             value: "{{item}}"
         withParam: "{{input.parameters.enrollments}}"
-    - - name: analyse-experiment
-        template: analyse-experiment  
+    - - name: analyse-and-export
+        template: analyse-and-export
         arguments:
           parameters:
           - name: slug
@@ -35,15 +34,6 @@ spec:
           - name: date
             value: "{{item.date}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
-        continueOn:
-          failed: true
-    - - name: export-statistics
-        template: export-statistics
-        arguments:
-          parameters:
-          - name: slug
-            value: "{{item.slug}}"
-        withParam: "{{inputs.parameters.experiments}}" 
 
   - name: ensure-enrollments
     inputs:
@@ -54,11 +44,9 @@ spec:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
         bin/entrypoint, ensure_enrollments,
-        "--experiment_slug={{inputs.parameters.experiment}}",
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
-        "--date={{inputs.parameters.date}}",
-        "--recreate={{workflow.parameters.recreate_enrollments}}"
+        "--recreate-enrollments={{workflow.parameters.recreate_enrollments}}"
       ]
 
   - name: analyse-experiment
@@ -74,7 +62,6 @@ spec:
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
         "--bucket={{workflow.parameters.bucket}}",
-        "--recreate=false"
       ]
       resources:
         requests:
@@ -103,3 +90,24 @@ spec:
         "--bucket={{workflow.parameters.bucket}}"
       ]
     activeDeadlineSeconds: 600   # terminate container template after 10 minutes
+
+  - name: analyse-and-export
+    inputs:
+      parameters:
+        - name: slug
+        - name: date
+    steps:
+    - - name: analyse-experiment
+        template: analyse-experiment  
+        arguments:
+          parameters:
+          - name: slug
+            value: "{{inputs.parameters.slug}}"
+          - name: date
+            value: "{{inputs.parameters.date}}"
+    - - name: export-statistics
+        template: export-statistics
+        arguments:
+          parameters:
+          - name: slug
+            value: "{{inputs.parameters.slug}}"

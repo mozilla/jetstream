@@ -1,17 +1,19 @@
 import logging
 import os
 import sys
+from dask.distributed import Client, LocalCluster
 from datetime import datetime, timedelta
 from itertools import groupby
+import mozanalysis
 from pathlib import Path
-from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+from typing import Callable, Iterable, List, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
 import attr
 import click
 import pytz
 import toml
 
-from .analysis import Analysis
+from .analysis import Analysis, DASK_DASHBOARD_ADDRESS, DASK_N_PROCESSES
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
@@ -97,19 +99,12 @@ class ArgoExecutorStrategy:
             {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (slug, date) in worklist
         ]
 
-        worklist_groups = groupby(worklist, lambda x: x[0])
-        experiment_enrollments = [
-            {"slug": slug, "date": max(group, key=lambda x: x[1])[1]}
-            for slug, group in worklist_groups
-        ]
-
         return submit_workflow(
             project_id=self.project_id,
             zone=self.zone,
             cluster_id=self.cluster_id,
             workflow_file=self.RUN_WORKFLOW,
             parameters={
-                "enrollments": experiment_enrollments,
                 "experiments": experiments_config,
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
@@ -187,19 +182,15 @@ class AnalysisExecutor:
             tzinfo=pytz.utc,
         )
 
-    def execute(
+    def _experiments_to_analyse(
         self,
-        strategy: ExecutorStrategy,
-        *,
         experiment_getter: Callable[
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
-        config_getter: Callable[
-            [], ExternalConfigCollection
-        ] = ExternalConfigCollection.from_github_repo,
-        today: Optional[datetime] = None,
-    ) -> bool:
+    ) -> List[mozanalysis.experiment.Experiment]:
+        """Fetch experiments that are to be analysed."""
         experiments = experiment_getter()
+        run_experiments = []
 
         if isinstance(self.experiment_slugs, AllType):
             if isinstance(self.date, AllType):
@@ -214,7 +205,6 @@ class AnalysisExecutor:
                 if e.normandy_slug is not None
             ]
         else:
-            run_experiments = []
             for slug in self.experiment_slugs:
                 if e := experiments.with_slug(slug).experiments:
                     run_experiments.append(e[0])
@@ -223,7 +213,21 @@ class AnalysisExecutor:
                         f"Slug {slug} provided but not found in Experimenter; skipping.",
                         extra={"experiment": slug},
                     )
+        return run_experiments
 
+    def execute(
+        self,
+        strategy: ExecutorStrategy,
+        *,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+        today: Optional[datetime] = None,
+    ) -> bool:
+        run_experiments = self._experiments_to_analyse(experiment_getter)
         worklist = []
 
         for experiment in run_experiments:
@@ -242,6 +246,58 @@ class AnalysisExecutor:
                 worklist.append((experiment.normandy_slug, run_date))
 
         return strategy.execute(worklist, self.configuration_map)
+
+    def ensure_enrollments(
+        self,
+        recreate_enrollments: bool,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+    ):
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        # set up dask
+        dask_cluster = LocalCluster(
+            dashboard_address=DASK_DASHBOARD_ADDRESS,
+            processes=True,
+            threads_per_worker=1,
+            n_workers=DASK_N_PROCESSES,
+        )
+        client = Client(dask_cluster)
+        results = []
+
+        run_experiments = self._experiments_to_analyse()
+
+        for experiment in run_experiments:
+            try:
+                spec = AnalysisSpec.default_for_experiment(experiment)
+                if self.configuration_map and experiment.normandy_slug in self.configuration_map:
+                    config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
+                    spec.merge(AnalysisSpec.from_dict(config_dict))
+                else:
+                    external_configs = config_getter()
+                    if external_spec := external_configs.spec_for_experiment(
+                        experiment.normandy_slug
+                    ):
+                        spec.merge(external_spec)
+
+                config = spec.resolve(experiment)
+                analysis = Analysis(self.project_id, self.dataset_id, config)
+
+                if self.date == All:
+                    today = self._today()
+                    end_date = min(
+                        experiment.end_date or today,
+                        today,
+                    )
+                else:
+                    end_date = self.date
+
+                results.append(analysis.ensure_enrollments(end_date, recreate_enrollments))
+            except Exception as e:
+                logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+
+        result_futures = client.compute(results)
+        client.gather(result_futures)  # block until futures have finished
 
 
 @click.group()
@@ -341,7 +397,7 @@ recreate_enrollments_option = click.option(
     "--recreate_enrollments",
     "--recreate-enrollments",
     help="Recreate the enrollments tables",
-    is_flag=True,
+    default=False,
 )
 
 
@@ -561,35 +617,22 @@ def rerun_config_changed(
     metavar="YYYY-MM-DD",
     required=True,
 )
-@click.option(
-    "--experiment_slug",
-    "--experiment-slug",
-    help="Experimenter or Normandy slug of the experiment to create enrollments table for",
-    required=True,
-)
+@bucket_option
+@experiment_slug_option
 @secret_config_file_option
 @recreate_enrollments_option
 def ensure_enrollments(
-    project_id, dataset_id, date, experiment_slug, config_file, recreate_enrollments
+    project_id, dataset_id, date, bucket, experiment_slug, config_file, recreate_enrollments
 ):
     """Ensure that enrollment tables for experiment are up-to-date or re-create."""
-    try:
-        experiments = ExperimentCollection.from_experimenter()
-        experiment = experiments.with_slug(experiment_slug).experiments[0]
-        spec = AnalysisSpec.default_for_experiment(experiment)
-        if config_file:
-            config_dict = toml.load(config_file)
-            spec.merge(AnalysisSpec.from_dict(config_dict))
-        else:
-            external_configs = ExternalConfigCollection.from_github_repo()
-            if external_spec := external_configs.spec_for_experiment(experiment_slug):
-                spec.merge(external_spec)
-
-        config = spec.resolve(experiment)
-        analysis = Analysis(project_id, dataset_id, config)
-        analysis.ensure_enrollments(experiment_slug, date, recreate_enrollments)
-    except Exception as e:
-        logger.exception(str(e), exc_info=e, extra={"experiment": experiment_slug})
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=date,
+        experiment_slugs=[experiment_slug] if experiment_slug else All,
+        configuration_map={experiment_slug: config_file} if config_file else None,
+    ).ensure_enrollments(recreate_enrollments=recreate_enrollments)
 
 
 @cli.command("validate_config")
