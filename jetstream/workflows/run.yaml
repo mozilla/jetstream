@@ -26,13 +26,8 @@ spec:
           - name: date
             value: "{{item.date}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
-    - - name: export-statistics
-        template: export-statistics
-        arguments:
-          parameters:
-          - name: slug
-            value: "{{item.slug}}"
-        withParam: "{{inputs.parameters.experiments}}" 
+        continueOn:
+          failed: true
 
   - name: analyse-experiment
     inputs:
