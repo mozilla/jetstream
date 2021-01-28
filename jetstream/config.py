@@ -21,6 +21,7 @@ which produce concrete mozanalysis classes when resolved.
 import copy
 import datetime as dt
 from inspect import isabstract
+from os import PathLike
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
@@ -45,9 +46,23 @@ from . import AnalysisPeriod, probe_sets
 if TYPE_CHECKING:
     import jetstream.experimenter
 
-DEFAULT_METRICS_CONFIG = Path(__file__).parent / "config" / "default_metrics.toml"
-CFR_METRICS_CONFIG = Path(__file__).parent / "config" / "cfr_metrics.toml"
 
+@attr.s(auto_attribs=True)
+class Platform:
+    config_spec_path: PathLike
+    metrics_module: Optional[ModuleType]
+    segments_module: Optional[ModuleType]
+
+
+PLATFORM_CONFIGS = {
+    "firefox_desktop": Platform(
+        Path(__file__).parent / "config" / "default_metrics.toml",
+        mozanalysis.metrics.desktop,
+        mozanalysis.segments.desktop,
+    )
+}
+
+TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
 
 _converter = cattr.Converter()
 
@@ -95,10 +110,10 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec)
-        if hasattr(mozanalysis.metrics.desktop, self.name):
+            return spec.metrics.definitions[self.name].resolve(spec, experiment)
+        if hasattr(experiment.platform.metrics_module, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
 
@@ -111,8 +126,10 @@ _converter.register_structure_hook(MetricReference, lambda obj, _type: MetricRef
 class DataSourceReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec") -> mozanalysis.metrics.DataSource:
-        search = mozanalysis.metrics.desktop
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
+    ) -> mozanalysis.metrics.DataSource:
+        search = experiment.platform.metrics_module
         return _lookup_name(
             name=self.name,
             klass=mozanalysis.metrics.DataSource,
@@ -134,7 +151,7 @@ class SegmentReference:
     def resolve(
         self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
     ) -> mozanalysis.segments.Segment:
-        search = mozanalysis.segments.desktop
+        search = experiment.platform.segments_module
         return _lookup_name(
             name=self.name,
             klass=mozanalysis.segments.Segment,
@@ -254,6 +271,13 @@ class ExperimentConfiguration:
             raise NoStartDateException(self.normandy_slug)
         return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
 
+    @property
+    def platform(self) -> Platform:
+        try:
+            return PLATFORM_CONFIGS[self.app_name]
+        except KeyError:
+            raise ValueError(f"Unknown platform {self.app_name}")
+
     # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
     # python-returns-typeerror-object-no
     def __getstate__(self):
@@ -324,10 +348,10 @@ class MetricDefinition:
     description: Optional[str] = None
     bigger_is_better: bool = True
 
-    def resolve(self, spec: "AnalysisSpec") -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
-            search = mozanalysis.metrics.desktop
+            search = experiment.platform.metrics_module
             metric = _lookup_name(
                 name=self.name,
                 klass=mozanalysis.metrics.Metric,
@@ -340,7 +364,7 @@ class MetricDefinition:
 
             metric = mozanalysis.metrics.Metric(
                 name=self.name,
-                data_source=self.data_source.resolve(spec),
+                data_source=self.data_source.resolve(spec, experiment),
                 select_expr=select_expression,
                 friendly_name=self.friendly_name,
                 description=self.description,
@@ -424,7 +448,7 @@ class MetricsSpec:
                 [
                     summary
                     for ref in getattr(self, period.adjective)
-                    for summary in ref.resolve(spec)
+                    for summary in ref.resolve(spec, experiment)
                 ]
             )
 
@@ -543,7 +567,7 @@ class SegmentDataSourceReference:
             name=self.name,
             klass=mozanalysis.segments.SegmentDataSource,
             spec=spec,
-            module=mozanalysis.segments.desktop,
+            module=experiment.platform.segments_module,
             definitions=spec.segments.data_sources,
             resolve_extras={"experiment": experiment},
         )
@@ -637,13 +661,14 @@ class AnalysisSpec:
         cls, experiment: "jetstream.experimenter.Experiment"
     ) -> "AnalysisSpec":
         """Return the default spec based on the experiment type."""
-        default_metrics = cls.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
+        if platform := PLATFORM_CONFIGS.get(experiment.app_name):
+            default_metrics = cls.from_dict(toml.load(platform.config_spec_path))
+        else:
+            default_metrics = cls()
 
-        if experiment.type == "message":
-            # CFR experiment
-            cfr_metrics = cls.from_dict(toml.load(CFR_METRICS_CONFIG))
-            default_metrics.merge(cfr_metrics)
-            return default_metrics
+        if type_config := TYPE_CONFIGS.get(experiment.type):
+            type_metrics = cls.from_dict(toml.load(type_config))
+            default_metrics.merge(type_metrics)
 
         return default_metrics
 
