@@ -41,7 +41,7 @@ jsonschema==3.2.0         # via mozilla-jetstream
 libcst==0.3.16            # via google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
-mozanalysis==2021.1.1     # via mozilla-jetstream
+mozanalysis==2021.1.2     # via mozilla-jetstream
 msgpack==1.0.2            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.800               # via mozilla-jetstream

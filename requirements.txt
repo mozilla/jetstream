@@ -409,9 +409,9 @@ mccabe==0.6.1 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2021.1.1 \
-    --hash=sha256:dbf814569f95a9fbd2efead61ac2142f15946a2bc7100c730a2bd0557e9d4a8a \
-    --hash=sha256:eb1a5f069c6e8517198e05f6455468c2dad0eb3ec2fe8d7344738a79214e2fd0
+mozanalysis==2021.1.2 \
+    --hash=sha256:af8d5d612a41d821b4bb8a17a07590288c6e2bb2cc2fd8c1873c66f60dc955d5 \
+    --hash=sha256:ce6b5d7da287407e43ed909dd7dc20acd4c6f4111caa58a5762aed0c888614c0
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
