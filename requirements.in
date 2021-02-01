@@ -45,7 +45,7 @@ mozanalysis==2021.1.1     # via mozilla-jetstream
 msgpack==1.0.2            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.800               # via mozilla-jetstream
-numpy==1.19.5             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
+numpy==1.20.0             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
 packaging==20.8           # via pytest
 pandas==1.2.1             # via mozanalysis, statsmodels
 pathspec==0.8.1           # via black
