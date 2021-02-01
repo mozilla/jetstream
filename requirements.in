@@ -68,7 +68,7 @@ pytest-cov==2.11.1        # via mozilla-jetstream
 pytest-flake8==1.0.7      # via mozilla-jetstream
 pytest==6.2.2             # via mozilla-jetstream, pytest-black, pytest-cov, pytest-flake8
 python-dateutil==2.8.1    # via pandas
-pytz==2020.5              # via google-api-core, mozilla-jetstream, pandas
+pytz==2021.1              # via google-api-core, mozilla-jetstream, pandas
 pyyaml==5.4.1             # via dask, distributed, libcst, mozilla-jetstream
 regex==2020.11.13         # via black
 requests==2.25.1          # via google-api-core, google-cloud-storage, mozilla-jetstream
