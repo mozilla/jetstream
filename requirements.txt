@@ -180,9 +180,9 @@ gitpython==3.1.12 \
     --hash=sha256:42dbefd8d9e2576c496ed0059f3103dcef7125b9ce16f9d5f9c834aed44a1dac \
     --hash=sha256:867ec3dfb126aac0f8296b19fb63b8c4a399f32b4b6fafe84c4b10af5fa9f7b5
     # via -r requirements.in
-google-api-core[grpc]==1.25.0 \
-    --hash=sha256:4656345cba9627ab1290eab51300a6397cc50370d99366133df1ae64b744e1eb \
-    --hash=sha256:d967beae8d8acdb88fb2f6f769e2ee0ee813042576a08891bded3b8e234150ae
+google-api-core[grpc]==1.25.1 \
+    --hash=sha256:0e152ec37b8481d1be1258d95844a5a7031cd3d83d7c7046d9e9b2d807042440 \
+    --hash=sha256:292dd636ed381098d24b7093ccb826b2278a12d886a3fc982084069aa24a8fbb
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
