@@ -196,9 +196,9 @@ google-auth==1.24.0 \
     #   -r requirements.in
     #   google-api-core
     #   google-cloud-storage
-google-cloud-bigquery-storage==2.2.0 \
-    --hash=sha256:73f484150d76caba45497b0d526817658323e8ead72f2d1004090b4cc6b2103b \
-    --hash=sha256:d30ab00f70e2d2066b01b7877414658cd73bf39360431a265fe8a635aeeb4c18
+google-cloud-bigquery-storage==2.2.1 \
+    --hash=sha256:2211cf3af04a59be657573de689f3644a97a4f6cbd4af2cbc4ae837303261580 \
+    --hash=sha256:9f54519c5e03a52644111b9cca1f35648e608a5612c7130827e89f10251725af
     # via
     #   -r requirements.in
     #   mozanalysis
