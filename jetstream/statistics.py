@@ -482,7 +482,7 @@ def _make_grid(values: Series, size: int, attempt_geometric: bool) -> MakeGridRe
     if geometric and start == 0:
         start = values.drop_duplicates().nsmallest(2).iloc[1]
         assert start != 0
-    f = np.geomspace if geometric else np.linspace
+    f: Any = np.geomspace if geometric else np.linspace
     return MakeGridResult(
         grid=f(start, stop, size),
         geometric=geometric,
