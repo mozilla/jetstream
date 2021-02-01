@@ -4,7 +4,7 @@ import numbers
 import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import attr
 import cattr
@@ -103,8 +103,12 @@ class StatisticResultCollection:
     data: List[StatisticResult] = attr.Factory(list)
 
     converter = cattr.Converter()
-    converter.register_unstructure_hook(Decimal, lambda x: str(round(x, 6).normalize()))
-    converter.register_unstructure_hook(float, lambda x: x if math.isfinite(x) else None)
+    _normalize_decimal: Callable[[Decimal], str] = lambda x: str(round(x, 6).normalize())
+    converter.register_unstructure_hook(Decimal, _normalize_decimal)
+    _suppress_infinites: Callable[[float], Optional[float]] = (
+        lambda x: x if math.isfinite(x) else None
+    )
+    converter.register_unstructure_hook(float, _suppress_infinites)
 
     def to_dict(self) -> Dict[str, Any]:
         """Return statistic results as dict."""
