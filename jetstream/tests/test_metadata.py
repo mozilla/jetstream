@@ -44,6 +44,30 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
 
 
+def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
+    config_str = dedent(
+        """
+        [metrics]
+        weekly = ["view_about_logins"]
+
+        [metrics.view_about_logins.statistics.bootstrap_mean]
+        """
+    )
+
+    spec = AnalysisSpec.from_dict(toml.loads(config_str))
+    config = spec.resolve(experiments[5])
+    metadata = ExperimentMetadata.from_config(config)
+
+    assert "view_about_logins" in metadata.metrics
+    assert metadata.metrics["view_about_logins"].bigger_is_better
+    assert metadata.metrics["view_about_logins"].description != ""
+
+    assert "tastiness" in metadata.outcomes
+    assert "performance" in metadata.outcomes
+    assert metadata.outcomes["tastiness"].friendly_name == "Tastiness outcomes"
+    assert "meals_eaten" in metadata.outcomes["tastiness"].metrics
+
+
 @patch.object(requests.Session, "get")
 def test_metadata_from_config_missing_metadata(mock_get, experiments):
     config_str = dedent(
@@ -119,7 +143,8 @@ def test_export_metadata(mock_storage_client, experiments):
                     "description": null,
                     "bigger_is_better": true
                 }
-            }
+            },
+            "outcomes": {}
         }
     """
     )
