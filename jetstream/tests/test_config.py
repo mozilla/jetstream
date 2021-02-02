@@ -1,5 +1,6 @@
 import datetime as dt
 from textwrap import dedent
+from typing import Dict
 
 import mozanalysis.segments
 import pytest
@@ -10,6 +11,7 @@ from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
+from jetstream import external_config
 
 
 DEFAULT_METRICS_CONFIG = PLATFORM_CONFIGS["firefox_desktop"].config_spec_path
@@ -574,3 +576,104 @@ class TestFenixConfiguration:
                 if summary.metric.data_source.name == "baseline":
                     found = True
             assert found
+
+
+class TestOutcomes:
+    def test_outcomes(self):
+        config_str = dedent(
+            """
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            num_samples = 10
+            pre_treatments = ["remove_nulls"]
+
+            [metrics.organic_search_count.statistics.bootstrap_mean]
+
+            [data_sources.eggs]
+            from_expression = "england.camelot"
+            client_id_column = "client_info.client_id"
+            """
+        )
+
+        outcome_spec = config.OutcomeSpec.from_dict(toml.loads(config_str))
+        assert "spam" in outcome_spec.metrics
+        assert "organic_search_count" in outcome_spec.metrics
+        assert "eggs" in outcome_spec.data_sources.definitions
+
+    def test_resolving_outcomes(self, experiments, monkeypatch):
+        performance_config = dedent(
+            """
+            [metrics.speed]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.speed.statistics.bootstrap_mean]
+            """
+        )
+
+        tastiness_config = dedent(
+            """
+            [metrics.meals_eaten]
+            data_source = "meals"
+            select_expression = "1"
+            friendly_name = "Meals eaten"
+            description = "Number of consumed meals"
+
+            [metrics.meals_eaten.statistics.bootstrap_mean]
+            num_samples = 10
+            pre_treatments = ["remove_nulls"]
+
+            [data_sources.meals]
+            from_expression = "meals"
+            client_id_column = "client_info.client_id"
+            """
+        )
+
+        class FakeOutcomeResolver:
+            @property
+            def data(self) -> Dict[str, external_config.ExternalOutcome]:
+                data = {}
+                data["performance"] = external_config.ExternalOutcome(
+                    slug="performance",
+                    spec=config.OutcomeSpec.from_dict(toml.loads(performance_config)),
+                )
+                data["tastiness"] = external_config.ExternalOutcome(
+                    slug="tastiness",
+                    spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
+                )
+                return data
+
+            def resolve(self, slug: str) -> external_config.ExternalOutcome:
+                return self.data[slug]
+
+        monkeypatch.setattr("jetstream.outcomes.OutcomesResolver", FakeOutcomeResolver())
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[5])
+
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
+        assert "meals_eaten" in weekly_metrics
+        assert "speed" in weekly_metrics
