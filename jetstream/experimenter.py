@@ -59,6 +59,7 @@ class Experiment:
     is_high_population: bool
     app_name: str
     app_id: str
+    outcomes: List[str] = []  # todo: TBD in Experimenter
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
