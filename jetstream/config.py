@@ -31,6 +31,7 @@ import cattr
 import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
+import mozanalysis.metrics.fenix
 import mozanalysis.segments
 import mozanalysis.segments.desktop
 import pytz
@@ -52,6 +53,7 @@ class Platform:
     config_spec_path: PathLike
     metrics_module: Optional[ModuleType]
     segments_module: Optional[ModuleType]
+    enrollments_query_type: str
 
 
 PLATFORM_CONFIGS = {
@@ -59,7 +61,14 @@ PLATFORM_CONFIGS = {
         Path(__file__).parent / "config" / "default_metrics.toml",
         mozanalysis.metrics.desktop,
         mozanalysis.segments.desktop,
-    )
+        "normandy",
+    ),
+    "fenix": Platform(
+        Path(__file__).parent / "config" / "fenix.toml",
+        mozanalysis.metrics.fenix,
+        None,
+        "fenix-fallback",
+    ),
 }
 
 TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
