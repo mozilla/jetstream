@@ -583,3 +583,14 @@ class TestDefaultConfiguration:
                 assert summary.metric.friendly_name
                 assert summary.metric.description
         assert ever_ran
+
+
+class TestFenixConfiguration:
+    def test_default_metrics(self, fenix_experiments):
+        for experiment in fenix_experiments:
+            default = config.AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+            found = False
+            for summary in default.metrics[AnalysisPeriod.WEEK]:
+                if summary.metric.data_source.name == "baseline":
+                    found = True
+            assert found
