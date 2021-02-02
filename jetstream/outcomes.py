@@ -1,5 +1,6 @@
-import attr
 from typing import Dict
+
+import attr
 
 from . import external_config
 

@@ -17,7 +17,7 @@ from .config import AnalysisSpec, OutcomeSpec
 from .dryrun import DryRunFailedError
 from .experimenter import Experiment, ExperimentCollection
 from .export_json import export_statistics_tables
-from .external_config import ExternalConfigCollection, OUTCOMES_DIR
+from .external_config import OUTCOMES_DIR, ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
 from .metadata import export_metadata
 from .util import inclusive_date_range

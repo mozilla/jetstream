@@ -1,6 +1,5 @@
 import datetime as dt
 from textwrap import dedent
-from typing import Dict
 
 import mozanalysis.segments
 import pytest
@@ -11,8 +10,6 @@ from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
-from jetstream import external_config
-
 
 DEFAULT_METRICS_CONFIG = PLATFORM_CONFIGS["firefox_desktop"].config_spec_path
 
@@ -606,59 +603,7 @@ class TestOutcomes:
         assert "organic_search_count" in outcome_spec.metrics
         assert "eggs" in outcome_spec.data_sources.definitions
 
-    def test_resolving_outcomes(self, experiments, monkeypatch):
-        performance_config = dedent(
-            """
-            friendly_name = "Performance outcomes"
-            description = "Outcomes related to performance"
-
-            [metrics.speed]
-            data_source = "main"
-            select_expression = "1"
-
-            [metrics.speed.statistics.bootstrap_mean]
-            """
-        )
-
-        tastiness_config = dedent(
-            """
-            friendly_name = "Tastiness outcomes"
-            description = "Outcomes related to tastiness 😋"
-
-            [metrics.meals_eaten]
-            data_source = "meals"
-            select_expression = "1"
-            friendly_name = "Meals eaten"
-            description = "Number of consumed meals"
-
-            [metrics.meals_eaten.statistics.bootstrap_mean]
-            num_samples = 10
-            pre_treatments = ["remove_nulls"]
-
-            [data_sources.meals]
-            from_expression = "meals"
-            client_id_column = "client_info.client_id"
-            """
-        )
-
-        class FakeOutcomeResolver:
-            @property
-            def data(self) -> Dict[str, external_config.ExternalOutcome]:
-                data = {}
-                data["performance"] = external_config.ExternalOutcome(
-                    slug="performance",
-                    spec=config.OutcomeSpec.from_dict(toml.loads(performance_config)),
-                )
-                data["tastiness"] = external_config.ExternalOutcome(
-                    slug="tastiness",
-                    spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
-                )
-                return data
-
-            def resolve(self, slug: str) -> external_config.ExternalOutcome:
-                return self.data[slug]
-
-        monkeypatch.setattr("jetstream.outcomes.OutcomesResolver", FakeOutcomeResolver())
+    def test_resolving_outcomes(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
             [metrics]

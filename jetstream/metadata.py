@@ -6,7 +6,7 @@ import attr
 import cattr
 from google.cloud import storage
 
-from jetstream import bq_normalize_name
+from jetstream import bq_normalize_name, outcomes
 from jetstream.config import AnalysisConfiguration
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,17 @@ class MetricsMetadata:
 
 
 @attr.s(auto_attribs=True)
+class OutcomeMetadata:
+    friendly_name: str
+    description: str
+    metrics: List[str]
+
+
+@attr.s(auto_attribs=True)
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
+    probesets: Dict[str, List[str]]
+    outcomes: Dict[str, OutcomeMetadata]
 
     @classmethod
     def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":
@@ -41,7 +50,22 @@ class ExperimentMetadata:
             for metric in all_metrics_distinct
         }
 
-        return cls(metrics=metrics_metadata)
+        all_outcomes = outcomes.OutcomesResolver.data
+
+        outcomes_metadata = {
+            external_outcome.slug: OutcomeMetadata(
+                friendly_name=external_outcome.spec.friendly_name,
+                description=external_outcome.spec.description,
+                metrics=[m for m, _ in external_outcome.spec.metrics.items()],
+            )
+            for experiment_outcome in config.experiment.outcomes
+            for _, external_outcome in all_outcomes.items()
+            if external_outcome.slug == experiment_outcome
+        }
+
+        return cls(
+            metrics=metrics_metadata, outcomes=outcomes_metadata
+        )
 
 
 def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
