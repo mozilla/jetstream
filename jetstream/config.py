@@ -696,12 +696,16 @@ class AnalysisSpec:
 class OutcomeSpec:
     """Represents an outcome snippet."""
 
+    friendly_name: str
+    description: str
     metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "OutcomeSpec":
         params: Dict[str, Any] = {}
+        params["friendly_name"] = d["friendly_name"]
+        params["description"] = d["description"]
         params["data_sources"] = _converter.structure(d.get("data_sources", {}), DataSourcesSpec)
         params["metrics"] = {
             k: _converter.structure({"name": k, **v}, MetricDefinition)

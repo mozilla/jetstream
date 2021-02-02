@@ -582,6 +582,9 @@ class TestOutcomes:
     def test_outcomes(self):
         config_str = dedent(
             """
+            friendly_name = "Test outcome"
+            description = "Outcome for testing"
+
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
@@ -606,6 +609,9 @@ class TestOutcomes:
     def test_resolving_outcomes(self, experiments, monkeypatch):
         performance_config = dedent(
             """
+            friendly_name = "Performance outcomes"
+            description = "Outcomes related to performance"
+
             [metrics.speed]
             data_source = "main"
             select_expression = "1"
@@ -616,6 +622,9 @@ class TestOutcomes:
 
         tastiness_config = dedent(
             """
+            friendly_name = "Tastiness outcomes"
+            description = "Outcomes related to tastiness 😋"
+
             [metrics.meals_eaten]
             data_source = "meals"
             select_expression = "1"
