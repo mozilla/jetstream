@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
@@ -187,7 +188,7 @@ class Analysis:
 
             enrollments_sql = exp.build_enrollments_query(
                 last_window_limits,
-                "normandy",
+                self.config.experiment.platform.enrollments_query_type,
                 self.config.experiment.enrollment_query,
                 self.config.experiment.segments,
             )
@@ -283,6 +284,9 @@ class Analysis:
 
         return True
 
+    def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9]", "_", app_id)
+
     def validate(self) -> None:
         self.check_runnable()
         assert self.config.experiment.start_date is not None  # for mypy
@@ -318,6 +322,7 @@ class Analysis:
         exp = mozanalysis.experiment.Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
         )
 
         metrics = set()
@@ -326,7 +331,7 @@ class Analysis:
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
-            "normandy",
+            self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
             self.config.experiment.segments,
         )
@@ -418,6 +423,7 @@ class Analysis:
             exp = mozanalysis.experiment.Experiment(
                 experiment_slug=self.config.experiment.normandy_slug,
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+                app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
             )
 
             metrics_table = self.calculate_metrics(exp, time_limits, period, dry_run)

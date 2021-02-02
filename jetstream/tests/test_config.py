@@ -7,10 +7,13 @@ import pytz
 import toml
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import DEFAULT_METRICS_CONFIG
+from jetstream.config import PLATFORM_CONFIGS
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.probe_sets import ProbeSet, TelemetryEventProbe, TelemetryScalarProbe
 from jetstream.statistics import BootstrapMean
+
+
+DEFAULT_METRICS_CONFIG = PLATFORM_CONFIGS["firefox_desktop"].config_spec_path
 
 
 @pytest.fixture
@@ -33,8 +36,6 @@ def fake_feature_resolver(monkeypatch):
 
 @pytest.mark.usefixtures("fake_feature_resolver")
 class TestAnalysisSpec:
-    default_metrics_config = DEFAULT_METRICS_CONFIG
-
     def test_trivial_configuration(self, experiments):
         spec = config.AnalysisSpec.from_dict({})
         assert isinstance(spec, config.AnalysisSpec)
@@ -143,7 +144,7 @@ class TestAnalysisSpec:
             weekly = ["active_hours"]
             """
         )
-        default_spec = config.AnalysisSpec.from_dict(toml.load(self.default_metrics_config))
+        default_spec = config.AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         spec.merge(default_spec)
         cfg = spec.resolve(experiments[0])
@@ -227,7 +228,7 @@ class TestAnalysisSpec:
             """
         )
 
-        default_spec = config.AnalysisSpec.from_dict(toml.load(self.default_metrics_config))
+        default_spec = config.AnalysisSpec.from_dict(toml.load(DEFAULT_METRICS_CONFIG))
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         default_spec.merge(spec)
         cfg = default_spec.resolve(experiments[0])
@@ -582,3 +583,14 @@ class TestDefaultConfiguration:
                 assert summary.metric.friendly_name
                 assert summary.metric.description
         assert ever_ran
+
+
+class TestFenixConfiguration:
+    def test_default_metrics(self, fenix_experiments):
+        for experiment in fenix_experiments:
+            default = config.AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+            found = False
+            for summary in default.metrics[AnalysisPeriod.WEEK]:
+                if summary.metric.data_source.name == "baseline":
+                    found = True
+            assert found

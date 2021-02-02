@@ -59,6 +59,8 @@ class Experiment:
     proposed_enrollment: Optional[int]
     reference_branch: Optional[str]
     is_high_population: bool
+    app_name: str
+    app_id: str
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -111,6 +113,8 @@ class ExperimentV1:
             probe_sets=[],
             reference_branch=control_slug,
             is_high_population=self.is_high_population or False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         )
 
 
@@ -125,6 +129,16 @@ class ExperimentV6:
     proposedEnrollment: int
     referenceBranch: Optional[str]
     probeSets: List[str]
+    _appName: Optional[str] = None
+    _appId: Optional[str] = None
+
+    @property
+    def appName(self) -> str:
+        return self._appName or "firefox_desktop"
+
+    @property
+    def appId(self) -> str:
+        return self._appId or "firefox-desktop"
 
     @classmethod
     def from_dict(cls, d) -> "ExperimentV6":
@@ -152,6 +166,8 @@ class ExperimentV6:
             probe_sets=self.probeSets,
             reference_branch=self.referenceBranch,
             is_high_population=False,
+            app_name=self.appName,
+            app_id=self.appId,
         )
 
 

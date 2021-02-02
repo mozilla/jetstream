@@ -29,6 +29,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch="b",
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -42,6 +44,8 @@ def experiments():
             normandy_slug=None,
             reference_branch=None,
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -55,6 +59,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -68,6 +74,8 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -80,6 +88,44 @@ def experiments():
             probe_sets=["pinned_tabs"],
             normandy_slug="normandy-test-slug",
             reference_branch="b",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        ),
+    ]
+
+
+@pytest.fixture
+def fenix_experiments():
+    return [
+        Experiment(
+            experimenter_slug="my_fenix_experiment",
+            normandy_slug="my_fenix_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="foo", ratio=1), Branch(slug="bar", ratio=1)],
+            probe_sets=[],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=pytz.UTC),
+            end_date=dt.datetime(2020, 10, 10, tzinfo=pytz.UTC),
+            proposed_enrollment=7,
+            reference_branch="foo",
+            app_name="fenix",
+            app_id="org.mozilla.firefox",
+            is_high_population=False,
+        ),
+        Experiment(
+            experimenter_slug="my_fenix_nightly_experiment",
+            normandy_slug="my_fenix_nightly_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="foo", ratio=1), Branch(slug="bar", ratio=1)],
+            probe_sets=[],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=pytz.UTC),
+            end_date=dt.datetime(2020, 10, 10, tzinfo=pytz.UTC),
+            proposed_enrollment=7,
+            reference_branch="foo",
+            app_name="fenix",
+            app_id="org.mozilla.fenix",
             is_high_population=False,
         ),
     ]
