@@ -18,6 +18,8 @@ from jetstream.util import TemporaryDirectory
 
 from . import bq_normalize_name
 
+OUTCOMES_DIR = "outcomes"
+
 
 @attr.s(auto_attribs=True)
 class ExternalConfig:
@@ -70,7 +72,7 @@ class ExternalConfigCollection:
 
             outcomes = []
 
-            for outcome_file in tmp_dir.glob("**/outcomes/*.toml"):
+            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*.toml"):
                 outcomes.append(
                     ExternalOutcome(
                         slug=outcome_file.stem, spec=OutcomeSpec.from_dict(toml.load(outcome_file))
