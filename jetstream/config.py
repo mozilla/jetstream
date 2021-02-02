@@ -46,7 +46,6 @@ from . import AnalysisPeriod
 
 if TYPE_CHECKING:
     import jetstream.experimenter
-    from . import outcomes
 
 
 @attr.s(auto_attribs=True)
@@ -666,9 +665,10 @@ class AnalysisSpec:
         return default_metrics
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
+        from . import outcomes
+
         for slug in experimenter.outcomes:
-            outcome = outcomes.OutcomesResolver.resolve(slug)
-            self.merge(outcome.spec)
+            self.merge(outcomes.OutcomesResolver.resolve(slug).spec)
 
         experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
         metrics = self.metrics.resolve(self, experiment)
@@ -690,16 +690,21 @@ class AnalysisSpec:
                 MetricsSpec(daily=[], weekly=metrics, overall=metrics, definitions=other.metrics)
             )
             self.data_sources.merge(other.data_sources)
-            self.segments.merge(other.segments)
 
 
+@attr.s(auto_attribs=True)
 class OutcomeSpec:
     """Represents an outcome snippet."""
 
     metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
-    segments: SegmentsSpec = attr.Factory(SegmentsSpec)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "OutcomeSpec":
-        return _converter.structure(d, cls)
+        params: Dict[str, Any] = {}
+        params["data_sources"] = _converter.structure(d.get("data_sources", {}), DataSourcesSpec)
+        params["metrics"] = {
+            k: _converter.structure({"name": k, **v}, MetricDefinition)
+            for k, v in d.get("metrics", {}).items()
+        }
+        return cls(**params)
