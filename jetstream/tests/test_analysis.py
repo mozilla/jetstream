@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import re
 from datetime import timedelta
 from textwrap import dedent
 from unittest.mock import Mock
@@ -175,3 +176,20 @@ def test_is_high_population_check(experiments):
 
     with pytest.raises(HighPopulationException):
         Analysis("spam", "eggs", config).check_runnable()
+
+
+def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
+    for experiment in fenix_experiments:
+        called = 0
+
+        def dry_run_query(query):
+            nonlocal called
+            called = called + 1
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id)
+            assert dataset in query
+            assert query.count(dataset) == query.count("org_mozilla")
+
+        monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
+        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        Analysis("spam", "eggs", config).validate()
+        assert called == 2
