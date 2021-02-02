@@ -13,7 +13,7 @@ from git import Repo
 from google.cloud import bigquery
 from pytz import UTC
 
-from jetstream.config import AnalysisSpec
+from jetstream.config import AnalysisSpec, OutcomeSpec
 from jetstream.util import TemporaryDirectory
 
 from . import bq_normalize_name
@@ -29,6 +29,14 @@ class ExternalConfig:
 
 
 @attr.s(auto_attribs=True)
+class ExternalOutcome:
+    """Represents an external outcome snippet."""
+
+    slug: str
+    spec: OutcomeSpec
+
+
+@attr.s(auto_attribs=True)
 class ExternalConfigCollection:
     """
     Collection of experiment-specific configurations pulled in
@@ -36,6 +44,7 @@ class ExternalConfigCollection:
     """
 
     configs: List[ExternalConfig] = attr.Factory(list)
+    outcomes: List[ExternalOutcome] = attr.Factory(list)
 
     JETSTREAM_CONFIG_URL = "https://github.com/mozilla/jetstream-config"
 
@@ -48,7 +57,7 @@ class ExternalConfigCollection:
 
             external_configs = []
 
-            for config_file in tmp_dir.glob("**/*.toml"):
+            for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
 
                 external_configs.append(
@@ -59,7 +68,16 @@ class ExternalConfigCollection:
                     )
                 )
 
-        return cls(external_configs)
+            outcomes = []
+
+            for outcome_file in tmp_dir.glob("**/outcomes/*.toml"):
+                outcomes.append(
+                    ExternalOutcome(
+                        slug=outcome_file.stem, spec=OutcomeSpec.from_dict(toml.load(outcome_file))
+                    )
+                )
+
+        return cls(external_configs, outcomes)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""

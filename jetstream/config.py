@@ -24,7 +24,7 @@ from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
 
 import attr
 import cattr
@@ -46,6 +46,7 @@ from . import AnalysisPeriod
 
 if TYPE_CHECKING:
     import jetstream.experimenter
+    from . import outcomes
 
 
 @attr.s(auto_attribs=True)
@@ -665,13 +666,40 @@ class AnalysisSpec:
         return default_metrics
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(self, experimenter)
+        for slug in experimenter.outcomes:
+            outcome = outcomes.OutcomesResolver.resolve(slug)
+            self.merge(outcome.spec)
+
+        experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 
-    def merge(self, other: "AnalysisSpec"):
+    def merge(self, other: Union["AnalysisSpec", "OutcomeSpec"]):
         """Merges another analysis spec into the current one."""
-        self.experiment.merge(other.experiment)
-        self.metrics.merge(other.metrics)
-        self.data_sources.merge(other.data_sources)
-        self.segments.merge(other.segments)
+        if isinstance(other, AnalysisSpec):
+            self.experiment.merge(other.experiment)
+            self.metrics.merge(other.metrics)
+            self.data_sources.merge(other.data_sources)
+            self.segments.merge(other.segments)
+        else:
+            metrics = [MetricReference(metric_name) for metric_name, _ in other.metrics.items()]
+
+            # metrics defined in outcome snippets are only computed for
+            # weekly and overall analysis windows
+            self.metrics.merge(
+                MetricsSpec(daily=[], weekly=metrics, overall=metrics, definitions=other.metrics)
+            )
+            self.data_sources.merge(other.data_sources)
+            self.segments.merge(other.segments)
+
+
+class OutcomeSpec:
+    """Represents an outcome snippet."""
+
+    metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
+    data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
+    segments: SegmentsSpec = attr.Factory(SegmentsSpec)
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "OutcomeSpec":
+        return _converter.structure(d, cls)
