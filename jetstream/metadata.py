@@ -21,6 +21,7 @@ class MetricsMetadata:
 
 @attr.s(auto_attribs=True)
 class OutcomeMetadata:
+    slug: str
     friendly_name: str
     description: str
     metrics: List[str]
@@ -54,6 +55,7 @@ class ExperimentMetadata:
 
         outcomes_metadata = {
             external_outcome.slug: OutcomeMetadata(
+                slug=external_outcome.slug,
                 friendly_name=external_outcome.spec.friendly_name,
                 description=external_outcome.spec.description,
                 metrics=[m for m, _ in external_outcome.spec.metrics.items()],

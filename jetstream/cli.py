@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -13,14 +12,14 @@ import toml
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
-from .config import AnalysisSpec, OutcomeSpec
-from .dryrun import DryRunFailedError
-from .experimenter import Experiment, ExperimentCollection
+from .config import AnalysisSpec
+from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
-from .external_config import OUTCOMES_DIR, ExternalConfigCollection
+from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
 from .metadata import export_metadata
 from .util import inclusive_date_range
+from . import validation
 
 
 def setup_logger(
@@ -526,56 +525,5 @@ def rerun_config_changed(
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
 def validate_config(path):
     """Validate config files."""
-    config_files = [p for p in path if os.path.isfile(p)]
-
-    collection = ExperimentCollection.from_experimenter()
-
-    for file in config_files:
-        click.echo(f"Validate {file}", err=False)
-
-        if Path(file).parent.name == OUTCOMES_DIR:
-            # file is an outcome snippet
-            outcomes_spec = OutcomeSpec.from_dict(toml.load(file))
-            dummy_experiment = Experiment(
-                experimenter_slug="dummy-experiment",
-                normandy_slug="dummy_experiment",
-                type="v6",
-                status="Live",
-                branches=[],
-                probe_sets=[],
-                end_date=None,
-                reference_branch="control",
-                is_high_population=False,
-                start_date=datetime.now(),
-                proposed_enrollment=14,
-                app_id="firefox-desktop",
-                app_name="firefox_desktop",
-            )
-            spec = AnalysisSpec.default_for_experiment(dummy_experiment)
-            spec.merge(outcomes_spec)
-            conf = spec.resolve(dummy_experiment)
-        else:
-            # validate experiment configuration file
-            custom_spec = AnalysisSpec.from_dict(toml.load(file))
-
-            # check if there is an experiment with a matching slug in Experimenter
-            slug = os.path.splitext(os.path.basename(file))[0]
-            if (experiments := collection.with_slug(slug).experiments) == []:
-                click.echo(f"No experiment with slug {slug} in Experimenter.", err=True)
-                sys.exit(1)
-
-            spec = AnalysisSpec.default_for_experiment(experiments[0])
-            spec.merge(custom_spec)
-            conf = spec.resolve(experiments[0])
-
-        try:
-            Analysis("no project", "no dataset", conf).validate()
-        except DryRunFailedError as e:
-            click.echo("Error evaluating SQL:")
-            for i, line in enumerate(e.sql.split("\n")):
-                click.echo(f"{i+1: 4d} {line.rstrip()}")
-            click.echo()
-            click.echo(str(e))
-            sys.exit(1)
-
-        click.echo(f"{file} is valid.", err=False)
+    if not validation.validate_config(path):
+        sys.exit(1)
