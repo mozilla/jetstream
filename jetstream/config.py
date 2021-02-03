@@ -24,7 +24,7 @@ from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
 
 import attr
 import cattr
@@ -668,28 +668,29 @@ class AnalysisSpec:
         from . import outcomes
 
         for slug in experimenter.outcomes:
-            self.merge(outcomes.OutcomesResolver.resolve(slug).spec)
+            self.merge_outcome(outcomes.OutcomesResolver.resolve(slug).spec)
 
         experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 
-    def merge(self, other: Union["AnalysisSpec", "OutcomeSpec"]):
+    def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""
-        if isinstance(other, AnalysisSpec):
-            self.experiment.merge(other.experiment)
-            self.metrics.merge(other.metrics)
-            self.data_sources.merge(other.data_sources)
-            self.segments.merge(other.segments)
-        else:
-            metrics = [MetricReference(metric_name) for metric_name, _ in other.metrics.items()]
+        self.experiment.merge(other.experiment)
+        self.metrics.merge(other.metrics)
+        self.data_sources.merge(other.data_sources)
+        self.segments.merge(other.segments)
 
-            # metrics defined in outcome snippets are only computed for
-            # weekly and overall analysis windows
-            self.metrics.merge(
-                MetricsSpec(daily=[], weekly=metrics, overall=metrics, definitions=other.metrics)
-            )
-            self.data_sources.merge(other.data_sources)
+    def merge_outcome(self, other: "OutcomeSpec"):
+        """Merges an outcome snippet into the analysis spec."""
+        metrics = [MetricReference(metric_name) for metric_name, _ in other.metrics.items()]
+
+        # metrics defined in outcome snippets are only computed for
+        # weekly and overall analysis windows
+        self.metrics.merge(
+            MetricsSpec(daily=[], weekly=metrics, overall=metrics, definitions=other.metrics)
+        )
+        self.data_sources.merge(other.data_sources)
 
 
 @attr.s(auto_attribs=True)
