@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List
+from typing import Dict
 
 import attr
 import cattr
@@ -22,7 +22,6 @@ class MetricsMetadata:
 @attr.s(auto_attribs=True)
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
-    probesets: Dict[str, List[str]]
 
     @classmethod
     def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":
@@ -42,14 +41,7 @@ class ExperimentMetadata:
             for metric in all_metrics_distinct
         }
 
-        probesets_metadata = {
-            probe_set.slug: list(
-                dict.fromkeys([summary.metric.name for summary in probe_set.to_summaries()])
-            )
-            for probe_set in config.experiment.probe_sets
-        }
-
-        return cls(metrics=metrics_metadata, probesets=probesets_metadata)
+        return cls(metrics=metrics_metadata)
 
 
 def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):

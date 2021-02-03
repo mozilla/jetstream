@@ -9,32 +9,12 @@ import toml
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
-from jetstream.probe_sets import ProbeSet, TelemetryEventProbe, TelemetryScalarProbe
 from jetstream.statistics import BootstrapMean
 
 
 DEFAULT_METRICS_CONFIG = PLATFORM_CONFIGS["firefox_desktop"].config_spec_path
 
 
-@pytest.fixture
-def fake_feature_resolver(monkeypatch):
-    class FakeProbeSetsResolver:
-        def resolve(self, slug: str) -> ProbeSet:
-            return ProbeSet(
-                slug="fake_feature",
-                name="Fake feature",
-                probes=[
-                    TelemetryEventProbe(event_category="fake"),
-                    TelemetryScalarProbe(name="fake.scalar"),
-                ],
-            )
-
-    fake = FakeProbeSetsResolver()
-    monkeypatch.setattr("jetstream.probe_sets.ProbeSetsResolver", fake)
-    yield fake
-
-
-@pytest.mark.usefixtures("fake_feature_resolver")
 class TestAnalysisSpec:
     def test_trivial_configuration(self, experiments):
         spec = config.AnalysisSpec.from_dict({})

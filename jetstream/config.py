@@ -42,7 +42,7 @@ from jetstream.errors import NoStartDateException
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
-from . import AnalysisPeriod, probe_sets
+from . import AnalysisPeriod
 
 if TYPE_CHECKING:
     import jetstream.experimenter
@@ -195,13 +195,11 @@ class ExperimentConfiguration:
 
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: "jetstream.experimenter.Experiment"
-    probe_sets_resolver: probe_sets.ResolvesProbeSets
     segments: List[mozanalysis.segments.Segment]
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
         self._enrollment_query = self.enrollment_query
-        self._probe_sets = self.probe_sets
 
     @property
     def enrollment_query(self) -> Optional[str]:
@@ -223,13 +221,6 @@ class ExperimentConfiguration:
         return env.from_string(self.experiment_spec.enrollment_query).render(
             experiment=ExperimentProxy()
         )
-
-    @property
-    def probe_sets(self) -> List[probe_sets.ProbeSet]:
-        return [
-            self.probe_sets_resolver.resolve(slug)
-            for slug in self.experimenter_experiment.probe_sets
-        ]
 
     @property
     def proposed_enrollment(self) -> int:
@@ -327,9 +318,8 @@ class ExperimentSpec:
         self,
         spec: "AnalysisSpec",
         experimenter: "jetstream.experimenter.Experiment",
-        probe_sets_resolver: probe_sets.ResolvesProbeSets,
     ) -> ExperimentConfiguration:
-        experiment = ExperimentConfiguration(self, experimenter, probe_sets_resolver, [])
+        experiment = ExperimentConfiguration(self, experimenter, [])
         # Segment data sources may need to know the enrollment dates of the experiment,
         # so we'll forward the Experiment we know about so far.
         experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
@@ -449,18 +439,11 @@ class MetricsSpec:
         result = {}
         for period in AnalysisPeriod:
             # these summaries might contain duplicates
-            summaries = []
-            if period in (AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL):
-                for feature in experiment.probe_sets:
-                    summaries.extend(feature.to_summaries())
-            summaries.extend(
-                [
-                    summary
-                    for ref in getattr(self, period.adjective)
-                    for summary in ref.resolve(spec, experiment)
-                ]
-            )
-
+            summaries = [
+                summary
+                for ref in getattr(self, period.adjective)
+                for summary in ref.resolve(spec, experiment)
+            ]
             unique_summaries = []
             seen_summaries = set()
 
@@ -682,7 +665,7 @@ class AnalysisSpec:
         return default_metrics
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
-        experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
+        experiment = self.experiment.resolve(self, experimenter)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 

@@ -297,7 +297,7 @@ def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
-    assert len(collection.experiments) == 5
+    assert len(collection.experiments) == 6
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
     assert len(collection.experiments[0].branches) == 2
@@ -315,7 +315,7 @@ def test_end_on_or_after(experiment_collection):
     active_experiments = experiment_collection.end_on_or_after(
         dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
     )
-    assert len(active_experiments.experiments) == 4
+    assert len(active_experiments.experiments) == 5
     assert (
         active_experiments.experiments[0].normandy_slug
         == "bug-1629098-rapid-please-reject-me-beta-86"
@@ -325,11 +325,11 @@ def test_end_on_or_after(experiment_collection):
         == "bug-1629000-rapid-testing-rapido-intake-1-release-79"
     )
     assert (
-        active_experiments.experiments[2].experimenter_slug
+        active_experiments.experiments[3].experimenter_slug
         == "impact-of-level-2-etp-on-a-custom-distribution"
     )
     assert (
-        active_experiments.experiments[3].normandy_slug
+        active_experiments.experiments[4].normandy_slug
         == "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831"
     )
 
@@ -392,7 +392,6 @@ def test_convert_experiment_v6_to_experiment():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        probeSets=[],
     )
 
     experiment = experiment_v6.to_experiment()
@@ -420,7 +419,6 @@ def test_experiment_v6_status():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        probeSets=[],
     )
 
     assert experiment_live.to_experiment().status == "Live"
@@ -432,7 +430,6 @@ def test_experiment_v6_status():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
-        probeSets=[],
     )
 
     assert experiment_complete.to_experiment().status == "Complete"
