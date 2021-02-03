@@ -9,24 +9,6 @@ import toml
 from jetstream.config import AnalysisSpec
 from jetstream.metadata import ExperimentMetadata, export_metadata
 
-EXPERIMENTER_FIXTURE_PROBESETS = r"""
-[
-  {
-    "name": "Pinned Tabs",
-    "slug": "pinned_tabs",
-    "probes": [
-      {
-        "kind": "event",
-        "event_category": "test",
-        "event_method": null,
-        "event_object": null,
-        "event_value": null
-      }
-    ]
-  }
-]
-"""
-
 
 @patch.object(requests.Session, "get")
 def test_metadata_from_config(mock_get, experiments):
@@ -49,8 +31,6 @@ def test_metadata_from_config(mock_get, experiments):
         """
     )
 
-    mock_get.return_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_PROBESETS)
-
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
     config = spec.resolve(experiments[4])
     metadata = ExperimentMetadata.from_config(config)
@@ -62,10 +42,6 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].bigger_is_better is False
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
-
-    assert "pinned_tabs" in metadata.probesets
-    assert "pinned_tabs_ever_used" in metadata.probesets["pinned_tabs"]
-    assert "pinned_tabs_sum" in metadata.probesets["pinned_tabs"]
 
 
 @patch.object(requests.Session, "get")
@@ -143,8 +119,7 @@ def test_export_metadata(mock_storage_client, experiments):
                     "description": null,
                     "bigger_is_better": true
                 }
-            },
-            "probesets": {}
+            }
         }
     """
     )

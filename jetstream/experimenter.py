@@ -40,7 +40,6 @@ class Experiment:
         status: V1 experiment status; "Live" for active V6 experiments,
             "Complete" for V6 experiments with endDate in the past
         branches: V1 experiment variants converted to branches; V6 experiment branches
-        probe_sets: List of labels for probesets
         start_date: experiment start_date
         end_date: experiment end_date
         proposed_enrollment: experiment proposed_enrollment
@@ -53,7 +52,6 @@ class Experiment:
     type: str
     status: Optional[str]
     branches: List[Branch]
-    probe_sets: List[str]
     start_date: Optional[dt.datetime]
     end_date: Optional[dt.datetime]
     proposed_enrollment: Optional[int]
@@ -110,7 +108,6 @@ class ExperimentV1:
             end_date=self.end_date,
             proposed_enrollment=self.proposed_enrollment,
             branches=branches,
-            probe_sets=[],
             reference_branch=control_slug,
             is_high_population=self.is_high_population or False,
             app_name="firefox_desktop",
@@ -128,7 +125,6 @@ class ExperimentV6:
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
     referenceBranch: Optional[str]
-    probeSets: List[str]
     _appName: Optional[str] = None
     _appId: Optional[str] = None
 
@@ -163,7 +159,6 @@ class ExperimentV6:
             end_date=self.endDate,
             proposed_enrollment=self.proposedEnrollment,
             branches=self.branches,
-            probe_sets=self.probeSets,
             reference_branch=self.referenceBranch,
             is_high_population=False,
             app_name=self.appName,
