@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict
+from typing import Dict, List
 
 import attr
 import cattr
@@ -30,7 +30,6 @@ class OutcomeMetadata:
 @attr.s(auto_attribs=True)
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
-    probesets: Dict[str, List[str]]
     outcomes: Dict[str, OutcomeMetadata]
 
     @classmethod
@@ -65,9 +64,7 @@ class ExperimentMetadata:
             if external_outcome.slug == experiment_outcome
         }
 
-        return cls(
-            metrics=metrics_metadata, outcomes=outcomes_metadata
-        )
+        return cls(metrics=metrics_metadata, outcomes=outcomes_metadata)
 
 
 def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
