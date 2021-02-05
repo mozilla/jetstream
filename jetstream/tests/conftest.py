@@ -99,7 +99,6 @@ def experiments():
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
             proposed_enrollment=7,
             branches=[],
-            probe_sets=[],
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
@@ -187,10 +186,12 @@ def fake_outcome_resolver(monkeypatch):
             data["performance"] = external_config.ExternalOutcome(
                 slug="performance",
                 spec=config.OutcomeSpec.from_dict(toml.loads(performance_config)),
+                platform="firefox_desktop",
             )
             data["tastiness"] = external_config.ExternalOutcome(
                 slug="tastiness",
                 spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
+                platform="firefox_desktop",
             )
             return data
 

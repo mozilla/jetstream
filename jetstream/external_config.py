@@ -36,6 +36,7 @@ class ExternalOutcome:
 
     slug: str
     spec: OutcomeSpec
+    platform: str
 
 
 @attr.s(auto_attribs=True)
@@ -72,10 +73,12 @@ class ExternalConfigCollection:
 
             outcomes = []
 
-            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*.toml"):
+            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
                 outcomes.append(
                     ExternalOutcome(
-                        slug=outcome_file.stem, spec=OutcomeSpec.from_dict(toml.load(outcome_file))
+                        slug=outcome_file.stem,
+                        spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
+                        platform=outcome_file.parent.name,
                     )
                 )
 

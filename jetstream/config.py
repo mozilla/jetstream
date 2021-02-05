@@ -668,9 +668,16 @@ class AnalysisSpec:
         from . import outcomes
 
         for slug in experimenter.outcomes:
-            self.merge_outcome(outcomes.OutcomesResolver.resolve(slug).spec)
+            outcome = outcomes.OutcomesResolver.resolve(slug)
 
-        experiment = self.experiment.resolve(self, experimenter, probe_sets.ProbeSetsResolver)
+            if outcome.platform == experimenter.app_name:
+                self.merge_outcome(outcome.spec)
+            else:
+                raise ValueError(
+                    f"Outcome {slug} doesn't support the platform '{experimenter.app_name}'"
+                )
+
+        experiment = self.experiment.resolve(self, experimenter)
         metrics = self.metrics.resolve(self, experiment)
         return AnalysisConfiguration(experiment, metrics)
 

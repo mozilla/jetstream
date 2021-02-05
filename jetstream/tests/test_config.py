@@ -8,6 +8,7 @@ import toml
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
+from jetstream.experimenter import Experiment
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
@@ -631,3 +632,24 @@ class TestOutcomes:
         assert "my_cool_metric" in weekly_metrics
         assert "meals_eaten" in weekly_metrics
         assert "speed" in weekly_metrics
+
+    def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
+        spec = config.AnalysisSpec.from_dict(toml.loads(""))
+        experiment = Experiment(
+            experimenter_slug="test_slug",
+            type="pref",
+            status="Live",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[],
+            normandy_slug="normandy-test-slug",
+            reference_branch=None,
+            is_high_population=True,
+            outcomes=["performance"],
+            app_name="fenix",
+            app_id="org.mozilla.fenix",
+        )
+
+        with pytest.raises(ValueError):
+            spec.resolve(experiment)
