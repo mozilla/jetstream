@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .analysis import Analysis
-from .config import AnalysisSpec, OutcomeSpec, PLATFORM_CONFIGS
+from .config import AnalysisConfiguration, AnalysisSpec, OutcomeSpec, PLATFORM_CONFIGS
 from .dryrun import DryRunFailedError
 from .experimenter import Experiment, ExperimentCollection
 from .external_config import OUTCOMES_DIR
@@ -30,28 +30,26 @@ def validate_config(path: str) -> bool:
                 print(f"Platform '{platform}' is unsupported.")
                 return False
             else:
-                if platform == "firefox_desktop":
-                    app_id = "firefox-desktop"
-                else:
-                    app_id = "org.mozilla.fenix"
-
-                dummy_experiment = Experiment(
-                    experimenter_slug="dummy-experiment",
-                    normandy_slug="dummy_experiment",
-                    type="v6",
-                    status="Live",
-                    branches=[],
-                    end_date=None,
-                    reference_branch="control",
-                    is_high_population=False,
-                    start_date=datetime.now(),
-                    proposed_enrollment=14,
-                    app_id=app_id,
-                    app_name=platform,  # seems to be unused
-                )
-                spec = AnalysisSpec.default_for_experiment(dummy_experiment)
-                spec.merge_outcome(outcomes_spec)
-                conf = spec.resolve(dummy_experiment)
+                for app_id in PLATFORM_CONFIGS[platform].app_ids:
+                    dummy_experiment = Experiment(
+                        experimenter_slug="dummy-experiment",
+                        normandy_slug="dummy_experiment",
+                        type="v6",
+                        status="Live",
+                        branches=[],
+                        end_date=None,
+                        reference_branch="control",
+                        is_high_population=False,
+                        start_date=datetime.now(),
+                        proposed_enrollment=14,
+                        app_id=app_id,
+                        app_name=platform,  # seems to be unused
+                    )
+                    spec = AnalysisSpec.default_for_experiment(dummy_experiment)
+                    spec.merge_outcome(outcomes_spec)
+                    conf = spec.resolve(dummy_experiment)
+                    if not _dry_run_analysis(conf):
+                        return False
         else:
             # validate experiment configuration file
             custom_spec = AnalysisSpec.from_dict(toml.load(file))
@@ -65,16 +63,22 @@ def validate_config(path: str) -> bool:
             spec = AnalysisSpec.default_for_experiment(experiments[0])
             spec.merge(custom_spec)
             conf = spec.resolve(experiments[0])
-        try:
-            Analysis("no project", "no dataset", conf).validate()
-        except DryRunFailedError as e:
-            print("Error evaluating SQL:")
-            for i, line in enumerate(e.sql.split("\n")):
-                print(f"{i+1: 4d} {line.rstrip()}")
-            print("")
-            print(str(e))
-            return False
+            if not _dry_run_analysis(conf):
+                return False
 
-        print(f"{file} is valid.")
+    print(f"{file} is valid.")
+    return True
+
+
+def _dry_run_analysis(conf: AnalysisConfiguration) -> bool:
+    try:
+        Analysis("no project", "no dataset", conf).validate()
+    except DryRunFailedError as e:
+        print("Error evaluating SQL:")
+        for i, line in enumerate(e.sql.split("\n")):
+            print(f"{i+1: 4d} {line.rstrip()}")
+        print("")
+        print(str(e))
+        return False
 
     return True

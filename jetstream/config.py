@@ -54,6 +54,7 @@ class Platform:
     metrics_module: Optional[ModuleType]
     segments_module: Optional[ModuleType]
     enrollments_query_type: str
+    app_ids: List[str]
 
 
 PLATFORM_CONFIGS = {
@@ -62,12 +63,20 @@ PLATFORM_CONFIGS = {
         mozanalysis.metrics.desktop,
         mozanalysis.segments.desktop,
         "normandy",
+        ["firefox-desktop"],
     ),
     "fenix": Platform(
         Path(__file__).parent / "config" / "fenix.toml",
         mozanalysis.metrics.fenix,
         None,
         "fenix-fallback",
+        [
+            "org.mozilla.fenix",
+            "org.mozilla.fenix.nightly",
+            "org.mozilla.fennec.aurora",
+            "org.mozilla.firefox",
+            "org.mozilla.firefox_beta",
+        ],
     ),
 }
 
