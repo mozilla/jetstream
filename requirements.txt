@@ -152,9 +152,9 @@ coverage==5.4 \
     # via
     #   -r requirements.in
     #   pytest-cov
-dask[distributed]==2021.1.1 \
-    --hash=sha256:c5afb690306ce80ba6c57f0b5bc8c44c2bcebffd0cc6b7471ba352e77e90045d \
-    --hash=sha256:cd98d44bc01071b5ee30262a5bcf40cd55d75df58c36bab79778d7c248b5ce16
+dask[distributed]==2021.2.0 \
+    --hash=sha256:9f5dd9371ba0a3f1ad6525264781d626bdfffa52d072402b93c53e39af90ae39 \
+    --hash=sha256:e7054b8d685205e95c789900ae87d6174550180cbe38a3cb1142e10c73004c22
     # via
     #   -r requirements.in
     #   distributed
