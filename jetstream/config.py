@@ -71,8 +71,8 @@ PLATFORM_CONFIGS = {
         None,
         "fenix-fallback",
         [
-            "org.mozilla.fenix",
             "org.mozilla.fenix.nightly",
+            "org.mozilla.fenix",
             "org.mozilla.fennec.aurora",
             "org.mozilla.firefox",
             "org.mozilla.firefox_beta",
