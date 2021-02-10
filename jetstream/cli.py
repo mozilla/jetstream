@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
@@ -10,11 +11,12 @@ import click
 import pytz
 import toml
 
-from . import validation
+from . import external_config
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
+from .dryrun import DryRunFailedError
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
@@ -526,5 +528,29 @@ def rerun_config_changed(
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
 def validate_config(path: Iterable[os.PathLike]):
     """Validate config files."""
-    if not validation.validate_config(path):
-        sys.exit(1)
+    dirty = False
+    collection = ExperimentCollection.from_experimenter()
+
+    for config_file in path:
+        config_file = Path(config_file)
+        if not config_file.is_file():
+            continue
+        print("Evaluating {config_file}...")
+        entity = external_config.entity_from_path(config_file)
+        call = partial(entity.validate)
+        if isinstance(entity, external_config.ExternalConfig):
+            if (experiments := collection.with_slug(entity.slug).experiments) == []:
+                print(f"No experiment with slug {entity.slug} in Experimenter.")
+                dirty = True
+                continue
+            call = partial(entity.validate, experiment=experiments[0])
+        try:
+            call()
+        except DryRunFailedError as e:
+            print("Error evaluating SQL:")
+            for i, line in enumerate(e.sql.split("\n")):
+                print(f"{i+1: 4d} {line.rstrip()}")
+            print("")
+            print(str(e))
+            dirty = True
+    sys.exit(1 if dirty else 0)

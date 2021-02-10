@@ -5,7 +5,8 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Union
 
 import attr
 import toml
@@ -13,8 +14,10 @@ from git import Repo
 from google.cloud import bigquery
 from pytz import UTC
 
-from jetstream.config import AnalysisSpec, OutcomeSpec
+from jetstream.analysis import Analysis
+from jetstream.config import AnalysisSpec, OutcomeSpec, PLATFORM_CONFIGS
 from jetstream.util import TemporaryDirectory
+import jetstream.experimenter
 
 from . import bq_normalize_name
 
@@ -29,6 +32,12 @@ class ExternalConfig:
     spec: AnalysisSpec
     last_modified: dt.datetime
 
+    def validate(self, experiment: jetstream.experimenter.Experiment) -> None:
+        spec = AnalysisSpec.default_for_experiment(experiment)
+        spec.merge(self.spec)
+        conf = spec.resolve(experiment)
+        Analysis("no project", "no dataset", conf).validate()
+
 
 @attr.s(auto_attribs=True)
 class ExternalOutcome:
@@ -37,6 +46,44 @@ class ExternalOutcome:
     slug: str
     spec: OutcomeSpec
     platform: str
+
+    def validate(self) -> None:
+        if self.platform not in PLATFORM_CONFIGS:
+            raise ValueError(f"Platform '{self.platform}' is unsupported.")
+        app_id = PLATFORM_CONFIGS[self.platform].app_ids[0]
+        dummy_experiment = jetstream.experimenter.Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=dt.datetime.now(UTC),
+            proposed_enrollment=14,
+            app_id=app_id,
+            app_name=self.platform,  # seems to be unused
+        )
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment)
+        spec.merge_outcome(self.spec)
+        conf = spec.resolve(dummy_experiment)
+        Analysis("no project", "no dataset", conf).validate()
+
+
+def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome]:
+    is_outcome = path.parent.parent.name == OUTCOMES_DIR
+    slug = path.stem
+    config_dict = toml.loads(path.read_text())
+    if is_outcome:
+        platform = path.parent.name
+        spec = OutcomeSpec.from_dict(config_dict)
+        return ExternalOutcome(slug=slug, spec=spec, platform=platform)
+    return ExternalConfig(
+        slug=slug,
+        spec=AnalysisSpec.from_dict(config_dict),
+        last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+    )
 
 
 @attr.s(auto_attribs=True)
