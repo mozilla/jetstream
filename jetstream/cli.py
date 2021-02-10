@@ -9,6 +9,7 @@ import click
 import pytz
 import toml
 
+from . import validation
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
@@ -19,7 +20,6 @@ from .external_config import ExternalConfigCollection
 from .logging.bigquery_log_handler import BigQueryLogHandler
 from .metadata import export_metadata
 from .util import inclusive_date_range
-from . import validation
 
 
 def setup_logger(

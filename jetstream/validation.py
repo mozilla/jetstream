@@ -1,12 +1,13 @@
 """Validation helpers."""
 
 import os
-import toml
 from datetime import datetime
 from pathlib import Path
 
+import toml
+
 from .analysis import Analysis
-from .config import AnalysisSpec, OutcomeSpec, PLATFORM_CONFIGS
+from .config import PLATFORM_CONFIGS, AnalysisSpec, OutcomeSpec
 from .dryrun import DryRunFailedError
 from .experimenter import Experiment, ExperimentCollection
 from .external_config import OUTCOMES_DIR
