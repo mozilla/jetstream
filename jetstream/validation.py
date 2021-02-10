@@ -3,6 +3,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 import toml
 
@@ -13,7 +14,7 @@ from .experimenter import Experiment, ExperimentCollection
 from .external_config import OUTCOMES_DIR
 
 
-def validate_config(path: str) -> bool:
+def validate_config(path: Iterable[os.PathLike]) -> bool:
     """Validate all config files in the provided path."""
     config_files = [p for p in path if os.path.isfile(p)]
 
