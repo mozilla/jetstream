@@ -652,6 +652,7 @@ class AnalysisSpec:
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
     segments: SegmentsSpec = attr.Factory(SegmentsSpec)
+    _resolved: bool = False
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
@@ -675,6 +676,10 @@ class AnalysisSpec:
 
     def resolve(self, experimenter: "jetstream.experimenter.Experiment") -> AnalysisConfiguration:
         from . import outcomes
+
+        if self._resolved:
+            raise Exception("Can't resolve an AnalysisSpec twice")
+        self._resolved = True
 
         for slug in experimenter.outcomes:
             outcome = outcomes.OutcomesResolver.resolve(slug)
