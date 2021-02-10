@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -523,7 +524,7 @@ def rerun_config_changed(
 
 @cli.command("validate_config")
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
-def validate_config(path):
+def validate_config(path: Iterable[os.PathLike]):
     """Validate config files."""
     if not validation.validate_config(path):
         sys.exit(1)
