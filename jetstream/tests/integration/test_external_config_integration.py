@@ -6,9 +6,9 @@ import pytest
 import pytz
 import toml
 
-from jetstream.config import AnalysisSpec
+from jetstream.config import AnalysisSpec, OutcomeSpec
 from jetstream.dryrun import DryRunFailedError
-from jetstream.external_config import ExternalConfig, ExternalConfigCollection
+from jetstream.external_config import ExternalConfig, ExternalConfigCollection, ExternalOutcome
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -145,3 +145,48 @@ class TestExternalConfigIntegration:
         )
         with pytest.raises(DryRunFailedError):
             extern.validate(experiments[0])
+
+    def test_valid_outcome_validates(self):
+        config = dedent(
+            """\
+            friendly_name = "Fred"
+            description = "Just your average paleolithic dad."
+
+            [metrics.rocks_mined]
+            select_expression = "COALESCE(SUM(pings_aggregated_by_this_row), 0)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            friendly_name = "Rocks mined"
+            description = "Number of rocks mined at the quarry"
+            """
+        )
+        spec = OutcomeSpec.from_dict(toml.loads(config))
+        extern = ExternalOutcome(
+            slug="good_outcome",
+            spec=spec,
+            platform="firefox_desktop",
+        )
+        extern.validate()
+
+    def test_busted_outcome_fails(self):
+        config = dedent(
+            """\
+            friendly_name = "Fred"
+            description = "Just your average paleolithic dad."
+
+            [metrics.rocks_mined]
+            select_expression = "COALESCE(SUM(fake_column_whoop_whoop), 0)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            friendly_name = "Rocks mined"
+            description = "Number of rocks mined at the quarry"
+            """
+        )
+        spec = OutcomeSpec.from_dict(toml.loads(config))
+        extern = ExternalOutcome(
+            slug="bogus_outcome",
+            spec=spec,
+            platform="firefox_desktop",
+        )
+        with pytest.raises(DryRunFailedError):
+            extern.validate()
