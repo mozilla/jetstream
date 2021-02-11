@@ -535,7 +535,7 @@ def validate_config(path: Iterable[os.PathLike]):
         config_file = Path(config_file)
         if not config_file.is_file():
             continue
-        print("Evaluating {config_file}...")
+        print(f"Evaluating {config_file}...")
         entity = external_config.entity_from_path(config_file)
         call = partial(entity.validate)
         if isinstance(entity, external_config.ExternalConfig):
