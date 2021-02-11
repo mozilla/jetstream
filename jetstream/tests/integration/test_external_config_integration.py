@@ -2,10 +2,12 @@ import datetime
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
 import pytz
 import toml
 
 from jetstream.config import AnalysisSpec
+from jetstream.dryrun import DryRunFailedError
 from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 
 TEST_DIR = Path(__file__).parent.parent
@@ -114,3 +116,32 @@ class TestExternalConfigIntegration:
         config_collection = ExternalConfigCollection([config])
         updated_configs = config_collection.updated_configs(project_id, temporary_dataset)
         assert [updated.slug for updated in updated_configs] == ["my_cool_experiment"]
+
+    def test_valid_config_validates(self, experiments):
+        extern = ExternalConfig(
+            slug="cool_experiment",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        extern.validate(experiments[0])
+
+    def test_busted_config_fails(self, experiments):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+        extern = ExternalConfig(
+            slug="bad_experiment",
+            spec=spec,
+            last_modified=datetime.datetime.now(),
+        )
+        with pytest.raises(DryRunFailedError):
+            extern.validate(experiments[0])
