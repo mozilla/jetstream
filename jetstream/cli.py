@@ -144,7 +144,7 @@ class SerialExecutorStrategy:
                     if external_spec := external_configs.spec_for_experiment(slug):
                         spec.merge(external_spec)
 
-                config = spec.resolve(experiment)
+                config = spec.resolve(experiment, external_configs)
                 self.analysis_class(self.project_id, self.dataset_id, config).run(date)
                 export_metadata(config, self.bucket, self.project_id)
             except Exception as e:
