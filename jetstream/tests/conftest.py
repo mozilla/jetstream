@@ -1,6 +1,6 @@
 import datetime as dt
 from textwrap import dedent
-from typing import Dict
+from typing import Dict, Optional
 
 import pytest
 import pytz
@@ -194,6 +194,11 @@ def fake_outcome_resolver(monkeypatch):
                 platform="firefox_desktop",
             )
             return data
+
+        def with_external_configs(
+            self, external_configs: Optional[external_config.ExternalConfigCollection]
+        ) -> "FakeOutcomeResolver":
+            return self
 
         def resolve(self, slug: str) -> external_config.ExternalOutcome:
             return self.data[slug]
