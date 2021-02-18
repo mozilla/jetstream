@@ -10,7 +10,7 @@ black==20.8b1             # via pytest-black
 cachetools==4.2.1         # via google-auth
 cattrs==1.2.0             # via mozilla-jetstream
 certifi==2020.12.5        # via requests
-cffi==1.14.4              # via google-crc32c
+cffi==1.14.5              # via google-crc32c
 chardet==4.0.0            # via requests
 click==7.1.2              # via black, distributed, mozilla-jetstream
 cloudpickle==1.6.0        # via distributed
@@ -19,14 +19,14 @@ dask[distributed]==2021.2.0  # via distributed, mozilla-jetstream
 distributed==2021.2.0     # via dask
 flake8==3.8.4             # via pytest-flake8
 gitdb==4.0.5              # via gitpython
-gitpython==3.1.12         # via mozilla-jetstream
-google-api-core[grpc]==1.25.1  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
-google-auth==1.25.0       # via google-api-core, google-cloud-core, google-cloud-storage
+gitpython==3.1.13         # via mozilla-jetstream
+google-api-core[grpc]==1.26.0  # via google-cloud-bigquery, google-cloud-bigquery-storage, google-cloud-container, google-cloud-core
+google-auth==1.26.1       # via google-api-core, google-cloud-core, google-cloud-storage
 google-cloud-bigquery-storage==2.2.1  # via mozanalysis, mozilla-jetstream
-google-cloud-bigquery==2.7.0  # via mozanalysis, mozilla-jetstream
+google-cloud-bigquery==2.8.0  # via mozanalysis, mozilla-jetstream
 google-cloud-container==2.3.0  # via mozilla-jetstream
 google-cloud-core==1.6.0  # via google-cloud-bigquery, google-cloud-storage
-google-cloud-storage==1.35.1  # via mozilla-jetstream, smart-open
+google-cloud-storage==1.36.0  # via mozilla-jetstream, smart-open
 google-crc32c==1.1.2      # via google-resumable-media
 google-resumable-media==1.2.0  # via google-cloud-bigquery, google-cloud-storage
 googleapis-common-protos[grpc]==1.52.0  # via google-api-core, grpc-google-iam-v1
@@ -38,7 +38,7 @@ incremental==17.5.0       # via mozilla-jetstream
 iniconfig==1.1.1          # via pytest
 jinja2==2.11.3            # via mozilla-jetstream
 jsonschema==3.2.0         # via mozilla-jetstream
-libcst==0.3.16            # via google-cloud-bigquery-storage, google-cloud-container
+libcst==0.3.17            # via google-cloud-bigquery-storage, google-cloud-container
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
 mozanalysis==2021.1.2     # via mozilla-jetstream
@@ -46,8 +46,8 @@ msgpack==1.0.2            # via distributed
 mypy-extensions==0.4.3    # via black, mypy, typing-inspect
 mypy==0.800               # via mozilla-jetstream
 numpy==1.20.1             # via mozanalysis, pandas, patsy, pyarrow, scipy, statsmodels
-packaging==20.9           # via pytest
-pandas==1.2.1             # via mozanalysis, statsmodels
+packaging==20.9           # via google-api-core, pytest
+pandas==1.2.2             # via mozanalysis, statsmodels
 pathspec==0.8.1           # via black
 patsy==0.5.1              # via statsmodels
 pluggy==0.13.1            # via pytest
@@ -72,10 +72,10 @@ pytz==2021.1              # via google-api-core, mozilla-jetstream, pandas
 pyyaml==5.4.1             # via dask, distributed, libcst, mozilla-jetstream
 regex==2020.11.13         # via black
 requests==2.25.1          # via google-api-core, google-cloud-storage, mozilla-jetstream
-rsa==4.7                  # via google-auth
+rsa==4.7.1                # via google-auth
 scipy==1.6.0              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-core, google-resumable-media, grpcio, jsonschema, patsy, protobuf, python-dateutil
-smart-open[gcp]==4.1.2    # via mozilla-jetstream
+smart-open[gcp]==4.2.0    # via mozilla-jetstream
 smmap==3.0.5              # via gitdb
 sortedcontainers==2.3.0   # via distributed
 statsmodels==0.12.2       # via mozilla-jetstream
