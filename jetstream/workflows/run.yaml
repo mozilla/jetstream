@@ -37,7 +37,8 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
-        bin/entrypoint, run, "--date={{inputs.parameters.date}}", 
+        jetstream, --log_to_bigquery, run, 
+        "--date={{inputs.parameters.date}}", 
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
@@ -63,7 +64,7 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
-        bin/entrypoint, export-statistics-to-json, 
+        jetstream, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
         "--experiment_slug={{inputs.parameters.slug}}",

@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 
 RUN pip install .
 
-ENTRYPOINT ["/app/bin/entrypoint"]
+ENTRYPOINT ["jetstream"]
