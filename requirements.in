@@ -73,7 +73,7 @@ pyyaml==5.4.1             # via dask, distributed, libcst, mozilla-jetstream
 regex==2020.11.13         # via black
 requests==2.25.1          # via google-api-core, google-cloud-storage, mozilla-jetstream
 rsa==4.7.1                # via google-auth
-scipy==1.6.0              # via mozanalysis, statsmodels
+scipy==1.6.1              # via mozanalysis, statsmodels
 six==1.15.0               # via google-api-core, google-auth, google-cloud-core, google-resumable-media, grpcio, jsonschema, patsy, protobuf, python-dateutil
 smart-open[gcp]==4.2.0    # via mozilla-jetstream
 smmap==3.0.5              # via gitdb
