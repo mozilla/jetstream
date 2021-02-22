@@ -17,6 +17,7 @@ from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
 from .dryrun import DryRunFailedError
+from .errors import ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
@@ -147,6 +148,11 @@ class SerialExecutorStrategy:
                 config = spec.resolve(experiment, external_configs)
                 self.analysis_class(self.project_id, self.dataset_id, config).run(date)
                 export_metadata(config, self.bucket, self.project_id)
+            except ValidationException as e:
+                # log custom Jetstream exceptions but let the workflow succeed;
+                # this prevents Argo from retrying the analysis unnecessarily
+                # when it is already clear that it won't succeed
+                logger.exception(str(e), exc_info=e, extra={"experiment": slug})
             except Exception as e:
                 failed = True
                 logger.exception(str(e), exc_info=e, extra={"experiment": slug})
