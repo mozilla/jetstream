@@ -4,7 +4,7 @@ from typing import Dict, List
 
 import attr
 import cattr
-from google.cloud import storage
+import google.cloud.storage as storage
 
 from jetstream import bq_normalize_name, outcomes
 from jetstream.config import AnalysisConfiguration
