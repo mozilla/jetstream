@@ -24,7 +24,7 @@ google-api-core[grpc]==1.26.0  # via google-cloud-bigquery, google-cloud-bigquer
 google-auth==1.26.1       # via google-api-core, google-cloud-core, google-cloud-storage
 google-cloud-bigquery-storage==2.2.1  # via mozanalysis, mozilla-jetstream
 google-cloud-bigquery==2.8.0  # via mozanalysis, mozilla-jetstream
-google-cloud-container==2.3.0  # via mozilla-jetstream
+google-cloud-container==2.3.1  # via mozilla-jetstream
 google-cloud-core==1.6.0  # via google-cloud-bigquery, google-cloud-storage
 google-cloud-storage==1.36.0  # via mozilla-jetstream, smart-open
 google-crc32c==1.1.2      # via google-resumable-media
