@@ -7,6 +7,7 @@ import attr
 import os
 import pytest
 from pytz import UTC
+from unittest import mock
 
 from jetstream import cli, experimenter, external_config
 from jetstream.config import AnalysisSpec
@@ -233,6 +234,59 @@ class TestAnalysisExecutor:
         )
         assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
 
+    def test_experiments_to_analyze(self, cli_experiments):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=["bogus_experiment", "my_cool_experiment"],
+        )
+        result = executor._experiments_to_analyse(lambda: cli_experiments)
+        assert set(e.normandy_slug for e in result) == {"my_cool_experiment"}
+
+    def test_experiments_to_analyze_all(self, cli_experiments):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=cli.All,
+        )
+
+        with pytest.raises(ValueError):
+            executor._experiments_to_analyse(lambda: cli_experiments)
+
+    def test_experiments_to_analyze_specific_date(self, cli_experiments):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=dt.datetime(2020, 10, 31, tzinfo=UTC),
+            experiment_slugs=cli.All,
+        )
+
+        result = executor._experiments_to_analyse(lambda: cli_experiments)
+        assert len(result) == 2
+
+    def test_ensure_enrollments(self, cli_experiments, monkeypatch):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=["my_cool_experiment"],
+        )
+
+        Analysis = Mock()
+        monkeypatch.setattr("jetstream.analysis.Analysis", Analysis)
+
+        executor.ensure_enrollments(
+            recreate_enrollments=False, experiment_getter=lambda: cli_experiments
+        )
+
+        assert Analysis.ensure_enrollments.called_once()
+
 
 class TestSerialExecutorStrategy:
     def test_trivial_workflow(self, cli_experiments):
@@ -248,9 +302,47 @@ class TestSerialExecutorStrategy:
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", "bucket", fake_analysis, lambda: cli_experiments
+            "spam", "eggs", "bucket", False, fake_analysis, lambda: cli_experiments
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])
         fake_analysis.assert_called_once_with("spam", "eggs", spec.resolve(experiment))
         fake_analysis().run.assert_called_once_with(run_date)
+
+
+class TestArgoExecutorStrategy:
+    def test_simple_workflow(self, cli_experiments):
+        experiment = cli_experiments.experiments[0]
+
+        with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
+            strategy = cli.ArgoExecutorStrategy(
+                "spam",
+                "eggs",
+                "bucket",
+                "zone",
+                "cluster_id",
+                False,
+                False,
+                None,
+                None,
+                lambda: cli_experiments,
+            )
+            run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
+            strategy.execute([(experiment.normandy_slug, run_date)])
+
+            submit_workflow_mock.assert_called_once_with(
+                project_id="spam",
+                zone="zone",
+                cluster_id="cluster_id",
+                workflow_file=strategy.RUN_WORKFLOW,
+                parameters={
+                    "experiments": [{"slug": "my_cool_experiment", "dates": ["2020-10-31"]}],
+                    "project_id": "spam",
+                    "dataset_id": "eggs",
+                    "bucket": "bucket",
+                    "recreate_enrollments": False,
+                },
+                monitor_status=False,
+                cluster_ip=None,
+                cluster_cert=None,
+            )
