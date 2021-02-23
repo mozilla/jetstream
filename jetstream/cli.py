@@ -670,6 +670,7 @@ def validate_config(path: Iterable[os.PathLike]):
     sys.exit(1 if dirty else 0)
 
 
+@cli.command()
 @project_id_option
 @dataset_id_option
 @bucket_option
