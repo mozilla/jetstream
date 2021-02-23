@@ -4,10 +4,11 @@ import sys
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+from typing import Callable, Iterable, List, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
 
 import attr
 import click
+import mozanalysis
 import pytz
 import toml
 
@@ -79,6 +80,7 @@ class ArgoExecutorStrategy:
     zone: str
     cluster_id: str
     monitor_status: bool
+    recreate_enrollments: bool = False
     cluster_ip: Optional[str] = None
     cluster_cert: Optional[str] = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
@@ -108,6 +110,7 @@ class ArgoExecutorStrategy:
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
+                "recreate_enrollments": self.recreate_enrollments,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -120,6 +123,7 @@ class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
     bucket: str
+    recreate_enrollments: bool = False
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: Callable[
@@ -188,31 +192,7 @@ class AnalysisExecutor:
         ] = ExternalConfigCollection.from_github_repo,
         today: Optional[datetime] = None,
     ) -> bool:
-        experiments = experiment_getter()
-
-        if isinstance(self.experiment_slugs, AllType):
-            if isinstance(self.date, AllType):
-                raise ValueError("Declining to re-run all experiments for all time.")
-            run_experiments = [
-                e
-                for e in (
-                    experiments.end_on_or_after(self.date)
-                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
-                    .experiments
-                )
-                if e.normandy_slug is not None
-            ]
-        else:
-            run_experiments = []
-            for slug in self.experiment_slugs:
-                if e := experiments.with_slug(slug).experiments:
-                    run_experiments.append(e[0])
-                else:
-                    logger.warning(
-                        f"Slug {slug} provided but not found in Experimenter; skipping.",
-                        extra={"experiment": slug},
-                    )
-
+        run_experiments = self._experiments_to_analyse(experiment_getter)
         worklist = []
 
         for experiment in run_experiments:
@@ -231,6 +211,80 @@ class AnalysisExecutor:
                 worklist.append((experiment.normandy_slug, run_date))
 
         return strategy.execute(worklist, self.configuration_map)
+
+    def _experiments_to_analyse(
+        self,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+    ) -> List[mozanalysis.experiment.Experiment]:
+        """Fetch experiments that are to be analysed."""
+        experiments = experiment_getter()
+        run_experiments = []
+
+        if isinstance(self.experiment_slugs, AllType):
+            if isinstance(self.date, AllType):
+                raise ValueError("Declining to re-run all experiments for all time.")
+            run_experiments = [
+                e
+                for e in (
+                    experiments.end_on_or_after(self.date)
+                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                    .experiments
+                )
+                if e.normandy_slug is not None
+            ]
+        else:
+            for slug in self.experiment_slugs:
+                if e := experiments.with_slug(slug).experiments:
+                    run_experiments.append(e[0])
+                else:
+                    logger.warning(
+                        f"Slug {slug} provided but not found in Experimenter; skipping.",
+                        extra={"experiment": slug},
+                    )
+        return run_experiments
+
+    def ensure_enrollments(
+        self,
+        recreate_enrollments: bool = False,
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+        experiment_getter: Callable[
+            [], ExperimentCollection
+        ] = ExperimentCollection.from_experimenter,
+    ) -> None:
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        run_experiments = self._experiments_to_analyse(experiment_getter)
+        for experiment in run_experiments:
+            try:
+                spec = AnalysisSpec.default_for_experiment(experiment)
+                if self.configuration_map and experiment.normandy_slug in self.configuration_map:
+                    config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
+                    spec.merge(AnalysisSpec.from_dict(config_dict))
+                else:
+                    external_configs = config_getter()
+                    if external_spec := external_configs.spec_for_experiment(
+                        experiment.normandy_slug
+                    ):
+                        spec.merge(external_spec)
+
+                config = spec.resolve(experiment)
+                analysis = Analysis(self.project_id, self.dataset_id, config)
+
+                if self.date == All:
+                    today = self._today()
+                    end_date = min(
+                        experiment.end_date or today,
+                        today,
+                    )
+                else:
+                    end_date = self.date
+
+                analysis.ensure_enrollments(end_date, recreate_enrollments)
+            except Exception as e:
+                logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
 
 
 @click.group()
@@ -326,6 +380,13 @@ cluster_cert_option = click.option(
     help="Kubernetes cluster certificate used for authenticating to the cluster",
 )
 
+recreate_enrollments_option = click.option(
+    "--recreate_enrollments",
+    "--recreate-enrollments",
+    help="Recreate the enrollments tables",
+    default=False,
+)
+
 
 @cli.command()
 @project_id_option
@@ -340,6 +401,7 @@ cluster_cert_option = click.option(
 @experiment_slug_option
 @bucket_option
 @secret_config_file_option
+@recreate_enrollments_option
 def run(
     project_id,
     dataset_id,
@@ -347,16 +409,22 @@ def run(
     experiment_slug,
     bucket,
     config_file,
+    recreate_enrollments,
 ):
     """Runs analysis for the provided date."""
-    success = AnalysisExecutor(
+    analysis_executor = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         bucket=bucket,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
-    ).execute(strategy=SerialExecutorStrategy(project_id, dataset_id, bucket))
+    )
+
+    analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
+    success = analysis_executor.execute(
+        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
+    )
 
     sys.exit(0 if success else 1)
 
@@ -378,6 +446,7 @@ def run(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@recreate_enrollments_option
 def run_argo(
     project_id,
     dataset_id,
@@ -389,6 +458,7 @@ def run_argo(
     monitor_status,
     cluster_ip,
     cluster_cert,
+    recreate_enrollments,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -400,6 +470,7 @@ def run_argo(
         monitor_status=monitor_status,
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
+        recreate_enrollments=recreate_enrollments,
     )
 
     AnalysisExecutor(
@@ -423,6 +494,7 @@ def run_argo(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@recreate_enrollments_option
 def rerun(
     project_id,
     dataset_id,
@@ -435,9 +507,19 @@ def rerun(
     monitor_status,
     cluster_ip,
     cluster_cert,
+    recreate_enrollments,
 ):
     """Rerun all available analyses for a specific experiment."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
+    analysis_executor = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=[experiment_slug],
+        configuration_map={experiment_slug: config_file} if config_file else None,
+    )
+
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -448,17 +530,12 @@ def rerun(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            recreate_enrollments=recreate_enrollments,
         )
+    else:
+        analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
 
-    AnalysisExecutor(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        bucket=bucket,
-        date=All,
-        experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else None,
-    ).execute(strategy=strategy)
-
+    analysis_executor.execute(strategy=strategy)
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
 
@@ -483,6 +560,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @cluster_ip_option
 @cluster_cert_option
 @return_status_option
+@recreate_enrollments_option
 def rerun_config_changed(
     project_id,
     dataset_id,
@@ -494,10 +572,23 @@ def rerun_config_changed(
     cluster_ip,
     cluster_cert,
     return_status,
+    recreate_enrollments,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
+
+    # get experiment-specific external configs
+    external_configs = ExternalConfigCollection.from_github_repo()
+    updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
+    analysis_executor = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=[config.slug for config in updated_external_configs],
+    )
+
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -508,19 +599,12 @@ def rerun_config_changed(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            recreate_enrollments=recreate_enrollments,
         )
+    else:
+        analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
 
-    # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
-    updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-
-    success = AnalysisExecutor(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        bucket=bucket,
-        date=All,
-        experiment_slugs=[config.slug for config in updated_external_configs],
-    ).execute(strategy=strategy)
+    success = analysis_executor.execute(strategy=strategy)
 
     client = BigQueryClient(project_id, dataset_id)
     for config in updated_external_configs:
