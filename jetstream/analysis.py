@@ -10,6 +10,7 @@ import dask
 import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -172,6 +173,8 @@ class Analysis:
         )
 
         res_table_name = self._table_name(period.value, window)
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
 
         if dry_run:
             logger.info(
@@ -185,16 +188,6 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 period.value,
             )
-
-            enrollments_sql = exp.build_enrollments_query(
-                last_window_limits,
-                self.config.experiment.platform.enrollments_query_type,
-                self.config.experiment.enrollment_query,
-                self.config.experiment.segments,
-            )
-
-            enrollments_table = f"enrollments_{res_table_name}"
-            self.bigquery.execute(enrollments_sql, enrollments_table)
 
             metrics_sql = exp.build_metrics_query(
                 {m.metric for m in self.config.metrics[period]},
@@ -460,3 +453,49 @@ class Analysis:
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
+
+    def ensure_enrollments(
+        self, current_date: datetime, recreate_enrollments: bool = False
+    ) -> None:
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
+
+        if time_limits is None:
+            logger.info("Skipping %s (%s); not ready", self.config.experiment.normandy_slug)
+            return
+
+        if self.config.experiment.start_date is None:
+            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
+
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
+
+        try:
+            if not recreate_enrollments:
+                # check if enrollments table already exists and skip creation
+                try:
+                    self.bigquery.client.get_table(
+                        f"{self.project}.{self.dataset}.{enrollments_table}"
+                    )
+                    return
+                except NotFound:
+                    # table not found, continue with creation
+                    pass
+
+            logger.info(f"Create {enrollments_table}")
+            exp = mozanalysis.experiment.Experiment(
+                experiment_slug=self.config.experiment.normandy_slug,
+                start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            )
+            enrollments_sql = exp.build_enrollments_query(
+                time_limits,
+                "normandy",
+                self.config.experiment.enrollment_query,
+                self.config.experiment.segments,
+            )
+
+            self.bigquery.execute(enrollments_sql, enrollments_table)
+        except Exception as e:
+            logger.exception(
+                str(e), exc_info=e, extra={"experiment": self.config.experiment.normandy_slug}
+            )

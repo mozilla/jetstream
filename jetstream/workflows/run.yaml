@@ -78,8 +78,8 @@ spec:
         jetstream, --log_to_bigquery, ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
-        "--project_id={{workflow.parameters.project_id}}"
-        # todo: recreate-enrollments option
+        "--project_id={{workflow.parameters.project_id}}",
+        "--recreate-enrollments={{workflow.parameters.recreate_enrollments}}"
       ]
 
   - name: analyse-experiment
