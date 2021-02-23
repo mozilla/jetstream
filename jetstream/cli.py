@@ -4,7 +4,19 @@ import sys
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
-from typing import Callable, Iterable, List, Mapping, Optional, Protocol, TextIO, Tuple, Type, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    TextIO,
+    Tuple,
+    Type,
+    Union,
+)
 
 import attr
 import click
@@ -96,8 +108,15 @@ class ArgoExecutorStrategy:
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
-        experiments_config = [
-            {"date": date.strftime("%Y-%m-%d"), "slug": slug} for (slug, date) in worklist
+        experiments_config: Dict[str, List[str]] = {}
+        for (slug, date) in worklist:
+            if slug not in experiments_config:
+                experiments_config[slug] = []
+
+            experiments_config[slug].append(date.strftime("%Y-%m-%d"))
+
+        experiments_config_list = [
+            {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
         ]
 
         return submit_workflow(
@@ -106,7 +125,7 @@ class ArgoExecutorStrategy:
             cluster_id=self.cluster_id,
             workflow_file=self.RUN_WORKFLOW,
             parameters={
-                "experiments": experiments_config,
+                "experiments": experiments_config_list,
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
