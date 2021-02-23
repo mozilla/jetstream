@@ -10,6 +10,7 @@ spec:
     - name: project_id
     - name: dataset_id
     - name: bucket
+    - name: recreate_enrollments
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -17,17 +18,69 @@ spec:
       parameters:
         - name: experiments
     steps:
-    - - name: analyse-and-export
-        template: analyse-and-export
+    - - name: analyse-experiment
+        template: analyse-experiment
         arguments:
           parameters:
           - name: slug
             value: "{{item.slug}}"
-          - name: date
-            value: "{{item.date}}"
+          - name: dates
+            value: "{{item.dates}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
         continueOn:
           failed: true
+
+  - name: analyse-experiment
+    inputs:
+      parameters:
+        - name: slug
+        - name: dates
+    steps:
+      - - name: ensure-enrollments-and-analyze
+          template: ensure-enrollments-and-analyze
+          arguments:
+            parameters:
+              - name: slug
+                value: "{{item.slug}}"
+              - name: dates
+                value: "{{item.dates}}"
+          withParam: "{{inputs.parameters.experiments}}"
+
+  - name: ensure-enrollments-and-analyze
+    inputs:
+      parameters:
+        - name: slug
+        - name: dates
+    steps:
+      - - name: ensure-enrollments
+          template: ensure-enrollments
+          arguments:
+            parameters:
+              - name: slug
+                value: "{{inputs.parameters.slug}}"
+      - - name: analyse-and-export
+          template: analyse-and-export
+          arguments:
+            parameters:
+              - name: slug
+                value: "{{inputs.parameters.slug}}"
+              - name: date
+                value: "{{item}}"
+          withParam: "{{input.parameters.dates}}"
+
+  - name: ensure-enrollments
+    inputs: 
+      parameters:
+      - name: slug  
+    container:
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      command: [
+        jetstream, --log_to_bigquery, ensure-enrollments, 
+        "--experiment_slug={{inputs.parameters.slug}}", 
+        "--dataset_id={{workflow.parameters.dataset_id}}", 
+        "--project_id={{workflow.parameters.project_id}}"
+        # todo: recreate-enrollments option
+      ]
 
   - name: analyse-experiment
     inputs:
