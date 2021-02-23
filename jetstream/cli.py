@@ -565,3 +565,23 @@ def validate_config(path: Iterable[os.PathLike]):
         except ExplicitSkipException:
             print("Found an explicit skip directive; will ignore this experiment.")
     sys.exit(1 if dirty else 0)
+
+
+@project_id_option
+@dataset_id_option
+@bucket_option
+@experiment_slug_option
+@secret_config_file_option
+@recreate_enrollments_option
+def ensure_enrollments(
+    project_id, dataset_id, bucket, experiment_slug, config_file, recreate_enrollments
+):
+    """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=AnalysisExecutor._today(),
+        experiment_slugs=[experiment_slug] if experiment_slug else All,
+        configuration_map={experiment_slug: config_file} if config_file else None,
+    ).ensure_enrollments(recreate_enrollments=recreate_enrollments)

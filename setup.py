@@ -1,3 +1,4 @@
+import os
 from setuptools import setup
 
 
@@ -53,7 +54,7 @@ setup(
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "incremental",
         "jinja2",
-        "mozanalysis",
+        # "mozanalysis",
         "pyarrow",
         "pytz",
         "PyYAML",
