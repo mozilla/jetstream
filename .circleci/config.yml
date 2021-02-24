@@ -21,13 +21,8 @@ jobs:
     - &build
       run:
         name: Build
-        command: |  # todo: remove mozanalysis custom installation
-          apt-get update
-          apt-get install -y default-jre-headless
+        command: |
           python3.8 -m venv venv/
-          git clone -b enrollments-caching https://github.com/scholtzan/mozanalysis.git
-          venv/bin/pip install --progress-bar off mozanalysis
-          venv/bin/pip install pyspark
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest

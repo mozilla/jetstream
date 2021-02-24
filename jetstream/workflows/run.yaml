@@ -50,7 +50,7 @@ spec:
                 value: "{{inputs.parameters.slug}}"
               - name: date
                 value: "{{item}}"
-          withParam: "{{input.parameters.dates}}"
+          withParam: "{{inputs.parameters.dates}}"
 
   - name: ensure-enrollments
     inputs: 

@@ -26,9 +26,8 @@ def apply_parameters(manifest: Dict[Any, Any], parameters: Dict[str, Any]) -> Di
         for workflow_param in workflow_parameters:
             # overwrite existing
             if workflow_param["name"] == key:
-                # the array needs to be encoded as string
-                # Argo doesn't support ' in it's configuration so replace with "
-                workflow_param["value"] = str(value).replace("'", '"')
+                # the array needs to be encoded as JSON string
+                workflow_param["value"] = json.dumps(value)
                 exists = True
 
         if not exists:

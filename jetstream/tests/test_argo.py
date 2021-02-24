@@ -25,7 +25,7 @@ class TestArgo:
         manifest = yaml.safe_load(config_str)
         updated_manifest = argo.apply_parameters(manifest, {"date": "2020-01-01"})
         assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "date"
-        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == "2020-01-01"
+        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == '"2020-01-01"'
 
     def test_apply_parameters_overwrite(self):
         config_str = dedent(
@@ -46,7 +46,7 @@ class TestArgo:
         manifest = yaml.safe_load(config_str)
         updated_manifest = argo.apply_parameters(manifest, {"date": "2020-01-01"})
         assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "date"
-        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == "2020-01-01"
+        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == '"2020-01-01"'
 
     def test_apply_parameters_add(self):
         config_str = dedent(
@@ -67,7 +67,7 @@ class TestArgo:
         manifest = yaml.safe_load(config_str)
         updated_manifest = argo.apply_parameters(manifest, {"date": "2020-01-01", "slug": "test"})
         assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "date"
-        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == "2020-01-01"
+        assert updated_manifest["spec"]["arguments"]["parameters"][0]["value"] == '"2020-01-01"'
         assert updated_manifest["spec"]["arguments"]["parameters"][1]["name"] == "slug"
         assert updated_manifest["spec"]["arguments"]["parameters"][1]["value"] == "test"
 

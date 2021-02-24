@@ -174,7 +174,7 @@ class Analysis:
 
         res_table_name = self._table_name(period.value, window)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"enrollments_{normalized_slug}"
+        enrollments_table = f"{self.project}.{self.dataset}.enrollments_{normalized_slug}"
 
         if dry_run:
             logger.info(
@@ -468,15 +468,13 @@ class Analysis:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"enrollments_{normalized_slug}"
+        enrollments_table = f"{self.project}.{self.dataset}.enrollments_{normalized_slug}"
 
         try:
             if not recreate_enrollments:
                 # check if enrollments table already exists and skip creation
                 try:
-                    self.bigquery.client.get_table(
-                        f"{self.project}.{self.dataset}.{enrollments_table}"
-                    )
+                    self.bigquery.client.get_table(enrollments_table)
                     return
                 except NotFound:
                     # table not found, continue with creation
