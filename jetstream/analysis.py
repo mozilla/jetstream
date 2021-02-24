@@ -466,30 +466,25 @@ class Analysis:
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         enrollments_table = f"enrollments_{normalized_slug}"
 
-        try:
-            if not recreate_enrollments:
-                # check if enrollments table already exists and skip creation
-                try:
-                    self.bigquery.client.get_table(enrollments_table)
-                    return
-                except NotFound:
-                    # table not found, continue with creation
-                    pass
+        if not recreate_enrollments:
+            # check if enrollments table already exists and skip creation
+            try:
+                self.bigquery.client.get_table(enrollments_table)
+                return
+            except NotFound:
+                # table not found, continue with creation
+                pass
 
-            logger.info(f"Create {enrollments_table}")
-            exp = mozanalysis.experiment.Experiment(
-                experiment_slug=self.config.experiment.normandy_slug,
-                start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
-            )
-            enrollments_sql = exp.build_enrollments_query(
-                time_limits,
-                "normandy",
-                self.config.experiment.enrollment_query,
-                self.config.experiment.segments,
-            )
+        logger.info(f"Create {enrollments_table}")
+        exp = mozanalysis.experiment.Experiment(
+            experiment_slug=self.config.experiment.normandy_slug,
+            start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+        )
+        enrollments_sql = exp.build_enrollments_query(
+            time_limits,
+            "normandy",
+            self.config.experiment.enrollment_query,
+            self.config.experiment.segments,
+        )
 
-            self.bigquery.execute(enrollments_sql, enrollments_table)
-        except Exception as e:
-            logger.exception(
-                str(e), exc_info=e, extra={"experiment": self.config.experiment.normandy_slug}
-            )
+        self.bigquery.execute(enrollments_sql, enrollments_table)

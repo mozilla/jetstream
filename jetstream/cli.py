@@ -304,6 +304,7 @@ class AnalysisExecutor:
                 analysis.ensure_enrollments(end_date, recreate_enrollments)
             except Exception as e:
                 logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+                raise e
 
 
 @click.group()
