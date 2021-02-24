@@ -165,6 +165,7 @@ class TestExternalConfigIntegration:
             slug="good_outcome",
             spec=spec,
             platform="firefox_desktop",
+            commit_hash="0000000",
         )
         extern.validate()
 
@@ -187,6 +188,7 @@ class TestExternalConfigIntegration:
             slug="bogus_outcome",
             spec=spec,
             platform="firefox_desktop",
+            commit_hash="0000000",
         )
         with pytest.raises(DryRunFailedError):
             extern.validate()

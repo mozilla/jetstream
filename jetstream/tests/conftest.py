@@ -187,11 +187,13 @@ def fake_outcome_resolver(monkeypatch):
                 slug="performance",
                 spec=config.OutcomeSpec.from_dict(toml.loads(performance_config)),
                 platform="firefox_desktop",
+                commit_hash="000000",
             )
             data["tastiness"] = external_config.ExternalOutcome(
                 slug="tastiness",
                 spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
                 platform="firefox_desktop",
+                commit_hash="000000",
             )
             return data
 

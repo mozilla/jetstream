@@ -85,7 +85,9 @@ class TestExternalConfig:
             """
         )
         spec = OutcomeSpec.from_dict(toml.loads(config))
-        extern = ExternalOutcome(slug="cool_outcome", spec=spec, platform="firefox_desktop")
+        extern = ExternalOutcome(
+            slug="cool_outcome", spec=spec, platform="firefox_desktop", commit_hash="0000000"
+        )
         extern.validate()
         assert Analysis.validate.called_once()
 

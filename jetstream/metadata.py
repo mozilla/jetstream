@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 import cattr
@@ -25,6 +25,7 @@ class OutcomeMetadata:
     friendly_name: str
     description: str
     metrics: List[str]
+    commit_hash: Optional[str]
 
 
 @attr.s(auto_attribs=True)
@@ -58,6 +59,7 @@ class ExperimentMetadata:
                 friendly_name=external_outcome.spec.friendly_name,
                 description=external_outcome.spec.description,
                 metrics=[m for m, _ in external_outcome.spec.metrics.items()],
+                commit_hash=external_outcome.commit_hash,
             )
             for experiment_outcome in config.experiment.outcomes
             for _, external_outcome in all_outcomes.items()
