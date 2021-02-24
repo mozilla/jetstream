@@ -279,7 +279,7 @@ class TestAnalysisExecutor:
         )
 
         Analysis = Mock()
-        monkeypatch.setattr("jetstream.analysis.Analysis", Analysis)
+        monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
 
         executor.ensure_enrollments(
             recreate_enrollments=False, experiment_getter=lambda: cli_experiments
