@@ -46,6 +46,7 @@ class ExternalOutcome:
     slug: str
     spec: OutcomeSpec
     platform: str
+    commit_hash: Optional[str]
 
     def validate(self) -> None:
         if self.platform not in PLATFORM_CONFIGS:
@@ -78,7 +79,7 @@ def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome]:
     if is_outcome:
         platform = path.parent.name
         spec = OutcomeSpec.from_dict(config_dict)
-        return ExternalOutcome(slug=slug, spec=spec, platform=platform)
+        return ExternalOutcome(slug=slug, spec=spec, platform=platform, commit_hash=None)
     return ExternalConfig(
         slug=slug,
         spec=AnalysisSpec.from_dict(config_dict),
@@ -121,11 +122,14 @@ class ExternalConfigCollection:
             outcomes = []
 
             for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
+                commit_hash = next(repo.iter_commits("main", paths=outcome_file)).hexsha
+
                 outcomes.append(
                     ExternalOutcome(
                         slug=outcome_file.stem,
                         spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
                         platform=outcome_file.parent.name,
+                        commit_hash=commit_hash,
                     )
                 )
 
