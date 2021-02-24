@@ -174,7 +174,7 @@ class Analysis:
 
         res_table_name = self._table_name(period.value, window)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"{self.project}.{self.dataset}.enrollments_{normalized_slug}"
+        enrollments_table = f"enrollments_{normalized_slug}"
 
         if dry_run:
             logger.info(
@@ -345,20 +345,16 @@ class Analysis:
         # A UNION ALL is required here otherwise the dry run fails with
         # "cannot query over table without filter over columns"
         metrics_sql = metrics_sql.replace(
-            "WITH enrollments AS (",
+            "WITH analysis_windows AS (",
             """WITH enrollments_table AS (
                 SELECT '00000' AS client_id,
                     'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date,
-                    1 AS analysis_window_start,
-                    2 AS analysis_window_end
+                    DATE('2020-01-01') AS enrollment_date
                 UNION ALL
                 SELECT '00000' AS client_id,
                     'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date,
-                    1 AS analysis_window_start,
-                    2 AS analysis_window_end
-            ), enrollments AS (""",
+                    DATE('2020-01-01') AS enrollment_date
+            ), analysis_windows AS (""",
         )
 
         dry_run_query(metrics_sql)
@@ -468,7 +464,7 @@ class Analysis:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"{self.project}.{self.dataset}.enrollments_{normalized_slug}"
+        enrollments_table = f"enrollments_{normalized_slug}"
 
         try:
             if not recreate_enrollments:

@@ -57,7 +57,7 @@ spec:
       parameters:
       - name: slug  
     container:
-      image: gcr.io/ascholtz-dev/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
         jetstream, --log_to_bigquery, ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
@@ -72,7 +72,7 @@ spec:
       - name: date
       - name: slug
     container:
-      image: gcr.io/ascholtz-dev/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
         jetstream, --log_to_bigquery, run, 
         "--date={{inputs.parameters.date}}", 
@@ -99,7 +99,7 @@ spec:
       parameters:
         - name: slug
     container:
-      image: gcr.io/ascholtz-dev/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
         jetstream, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 

@@ -65,6 +65,9 @@ class TestAnalysisIntegration:
         )
         monkeypatch.setattr(dask.distributed.LocalCluster, "__init__", mock_local_cluster)
 
+        analysis.ensure_enrollments(
+            dt.datetime(2020, 4, 12, tzinfo=pytz.utc), recreate_enrollments=True
+        )
         analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
 
     def test_metrics(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
