@@ -10,7 +10,6 @@ import dask
 import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
-from google.cloud.exceptions import NotFound
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -468,12 +467,8 @@ class Analysis:
 
         if not recreate_enrollments:
             # check if enrollments table already exists and skip creation
-            try:
-                self.bigquery.client.get_table(enrollments_table)
+            if self.bigquery.table_exists(enrollments_table):
                 return
-            except NotFound:
-                # table not found, continue with creation
-                pass
 
         logger.info(f"Create {enrollments_table}")
         exp = mozanalysis.experiment.Experiment(
@@ -482,7 +477,7 @@ class Analysis:
         )
         enrollments_sql = exp.build_enrollments_query(
             time_limits,
-            "normandy",
+            self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
             self.config.experiment.segments,
         )

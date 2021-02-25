@@ -113,7 +113,7 @@ class ArgoExecutorStrategy:
             if slug not in experiments_config:
                 experiments_config[slug] = []
 
-            experiments_config[slug].append(date.strftime("%Y-%m-%d"))
+            experiments_config.setdefault(slug, []).append(date.strftime("%Y-%m-%d"))
 
         experiments_config_list = [
             {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()

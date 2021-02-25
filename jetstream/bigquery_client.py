@@ -10,6 +10,7 @@ import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
+from google.cloud.exceptions import NotFound
 
 from . import AnalysisPeriod, bq_normalize_name
 
@@ -98,3 +99,12 @@ class BigQueryClient:
         timestamp = self._current_timestamp_label()
         for table in tables:
             self.add_labels_to_table(table, {"last_updated": timestamp})
+
+    def table_exists(self, table_name: str) -> bool:
+        """Checks if a table exists."""
+        try:
+            self.client.get_table(table_name)
+            return True
+        except NotFound:
+            # table not found, continue with creation
+            return False
