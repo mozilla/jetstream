@@ -489,12 +489,20 @@ class DataSourceDefinition:
     submission_date_column: Optional[str] = None
 
     def resolve(self, spec: "AnalysisSpec") -> mozanalysis.metrics.DataSource:
-        params = {"name": self.name, "from_expr": self.from_expression}
+        params: Dict[str, Any] = {"name": self.name, "from_expr": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in ("experiments_column_type", "client_id_column", "submission_date_column"):
             v = getattr(self, k)
             if v:
                 params[k] = v
+        # experiments_column_type is a little special, though!
+        # `None` is a valid value, which means there isn't any `experiments` column in the
+        # data source, so mozanalysis shouldn't try to use it.
+        # But mozanalysis has a different default value for that param ("simple"), and
+        # TOML can't represent an explicit null. So we'll look for the string "none" and
+        # transform it to the value None.
+        if (self.experiments_column_type or "").lower() == "none":
+            params["experiments_column_type"] = None
         return mozanalysis.metrics.DataSource(**params)
 
 
