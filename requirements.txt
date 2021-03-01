@@ -204,9 +204,9 @@ google-cloud-bigquery-storage==2.3.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery==2.9.0 \
-    --hash=sha256:33fcbdf5567bdb7657fb3485f061e7f1b45361f65fdafc168ab9172117fd9a5a \
-    --hash=sha256:967a0b1b5ebc1412879a9309704a0e2d512cee88295dba0de94ac0a471474d12
+google-cloud-bigquery==2.10.0 \
+    --hash=sha256:a5597453a5b7ba379190c6c6f45782ea81f5fd81ee4676eafd8e7ac09a2cee5b \
+    --hash=sha256:fac9adb1394d948e259fba1df4e86a6c34cfccaf19af7bdbdf9640cf6e313a71
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -537,6 +537,7 @@ packaging==20.9 \
     # via
     #   -r requirements.in
     #   google-api-core
+    #   google-cloud-bigquery
     #   pytest
 pandas==1.2.2 \
     --hash=sha256:05ca6bda50123158eb15e716789083ca4c3b874fd47688df1716daa72644ee1c \
