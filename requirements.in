@@ -216,7 +216,7 @@ requests==2.25.1
     #   google-api-core
     #   google-cloud-storage
     #   mozilla-jetstream
-rsa==4.7.1
+rsa==4.7.2
     # via google-auth
 scipy==1.6.1
     # via
