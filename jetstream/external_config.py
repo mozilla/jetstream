@@ -113,7 +113,7 @@ class ExternalConfigCollection:
 
                 external_configs.append(
                     ExternalConfig(
-                        config_file.stem,
+                        config_file.stem.split(".")[0],
                         AnalysisSpec.from_dict(toml.load(config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                     )
@@ -126,7 +126,7 @@ class ExternalConfigCollection:
 
                 outcomes.append(
                     ExternalOutcome(
-                        slug=outcome_file.stem,
+                        slug=outcome_file.stem.split(".")[0],
                         spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
                         platform=outcome_file.parent.name,
                         commit_hash=commit_hash,
