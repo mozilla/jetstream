@@ -121,7 +121,7 @@ class ExternalConfigCollection:
 
             outcomes = []
 
-            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
+            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml*"):
                 commit_hash = next(repo.iter_commits("main", paths=outcome_file)).hexsha
 
                 outcomes.append(
