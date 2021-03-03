@@ -1,4 +1,6 @@
+from click.testing import CliRunner
 import datetime as dt
+from textwrap import dedent
 from unittest.mock import Mock
 
 import attr
@@ -52,6 +54,10 @@ def cli_experiments():
 
 
 class TestCli:
+    @pytest.fixture
+    def runner(self):
+        return CliRunner()
+
     def test_inclusive_date_range(self):
         start_date = dt.date(2020, 5, 1)
         end_date = dt.date(2020, 5, 1)
@@ -65,6 +71,24 @@ class TestCli:
         assert len(date_range) == 5
         assert date_range[0] == dt.date(2020, 5, 1)
         assert date_range[4] == dt.date(2020, 5, 5)
+
+    def test_validate_config(self, runner):
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                [experiment]
+                start_date = "2020-12-31"
+                end_date = "2021-02-01"
+                """
+            )
+
+            with open("example_config.toml.example", "w") as config:
+                config.write(conf)
+
+                result = runner.invoke(cli.validate_config, ["example_config.toml.example"])
+
+                assert "Skipping example config" in result.output
+                assert result.exit_code == 0
 
 
 @attr.s(auto_attribs=True)
