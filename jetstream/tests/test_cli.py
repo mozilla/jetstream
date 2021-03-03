@@ -4,6 +4,7 @@ from textwrap import dedent
 from unittest.mock import Mock
 
 import attr
+import os
 import pytest
 from pytz import UTC
 
@@ -72,7 +73,7 @@ class TestCli:
         assert date_range[0] == dt.date(2020, 5, 1)
         assert date_range[4] == dt.date(2020, 5, 5)
 
-    def test_validate_config(self, runner):
+    def test_validate_example_config(self, runner):
         with runner.isolated_filesystem():
             conf = dedent(
                 """
@@ -85,10 +86,29 @@ class TestCli:
             with open("example_config.toml.example", "w") as config:
                 config.write(conf)
 
-                result = runner.invoke(cli.validate_config, ["example_config.toml.example"])
+            result = runner.invoke(cli.validate_config, ["example_config.toml.example"])
 
-                assert "Skipping example config" in result.output
-                assert result.exit_code == 0
+            assert "Skipping example config" in result.output
+            assert result.exit_code == 0
+
+    def test_validate_example_outcome_config(self, runner):
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                friendly_name = "outcome"
+                """
+            )
+
+            os.makedirs("outcomes/fenix")
+            with open("outcomes/fenix/example_config.toml.example", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(
+                cli.validate_config, ["outcomes/fenix/example_config.toml.example"]
+            )
+
+            assert "Skipping example config" in result.output
+            assert result.exit_code == 0
 
 
 @attr.s(auto_attribs=True)
