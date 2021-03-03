@@ -113,7 +113,7 @@ class ExternalConfigCollection:
 
                 external_configs.append(
                     ExternalConfig(
-                        config_file.stem.split(".")[0],
+                        config_file.stem,
                         AnalysisSpec.from_dict(toml.load(config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                     )
@@ -121,12 +121,12 @@ class ExternalConfigCollection:
 
             outcomes = []
 
-            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml*"):
+            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
                 commit_hash = next(repo.iter_commits("main", paths=outcome_file)).hexsha
 
                 outcomes.append(
                     ExternalOutcome(
-                        slug=outcome_file.stem.split(".")[0],
+                        slug=outcome_file.stem,
                         spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
                         platform=outcome_file.parent.name,
                         commit_hash=commit_hash,
