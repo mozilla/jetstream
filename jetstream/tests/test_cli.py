@@ -141,7 +141,7 @@ class TestAnalysisExecutor:
         assert success
         assert strategy.worklist == []
 
-    def test_single_date(self, cli_experiments):
+    def test_single_date(self, cli_experiments, monkeypatch):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -149,6 +149,10 @@ class TestAnalysisExecutor:
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=["my_cool_experiment"],
         )
+
+        bigquery_mock_client = Mock()
+        monkeypatch.setattr("jetstream.bigquery_client.BigQueryClient", bigquery_mock_client)
+
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
@@ -159,6 +163,33 @@ class TestAnalysisExecutor:
         assert len(strategy.worklist) == 1
         assert strategy.worklist[0][0] == "my_cool_experiment"
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
+        assert bigquery_mock_client.called is False
+
+    def test_recreate_enrollments(self, cli_experiments, monkeypatch):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=dt.datetime(2020, 10, 28, tzinfo=UTC),
+            experiment_slugs=["my_cool_experiment"],
+            recreate_enrollments=True,
+        )
+
+        bigquery_mock_client = Mock()
+        monkeypatch.setattr("jetstream.bigquery_client.BigQueryClient", bigquery_mock_client)
+        strategy = DummyExecutorStrategy("project", "dataset")
+        success = executor.execute(
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=strategy,
+        )
+        assert success
+        assert len(strategy.worklist) == 1
+        assert strategy.worklist[0][0] == "my_cool_experiment"
+        assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
+        assert bigquery_mock_client.delete_table.called_once_with(
+            "project.dataset.enrollments_my_cool_experiment"
+        )
 
     def test_all_single_date(self, cli_experiments):
         executor = cli.AnalysisExecutor(
@@ -281,9 +312,7 @@ class TestAnalysisExecutor:
         Analysis = Mock()
         monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
 
-        executor.ensure_enrollments(
-            recreate_enrollments=False, experiment_getter=lambda: cli_experiments
-        )
+        executor.ensure_enrollments(experiment_getter=lambda: cli_experiments)
 
         assert Analysis.ensure_enrollments.called_once()
 
@@ -302,7 +331,7 @@ class TestSerialExecutorStrategy:
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", "bucket", False, fake_analysis, lambda: cli_experiments
+            "spam", "eggs", "bucket", fake_analysis, lambda: cli_experiments
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])
@@ -322,7 +351,6 @@ class TestArgoExecutorStrategy:
                 "zone",
                 "cluster_id",
                 False,
-                False,
                 None,
                 None,
                 lambda: cli_experiments,
@@ -340,7 +368,6 @@ class TestArgoExecutorStrategy:
                     "project_id": "spam",
                     "dataset_id": "eggs",
                     "bucket": "bucket",
-                    "recreate_enrollments": False,
                 },
                 monitor_status=False,
                 cluster_ip=None,

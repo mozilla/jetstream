@@ -1,3 +1,4 @@
+import google
 import logging
 import os
 import re
@@ -9,6 +10,7 @@ import attr
 import dask
 import mozanalysis
 from dask.distributed import Client, LocalCluster
+from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
@@ -449,9 +451,7 @@ class Analysis:
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
 
-    def ensure_enrollments(
-        self, current_date: datetime, recreate_enrollments: bool = False
-    ) -> None:
+    def ensure_enrollments(self, current_date: datetime) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
 
@@ -465,11 +465,6 @@ class Analysis:
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         enrollments_table = f"enrollments_{normalized_slug}"
 
-        if not recreate_enrollments:
-            # check if enrollments table already exists and skip creation
-            if self.bigquery.table_exists(enrollments_table):
-                return
-
         logger.info(f"Create {enrollments_table}")
         exp = mozanalysis.experiment.Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
@@ -482,4 +477,11 @@ class Analysis:
             self.config.experiment.segments,
         )
 
-        self.bigquery.execute(enrollments_sql, enrollments_table)
+        try:
+            self.bigquery.execute(
+                enrollments_sql,
+                enrollments_table,
+                google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
+            )
+        except Conflict:
+            pass

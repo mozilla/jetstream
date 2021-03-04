@@ -10,7 +10,6 @@ import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
-from google.cloud.exceptions import NotFound
 
 from . import AnalysisPeriod, bq_normalize_name
 
@@ -60,7 +59,12 @@ class BigQueryClient:
             {"last_updated": self._current_timestamp_label()},
         )
 
-    def execute(self, query: str, destination_table: Optional[str] = None) -> None:
+    def execute(
+        self,
+        query: str,
+        destination_table: Optional[str] = None,
+        write_disposition: Optional[google.cloud.bigquery.job.WriteDisposition] = None,
+    ) -> None:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
             default_project=self.project,
@@ -69,6 +73,10 @@ class BigQueryClient:
         if destination_table:
             kwargs["destination"] = dataset.table(destination_table)
             kwargs["write_disposition"] = google.cloud.bigquery.job.WriteDisposition.WRITE_TRUNCATE
+
+        if write_disposition:
+            kwargs["write_disposition"] = write_disposition
+
         config = google.cloud.bigquery.job.QueryJobConfig(default_dataset=dataset, **kwargs)
         job = self.client.query(query, config)
         # block on result
@@ -100,11 +108,6 @@ class BigQueryClient:
         for table in tables:
             self.add_labels_to_table(table, {"last_updated": timestamp})
 
-    def table_exists(self, table_name: str) -> bool:
-        """Checks if a table exists."""
-        try:
-            self.client.get_table(table_name)
-            return True
-        except NotFound:
-            # table not found, continue with creation
-            return False
+    def delete_table(self, table_id: str) -> None:
+        """Delete the table."""
+        self.client.delete_table(table_id, not_found_ok=True)
