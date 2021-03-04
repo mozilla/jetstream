@@ -24,7 +24,7 @@ import mozanalysis
 import pytz
 import toml
 
-from . import external_config
+from . import bq_normalize_name, external_config
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
@@ -92,7 +92,6 @@ class ArgoExecutorStrategy:
     zone: str
     cluster_id: str
     monitor_status: bool
-    recreate_enrollments: bool = False
     cluster_ip: Optional[str] = None
     cluster_cert: Optional[str] = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
@@ -110,9 +109,6 @@ class ArgoExecutorStrategy:
 
         experiments_config: Dict[str, List[str]] = {}
         for (slug, date) in worklist:
-            if slug not in experiments_config:
-                experiments_config[slug] = []
-
             experiments_config.setdefault(slug, []).append(date.strftime("%Y-%m-%d"))
 
         experiments_config_list = [
@@ -129,7 +125,6 @@ class ArgoExecutorStrategy:
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
-                "recreate_enrollments": self.recreate_enrollments,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -142,7 +137,6 @@ class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
     bucket: str
-    recreate_enrollments: bool = False
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: Callable[
@@ -169,7 +163,9 @@ class SerialExecutorStrategy:
                         spec.merge(external_spec)
 
                 config = spec.resolve(experiment, external_configs)
-                self.analysis_class(self.project_id, self.dataset_id, config).run(date)
+                analysis = self.analysis_class(self.project_id, self.dataset_id, config)
+                analysis.ensure_enrollments(date)
+                analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id)
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
@@ -190,6 +186,7 @@ class AnalysisExecutor:
     date: Union[datetime, AllType]
     experiment_slugs: Union[Iterable[str], AllType]
     configuration_map: Optional[Mapping[str, TextIO]] = attr.ib(None)
+    recreate_enrollments: bool = False
 
     @staticmethod
     def _today() -> datetime:
@@ -229,7 +226,18 @@ class AnalysisExecutor:
                 assert experiment.normandy_slug
                 worklist.append((experiment.normandy_slug, run_date))
 
+            if self.recreate_enrollments:
+                self._delete_enrollment_table(experiment)
+
         return strategy.execute(worklist, self.configuration_map)
+
+    def _delete_enrollment_table(self, experiment: mozanalysis.experiment.Experiment) -> None:
+        """Deletes all enrollment table associated with the experiment."""
+        print(f"Delete enrollment table for {experiment.normandy_slug}")
+        client = BigQueryClient(project=self.project_id, dataset=self.dataset_id)
+        normalized_slug = bq_normalize_name(experiment.normandy_slug)
+        enrollments_table = f"{self.project_id}.{self.dataset_id}.enrollments_{normalized_slug}"
+        client.delete_table(enrollments_table)
 
     def _experiments_to_analyse(
         self,
@@ -266,7 +274,6 @@ class AnalysisExecutor:
 
     def ensure_enrollments(
         self,
-        recreate_enrollments: bool = False,
         config_getter: Callable[
             [], ExternalConfigCollection
         ] = ExternalConfigCollection.from_github_repo,
@@ -301,7 +308,7 @@ class AnalysisExecutor:
                 else:
                     end_date = self.date
 
-                analysis.ensure_enrollments(end_date, recreate_enrollments)
+                analysis.ensure_enrollments(end_date)
             except Exception as e:
                 logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
                 raise e
@@ -439,11 +446,11 @@ def run(
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
+        recreate_enrollments=recreate_enrollments,
     )
 
-    analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
     success = analysis_executor.execute(
-        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
+        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket)
     )
 
     sys.exit(0 if success else 1)
@@ -490,7 +497,6 @@ def run_argo(
         monitor_status=monitor_status,
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
-        recreate_enrollments=recreate_enrollments,
     )
 
     AnalysisExecutor(
@@ -499,6 +505,7 @@ def run_argo(
         bucket=bucket,
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
+        recreate_enrollments=recreate_enrollments,
     ).execute(strategy=strategy)
 
 
@@ -530,15 +537,7 @@ def rerun(
     recreate_enrollments,
 ):
     """Rerun all available analyses for a specific experiment."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
-    analysis_executor = AnalysisExecutor(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        bucket=bucket,
-        date=All,
-        experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else None,
-    )
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -550,12 +549,17 @@ def rerun(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
-            recreate_enrollments=recreate_enrollments,
         )
-    else:
-        analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
 
-    analysis_executor.execute(strategy=strategy)
+    AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=[experiment_slug],
+        configuration_map={experiment_slug: config_file} if config_file else None,
+        recreate_enrollments=recreate_enrollments,
+    ).execute(strategy=strategy)
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
 
@@ -596,18 +600,11 @@ def rerun_config_changed(
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, recreate_enrollments)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
 
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-    analysis_executor = AnalysisExecutor(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        bucket=bucket,
-        date=All,
-        experiment_slugs=[config.slug for config in updated_external_configs],
-    )
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -619,12 +616,16 @@ def rerun_config_changed(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
-            recreate_enrollments=recreate_enrollments,
         )
-    else:
-        analysis_executor.ensure_enrollments(recreate_enrollments=recreate_enrollments)
 
-    success = analysis_executor.execute(strategy=strategy)
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=[config.slug for config in updated_external_configs],
+        recreate_enrollments=recreate_enrollments,
+    ).execute(strategy=strategy)
 
     client = BigQueryClient(project_id, dataset_id)
     for config in updated_external_configs:
@@ -689,4 +690,5 @@ def ensure_enrollments(
         date=AnalysisExecutor._today(),
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if config_file else None,
-    ).ensure_enrollments(recreate_enrollments=recreate_enrollments)
+        recreate_enrollments=recreate_enrollments,
+    ).ensure_enrollments()

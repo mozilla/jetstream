@@ -10,7 +10,6 @@ spec:
     - name: project_id
     - name: dataset_id
     - name: bucket
-    - name: recreate_enrollments
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -62,8 +61,7 @@ spec:
         jetstream, --log_to_bigquery, ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
-        "--project_id={{workflow.parameters.project_id}}",
-        "--recreate-enrollments={{workflow.parameters.recreate_enrollments}}"
+        "--project_id={{workflow.parameters.project_id}}"
       ]
 
   - name: analyse-experiment
