@@ -283,6 +283,10 @@ class ExperimentConfiguration:
         except KeyError:
             raise ValueError(f"Unknown platform {self.app_name}")
 
+    @property
+    def skip(self) -> bool:
+        return self.experiment_spec.skip
+
     # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
     # python-returns-typeerror-object-no
     def __getstate__(self):
@@ -301,17 +305,17 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
     instance.parse_date(value)
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True)
 class ExperimentSpec:
     """Describes the interface for overriding experiment details."""
 
-    # TODO: Expand this list.
     enrollment_query: Optional[str] = None
     enrollment_period: Optional[int] = None
     reference_branch: Optional[str] = None
     start_date: Optional[str] = attr.ib(default=None, validator=_validate_yyyy_mm_dd)
     end_date: Optional[str] = attr.ib(default=None, validator=_validate_yyyy_mm_dd)
     segments: List[SegmentReference] = attr.Factory(list)
+    skip: bool = False
 
     @staticmethod
     def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
