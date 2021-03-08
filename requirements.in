@@ -54,7 +54,7 @@ google-api-core[grpc]==1.26.0
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
-google-auth==1.27.0
+google-auth==1.27.1
     # via
     #   google-api-core
     #   google-cloud-core
