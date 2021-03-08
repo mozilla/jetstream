@@ -13,7 +13,11 @@ import toml
 import jetstream.analysis
 from jetstream.analysis import Analysis, AnalysisPeriod
 from jetstream.config import AnalysisSpec
-from jetstream.errors import HighPopulationException, NoEnrollmentPeriodException
+from jetstream.errors import (
+    ExplicitSkipException,
+    HighPopulationException,
+    NoEnrollmentPeriodException,
+)
 from jetstream.experimenter import ExperimentV1
 
 
@@ -176,6 +180,21 @@ def test_is_high_population_check(experiments):
 
     with pytest.raises(HighPopulationException):
         Analysis("spam", "eggs", config).check_runnable()
+
+
+def test_skip_works(experiments):
+    conf = dedent(
+        """
+        [experiment]
+        skip = true
+        """
+    )
+    spec = AnalysisSpec.from_dict(toml.loads(conf))
+    configured = spec.resolve(experiments[0])
+    with pytest.raises(ExplicitSkipException):
+        Analysis("test", "test", configured).run(
+            current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+        )
 
 
 def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):

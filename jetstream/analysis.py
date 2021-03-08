@@ -266,6 +266,9 @@ class Analysis:
             # some experiments do not have a normandy slug
             raise errors.NoSlugException()
 
+        if self.config.experiment.skip:
+            raise errors.ExplicitSkipException(self.config.experiment.normandy_slug)
+
         if self.config.experiment.is_high_population:
             raise errors.HighPopulationException(self.config.experiment.normandy_slug)
 

@@ -33,3 +33,8 @@ class EnrollmentLongerThanAnalysisException(ValidationException):
 class HighPopulationException(ValidationException):
     def __init__(self, normandy_slug, message="Experiment has high population."):
         super().__init__(f"{normandy_slug} -> {message}")
+
+
+class ExplicitSkipException(ValidationException):
+    def __init__(self, normandy_slug, message="Experiment is configured with skip=true."):
+        super().__init__(f"{normandy_slug} -> {message}")
