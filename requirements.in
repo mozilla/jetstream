@@ -140,7 +140,7 @@ packaging==20.9
     #   google-api-core
     #   google-cloud-bigquery
     #   pytest
-pandas==1.2.2
+pandas==1.2.3
     # via
     #   mozanalysis
     #   statsmodels
