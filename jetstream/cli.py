@@ -17,7 +17,7 @@ from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
 from .config import AnalysisSpec
 from .dryrun import DryRunFailedError
-from .errors import ValidationException
+from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
@@ -562,4 +562,6 @@ def validate_config(path: Iterable[os.PathLike]):
             print("")
             print(str(e))
             dirty = True
+        except ExplicitSkipException:
+            print("Found an explicit skip directive; will ignore this experiment.")
     sys.exit(1 if dirty else 0)
