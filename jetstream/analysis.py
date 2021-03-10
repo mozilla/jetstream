@@ -389,6 +389,8 @@ class Analysis:
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy
 
+        self.ensure_enrollments(current_date)
+
         # set up dask
         _dask_cluster = _dask_cluster or LocalCluster(
             dashboard_address=DASK_DASHBOARD_ADDRESS,

@@ -164,7 +164,6 @@ class SerialExecutorStrategy:
 
                 config = spec.resolve(experiment, external_configs)
                 analysis = self.analysis_class(self.project_id, self.dataset_id, config)
-                analysis.ensure_enrollments(date)
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id)
             except ValidationException as e:

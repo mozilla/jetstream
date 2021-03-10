@@ -90,7 +90,7 @@ def test_regression_20200320():
         analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
 
 
-def test_regression_20200316():
+def test_regression_20200316(monkeypatch):
     experiment_json = r"""
     {
       "experiment_url": "https://blah/experiments/search-tips-aka-nudges/",
@@ -146,6 +146,8 @@ def test_regression_20200316():
     """
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment)
+
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
 
@@ -159,7 +161,7 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     assert m.call_count == 2
 
 
-def test_analysis_doesnt_choke_on_segments(experiments):
+def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     conf = dedent(
         """
         [experiment]
@@ -169,6 +171,7 @@ def test_analysis_doesnt_choke_on_segments(experiments):
     spec = AnalysisSpec.from_dict(toml.loads(conf))
     configured = spec.resolve(experiments[0])
     assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
     Analysis("test", "test", configured).run(
         current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
     )
