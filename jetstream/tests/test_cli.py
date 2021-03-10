@@ -151,7 +151,7 @@ class TestAnalysisExecutor:
         )
 
         bigquery_mock_client = Mock()
-        monkeypatch.setattr("jetstream.bigquery_client.BigQueryClient", bigquery_mock_client)
+        monkeypatch.setattr("jetstream.cli.BigQueryClient", bigquery_mock_client)
 
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
@@ -176,7 +176,7 @@ class TestAnalysisExecutor:
         )
 
         bigquery_mock_client = Mock()
-        monkeypatch.setattr("jetstream.bigquery_client.BigQueryClient", bigquery_mock_client)
+        monkeypatch.setattr("jetstream.cli.BigQueryClient", bigquery_mock_client)
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
