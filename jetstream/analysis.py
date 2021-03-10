@@ -202,37 +202,7 @@ class Analysis:
                 enrollments_table,
             )
 
-            if "main" in metrics_sql:
-                # todo: remove/undo
-                # Run metrics queries in shared-prod as a workaround
-                shared_prod_client = BigQueryClient(
-                    project="moz-fx-data-shared-prod", dataset="tmp"
-                )
-
-                tmp_enrollments_table = f"moz-fx-data-shared-prod.tmp.{enrollments_table}"
-                job_config = bigquery.CopyJobConfig()
-                job_config.write_disposition = "WRITE_TRUNCATE"
-
-                shared_prod_client.client.copy_table(
-                    f"{self.project}.{self.dataset}.{enrollments_table}",
-                    tmp_enrollments_table,
-                    job_config=job_config,
-                ).result()
-
-                metrics_sql = metrics_sql.replace(enrollments_table, tmp_enrollments_table)
-
-                tmp_metrics_table = f"moz-fx-data-shared-prod.tmp.{res_table_name}"
-                shared_prod_client.execute(metrics_sql, res_table_name)
-
-                shared_prod_client.client.copy_table(
-                    tmp_metrics_table,
-                    f"{self.project}.{self.dataset}.{res_table_name}",
-                    job_config=job_config,
-                ).result()
-
-            else:
-                self.bigquery.execute(metrics_sql, res_table_name)
-
+            self.bigquery.execute(metrics_sql, res_table_name)
             self._publish_view(period)
 
         return res_table_name
