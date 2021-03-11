@@ -410,6 +410,7 @@ recreate_enrollments_option = click.option(
     "--recreate_enrollments",
     "--recreate-enrollments",
     help="Recreate the enrollments tables",
+    is_flag=True,
     default=False,
 )
 
