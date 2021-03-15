@@ -42,7 +42,7 @@ dask[distributed]==2021.3.0
     #   mozilla-jetstream
 distributed==2021.3.0
     # via dask
-flake8==3.8.4
+flake8==3.9.0
     # via pytest-flake8
 gitdb==4.0.5
     # via gitpython
@@ -63,7 +63,7 @@ google-cloud-bigquery-storage==2.3.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery==2.10.0
+google-cloud-bigquery==2.11.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -73,7 +73,7 @@ google-cloud-core==1.6.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==1.36.1
+google-cloud-storage==1.36.2
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -150,12 +150,12 @@ patsy==0.5.1
     # via statsmodels
 pluggy==0.13.1
     # via pytest
-proto-plus==1.14.2
+proto-plus==1.17.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.15.5
+protobuf==3.15.6
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -175,11 +175,11 @@ pyasn1==0.4.8
     # via
     #   pyasn1-modules
     #   rsa
-pycodestyle==2.6.0
+pycodestyle==2.7.0
     # via flake8
 pycparser==2.20
     # via cffi
-pyflakes==2.2.0
+pyflakes==2.3.0
     # via flake8
 pyparsing==2.4.7
     # via packaging
@@ -266,7 +266,7 @@ typing-extensions==3.7.4.3
     #   typing-inspect
 typing-inspect==0.6.0
     # via libcst
-urllib3==1.26.3
+urllib3==1.26.4
     # via requests
 zict==2.0.0
     # via distributed
