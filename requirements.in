@@ -150,7 +150,7 @@ patsy==0.5.1
     # via statsmodels
 pluggy==0.13.1
     # via pytest
-proto-plus==1.14.2
+proto-plus==1.17.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
