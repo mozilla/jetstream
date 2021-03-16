@@ -16,6 +16,7 @@ import logging
 from typing import Any
 
 import requests
+import requests.exceptions
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,15 @@ def dry_run_query(sql: str) -> None:
             headers={"Content-Type": "application/json"},
             data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
         )
+        response = r.json()
     except Exception as e:
+        # This may be a JSONDecode exception or something else.
+        # If we got a HTTP exception, that's probably the most interesting thing to raise.
+        try:
+            r.raise_for_status()
+        except requests.exceptions.RequestException as request_exception:
+            e = request_exception
         raise DryRunFailedError(e, sql)
-    response = r.json()
 
     if response["valid"]:
         logger.info("Dry run OK")
