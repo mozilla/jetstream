@@ -6,7 +6,13 @@
 const { BigQuery } = require('@google-cloud/bigquery');
 
 exports.dryRun = (req, res) => {
-  const bigquery = new BigQuery();
+  const bigquery = new BigQuery({
+    // See https://github.com/googleapis/nodejs-bigquery/issues/823#issuecomment-706928686
+    // Increase timeout for API request to 5 minutes
+    // Prevents network timeouts when dry runs take several minutes to finish
+    timeout: 1000 * 60 * 5
+  });
+  
   const options = {
     query: req.body.query,
     defaultDataset: { datasetId: req.body.dataset },
