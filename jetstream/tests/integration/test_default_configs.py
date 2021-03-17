@@ -9,7 +9,7 @@ import jetstream.experimenter
 
 
 class TestDefaultConfigs:
-    @pytest.mark.parametrize("platform_name,platform", jetstream.analysis.PLATFORM_CONFIGS.items())
+    @pytest.mark.parametrize("platform_name,platform", jetstream.config.PLATFORM_CONFIGS.items())
     def test_default_configs(self, platform_name, platform):
         experiment = jetstream.experimenter.Experiment(
             experimenter_slug="dummy-experiment",
