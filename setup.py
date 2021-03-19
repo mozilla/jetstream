@@ -22,7 +22,6 @@ extras = {
 
 setup(
     name="mozilla-jetstream",
-    use_incremental=True,
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
     description="Runs a thing that analyzes experiments",
@@ -51,7 +50,6 @@ setup(
         "google-cloud-container",
         "google-cloud-storage",
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
-        "incremental",
         "jinja2",
         "mozanalysis",
         "pyarrow",
@@ -62,7 +60,6 @@ setup(
         "statsmodels",
         "toml",
     ],
-    setup_requires=["incremental"],
     tests_require=test_dependencies,
     extras_require=extras,
     long_description=text_from_file("README.md"),
@@ -73,4 +70,7 @@ setup(
         pensieve=jetstream.cli:cli
         jetstream=jetstream.cli:cli
     """,
+    # This project does not issue releases, so this number is not meaningful
+    # and should not need to change.
+    version="2021.1.0",
 )
