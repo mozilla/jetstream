@@ -99,8 +99,6 @@ heapdict==1.0.1
     # via zict
 idna==2.10
     # via requests
-incremental==21.3.0
-    # via mozilla-jetstream
 iniconfig==1.1.1
     # via pytest
 jinja2==2.11.3
