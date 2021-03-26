@@ -480,3 +480,4 @@ def test_experiment_v6_status():
 def test_app_name():
     x = ExperimentV6.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
     assert x.appName == "fenix"
+    assert x.appId == "org.mozilla.fenix"
