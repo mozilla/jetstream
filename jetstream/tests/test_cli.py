@@ -230,6 +230,24 @@ class TestAnalysisExecutor:
         assert len(strategy.worklist) == 366
         assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
 
+    def test_post_facto_rerun_includes_overall_date(self, cli_experiments):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=["my_cool_experiment"],
+        )
+        strategy = DummyExecutorStrategy("project", "dataset")
+        success = executor.execute(
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=strategy,
+            today=dt.datetime(2022, 12, 31, tzinfo=UTC),
+        )
+        assert success
+        assert max(w[1] for w in strategy.worklist).date() == dt.date(2021, 2, 2)
+
     def test_bartleby(self, cli_experiments):
         "'I would prefer not to.' - Bartleby"
         executor = cli.AnalysisExecutor(
