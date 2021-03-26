@@ -491,6 +491,7 @@ class TestExperimentSpec:
             """
             [metrics]
             weekly = ["spam"]
+            28_day = ["spam"]
             overall = ["spam"]
 
             [metrics.spam]
