@@ -336,20 +336,32 @@ class TestAnalysisExecutor:
 
 
 class TestSerialExecutorStrategy:
-    def test_trivial_workflow(self, cli_experiments):
+    def test_trivial_workflow(self, cli_experiments, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         fake_analysis = Mock()
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", fake_analysis, lambda: cli_experiments
+            project_id="spam",
+            dataset_id="eggs",
+            bucket="bucket",
+            analysis_class=fake_analysis,
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
         )
         strategy.execute([])
         fake_analysis().run.assert_not_called()
 
-    def test_simple_workflow(self, cli_experiments):
+    def test_simple_workflow(self, cli_experiments, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         fake_analysis = Mock()
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", "bucket", fake_analysis, lambda: cli_experiments
+            project_id="spam",
+            dataset_id="eggs",
+            bucket="bucket",
+            analysis_class=fake_analysis,
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])
