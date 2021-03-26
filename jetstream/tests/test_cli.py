@@ -13,7 +13,11 @@ from jetstream import cli, experimenter, external_config
 from jetstream.config import AnalysisSpec
 
 
-@pytest.fixture
+@pytest.fixture(name="cli_experiments")
+def cli_experiment_fixture():
+    return cli_experiments()
+
+
 def cli_experiments():
     return experimenter.ExperimentCollection(
         [
@@ -74,7 +78,8 @@ class TestCli:
         assert date_range[0] == dt.date(2020, 5, 1)
         assert date_range[4] == dt.date(2020, 5, 5)
 
-    def test_validate_example_config(self, runner):
+    def test_validate_example_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():
             conf = dedent(
                 """
@@ -92,7 +97,8 @@ class TestCli:
             assert "Skipping example config" in result.output
             assert result.exit_code == 0
 
-    def test_validate_example_outcome_config(self, runner):
+    def test_validate_example_outcome_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():
             conf = dedent(
                 """
@@ -141,7 +147,7 @@ class TestAnalysisExecutor:
         assert success
         assert strategy.worklist == []
 
-    def test_single_date(self, cli_experiments, monkeypatch):
+    def test_single_date(self, monkeypatch):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -155,7 +161,7 @@ class TestAnalysisExecutor:
 
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
-            experiment_getter=lambda: cli_experiments,
+            experiment_getter=cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
             strategy=strategy,
         )
@@ -165,7 +171,7 @@ class TestAnalysisExecutor:
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
         assert bigquery_mock_client.called is False
 
-    def test_recreate_enrollments(self, cli_experiments, monkeypatch):
+    def test_recreate_enrollments(self, monkeypatch):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -179,7 +185,7 @@ class TestAnalysisExecutor:
         monkeypatch.setattr("jetstream.cli.BigQueryClient", bigquery_mock_client)
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
-            experiment_getter=lambda: cli_experiments,
+            experiment_getter=cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
             strategy=strategy,
         )
@@ -211,7 +217,7 @@ class TestAnalysisExecutor:
             x.normandy_slug for x in cli_experiments.experiments
         }
 
-    def test_any_date(self, cli_experiments):
+    def test_any_date(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -221,7 +227,7 @@ class TestAnalysisExecutor:
         )
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
-            experiment_getter=lambda: cli_experiments,
+            experiment_getter=cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
@@ -230,7 +236,25 @@ class TestAnalysisExecutor:
         assert len(strategy.worklist) == 366
         assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
 
-    def test_bartleby(self, cli_experiments):
+    def test_post_facto_rerun_includes_overall_date(self):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=["my_cool_experiment"],
+        )
+        strategy = DummyExecutorStrategy("project", "dataset")
+        success = executor.execute(
+            experiment_getter=cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+            strategy=strategy,
+            today=dt.datetime(2022, 12, 31, tzinfo=UTC),
+        )
+        assert success
+        assert max(w[1] for w in strategy.worklist).date() == dt.date(2021, 2, 2)
+
+    def test_bartleby(self):
         "'I would prefer not to.' - Bartleby"
         executor = cli.AnalysisExecutor(
             project_id="project",
@@ -242,13 +266,13 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         with pytest.raises(ValueError):
             executor.execute(
-                experiment_getter=lambda: cli_experiments,
+                experiment_getter=cli_experiments,
                 config_getter=external_config.ExternalConfigCollection,
                 strategy=strategy,
                 today=dt.datetime(2020, 12, 31, tzinfo=UTC),
             )
 
-    def test_bogus_experiment(self, cli_experiments):
+    def test_bogus_experiment(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -258,14 +282,14 @@ class TestAnalysisExecutor:
         )
         strategy = DummyExecutorStrategy("project", "dataset")
         executor.execute(
-            experiment_getter=lambda: cli_experiments,
+            experiment_getter=cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
         assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
 
-    def test_experiments_to_analyze(self, cli_experiments):
+    def test_experiments_to_analyze(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -273,10 +297,10 @@ class TestAnalysisExecutor:
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
-        result = executor._experiments_to_analyse(lambda: cli_experiments)
+        result = executor._experiments_to_analyse(cli_experiments)
         assert set(e.normandy_slug for e in result) == {"my_cool_experiment"}
 
-    def test_experiments_to_analyze_all(self, cli_experiments):
+    def test_experiments_to_analyze_all(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -286,9 +310,9 @@ class TestAnalysisExecutor:
         )
 
         with pytest.raises(ValueError):
-            executor._experiments_to_analyse(lambda: cli_experiments)
+            executor._experiments_to_analyse(cli_experiments)
 
-    def test_experiments_to_analyze_specific_date(self, cli_experiments):
+    def test_experiments_to_analyze_specific_date(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -297,10 +321,10 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        result = executor._experiments_to_analyse(lambda: cli_experiments)
+        result = executor._experiments_to_analyse(cli_experiments)
         assert len(result) == 2
 
-    def test_ensure_enrollments(self, cli_experiments, monkeypatch):
+    def test_ensure_enrollments(self, monkeypatch):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -312,26 +336,41 @@ class TestAnalysisExecutor:
         Analysis = Mock()
         monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
 
-        executor.ensure_enrollments(experiment_getter=lambda: cli_experiments)
+        executor.ensure_enrollments(
+            experiment_getter=cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+        )
 
         assert Analysis.ensure_enrollments.called_once()
 
 
 class TestSerialExecutorStrategy:
-    def test_trivial_workflow(self, cli_experiments):
+    def test_trivial_workflow(self, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         fake_analysis = Mock()
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", fake_analysis, lambda: cli_experiments
+            project_id="spam",
+            dataset_id="eggs",
+            bucket="bucket",
+            analysis_class=fake_analysis,
+            experiment_getter=cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
         )
         strategy.execute([])
         fake_analysis().run.assert_not_called()
 
-    def test_simple_workflow(self, cli_experiments):
+    def test_simple_workflow(self, cli_experiments, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         fake_analysis = Mock()
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment)
         strategy = cli.SerialExecutorStrategy(
-            "spam", "eggs", "bucket", fake_analysis, lambda: cli_experiments
+            project_id="spam",
+            dataset_id="eggs",
+            bucket="bucket",
+            analysis_class=fake_analysis,
+            experiment_getter=lambda: cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
         )
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(experiment.normandy_slug, run_date)])

@@ -214,7 +214,7 @@ class AnalysisExecutor:
             if self.date == All:
                 today = today or self._today()
                 end_date = min(
-                    experiment.end_date or today,
+                    experiment.end_date + timedelta(days=1) or today,
                     today,
                 )
                 run_dates = inclusive_date_range(experiment.start_date, end_date)
