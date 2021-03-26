@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 import attr
 import google.auth
+import re
 import requests
 import yaml
 from google.cloud.container_v1 import ClusterManagerClient
@@ -88,17 +89,30 @@ def submit_workflow(
             time.sleep(1)
 
     # check status of pods
-    all_pods_succeeded = True
     if "status" in workflow and workflow["status"] and workflow["status"]["nodes"]:
-        all_pods_succeeded = all(
-            [
-                node["phase"] == "Succeeded"
-                for _, node in workflow["status"]["nodes"].items()
-                if node["type"] == "Pod"
-            ]
-        )
+        pods_succeeded = [
+            # name contains the step name and all parameter values, e.g.
+            # jetstream-zvbcs[0].ensure-enrollments-and-analyze(0:dates:[\"2021-03-25\"],
+            # slug:set-default-as-first-screen-100-roll-out)[1].analyse-and-export(0:2021-03-25)
+            # [0].analyse-experiment(0)
+            # the end of the name "(0)" indicates the retry number
+            re.sub(r"\(\d\)", "", node["name"])  # remove retry number
+            for _, node in workflow["status"]["nodes"].items()
+            if node["type"] == "Pod" and node["phase"] == "Succeeded"
+        ]
 
-    return all_pods_succeeded
+        pods_failed = [
+            node["name"]
+            for _, node in workflow["status"]["nodes"].items()
+            if node["type"] == "Pod"
+            and node["phase"] == "Failed"
+            and re.sub(r"\(\d\)", "", node["name"]) not in pods_succeeded
+        ]
+
+    if len(pods_failed) > 0:
+        logger.info(f"The following pods failed: {pods_failed}")
+
+    return len(pods_failed) == 0
 
 
 @attr.s(auto_attribs=True)
