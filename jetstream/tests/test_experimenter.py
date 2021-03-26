@@ -269,6 +269,48 @@ EXPERIMENTER_FIXTURE_V6 = r"""
 ]
 """  # noqa
 
+FENIX_EXPERIMENT_FIXTURE = """
+{
+  "schemaVersion": "1.4.0",
+  "slug": "fenix-bookmark-list-icon",
+  "id": "fenix-bookmark-list-icon",
+  "arguments": {},
+  "application": "org.mozilla.fenix",
+  "appName": "fenix",
+  "appId": "org.mozilla.fenix",
+  "channel": "nightly",
+  "userFacingName": "Fenix Bookmark List Icon",
+  "userFacingDescription": "If we make the save-bookmark and access-bookmarks icons more visually distinct,  users are more likely to know what icon to click to save their bookmarks. By changing the access-bookmarks icon, we believe that we will and can see an increase in engagement with the save to bookmarks icon.",
+  "isEnrollmentPaused": true,
+  "bucketConfig": {
+    "randomizationUnit": "nimbus_id",
+    "namespace": "fenix-bookmark-list-icon-1",
+    "start": 0,
+    "count": 10000,
+    "total": 10000
+  },
+  "probeSets": [],
+  "outcomes": [],
+  "branches": [
+    {
+      "slug": "control",
+      "ratio": 1
+    },
+    {
+      "slug": "treatment",
+      "ratio": 1
+    }
+  ],
+  "targeting": "true",
+  "startDate": "2021-02-09T19:36:51.667812Z",
+  "endDate": "2021-03-11T12:53:30.039190Z",
+  "proposedDuration": 28,
+  "proposedEnrollment": 7,
+  "referenceBranch": "control",
+  "featureIds": []
+}
+"""  # noqa:E501
+
 
 @pytest.fixture
 def mock_session():
@@ -433,3 +475,8 @@ def test_experiment_v6_status():
     )
 
     assert experiment_complete.to_experiment().status == "Complete"
+
+
+def test_app_name():
+    x = ExperimentV6.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
+    assert x.appName == "fenix"

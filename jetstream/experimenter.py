@@ -139,10 +139,19 @@ class ExperimentV6:
 
     @classmethod
     def from_dict(cls, d) -> "ExperimentV6":
-        converter = cattr.Converter()
+        converter = cattr.GenConverter()
         converter.register_structure_hook(
             dt.datetime,
             lambda num, _: dt.datetime.fromisoformat(num.replace("Z", "+00:00")),
+        )
+        converter.register_structure_hook(
+            cls,
+            cattr.gen.make_dict_structure_fn(
+                cls,
+                converter,
+                _appName=cattr.override(rename="appName"),
+                _appId=cattr.override(rename="appId"),
+            ),
         )
         return converter.structure(d, cls)
 
