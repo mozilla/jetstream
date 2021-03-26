@@ -336,7 +336,10 @@ class TestAnalysisExecutor:
         Analysis = Mock()
         monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
 
-        executor.ensure_enrollments(experiment_getter=cli_experiments)
+        executor.ensure_enrollments(
+            experiment_getter=cli_experiments,
+            config_getter=external_config.ExternalConfigCollection,
+        )
 
         assert Analysis.ensure_enrollments.called_once()
 
