@@ -471,6 +471,7 @@ class Analysis:
         exp = mozanalysis.experiment.Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+            app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
         )
         enrollments_sql = exp.build_enrollments_query(
             time_limits,
