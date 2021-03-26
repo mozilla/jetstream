@@ -90,7 +90,7 @@ def submit_workflow(
 
     # check status of pods
     if "status" in workflow and workflow["status"] and workflow["status"]["nodes"]:
-        pods_succeeded = [
+        pods_succeeded = {
             # name contains the step name and all parameter values, e.g.
             # jetstream-zvbcs[0].ensure-enrollments-and-analyze(0:dates:[\"2021-03-25\"],
             # slug:set-default-as-first-screen-100-roll-out)[1].analyse-and-export(0:2021-03-25)
@@ -99,7 +99,7 @@ def submit_workflow(
             re.sub(r"\(\d\)", "", node["name"])  # remove retry number
             for _, node in workflow["status"]["nodes"].items()
             if node["type"] == "Pod" and node["phase"] == "Succeeded"
-        ]
+        }
 
         pods_failed = [
             node["name"]
