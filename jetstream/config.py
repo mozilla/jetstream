@@ -421,6 +421,7 @@ class MetricsSpec:
 
     daily: List[MetricReference] = attr.Factory(list)
     weekly: List[MetricReference] = attr.Factory(list)
+    days_28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
@@ -430,7 +431,10 @@ class MetricsSpec:
         params: Dict[str, Any] = {}
         known_keys = {f.name for f in attr.fields(cls)}
         for k in known_keys:
-            v = d.get(k, [])
+            if k == "days_28":
+                v = d.get("28_day", [])
+            else:
+                v = d.get(k, [])
             if not isinstance(v, list):
                 raise ValueError(f"metrics.{k} should be a list of metrics")
             params[k] = [MetricReference(m) for m in v]
@@ -438,7 +442,7 @@ class MetricsSpec:
         params["definitions"] = {
             k: _converter.structure({"name": k, **v}, MetricDefinition)
             for k, v in d.items()
-            if k not in known_keys
+            if k not in known_keys and k != "28_day"
         }
         return cls(**params)
 
@@ -475,6 +479,7 @@ class MetricsSpec:
         """
         self.daily += other.daily
         self.weekly += other.weekly
+        self.days_28 += other.days_28
         self.overall += other.overall
         self.definitions.update(other.definitions)
 
@@ -723,7 +728,9 @@ class AnalysisSpec:
         # metrics defined in outcome snippets are only computed for
         # weekly and overall analysis windows
         self.metrics.merge(
-            MetricsSpec(daily=[], weekly=metrics, overall=metrics, definitions=other.metrics)
+            MetricsSpec(
+                daily=[], weekly=metrics, days_28=[], overall=metrics, definitions=other.metrics
+            )
         )
         self.data_sources.merge(other.data_sources)
 

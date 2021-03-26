@@ -5,11 +5,12 @@ import re
 class AnalysisPeriod(enum.Enum):
     DAY = "day"
     WEEK = "week"
+    DAYS_28 = "days_28"
     OVERALL = "overall"
 
     @property
     def adjective(self) -> str:
-        d = {"day": "daily", "week": "weekly", "overall": "overall"}
+        d = {"day": "daily", "week": "weekly", "days_28": "days_28", "overall": "overall"}
         return d[self.value]
 
 
