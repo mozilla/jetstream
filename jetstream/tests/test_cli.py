@@ -13,7 +13,11 @@ from jetstream import cli, experimenter, external_config
 from jetstream.config import AnalysisSpec
 
 
-@pytest.fixture
+@pytest.fixture(name="cli_experiments")
+def cli_experiment_fixture():
+    return cli_experiments()
+
+
 def cli_experiments():
     return experimenter.ExperimentCollection(
         [
@@ -74,7 +78,8 @@ class TestCli:
         assert date_range[0] == dt.date(2020, 5, 1)
         assert date_range[4] == dt.date(2020, 5, 5)
 
-    def test_validate_example_config(self, runner):
+    def test_validate_example_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():
             conf = dedent(
                 """
@@ -92,7 +97,8 @@ class TestCli:
             assert "Skipping example config" in result.output
             assert result.exit_code == 0
 
-    def test_validate_example_outcome_config(self, runner):
+    def test_validate_example_outcome_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():
             conf = dedent(
                 """
