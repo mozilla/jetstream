@@ -36,7 +36,7 @@ coverage==5.5
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.3.0
+dask[distributed]==2021.3.1
     # via
     #   distributed
     #   mozilla-jetstream

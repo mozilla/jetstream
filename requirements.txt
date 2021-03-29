@@ -99,6 +99,7 @@ cloudpickle==1.6.0 \
     --hash=sha256:9bc994f9e9447593bd0a45371f0e7ac7333710fcf64a4eb9834bf149f4ef2f32
     # via
     #   -r requirements.in
+    #   dask
     #   distributed
 coverage==5.5 \
     --hash=sha256:004d1880bed2d97151facef49f08e255a20ceb6f9432df75f4eef018fdd5a78c \
@@ -156,9 +157,9 @@ coverage==5.5 \
     # via
     #   -r requirements.in
     #   pytest-cov
-dask[distributed]==2021.3.0 \
-    --hash=sha256:566054b493d63c15732f2a640382b21e861571d61639f59341bc7695a9be138e \
-    --hash=sha256:9943b58215090ec388250c572ba4484b9e0f3e57092c3045871f79e69b3c8658
+dask[distributed]==2021.3.1 \
+    --hash=sha256:0dd19b4ac92b21932ee145848a00d88ee83461e5ee1d0862a270b5fba1b9620e \
+    --hash=sha256:1fa7e1809e7c50c5505297b03e6ee161e0695df73b4c4051b5b1c8fd670bf5d7
     # via
     #   -r requirements.in
     #   distributed
@@ -174,6 +175,10 @@ flake8==3.9.0 \
     # via
     #   -r requirements.in
     #   pytest-flake8
+fsspec==0.8.7 \
+    --hash=sha256:4b11557a90ac637089b10afa4c77adf42080c0696f6f2771c41ce92d73c41432 \
+    --hash=sha256:65dbf8244a3a3d23342109925f9f588c7551b2b01a5f47e555043b17e2b32d62
+    # via dask
 gitdb==4.0.5 \
     --hash=sha256:91f36bfb1ab7949b3b40e23736db18231bf7593edada2ba5c3a174a7b23657ac \
     --hash=sha256:c9e1f2d0db7ddb9a704c2a0217be31214e91a4fe1dea1efad19ae42ba0c285c9
@@ -367,6 +372,10 @@ libcst==0.3.17 \
     #   -r requirements.in
     #   google-cloud-bigquery-storage
     #   google-cloud-container
+locket==0.2.1 \
+    --hash=sha256:12b6ada59d1f50710bca9704dbadd3f447dbf8dac6664575c1281cadab8e6449 \
+    --hash=sha256:3e1faba403619fe201552f083f1ecbf23f550941bc51985ac6ed4d02d25056dd
+    # via partd
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
     --hash=sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161 \
@@ -559,6 +568,10 @@ pandas==1.2.3 \
     #   -r requirements.in
     #   mozanalysis
     #   statsmodels
+partd==1.1.0 \
+    --hash=sha256:6e258bf0810701407ad1410d63d1a15cfd7b773fd9efe555dac6bb82cc8832b0 \
+    --hash=sha256:7a491cf254e5ab09e9e6a40d80195e5e0e5e169115bfb8287225cb0c207536d2
+    # via dask
 pathspec==0.8.1 \
     --hash=sha256:86379d6b86d75816baba717e64b1a3a3469deb93bb76d613c9ce79edc5cb68fd \
     --hash=sha256:aa0cb481c4041bf52ffa7b0d8fa6cd3e88a2ca4879c533c9153882ee2556790d
@@ -937,7 +950,9 @@ toolz==0.11.1 \
     --hash=sha256:c7a47921f07822fe534fb1c01c9931ab335a4390c782bd28c6bcc7c2f71f3fbf
     # via
     #   -r requirements.in
+    #   dask
     #   distributed
+    #   partd
 tornado==6.1 \
     --hash=sha256:0a00ff4561e2929a2c37ce706cb8233b7907e0cdc22eab98888aca5dd3775feb \
     --hash=sha256:0d321a39c36e5f2c4ff12b4ed58d41390460f798422c4504e09eb5678e09998c \
