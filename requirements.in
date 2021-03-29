@@ -48,7 +48,7 @@ gitdb==4.0.5
     # via gitpython
 gitpython==3.1.14
     # via mozilla-jetstream
-google-api-core[grpc]==1.26.1
+google-api-core[grpc]==1.26.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
