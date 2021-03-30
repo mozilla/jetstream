@@ -262,17 +262,3 @@ class ExperimentCollection:
                 if ex.start_date and ex.start_date >= since
             ]
         )
-
-    def end_on_or_after(self, after: dt.datetime) -> "ExperimentCollection":
-        """All experiments that ever launched that end on or after the specified time.
-
-        after should be a tz-aware datetime."""
-        cls = type(self)
-        # V6 experiments might not have an endDate set yet
-        return cls(
-            [
-                ex
-                for ex in self.ever_launched().experiments
-                if (ex.end_date and ex.end_date >= after) or ex.end_date is None
-            ]
-        )
