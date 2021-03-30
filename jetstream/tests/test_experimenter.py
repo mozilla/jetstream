@@ -353,29 +353,6 @@ def test_started_since(experiment_collection):
     assert len(recent.experiments) > 0
 
 
-def test_end_on_or_after(experiment_collection):
-    active_experiments = experiment_collection.end_on_or_after(
-        dt.datetime(2019, 12, 1, tzinfo=pytz.utc)
-    )
-    assert len(active_experiments.experiments) == 5
-    assert (
-        active_experiments.experiments[0].normandy_slug
-        == "bug-1629098-rapid-please-reject-me-beta-86"
-    )
-    assert (
-        active_experiments.experiments[1].normandy_slug
-        == "bug-1629000-rapid-testing-rapido-intake-1-release-79"
-    )
-    assert (
-        active_experiments.experiments[3].experimenter_slug
-        == "impact-of-level-2-etp-on-a-custom-distribution"
-    )
-    assert (
-        active_experiments.experiments[4].normandy_slug
-        == "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831"
-    )
-
-
 def test_normandy_experiment_slug(experiment_collection):
     normandy_slugs = list(map(lambda e: e.normandy_slug, experiment_collection.experiments))
     assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs

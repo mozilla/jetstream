@@ -28,7 +28,7 @@ from . import bq_normalize_name, external_config
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
-from .config import AnalysisSpec
+from .config import AnalysisConfiguration, AnalysisSpec
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
@@ -207,26 +207,27 @@ class AnalysisExecutor:
         ] = ExternalConfigCollection.from_github_repo,
         today: Optional[datetime] = None,
     ) -> bool:
-        run_experiments = self._experiments_to_analyse(experiment_getter)
+        run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
         worklist = []
 
-        for experiment in run_experiments:
+        for config in run_configs:
             if self.date == All:
                 today = today or self._today()
-                end_date = min(
-                    experiment.end_date + timedelta(days=1) or today,
-                    today,
-                )
-                run_dates = inclusive_date_range(experiment.start_date, end_date)
+                end_date = today
+                if config.experiment.end_date:
+                    end_date = config.experiment.end_date + timedelta(days=1)
+
+                end_date = min(end_date, today)
+                run_dates = inclusive_date_range(config.experiment.start_date, end_date)
             else:
                 run_dates = [self.date]
 
             for run_date in run_dates:
-                assert experiment.normandy_slug
-                worklist.append((experiment.normandy_slug, run_date))
+                assert config.experiment.normandy_slug
+                worklist.append((config.experiment.normandy_slug, run_date))
 
             if self.recreate_enrollments:
-                self._delete_enrollment_table(experiment)
+                self._delete_enrollment_table(config.experiment)
 
         return strategy.execute(worklist, self.configuration_map)
 
@@ -238,38 +239,75 @@ class AnalysisExecutor:
         enrollments_table = f"{self.project_id}.{self.dataset_id}.enrollments_{normalized_slug}"
         client.delete_table(enrollments_table)
 
-    def _experiments_to_analyse(
+    def _experiments_to_configs(
+        self,
+        experiments: List[mozanalysis.experiment.Experiment],
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+    ) -> List[AnalysisConfiguration]:
+        """Convert mozanalysis experiments to analysis configs."""
+        configs = []
+
+        for experiment in experiments:
+            spec = AnalysisSpec.default_for_experiment(experiment)
+            if self.configuration_map and experiment.normandy_slug in self.configuration_map:
+                config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
+                spec.merge(AnalysisSpec.from_dict(config_dict))
+            else:
+                external_configs = config_getter()
+                if external_spec := external_configs.spec_for_experiment(experiment.normandy_slug):
+                    spec.merge(external_spec)
+
+            configs.append(spec.resolve(experiment))
+
+        return configs
+
+    def _experiment_configs_to_analyse(
         self,
         experiment_getter: Callable[
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
-    ) -> List[mozanalysis.experiment.Experiment]:
-        """Fetch experiments that are to be analysed."""
+        config_getter: Callable[
+            [], ExternalConfigCollection
+        ] = ExternalConfigCollection.from_github_repo,
+    ) -> List[AnalysisConfiguration]:
+        """Fetch configs of experiments that are to be analysed."""
         experiments = experiment_getter()
-        run_experiments = []
+        run_configs = []
 
         if isinstance(self.experiment_slugs, AllType):
             if isinstance(self.date, AllType):
                 raise ValueError("Declining to re-run all experiments for all time.")
-            run_experiments = [
-                e
-                for e in (
-                    experiments.end_on_or_after(self.date)
-                    .of_type(RECOGNIZED_EXPERIMENT_TYPES)
-                    .experiments
-                )
-                if e.normandy_slug is not None
-            ]
+
+            launched_experiments = (
+                experiments.ever_launched().of_type(RECOGNIZED_EXPERIMENT_TYPES).experiments
+            )
+
+            launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
+
+            for config in launched_configs:
+                if config.experiment.normandy_slug is not None:
+                    # get end_date from external config
+                    if config.experiment.end_date is None or (
+                        config.experiment.end_date and config.experiment.end_date >= self.date
+                    ):
+                        run_configs.append(config)
         else:
+            existing_experiments = []
+
             for slug in self.experiment_slugs:
                 if e := experiments.with_slug(slug).experiments:
-                    run_experiments.append(e[0])
+                    existing_experiments.append(e[0])
                 else:
                     logger.warning(
                         f"Slug {slug} provided but not found in Experimenter; skipping.",
                         extra={"experiment": slug},
                     )
-        return run_experiments
+
+            run_configs = self._experiments_to_configs(existing_experiments, config_getter)
+
+        return run_configs
 
     def ensure_enrollments(
         self,
@@ -281,35 +319,26 @@ class AnalysisExecutor:
         ] = ExperimentCollection.from_experimenter,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
-        run_experiments = self._experiments_to_analyse(experiment_getter)
-        for experiment in run_experiments:
+        run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
+        for config in run_configs:
             try:
-                spec = AnalysisSpec.default_for_experiment(experiment)
-                if self.configuration_map and experiment.normandy_slug in self.configuration_map:
-                    config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
-                    spec.merge(AnalysisSpec.from_dict(config_dict))
-                else:
-                    external_configs = config_getter()
-                    if external_spec := external_configs.spec_for_experiment(
-                        experiment.normandy_slug
-                    ):
-                        spec.merge(external_spec)
-
-                config = spec.resolve(experiment)
                 analysis = Analysis(self.project_id, self.dataset_id, config)
 
-                if self.date == All:
+                if isinstance(self.date, AllType):
                     today = self._today()
-                    end_date = min(
-                        experiment.end_date or today,
-                        today,
-                    )
+                    end_date = today
+                    if config.experiment.end_date:
+                        end_date = config.experiment.end_date
+
+                    end_date = min(end_date, today)
                 else:
                     end_date = self.date
 
                 analysis.ensure_enrollments(end_date)
             except Exception as e:
-                logger.exception(str(e), exc_info=e, extra={"experiment": experiment.normandy_slug})
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                )
                 raise e
 
 

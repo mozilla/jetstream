@@ -7,6 +7,7 @@ import attr
 import os
 import pytest
 from pytz import UTC
+import toml
 from unittest import mock
 
 from jetstream import cli, experimenter, external_config
@@ -297,8 +298,42 @@ class TestAnalysisExecutor:
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
-        result = executor._experiments_to_analyse(cli_experiments)
-        assert set(e.normandy_slug for e in result) == {"my_cool_experiment"}
+        result = executor._experiment_configs_to_analyse(cli_experiments)
+        assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
+
+    def test_experiments_to_analyze_end_date_override(self):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=dt.datetime(2021, 2, 15, tzinfo=UTC),
+            experiment_slugs=cli.All,
+        )
+        result = executor._experiment_configs_to_analyse(cli_experiments)
+        assert result == []
+
+        conf = dedent(
+            """
+            [experiment]
+            end_date = 2021-03-01
+            """
+        )
+
+        external_configs = external_config.ExternalConfigCollection(
+            [
+                external_config.ExternalConfig(
+                    slug="my_cool_experiment",
+                    spec=AnalysisSpec.from_dict(toml.loads(conf)),
+                    last_modified=dt.datetime(2021, 2, 15, tzinfo=UTC),
+                )
+            ]
+        )
+
+        def config_getter():
+            return external_configs
+
+        result = executor._experiment_configs_to_analyse(cli_experiments, config_getter)
+        assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_all(self):
         executor = cli.AnalysisExecutor(
@@ -310,7 +345,7 @@ class TestAnalysisExecutor:
         )
 
         with pytest.raises(ValueError):
-            executor._experiments_to_analyse(cli_experiments)
+            executor._experiment_configs_to_analyse(cli_experiments)
 
     def test_experiments_to_analyze_specific_date(self):
         executor = cli.AnalysisExecutor(
@@ -321,7 +356,7 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        result = executor._experiments_to_analyse(cli_experiments)
+        result = executor._experiment_configs_to_analyse(cli_experiments)
         assert len(result) == 2
 
     def test_ensure_enrollments(self, monkeypatch):
