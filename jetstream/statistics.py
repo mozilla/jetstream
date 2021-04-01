@@ -166,9 +166,16 @@ class Statistic(ABC):
                     ref_branch_list = [reference_branch]
 
                 for ref_branch in ref_branch_list:
-                    statistic_result_collection.data += self.transform(
-                        df, metric, ref_branch, experiment
-                    ).data
+                    try:
+                        statistic_result_collection.data += self.transform(
+                            df, metric, ref_branch, experiment
+                        ).data
+                    except Exception as e:
+                        logger.error(
+                            f"Error while computing statistic {self.name} for metric {metric}: {e}",
+                            extra={"experiment": experiment.normandy_slug},
+                        )
+
                     df = df[df.branch != ref_branch]
 
         return statistic_result_collection
