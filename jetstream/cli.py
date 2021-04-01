@@ -301,7 +301,18 @@ class AnalysisExecutor:
 
             run_configs = self._experiments_to_configs(existing_experiments, config_getter)
 
-        return run_configs
+        # filter out experiments that are always getting skipped
+        non_skipped_configs = []
+        for c in run_configs:
+            if not c.experiment.skip:
+                non_skipped_configs.append(c)
+            else:
+                logger.warning(
+                    f"Skipping {c.experiment.normandy_slug}; skip=true in config.",
+                    extra={"experiment": c.experiment.normandy_slug},
+                )
+
+        return non_skipped_configs
 
     def ensure_enrollments(
         self,
