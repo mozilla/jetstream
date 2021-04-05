@@ -109,7 +109,7 @@ jinja2==2.11.3
     # via mozilla-jetstream
 jsonschema==3.2.0
     # via mozilla-jetstream
-libcst==0.3.17
+libcst==0.3.18
     # via
     #   google-cloud-bigquery-storage
     #   google-cloud-container
