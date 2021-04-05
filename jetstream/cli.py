@@ -78,7 +78,7 @@ class ExecutorStrategy(Protocol):
 
     def execute(
         self,
-        worklist: Iterable[Tuple[str, datetime]],
+        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
         configuration_map: Optional[Mapping[str, TextIO]] = None,
     ) -> bool:
         ...
@@ -101,15 +101,17 @@ class ArgoExecutorStrategy:
 
     def execute(
         self,
-        worklist: Iterable[Tuple[str, datetime]],
+        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
         configuration_map: Optional[Mapping[str, TextIO]] = None,
     ):
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: Dict[str, List[str]] = {}
-        for (slug, date) in worklist:
-            experiments_config.setdefault(slug, []).append(date.strftime("%Y-%m-%d"))
+        for (config, date) in worklist:
+            experiments_config.setdefault(config.experiment.normandy_slug, []).append(
+                date.strftime("%Y-%m-%d")
+            )
 
         experiments_config_list = [
             {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
@@ -145,24 +147,12 @@ class SerialExecutorStrategy:
 
     def execute(
         self,
-        worklist: Iterable[Tuple[str, datetime]],
+        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
         configuration_map: Optional[Mapping[str, TextIO]] = None,
     ):
         failed = False
-        experiments = self.experiment_getter()
-        for slug, date in worklist:
+        for config, date in worklist:
             try:
-                experiment = experiments.with_slug(slug).experiments[0]
-                spec = AnalysisSpec.default_for_experiment(experiment)
-                if configuration_map and slug in configuration_map:
-                    config_dict = toml.load(configuration_map[slug])
-                    spec.merge(AnalysisSpec.from_dict(config_dict))
-                else:
-                    external_configs = self.config_getter()
-                    if external_spec := external_configs.spec_for_experiment(slug):
-                        spec.merge(external_spec)
-
-                config = spec.resolve(experiment, external_configs)
                 analysis = self.analysis_class(self.project_id, self.dataset_id, config)
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id)
@@ -170,10 +160,14 @@ class SerialExecutorStrategy:
                 # log custom Jetstream exceptions but let the workflow succeed;
                 # this prevents Argo from retrying the analysis unnecessarily
                 # when it is already clear that it won't succeed
-                logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                )
             except Exception as e:
                 failed = True
-                logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                )
         return not failed
 
 
@@ -224,7 +218,7 @@ class AnalysisExecutor:
 
             for run_date in run_dates:
                 assert config.experiment.normandy_slug
-                worklist.append((config.experiment.normandy_slug, run_date))
+                worklist.append((config, run_date))
 
             if self.recreate_enrollments:
                 self._delete_enrollment_table(config.experiment)

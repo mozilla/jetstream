@@ -168,7 +168,7 @@ class TestAnalysisExecutor:
         )
         assert success
         assert len(strategy.worklist) == 1
-        assert strategy.worklist[0][0] == "my_cool_experiment"
+        assert strategy.worklist[0][0].experiment.normandy_slug == "my_cool_experiment"
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
         assert bigquery_mock_client.called is False
 
@@ -192,7 +192,7 @@ class TestAnalysisExecutor:
         )
         assert success
         assert len(strategy.worklist) == 1
-        assert strategy.worklist[0][0] == "my_cool_experiment"
+        assert strategy.worklist[0][0].experiment.normandy_slug == "my_cool_experiment"
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
         assert bigquery_mock_client.delete_table.called_once_with(
             "project.dataset.enrollments_my_cool_experiment"
@@ -214,7 +214,7 @@ class TestAnalysisExecutor:
         )
         assert success
         assert len(strategy.worklist) == 2
-        assert {slug for slug, _ in strategy.worklist} == {
+        assert {c.experiment.normandy_slug for c, _ in strategy.worklist} == {
             x.normandy_slug for x in cli_experiments.experiments
         }
 
@@ -235,7 +235,9 @@ class TestAnalysisExecutor:
         )
         assert success
         assert len(strategy.worklist) == 366
-        assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
+        assert set(w[0].experiment.normandy_slug for w in strategy.worklist) == {
+            "my_cool_experiment"
+        }
 
     def test_post_facto_rerun_includes_overall_date(self):
         executor = cli.AnalysisExecutor(
@@ -288,7 +290,9 @@ class TestAnalysisExecutor:
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
-        assert set(w[0] for w in strategy.worklist) == {"my_cool_experiment"}
+        assert set(w[0].experiment.normandy_slug for w in strategy.worklist) == {
+            "my_cool_experiment"
+        }
 
     def test_experiments_to_analyze(self):
         executor = cli.AnalysisExecutor(
@@ -298,7 +302,9 @@ class TestAnalysisExecutor:
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
-        result = executor._experiment_configs_to_analyse(cli_experiments)
+        result = executor._experiment_configs_to_analyse(
+            cli_experiments, external_config.ExternalConfigCollection
+        )
         assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_end_date_override(self):
@@ -309,7 +315,9 @@ class TestAnalysisExecutor:
             date=dt.datetime(2021, 2, 15, tzinfo=UTC),
             experiment_slugs=cli.All,
         )
-        result = executor._experiment_configs_to_analyse(cli_experiments)
+        result = executor._experiment_configs_to_analyse(
+            cli_experiments, external_config.ExternalConfigCollection
+        )
         assert result == []
 
         conf = dedent(
@@ -356,7 +364,9 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        result = executor._experiment_configs_to_analyse(cli_experiments)
+        result = executor._experiment_configs_to_analyse(
+            cli_experiments, external_config.ExternalConfigCollection
+        )
         assert len(result) == 2
 
     def test_ensure_enrollments(self, monkeypatch):
@@ -407,15 +417,18 @@ class TestSerialExecutorStrategy:
             experiment_getter=lambda: cli_experiments,
             config_getter=external_config.ExternalConfigCollection,
         )
+        config = spec.resolve(experiment)
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
-        strategy.execute([(experiment.normandy_slug, run_date)])
-        fake_analysis.assert_called_once_with("spam", "eggs", spec.resolve(experiment))
+        strategy.execute([(config, run_date)])
+        fake_analysis.assert_called_once_with("spam", "eggs", config)
         fake_analysis().run.assert_called_once_with(run_date)
 
 
 class TestArgoExecutorStrategy:
     def test_simple_workflow(self, cli_experiments):
         experiment = cli_experiments.experiments[0]
+        spec = AnalysisSpec.default_for_experiment(experiment)
+        config = spec.resolve(experiment)
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             strategy = cli.ArgoExecutorStrategy(
@@ -430,7 +443,7 @@ class TestArgoExecutorStrategy:
                 lambda: cli_experiments,
             )
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
-            strategy.execute([(experiment.normandy_slug, run_date)])
+            strategy.execute([(config, run_date)])
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
