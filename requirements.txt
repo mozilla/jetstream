@@ -163,9 +163,9 @@ dask[distributed]==2021.3.1 \
     # via
     #   -r requirements.in
     #   distributed
-distributed==2021.3.1 \
-    --hash=sha256:1f36247744e375d5d11c44a3b18891dfde42832132de3cb94efcb06b6da31f68 \
-    --hash=sha256:e2f15543147722a08fb3f3c2e6671ee1c4a7b13cb22482941a8d1c7b005a7a32
+distributed==2021.4.0 \
+    --hash=sha256:44618b7682d36496efcc8230f817d3b99432935fab475513be0c707fcf26c837 \
+    --hash=sha256:7af2b77819a162d8f5973fb015be5a1641f47901d2e254409dafa2d7fcc3fce6
     # via
     #   -r requirements.in
     #   dask
