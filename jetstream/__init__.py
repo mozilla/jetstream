@@ -5,12 +5,17 @@ import re
 class AnalysisPeriod(enum.Enum):
     DAY = "day"
     WEEK = "week"
-    DAYS_28 = "days_28"
+    DAYS_28 = "days28"
     OVERALL = "overall"
 
     @property
-    def adjective(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days_28": "days_28", "overall": "overall"}
+    def mozanalysis_label(self) -> str:
+        d = {"day": "daily", "week": "weekly", "days28": "28_day", "overall": "overall"}
+        return d[self.value]
+
+    @property
+    def table_suffix(self) -> str:
+        d = {"day": "daily", "week": "weekly", "days28": "days28", "overall": "overall"}
         return d[self.value]
 
 

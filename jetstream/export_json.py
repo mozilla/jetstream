@@ -21,7 +21,7 @@ def _get_statistics_tables_last_modified(
     if experiment_slug:
         experiment_table = bq_normalize_name(experiment_slug)
 
-    periods = [f"'statistics_{experiment_table}_{p.adjective}'" for p in AnalysisPeriod]
+    periods = [f"'statistics_{experiment_table}_{p.table_suffix}'" for p in AnalysisPeriod]
     expression = " OR table_id LIKE ".join(periods)
 
     job = client.query(

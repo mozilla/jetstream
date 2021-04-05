@@ -51,6 +51,9 @@ def test_get_timelimits_if_ready(experiments):
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date)
     assert analysis2._get_timelimits_if_ready(AnalysisPeriod.OVERALL, date) is None
 
+    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=34)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAYS_28, date)
+
 
 def test_regression_20200320():
     experiment_json = r"""
