@@ -241,7 +241,7 @@ six==1.15.0
     #   patsy
     #   protobuf
     #   python-dateutil
-smart-open[gcp]==4.2.0
+smart-open[gcp]==5.0.0
     # via mozilla-jetstream
 smmap==4.0.0
     # via gitdb

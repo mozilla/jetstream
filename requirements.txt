@@ -234,9 +234,7 @@ google-cloud-core==1.6.0 \
 google-cloud-storage==1.37.0 \
     --hash=sha256:2003c5ed473f9b37d045f30c4c8be7d30d7d0eb8a97bcd2c58b3a8bc549c4ccc \
     --hash=sha256:d82a3e22cd3114188ad88004f950bb00af29dacd6ad02460af1d681a31146c50
-    # via
-    #   -r requirements.in
-    #   smart-open
+    # via -r requirements.in
 google-crc32c==1.1.2 \
     --hash=sha256:0ae3cf54e0d4d83c8af1afe96fc0970fbf32f1b29275f3bfd44ce25c4b622a2b \
     --hash=sha256:0dd9b61d0c63043b013349c9ec8a83ec2b05c96410c5bc257da5d0de743fc171 \
@@ -900,8 +898,9 @@ six==1.15.0 \
     #   patsy
     #   protobuf
     #   python-dateutil
-smart-open[gcp]==4.2.0 \
-    --hash=sha256:d9f5a0f173ccb9bbae528db5a3804f57145815774f77ef755b9b0f3b4b2a9dcb
+smart-open[gcp]==5.0.0 \
+    --hash=sha256:02e5e02207d955a1f9fd924c37900ac272536bd24393ae731b6945d4f766015f \
+    --hash=sha256:ed310ac51a797051b42f9437a566ac8149a3abf8c80ab994a8bd92d96fb7cf44
     # via -r requirements.in
 smmap==4.0.0 \
     --hash=sha256:7e65386bd122d45405ddf795637b7f7d2b532e7e401d46bbe3fb49b9986d5182 \
