@@ -69,7 +69,7 @@ class Analysis:
             try:
                 current_time_limits = TimeLimits.for_ts(
                     last_date_full_data=current_date_str,
-                    time_series_period=period.adjective,
+                    time_series_period=period.mozanalysis_label,
                     **time_limits_args,
                 )
             except ValueError:
@@ -80,7 +80,7 @@ class Analysis:
             try:
                 prior_time_limits = TimeLimits.for_ts(
                     last_date_full_data=prior_date_str,
-                    time_series_period=period.adjective,
+                    time_series_period=period.mozanalysis_label,
                     **time_limits_args,
                 )
             except ValueError:
@@ -129,7 +129,7 @@ class Analysis:
     def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        view_name = "_".join([normalized_slug, window_period.adjective])
+        view_name = "_".join([normalized_slug, window_period.table_suffix])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
         if table_prefix:

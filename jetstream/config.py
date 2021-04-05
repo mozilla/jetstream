@@ -421,7 +421,7 @@ class MetricsSpec:
 
     daily: List[MetricReference] = attr.Factory(list)
     weekly: List[MetricReference] = attr.Factory(list)
-    days_28: List[MetricReference] = attr.Factory(list)
+    days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
@@ -431,7 +431,7 @@ class MetricsSpec:
         params: Dict[str, Any] = {}
         known_keys = {f.name for f in attr.fields(cls)}
         for k in known_keys:
-            if k == "days_28":
+            if k == "days28":
                 v = d.get("28_day", [])
             else:
                 v = d.get(k, [])
@@ -454,7 +454,7 @@ class MetricsSpec:
             # these summaries might contain duplicates
             summaries = [
                 summary
-                for ref in getattr(self, period.adjective)
+                for ref in getattr(self, period.table_suffix)
                 for summary in ref.resolve(spec, experiment)
             ]
             unique_summaries = []
@@ -479,7 +479,7 @@ class MetricsSpec:
         """
         self.daily += other.daily
         self.weekly += other.weekly
-        self.days_28 += other.days_28
+        self.days28 += other.days28
         self.overall += other.overall
         self.definitions.update(other.definitions)
 
@@ -729,7 +729,7 @@ class AnalysisSpec:
         # weekly and overall analysis windows
         self.metrics.merge(
             MetricsSpec(
-                daily=[], weekly=metrics, days_28=[], overall=metrics, definitions=other.metrics
+                daily=[], weekly=metrics, days28=[], overall=metrics, definitions=other.metrics
             )
         )
         self.data_sources.merge(other.data_sources)
