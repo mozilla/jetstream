@@ -197,7 +197,7 @@ pytest-cov==2.11.1
     # via mozilla-jetstream
 pytest-flake8==1.0.7
     # via mozilla-jetstream
-pytest==6.2.2
+pytest==6.2.3
     # via
     #   mozilla-jetstream
     #   pytest-black
