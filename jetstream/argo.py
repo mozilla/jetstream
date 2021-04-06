@@ -86,7 +86,9 @@ def submit_workflow(
                 if workflow["status"]["phase"] == "Failed":
                     raise Exception(f"Workflow execution failed: {workflow['status']}")
 
-            time.sleep(1)
+            # adjust wait time, too many requests might hit the request limit and raise
+            # HTTPSConnectionPool(host='##.##.##.##', port=443): Max retries exceeded with url
+            time.sleep(10)
 
     # check status of pods
     if "status" in workflow and workflow["status"] and workflow["status"]["nodes"]:
