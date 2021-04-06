@@ -1,12 +1,13 @@
 import datetime as dt
 import logging
-import time
-from typing import Any, Iterable, List, Mapping, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import attr
 import cattr
 import pytz
 import requests
+
+from .util import retry_get
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +191,7 @@ class ExperimentCollection:
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
 
-        legacy_experiments_json = cls._retry_get(session, cls.EXPERIMENTER_API_URL_V1)
+        legacy_experiments_json = retry_get(session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES)
         legacy_experiments = []
 
         for experiment in legacy_experiments_json:
@@ -200,7 +201,7 @@ class ExperimentCollection:
                 except Exception as e:
                     logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
-        nimbus_experiments_json = cls._retry_get(session, cls.EXPERIMENTER_API_URL_V6)
+        nimbus_experiments_json = retry_get(session, cls.EXPERIMENTER_API_URL_V6, cls.MAX_RETRIES)
         nimbus_experiments = []
 
         for experiment in nimbus_experiments_json:
@@ -210,19 +211,6 @@ class ExperimentCollection:
                 logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
         return cls(nimbus_experiments + legacy_experiments)
-
-    @staticmethod
-    def _retry_get(session, url) -> Iterable[Mapping[str, Any]]:
-        for _i in range(ExperimentCollection.MAX_RETRIES):
-            try:
-                blob = session.get(url).json()
-                break
-            except Exception:
-                logger.info(f"Error fetching from {url}. Retrying...")
-                time.sleep(1)
-        else:
-            raise Exception(f"Too many retries for {url}")
-        return blob
 
     def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):

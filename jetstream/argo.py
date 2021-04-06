@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from pathlib import Path
+from requests.structures import CaseInsensitiveDict
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
@@ -12,6 +13,8 @@ import re
 import requests
 import yaml
 from google.cloud.container_v1 import ClusterManagerClient
+
+from .util import retry_get
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +57,14 @@ def submit_workflow(
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
 
-    workflow = api.create_workflow("argo", manifest)
+    config = api._get_config()
+    session = requests.Session()
+    session.verify = config.ssl_ca_cert
+    headers: CaseInsensitiveDict[str] = CaseInsensitiveDict()
+    headers["Authorization"] = f"{config.authorization_key_prefix} {config.authorization_key}"
+    session.headers = headers
+
+    workflow = api.create_workflow("argo", manifest, session)
 
     if monitor_status:
         finished = False
@@ -73,7 +83,7 @@ def submit_workflow(
 
         while not finished:
             workflow = api.get_workflow(
-                workflow["metadata"]["namespace"], workflow["metadata"]["name"]
+                workflow["metadata"]["namespace"], workflow["metadata"]["name"], session
             )
 
             if (
@@ -136,6 +146,8 @@ class ArgoApi:
     not require setting up a load balancer or port-forwarding to access the argo-server API.
     """
 
+    MAX_RETRIES = 3
+
     project_id: str
     zone: str
     cluster_id: str
@@ -174,28 +186,23 @@ class ArgoApi:
             authorization_key=creds.token,  # valid for one hour
         )
 
-    def create_workflow(self, namespace: str, manifest: str) -> Dict[str, Any]:
+    def create_workflow(
+        self, namespace: str, manifest: str, session: requests.Session
+    ) -> Dict[str, Any]:
         """Submit a new Argo workflow via the Kubernetes API."""
         config = self._get_config()
-        response = requests.post(
+        response = session.post(
             f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows",
             data=json.dumps(manifest),
-            verify=config.ssl_ca_cert,
-            headers={
-                "Authorization": f"{config.authorization_key_prefix} {config.authorization_key}",
-                "Content-type": "application/json",
-            },
         )
         return response.json()
 
-    def get_workflow(self, namespace: str, name: str) -> Dict[str, Any]:
+    def get_workflow(self, namespace: str, name: str, session: requests.Session) -> Dict[str, Any]:
         """Fetch the workflow status from the Argo Kubernetes API."""
         config = self._get_config()
-        response = requests.get(
+        response = retry_get(
+            session,
             f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows/{name}",
-            verify=config.ssl_ca_cert,
-            headers={
-                "Authorization": f"{config.authorization_key_prefix} {config.authorization_key}"
-            },
+            self.MAX_RETRIES,
         )
-        return response.json()
+        return response
