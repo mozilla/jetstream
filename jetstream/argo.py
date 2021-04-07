@@ -56,15 +56,7 @@ def submit_workflow(
     api = ArgoApi(project_id, zone, cluster_id, cluster_ip, cluster_cert)
     manifest = yaml.safe_load(workflow_file.read_text())
     manifest = apply_parameters(manifest, parameters)
-
-    config = api._get_config()
-    session = requests.Session()
-    session.verify = config.ssl_ca_cert
-    headers: CaseInsensitiveDict[str] = CaseInsensitiveDict()
-    headers["Authorization"] = f"{config.authorization_key_prefix} {config.authorization_key}"
-    session.headers = headers
-
-    workflow = api.create_workflow("argo", manifest, session)
+    workflow = api.create_workflow("argo", manifest)
 
     if monitor_status:
         finished = False
@@ -83,7 +75,7 @@ def submit_workflow(
 
         while not finished:
             workflow = api.get_workflow(
-                workflow["metadata"]["namespace"], workflow["metadata"]["name"], session
+                workflow["metadata"]["namespace"], workflow["metadata"]["name"]
             )
 
             if (
@@ -186,20 +178,33 @@ class ArgoApi:
             authorization_key=creds.token,  # valid for one hour
         )
 
-    def create_workflow(
-        self, namespace: str, manifest: str, session: requests.Session
-    ) -> Dict[str, Any]:
+    @staticmethod
+    def _session_for_config(config: Configuration) -> requests.Session:
+        """Returns a Requests Session for Argo requests.
+        This Session bakes in the TLS certificate we expect the Argo server
+        to present and includes the bearer token with all requests,
+        so it shouldn't be reused for any other services."""
+        session = requests.Session()
+        session.verify = config.ssl_ca_cert
+        headers: CaseInsensitiveDict[str] = CaseInsensitiveDict()
+        headers["Authorization"] = f"{config.authorization_key_prefix} {config.authorization_key}"
+        session.headers = headers
+        return session
+
+    def create_workflow(self, namespace: str, manifest: str) -> Dict[str, Any]:
         """Submit a new Argo workflow via the Kubernetes API."""
         config = self._get_config()
+        session = self._session_for_config(config)
         response = session.post(
             f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows",
             data=json.dumps(manifest),
         )
         return response.json()
 
-    def get_workflow(self, namespace: str, name: str, session: requests.Session) -> Dict[str, Any]:
+    def get_workflow(self, namespace: str, name: str) -> Dict[str, Any]:
         """Fetch the workflow status from the Argo Kubernetes API."""
         config = self._get_config()
+        session = self._session_for_config(config)
         response = retry_get(
             session,
             f"{config.host}/apis/argoproj.io/v1alpha1/namespaces/{namespace}/workflows/{name}",
