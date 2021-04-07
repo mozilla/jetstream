@@ -7,6 +7,8 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
+from requests import Session
+
 logger = logging.getLogger(__name__)
 
 # based on https://stackoverflow.com/a/22726782
@@ -27,7 +29,7 @@ def inclusive_date_range(start_date, end_date):
         yield start_date + timedelta(n)
 
 
-def retry_get(session, url, max_retries) -> Any:
+def retry_get(session: Session, url: str, max_retries: int) -> Any:
     for _i in range(max_retries):
         try:
             blob = session.get(url).json()
