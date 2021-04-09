@@ -311,6 +311,49 @@ FENIX_EXPERIMENT_FIXTURE = """
 }
 """  # noqa:E501
 
+FIREFOX_IOS_EXPERIMENT_FIXTURE = """
+{
+   "schemaVersion":"1.4.0",
+   "slug":"nimbus-aa-validation-for-ios",
+   "id":"nimbus-aa-validation-for-ios",
+   "application":"org.mozilla.ios.FirefoxBeta",
+   "appName":"firefox_ios",
+   "appId":"org.mozilla.ios.FirefoxBeta",
+   "channel":"beta",
+   "userFacingName":"Nimbus A/A Validation for iOS",
+   "userFacingDescription":"Is Nimbus working? This experiment tries to find out.",
+   "isEnrollmentPaused":true,
+   "bucketConfig":{
+      "randomizationUnit":"nimbus_id",
+      "namespace":"nimbus-aa-validation-for-ios-1",
+      "start":0,
+      "count":8000,
+      "total":10000
+   },
+   "probeSets":[],
+   "outcomes":[],
+   "branches":[
+      {
+         "slug":"a1",
+         "ratio":60
+      },
+      {
+         "slug":"a2",
+         "ratio":40
+      }
+   ],
+   "targeting":"true",
+   "startDate":"2021-04-01T17:06:02.362199Z",
+   "endDate":null,
+   "proposedDuration":28,
+   "proposedEnrollment":7,
+   "referenceBranch":"a1",
+   "featureIds":[
+      "nimbusValidation"
+   ]
+}
+"""  # noqa:E501
+
 
 @pytest.fixture
 def mock_session():
@@ -458,3 +501,9 @@ def test_app_name():
     x = ExperimentV6.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
     assert x.appName == "fenix"
     assert x.appId == "org.mozilla.fenix"
+
+
+def test_ios_app_name():
+    x = ExperimentV6.from_dict(json.loads(FIREFOX_IOS_EXPERIMENT_FIXTURE))
+    assert x.appName == "firefox_ios"
+    assert x.appId == "org.mozilla.ios.FirefoxBeta"

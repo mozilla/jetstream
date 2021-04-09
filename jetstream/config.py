@@ -32,6 +32,7 @@ import jinja2
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.metrics.fenix
+import mozanalysis.metrics.firefox_ios
 import mozanalysis.segments
 import mozanalysis.segments.desktop
 import pytz
@@ -71,8 +72,15 @@ PLATFORM_CONFIGS = {
         Path(__file__).parent / "config" / "fenix.toml",
         mozanalysis.metrics.fenix,
         None,
-        "fenix-fallback",
+        "glean-event",
         "org.mozilla.fenix",
+    ),
+    "firefox_ios": Platform(
+        Path(__file__).parent / "config" / "firefox_ios.toml",
+        mozanalysis.metrics.firefox_ios,
+        None,
+        "glean-event",
+        "org.mozilla.ios.FirefoxBeta",
     ),
 }
 
