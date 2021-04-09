@@ -144,6 +144,26 @@ def fenix_experiments():
 
 
 @pytest.fixture
+def firefox_ios_experiments():
+    return [
+        Experiment(
+            experimenter_slug="my_ios_experiment",
+            normandy_slug="my_ios_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="foo", ratio=1), Branch(slug="bar", ratio=1)],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=pytz.UTC),
+            end_date=dt.datetime(2020, 10, 10, tzinfo=pytz.UTC),
+            proposed_enrollment=7,
+            reference_branch="foo",
+            app_name="firefox_ios",
+            app_id="org.mozilla.ios.FirefoxBeta",
+            is_high_population=False,
+        )
+    ]
+
+
+@pytest.fixture
 def fake_outcome_resolver(monkeypatch):
     performance_config = dedent(
         """

@@ -218,3 +218,20 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
         config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
+
+
+def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, monkeypatch):
+    for experiment in firefox_ios_experiments:
+        called = 0
+
+        def dry_run_query(query):
+            nonlocal called
+            called = called + 1
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id)
+            assert dataset in query
+            assert query.count(dataset) == query.count("org_mozilla_ios")
+
+        monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
+        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        Analysis("spam", "eggs", config).validate()
+        assert called == 2

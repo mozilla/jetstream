@@ -591,6 +591,17 @@ class TestFenixConfiguration:
             assert found
 
 
+class TestFirefoxIosConfiguration:
+    def test_default_metrics(self, firefox_ios_experiments):
+        for experiment in firefox_ios_experiments:
+            default = config.AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+            found = False
+            for summary in default.metrics[AnalysisPeriod.WEEK]:
+                if summary.metric.data_source.name == "baseline":
+                    found = True
+            assert found
+
+
 class TestOutcomes:
     def test_outcomes(self):
         config_str = dedent(
