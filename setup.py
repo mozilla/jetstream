@@ -56,7 +56,7 @@ setup(
         "pytz",
         "PyYAML",
         "requests",
-        "smart_open[gcp]",
+        "smart_open[gcs]",
         "statsmodels",
         "toml",
     ],
