@@ -19,8 +19,9 @@ attrs==20.3.0 \
     #   jsonschema
     #   mozanalysis
     #   pytest
-black==20.8b1 \
-    --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea
+black==21.4b0 \
+    --hash=sha256:2db7040bbbbaa46247bfcc05c6efdebd7ebe50c1c3ca745ca6e0f6776438c96c \
+    --hash=sha256:915d916c48646dbe8040d5265cff7111421a60a3dfe7f7e07273176a57c24a34
     # via
     #   -r requirements.in
     #   pytest-black
@@ -1043,7 +1044,6 @@ typed-ast==1.4.3 \
     --hash=sha256:fb1bbeac803adea29cedd70781399c99138358c26d05fcbd23c13016b7f5ec65
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 typing-extensions==3.7.4.3 \
     --hash=sha256:7cb407020f00f7bfc3cb3e7881628838e69d8f3fcab2f64742a5e76b2f841918 \
@@ -1051,7 +1051,6 @@ typing-extensions==3.7.4.3 \
     --hash=sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f
     # via
     #   -r requirements.in
-    #   black
     #   libcst
     #   mypy
     #   typing-inspect
