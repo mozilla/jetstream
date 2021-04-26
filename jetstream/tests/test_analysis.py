@@ -227,7 +227,7 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
         def dry_run_query(query):
             nonlocal called
             called = called + 1
-            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id)
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_ios")
 
