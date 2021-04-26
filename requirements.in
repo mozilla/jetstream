@@ -42,7 +42,7 @@ dask[distributed]==2021.4.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.4.0
+distributed==2021.4.1
     # via dask
 flake8==3.9.1
     # via pytest-flake8
