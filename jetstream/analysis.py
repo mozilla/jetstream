@@ -282,7 +282,7 @@ class Analysis:
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
-        return re.sub(r"[^a-zA-Z0-9]", "_", app_id)
+        return re.sub(r"[^a-zA-Z0-9]", "_", app_id).lower()
 
     def validate(self) -> None:
         self.check_runnable()
