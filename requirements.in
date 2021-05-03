@@ -266,7 +266,7 @@ tornado==6.1
     # via distributed
 typed-ast==1.4.3
     # via mypy
-typing-extensions==3.7.4.3
+typing-extensions==3.10.0.0
     # via
     #   libcst
     #   mypy
