@@ -6,14 +6,14 @@
 #
 appdirs==1.4.4
     # via black
-attrs==20.3.0
+attrs==21.2.0
     # via
     #   cattrs
     #   jsonschema
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.4b2
+black==21.5b0
     # via pytest-black
 cachetools==4.2.2
     # via google-auth
@@ -44,7 +44,7 @@ dask[distributed]==2021.4.1
     #   mozilla-jetstream
 distributed==2021.4.1
     # via dask
-flake8==3.9.1
+flake8==3.9.2
     # via pytest-flake8
 fsspec==2021.4.0
     # via dask
@@ -67,7 +67,7 @@ google-cloud-bigquery-storage==2.4.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery==2.15.0
+google-cloud-bigquery==2.16.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -161,7 +161,7 @@ proto-plus==1.18.1
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.15.8
+protobuf==3.16.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -197,7 +197,7 @@ pytest-cov==2.11.1
     # via mozilla-jetstream
 pytest-flake8==1.0.7
     # via mozilla-jetstream
-pytest==6.2.3
+pytest==6.2.4
     # via
     #   mozilla-jetstream
     #   pytest-black
@@ -230,7 +230,7 @@ scipy==1.6.3
     # via
     #   mozanalysis
     #   statsmodels
-six==1.15.0
+six==1.16.0
     # via
     #   google-api-core
     #   google-auth
