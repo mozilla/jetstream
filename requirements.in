@@ -230,7 +230,7 @@ scipy==1.6.3
     # via
     #   mozanalysis
     #   statsmodels
-six==1.15.0
+six==1.16.0
     # via
     #   google-api-core
     #   google-auth
