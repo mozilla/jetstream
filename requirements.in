@@ -50,7 +50,7 @@ fsspec==2021.4.0
     # via dask
 gitdb==4.0.7
     # via gitpython
-gitpython==3.1.14
+gitpython==3.1.17
     # via mozilla-jetstream
 google-api-core[grpc]==1.26.3
     # via
