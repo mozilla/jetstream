@@ -373,9 +373,9 @@ jsonschema==3.2.0 \
     --hash=sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163 \
     --hash=sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a
     # via -r requirements.in
-libcst==0.3.18 \
-    --hash=sha256:30154cd0aaede8f3adfc4bdead23fe022a57e88898b9993cc3fea3bfbaf780d2 \
-    --hash=sha256:da89cc1a37702caa6fe7207b1257fad58f0d4643597279733106ca902b4fdbad
+libcst==0.3.19 \
+    --hash=sha256:4876239db55164acaf034ee01f56a7db0a2f90cacea24b183d8aa69efc11b067 \
+    --hash=sha256:9e26313ded6e17605658b93319299bce43cc8d7e24dafc12d6f782f758a3faf4
     # via
     #   -r requirements.in
     #   google-cloud-bigquery-storage
