@@ -13,7 +13,7 @@ attrs==21.2.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.5b0
+black==21.5b1
     # via pytest-black
 cachetools==4.2.2
     # via google-auth
