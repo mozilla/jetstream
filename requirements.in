@@ -25,7 +25,7 @@ cffi==1.14.5
     # via google-crc32c
 chardet==4.0.0
     # via requests
-click==7.1.2
+click==8.0.0
     # via
     #   black
     #   distributed
