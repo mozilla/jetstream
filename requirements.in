@@ -245,7 +245,7 @@ smart-open[gcs]==5.0.0
     # via mozilla-jetstream
 smmap==4.0.0
     # via gitdb
-sortedcontainers==2.3.0
+sortedcontainers==2.4.0
     # via distributed
 statsmodels==0.12.2
     # via mozilla-jetstream
