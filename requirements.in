@@ -58,7 +58,7 @@ google-api-core[grpc]==1.28.0
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
-google-auth==1.30.0
+google-auth==1.30.1
     # via
     #   google-api-core
     #   google-cloud-core
@@ -162,7 +162,7 @@ proto-plus==1.18.1
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.17.0
+protobuf==3.17.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -242,7 +242,7 @@ six==1.16.0
     #   patsy
     #   protobuf
     #   python-dateutil
-smart-open[gcs]==5.0.0
+smart-open[gcs]==5.1.0
     # via mozilla-jetstream
 smmap==4.0.0
     # via gitdb
