@@ -281,7 +281,7 @@ def flatten_simple_compare_branches_result(
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
     num_samples: int = 10000
-    drop_highest: float = 1e-4
+    drop_highest: float = 0.005
     confidence_interval: float = 0.95
 
     def transform(
