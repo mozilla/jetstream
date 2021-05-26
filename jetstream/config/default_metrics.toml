@@ -32,6 +32,8 @@ overall = [
 [metrics.ad_clicks.statistics.deciles]
 
 [metrics.days_of_use.statistics.bootstrap_mean]
+drop_highest = 0
+
 [metrics.days_of_use.statistics.deciles]
 [metrics.days_of_use.statistics.empirical_cdf]
 
