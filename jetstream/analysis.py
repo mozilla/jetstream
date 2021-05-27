@@ -12,7 +12,7 @@ import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
-from mozanalysis.experiment import TimeLimits
+from mozanalysis.experiment import TimeLimits, AnalysisBasis
 from mozanalysis.utils import add_days
 from pandas import DataFrame
 
@@ -21,6 +21,7 @@ from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 from jetstream.logging import LogConfiguration, LogPlugin
+from jetstream.metric import Metric
 from jetstream.statistics import (
     Count,
     StatisticResult,
@@ -168,7 +169,7 @@ class Analysis:
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
         """
-
+        print(self.config)
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
@@ -182,7 +183,6 @@ class Analysis:
 
         res_table_name = self._table_name(period.value, window)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"enrollments_{normalized_slug}"
 
         if dry_run:
             logger.info(
@@ -197,14 +197,22 @@ class Analysis:
                 period.value,
             )
 
-            metrics_sql = exp.build_metrics_query(
-                {m.metric for m in self.config.metrics[period]},
-                last_window_limits,
-                enrollments_table,
-            )
+            for analysis_basis in AnalysisBasis:
+                table_name = f"{analysis_basis.value}_{normalized_slug}"
 
-            self.bigquery.execute(metrics_sql, res_table_name)
-            self._publish_view(period)
+                metrics_sql = exp.build_metrics_query(
+                    {
+                        m.metric.to_mozanalysis_metric()
+                        for m in self.config.metrics[period]
+                        if m.metric.analysis_basis == analysis_basis
+                    },
+                    last_window_limits,
+                    table_name,
+                    analysis_basis,
+                )
+
+                self.bigquery.execute(metrics_sql, res_table_name)
+                self._publish_view(period)
 
         return res_table_name
 

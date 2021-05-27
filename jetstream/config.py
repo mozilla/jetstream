@@ -366,7 +366,7 @@ class MetricDefinition:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
-    analysis_basis: Optional[mozanalysis.experiment.AnalysisBasis] = None
+    analysis_basis: mozanalysis.experiment.AnalysisBasis = None
 
     def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
@@ -379,7 +379,11 @@ class MetricDefinition:
                 module=search,
                 definitions={},
             )
-            metric = Metric.from_mozanalysis_metric(mozanalysis_metric=mozanalysis_metric)
+            metric = Metric.from_mozanalysis_metric(
+                mozanalysis_metric=mozanalysis_metric,
+                analysis_basis=self.analysis_basis
+                or mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
+            )
         else:
             select_expression = _metrics_environment.from_string(self.select_expression).render()
 
@@ -391,7 +395,7 @@ class MetricDefinition:
                 description=self.description,
                 bigger_is_better=self.bigger_is_better,
                 analysis_basis=self.analysis_basis
-                or mozanalysis.experiment.AnalysisBasis.ENROLLMENT,
+                or mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
             )
 
         metrics_with_treatments = []

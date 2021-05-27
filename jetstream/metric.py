@@ -16,7 +16,7 @@ class Metric(mozanalysis.metrics.Metric):
     """
 
     analysis_basis: mozanalysis.experiment.AnalysisBasis = (
-        mozanalysis.experiment.AnalysisBasis.ENROLLMENT
+        mozanalysis.experiment.AnalysisBasis.ENROLLMENTS
     )
 
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
@@ -36,5 +36,5 @@ class Metric(mozanalysis.metrics.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_basis=analysis_basis or mozanalysis.experiment.AnalysisBasis.ENROLLMENT,
+            analysis_basis=analysis_basis or mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
         )
