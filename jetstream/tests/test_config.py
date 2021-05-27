@@ -359,7 +359,7 @@ class TestAnalysisSpec:
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "events"
         assert spam.metric.select_expr == "2"
-        assert spam.metric.analysis_basis == AnalysisBasis.ENROLLMENT
+        assert spam.metric.analysis_basis == AnalysisBasis.ENROLLMENTS
         assert spam.statistic.name() == "bootstrap_mean"
         assert spam.statistic.num_samples == 100
 
@@ -372,7 +372,7 @@ class TestAnalysisSpec:
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
-            analysis_basis = "exposure"
+            analysis_basis = "exposures"
 
             [metrics.spam.statistics.bootstrap_mean]
             """
@@ -382,7 +382,29 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
 
-        assert metric.analysis_basis == AnalysisBasis.EXPOSURE
+        assert metric.analysis_basis == AnalysisBasis.EXPOSURES
+
+    def test_change_metric_to_exposure(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["ad_clicks"]
+
+            [metrics.ad_clicks]
+            analysis_basis = "exposures"
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "ad_clicks"][
+            0
+        ].metric
+
+        assert metric.analysis_basis == AnalysisBasis.EXPOSURES
 
 
 class TestExperimentSpec:
