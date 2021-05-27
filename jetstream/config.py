@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, Type
 import attr
 import cattr
 import jinja2
+import mozanalysis.experiment
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.metrics.fenix
@@ -40,6 +41,7 @@ import toml
 from jinja2 import StrictUndefined
 
 from jetstream.errors import NoStartDateException
+from jetstream.metric import Metric
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
@@ -364,28 +366,32 @@ class MetricDefinition:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
+    analysis_basis: Optional[mozanalysis.experiment.AnalysisBasis] = None
 
     def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             search = experiment.platform.metrics_module
-            metric = _lookup_name(
+            mozanalysis_metric = _lookup_name(
                 name=self.name,
                 klass=mozanalysis.metrics.Metric,
                 spec=spec,
                 module=search,
                 definitions={},
             )
+            metric = Metric.from_mozanalysis_metric(mozanalysis_metric=mozanalysis_metric)
         else:
             select_expression = _metrics_environment.from_string(self.select_expression).render()
 
-            metric = mozanalysis.metrics.Metric(
+            metric = Metric(
                 name=self.name,
                 data_source=self.data_source.resolve(spec, experiment),
                 select_expr=select_expression,
                 friendly_name=self.friendly_name,
                 description=self.description,
                 bigger_is_better=self.bigger_is_better,
+                analysis_basis=self.analysis_basis
+                or mozanalysis.experiment.AnalysisBasis.ENROLLMENT,
             )
 
         metrics_with_treatments = []

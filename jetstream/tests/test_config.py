@@ -6,6 +6,8 @@ import pytest
 import pytz
 import toml
 
+from mozanalysis.experiment import AnalysisBasis
+
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
 from jetstream.experimenter import Experiment
@@ -357,8 +359,30 @@ class TestAnalysisSpec:
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "events"
         assert spam.metric.select_expr == "2"
+        assert spam.metric.analysis_basis == AnalysisBasis.ENROLLMENT
         assert spam.statistic.name() == "bootstrap_mean"
         assert spam.statistic.num_samples == 100
+
+    def test_exposure_based_metric(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+            analysis_basis = "exposure"
+
+            [metrics.spam.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
+
+        assert metric.analysis_basis == AnalysisBasis.EXPOSURE
 
 
 class TestExperimentSpec:

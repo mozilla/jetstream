@@ -18,6 +18,7 @@ from google.cloud import bigquery
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
+from .metric import Metric
 from .pre_treatment import PreTreatment
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ def _maybe_decimal(value) -> Optional[Decimal]:
 class Summary:
     """Represents a metric with a statistical treatment."""
 
-    metric: mozanalysis.metrics.Metric
+    metric: Metric
     statistic: "Statistic"
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
