@@ -1,4 +1,3 @@
-from jetstream import AnalysisPeriod
 from mozanalysis.experiment import AnalysisBasis
 from mozanalysis.metrics import DataSource
 from mozanalysis.metrics.fenix import uri_count

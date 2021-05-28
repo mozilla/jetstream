@@ -31,9 +31,9 @@ cachetools==4.2.2 \
     # via
     #   -r requirements.in
     #   google-auth
-cattrs==1.7.1 \
-    --hash=sha256:95265b8aaa45e6de75b5f52ae081e021a2a7a688babdb711e4174e6b18920d08 \
-    --hash=sha256:d69bd4a3239e189f0740c3c41178dd0f00e4eac3bcb806937e49942fa83adfee
+cattrs==1.7.0 \
+    --hash=sha256:7222700355c9c4f0be4f4eefd2f897170e8587336cb1af485f707f6a216a22a2 \
+    --hash=sha256:eceb4e0a3245154a4e9dcfbf4bfbc34ed28cd3d9d1e7dbaea6a2fe43f43560e4
     # via -r requirements.in
 certifi==2021.5.30 \
     --hash=sha256:2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee \
