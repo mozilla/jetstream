@@ -339,7 +339,7 @@ class Analysis:
 
         metrics = set()
         for v in self.config.metrics.values():
-            metrics |= {m.metric for m in v}
+            metrics |= {m.metric.to_mozanalysis_metric() for m in v}
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
@@ -353,9 +353,7 @@ class Analysis:
         dry_run_query(enrollments_sql)
 
         metrics_sql = exp.build_metrics_query(
-            metrics,
-            limits,
-            "enrollments_table",
+            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS
         )
 
         # enrollments_table doesn't get created when performing a dry run;
