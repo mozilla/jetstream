@@ -7,6 +7,8 @@ import pytz
 import toml
 
 from mozanalysis.experiment import AnalysisBasis
+import mozanalysis.exposure
+import mozanalysis.metrics.desktop
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
@@ -405,6 +407,36 @@ class TestAnalysisSpec:
         ].metric
 
         assert metric.analysis_basis == AnalysisBasis.EXPOSURES
+        assert cfg.experiment.exposure_signal is None
+
+    def test_exposure_signal(self, experiments):
+        config_str = dedent(
+            """
+            [experiment.exposure_signal]
+            name = "ad_exposure"
+            data_source = "search_clients_daily"
+            select_expr = "ad_click > 0"
+            friendly_name = "Ad exposure"
+            description = "Clients have clicked on ad"
+
+            [metrics]
+            weekly = ["ad_clicks"]
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+
+        assert cfg.experiment.exposure_signal == mozanalysis.exposure.ExposureSignal(
+            name="ad_exposure",
+            data_source=mozanalysis.metrics.desktop.search_clients_daily,
+            select_expr="ad_click > 0",
+            friendly_name="Ad exposure",
+            description="Clients have clicked on ad",
+        )
 
 
 class TestExperimentSpec:

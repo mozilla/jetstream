@@ -30,6 +30,7 @@ import attr
 import cattr
 import jinja2
 import mozanalysis.experiment
+import mozanalysis.exposure
 import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.metrics.fenix
@@ -216,6 +217,7 @@ class ExperimentConfiguration:
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
         self._enrollment_query = self.enrollment_query
+        self._exposure_query = self.exposure_query
 
     @property
     def enrollment_query(self) -> Optional[str]:
@@ -235,6 +237,27 @@ class ExperimentConfiguration:
 
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         return env.from_string(self.experiment_spec.enrollment_query).render(
+            experiment=ExperimentProxy()
+        )
+
+    @property
+    def exposure_query(self) -> Optional[str]:
+        if self.experiment_spec.exposure_query is None:
+            return None
+
+        if cached := getattr(self, "_exposure_query", None):
+            return cached
+
+        class ExperimentProxy:
+            @property
+            def exposure_query(proxy):
+                raise ValueError()
+
+            def __getattr__(proxy, name):
+                return getattr(self, name)
+
+        env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
+        return env.from_string(self.experiment_spec.exposure_query).render(
             experiment=ExperimentProxy()
         )
 
@@ -298,6 +321,10 @@ class ExperimentConfiguration:
     def skip(self) -> bool:
         return self.experiment_spec.skip
 
+    @property
+    def exposure_signal(self) -> Optional[mozanalysis.exposure.ExposureSignal]:
+        return self.experiment_spec.exposure_signal
+
     # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
     # python-returns-typeerror-object-no
     def __getstate__(self):
@@ -316,6 +343,28 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
     instance.parse_date(value)
 
 
+@attr.s(auto_attribs=True)
+class ExposureSignalDefinition:
+    """Describes the interface for defining an exposure signal in configuration."""
+
+    name: str
+    data_source: DataSourceReference
+    select_expr: str
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
+
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+    ) -> mozanalysis.exposure.ExposureSignal:
+        return mozanalysis.exposure.ExposureSignal(
+            name=self.name,
+            data_source=self.data_source.resolve(spec, experiment=experiment),
+            select_expr=self.select_expr,
+            friendly_name=self.friendly_name,
+            description=self.description,
+        )
+
+
 @attr.s(auto_attribs=True, kw_only=True)
 class ExperimentSpec:
     """Describes the interface for overriding experiment details."""
@@ -327,6 +376,8 @@ class ExperimentSpec:
     end_date: Optional[str] = attr.ib(default=None, validator=_validate_yyyy_mm_dd)
     segments: List[SegmentReference] = attr.Factory(list)
     skip: bool = False
+    exposure_signal: Optional[ExposureSignalDefinition] = None
+    exposure_query: Optional[str] = None
 
     @staticmethod
     def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
@@ -343,6 +394,12 @@ class ExperimentSpec:
         # Segment data sources may need to know the enrollment dates of the experiment,
         # so we'll forward the Experiment we know about so far.
         experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
+
+        if self.exposure_signal:
+            experiment.experiment_spec.exposure_signal = self.exposure_signal.resolve(
+                spec, experiment=experiment
+            )
+
         return experiment
 
     def merge(self, other: "ExperimentSpec") -> None:

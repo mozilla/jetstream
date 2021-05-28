@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 @attr.s(auto_attribs=True)
 class MetricsMetadata:
-    friendly_name: str
-    description: str
+    friendly_name: Optional[str]
+    description: Optional[str]
     bigger_is_better: bool
+    analysis_basis: str
 
 
 @attr.s(auto_attribs=True)
@@ -49,6 +50,7 @@ class ExperimentMetadata:
                 friendly_name=metric.friendly_name,
                 description=metric.description,
                 bigger_is_better=metric.bigger_is_better,
+                analysis_basis=metric.analysis_basis.value,
             )
             for metric in all_metrics_distinct
         }

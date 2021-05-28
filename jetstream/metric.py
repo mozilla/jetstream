@@ -6,8 +6,8 @@ import mozanalysis.metrics
 from typing import Optional
 
 
-@attr.s(auto_attribs=True)
-class Metric(mozanalysis.metrics.Metric):
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class Metric:
     """
     Jetstream metric representation.
 
@@ -15,13 +15,26 @@ class Metric(mozanalysis.metrics.Metric):
     metadata required for analysis.
     """
 
+    name: str
+    data_source: mozanalysis.metrics.DataSource
+    select_expr: str
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
+    bigger_is_better: bool = True
     analysis_basis: mozanalysis.experiment.AnalysisBasis = (
         mozanalysis.experiment.AnalysisBasis.ENROLLMENTS
     )
 
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
         """Return Jetstream metric as mozanalysis metric."""
-        return super(self.__class__, self)
+        return mozanalysis.metrics.Metric(
+            name=self.name,
+            data_source=self.data_source,
+            select_expr=self.select_expr,
+            friendly_name=self.friendly_name,
+            description=self.description,
+            bigger_is_better=self.bigger_is_better,
+        )
 
     @classmethod
     def from_mozanalysis_metric(
