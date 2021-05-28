@@ -18,6 +18,7 @@ class TestMetric:
 
         assert mozanalysis_metric
         assert mozanalysis_metric.name == metric.name
+        assert metric.analysis_basis == AnalysisBasis.EXPOSURES
 
     def test_from_mozanalysis_metric(self):
         metric = Metric.from_mozanalysis_metric(uri_count)

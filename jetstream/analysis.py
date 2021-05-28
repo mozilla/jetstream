@@ -10,6 +10,8 @@ import dask
 import google
 import mozanalysis
 from dask.distributed import Client, LocalCluster
+from functools import reduce
+from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from mozanalysis.experiment import TimeLimits, AnalysisBasis
@@ -129,16 +131,31 @@ class Analysis:
             **time_limits_args,
         )
 
-    def _table_name(self, window_period: str, window_index: int) -> str:
+    def _table_name(
+        self, window_period: str, window_index: int, analysis_basis: Optional[AnalysisBasis] = None
+    ) -> str:
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        return "_".join([normalized_slug, window_period, str(window_index)])
 
-    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None):
+        if analysis_basis:
+            return "_".join(
+                [normalized_slug, analysis_basis.value, window_period, str(window_index)]
+            )
+        else:
+            return "_".join([normalized_slug, window_period, str(window_index)])
+
+    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None, table_postfix=None):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.table_suffix])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
+
+        if table_postfix:
+            normalized_postfix = bq_normalize_name(table_postfix)
+            view_name = "_".join([normalized_slug, normalized_postfix, window_period.table_suffix])
+            wildcard_expr = "_".join(
+                [normalized_slug, normalized_postfix, window_period.value, "*"]
+            )
 
         if table_prefix:
             normalized_prefix = bq_normalize_name(table_prefix)
@@ -163,13 +180,13 @@ class Analysis:
         exp: mozanalysis.experiment.Experiment,
         time_limits: TimeLimits,
         period: AnalysisPeriod,
+        analysis_basis: AnalysisBasis,
         dry_run: bool,
     ):
         """
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
         """
-        print(self.config)
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
@@ -181,7 +198,7 @@ class Analysis:
             ),
         )
 
-        res_table_name = self._table_name(period.value, window)
+        res_table_name = self._table_name(period.value, window, analysis_basis=analysis_basis)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
 
         if dry_run:
@@ -197,22 +214,21 @@ class Analysis:
                 period.value,
             )
 
-            for analysis_basis in AnalysisBasis:
-                table_name = f"{analysis_basis.value}_{normalized_slug}"
+            table_name = f"enrollments_{normalized_slug}"
 
-                metrics_sql = exp.build_metrics_query(
-                    {
-                        m.metric.to_mozanalysis_metric()
-                        for m in self.config.metrics[period]
-                        if m.metric.analysis_basis == analysis_basis
-                    },
-                    last_window_limits,
-                    table_name,
-                    analysis_basis,
-                )
+            metrics_sql = exp.build_metrics_query(
+                {
+                    m.metric.to_mozanalysis_metric()
+                    for m in self.config.metrics[period]
+                    if m.metric.analysis_basis == analysis_basis
+                },
+                last_window_limits,
+                table_name,
+                analysis_basis,
+            )
 
-                self.bigquery.execute(metrics_sql, res_table_name)
-                self._publish_view(period)
+            self.bigquery.execute(metrics_sql, res_table_name)
+            self._publish_view(period, table_postfix=analysis_basis.value)
 
         return res_table_name
 
@@ -345,8 +361,8 @@ class Analysis:
             limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
-            None,
-            None,
+            self.config.experiment.exposure_query,
+            self.config.experiment.exposure_signal,
             self.config.experiment.segments,
         )
 
@@ -445,7 +461,24 @@ class Analysis:
                 app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
             )
 
-            metrics_table = self.calculate_metrics(exp, time_limits, period, dry_run)
+            metrics_dataframes = []
+
+            analysis_bases = list(
+                set([m.metric.analysis_basis for m in self.config.metrics[period]])
+            )
+
+            if len(analysis_bases) == 0:
+                continue
+
+            for analysis_basis in analysis_bases:
+                metrics_table = self.calculate_metrics(
+                    exp, time_limits, period, analysis_basis, dry_run
+                )
+
+                if dry_run:
+                    results.append(metrics_table)
+                else:
+                    metrics_dataframes.append(table_to_dataframe(metrics_table))
 
             if dry_run:
                 logger.info(
@@ -453,26 +486,52 @@ class Analysis:
                     self.config.experiment.normandy_slug,
                     period.value,
                 )
-                results.append(metrics_table)
                 continue
 
-            metrics_data = table_to_dataframe(metrics_table)
+            segment_labels = [s.name for s in self.config.experiment.segments]
+            join_fields = [
+                "client_id",
+                "branch",
+                "enrollment_date",
+                "num_enrollment_events",
+                "analysis_window_start",
+                "analysis_window_end",
+                "exposure_date",
+                "num_exposure_events",
+            ] + segment_labels
+
+            metrics_data = reduce(
+                lambda mdf1, mdf2: mdf1.merge(
+                    mdf2,
+                    right_on=join_fields,
+                    left_on=join_fields,
+                    how="outer",
+                ),
+                metrics_dataframes,
+            )
 
             segment_results = []
 
-            segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+            segment_labels = ["all"] + segment_labels
             for segment in segment_labels:
                 segment_data = self.subset_to_segment(segment, metrics_data)
                 for m in self.config.metrics[period]:
-                    segment_results += self.calculate_statistics(
-                        m,
-                        segment_data,
-                        segment,
-                    ).to_dict()["data"]
+                    if m.metric.analysis_basis == analysis_basis:
+                        segment_results += self.calculate_statistics(
+                            m,
+                            segment_data,
+                            segment,
+                        ).to_dict()["data"]
 
                 segment_results += self.counts(segment_data, segment).to_dict()["data"]
 
-            results.append(self.save_statistics(period, segment_results, metrics_table))
+            results.append(
+                self.save_statistics(
+                    period,
+                    segment_results,
+                    self._table_name(period.value, len(time_limits.analysis_windows)),
+                )
+            )
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
@@ -503,8 +562,8 @@ class Analysis:
             time_limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
-            None,
-            None,
+            self.config.experiment.exposure_query,
+            self.config.experiment.exposure_signal,
             self.config.experiment.segments,
         )
 
