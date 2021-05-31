@@ -19,7 +19,7 @@ cachetools==4.2.2
     # via google-auth
 cattrs==1.6.0
     # via mozilla-jetstream
-certifi==2020.12.5
+certifi==2021.5.30
     # via requests
 cffi==1.14.5
     # via google-crc32c
