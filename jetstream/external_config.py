@@ -14,10 +14,10 @@ from git import Repo
 from google.cloud import bigquery
 from pytz import UTC
 
-from jetstream.analysis import Analysis
-from jetstream.config import AnalysisSpec, OutcomeSpec, PLATFORM_CONFIGS
-from jetstream.util import TemporaryDirectory
 import jetstream.experimenter
+from jetstream.analysis import Analysis
+from jetstream.config import PLATFORM_CONFIGS, AnalysisSpec, OutcomeSpec
+from jetstream.util import TemporaryDirectory
 
 from . import bq_normalize_name
 

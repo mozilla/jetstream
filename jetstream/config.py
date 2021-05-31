@@ -47,6 +47,7 @@ from . import AnalysisPeriod
 
 if TYPE_CHECKING:
     import jetstream.experimenter
+
     from .external_config import ExternalConfigCollection
 
 

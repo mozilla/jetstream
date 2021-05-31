@@ -1,14 +1,14 @@
-from click.testing import CliRunner
 import datetime as dt
+import os
 from textwrap import dedent
+from unittest import mock
 from unittest.mock import Mock
 
 import attr
-import os
 import pytest
-from pytz import UTC
 import toml
-from unittest import mock
+from click.testing import CliRunner
+from pytz import UTC
 
 from jetstream import cli, experimenter, external_config
 from jetstream.config import AnalysisSpec
