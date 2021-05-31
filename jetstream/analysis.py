@@ -1,4 +1,3 @@
-import google
 import logging
 import os
 import re
@@ -8,10 +7,11 @@ from typing import Any, Dict, List, Optional
 
 import attr
 import dask
+import google
 import mozanalysis
 from dask.distributed import Client, LocalCluster
-from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
+from google.cloud.exceptions import Conflict
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -20,7 +20,12 @@ import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
-from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
+from jetstream.statistics import (
+    Count,
+    StatisticResult,
+    StatisticResultCollection,
+    Summary,
+)
 
 from . import AnalysisPeriod, bq_normalize_name
 

@@ -8,7 +8,11 @@ import toml
 
 from jetstream.config import AnalysisSpec, OutcomeSpec
 from jetstream.dryrun import DryRunFailedError
-from jetstream.external_config import ExternalConfig, ExternalConfigCollection, ExternalOutcome
+from jetstream.external_config import (
+    ExternalConfig,
+    ExternalConfigCollection,
+    ExternalOutcome,
+)
 
 TEST_DIR = Path(__file__).parent.parent
 

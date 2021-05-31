@@ -4,9 +4,9 @@ import string
 from datetime import datetime
 from typing import Dict, Optional
 
-import smart_open
 import google.cloud.bigquery as bigquery
 import google.cloud.storage as storage
+import smart_open
 
 from jetstream import AnalysisPeriod, bq_normalize_name
 

@@ -1,16 +1,16 @@
 import datetime as dt
 from pathlib import Path
-from unittest.mock import Mock
 from textwrap import dedent
 from typing import cast
+from unittest.mock import Mock
 
 import pytest
 import toml
 
 from jetstream.config import AnalysisSpec, OutcomeSpec
 from jetstream.external_config import (
-    ExternalConfigCollection,
     ExternalConfig,
+    ExternalConfigCollection,
     ExternalOutcome,
     entity_from_path,
 )

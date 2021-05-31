@@ -28,6 +28,9 @@ jobs:
         name: PyTest
         command: venv/bin/pytest --black --flake8 --ignore=jetstream/tests/integration/
     - run:
+        name: isort
+        command: venv/bin/isort --check jetstream
+    - run:
         name: Mypy
         command: venv/bin/mypy jetstream
     - save_cache:
