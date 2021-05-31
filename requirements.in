@@ -17,7 +17,7 @@ black==21.5b1
     # via pytest-black
 cachetools==4.2.2
     # via google-auth
-cattrs==1.6.0
+cattrs==1.7.1
     # via mozilla-jetstream
 certifi==2020.12.5
     # via requests
