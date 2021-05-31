@@ -13,13 +13,13 @@ attrs==21.2.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.5b1
+black==21.5b2
     # via pytest-black
 cachetools==4.2.2
     # via google-auth
-cattrs==1.6.0
+cattrs==1.7.1
     # via mozilla-jetstream
-certifi==2020.12.5
+certifi==2021.5.30
     # via requests
 cffi==1.14.5
     # via google-crc32c
@@ -38,11 +38,11 @@ coverage[toml]==5.5
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask==2021.05.0
+dask[distributed]==2021.05.1
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.05.0
+distributed==2021.05.1
     # via dask
 flake8==3.9.2
     # via pytest-flake8
@@ -172,7 +172,7 @@ psutil==5.8.0
     # via distributed
 py==1.10.0
     # via pytest
-pyarrow==4.0.0
+pyarrow==4.0.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -275,7 +275,7 @@ typing-extensions==3.10.0.0
     #   typing-inspect
 typing-inspect==0.6.0
     # via libcst
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 zict==2.0.0
     # via distributed
