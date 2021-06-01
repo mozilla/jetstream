@@ -651,7 +651,7 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[5])
+        cfg = spec.resolve(experiments[5], fake_outcome_resolver)
 
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
         assert "view_about_logins" in weekly_metrics
@@ -659,7 +659,7 @@ class TestOutcomes:
         assert "meals_eaten" in weekly_metrics
         assert "speed" in weekly_metrics
 
-    def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
+    def test_unsupported_platform_outcomes(self, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
         experiment = Experiment(
             experimenter_slug="test_slug",
@@ -678,4 +678,4 @@ class TestOutcomes:
         )
 
         with pytest.raises(ValueError):
-            spec.resolve(experiment)
+            spec.resolve(experiment, fake_outcome_resolver)

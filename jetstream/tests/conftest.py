@@ -1,6 +1,6 @@
 import datetime as dt
 from textwrap import dedent
-from typing import Dict, Optional
+from typing import Dict
 
 import pytest
 import pytz
@@ -217,12 +217,7 @@ def fake_outcome_resolver(monkeypatch):
             )
             return data
 
-        def with_external_configs(
-            self, external_configs: Optional[external_config.ExternalConfigCollection]
-        ) -> "FakeOutcomeResolver":
-            return self
-
         def resolve(self, slug: str) -> external_config.ExternalOutcome:
             return self.data[slug]
 
-    monkeypatch.setattr("jetstream.outcomes.OutcomesResolver", FakeOutcomeResolver())
+    yield FakeOutcomeResolver()
