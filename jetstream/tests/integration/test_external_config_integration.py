@@ -28,6 +28,12 @@ class TestExternalConfigIntegration:
     )
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
 
+    def test_from_github_repo(self):
+        external_configs = ExternalConfigCollection.from_github_repo()
+        assert external_configs
+
+        assert external_configs.spec_for_experiment("not-existing-conf") is None
+
     def test_old_config(self, client, project_id, temporary_dataset):
         config = ExternalConfig(
             slug="new_table",

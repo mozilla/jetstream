@@ -8,21 +8,10 @@ import pytest
 import toml
 
 from jetstream.config import AnalysisSpec, OutcomeSpec
-from jetstream.external_config import (
-    ExternalConfig,
-    ExternalConfigCollection,
-    ExternalOutcome,
-    entity_from_path,
-)
+from jetstream.external_config import ExternalConfig, ExternalOutcome, entity_from_path
 
 
 class TestExternalConfig:
-    def test_from_github_repo(self):
-        external_configs = ExternalConfigCollection.from_github_repo()
-        assert external_configs
-
-        assert external_configs.spec_for_experiment("not-existing-conf") is None
-
     class FakePath:
         def __init__(self, path, config):
             self._path = Path(path)
