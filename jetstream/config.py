@@ -48,7 +48,7 @@ from . import AnalysisPeriod
 if TYPE_CHECKING:
     import jetstream.experimenter
 
-    from .external_config import ExternalConfigCollection
+    from .outcomes import OutcomesResolverType
 
 
 @attr.s(auto_attribs=True)
@@ -699,7 +699,7 @@ class AnalysisSpec:
     def resolve(
         self,
         experimenter: "jetstream.experimenter.Experiment",
-        external_configs: Optional["ExternalConfigCollection"] = None,
+        outcomes_resolver: Optional["OutcomesResolverType"] = None,
     ) -> AnalysisConfiguration:
         from . import outcomes
 
@@ -707,7 +707,7 @@ class AnalysisSpec:
             raise Exception("Can't resolve an AnalysisSpec twice")
         self._resolved = True
 
-        outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
+        outcomes_resolver = outcomes_resolver or outcomes.OutcomesResolver
 
         for slug in experimenter.outcomes:
             outcome = outcomes_resolver.resolve(slug)
