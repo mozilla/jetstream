@@ -11,7 +11,7 @@ overall = [
     "active_hours",
     "serp_ad_clicks",
     "organic_searches",
-    "sap_search_count",
+    "search_count",
     "searches_with_ads",
     "tagged_follow_on_searches",
     "total_uri_count",
@@ -70,11 +70,13 @@ bootstrap_mean = {}
 
 ##
 
-[metrics.sap_search_count]
+[metrics.search_count]
+friendly_name = "SAP search count"
+description = "Number of searches performed through a Search Access Point."
 select_expression = "{{agg_sum('search_count')}}"
 data_source = "mobile_search_clients_daily"
 
-[metrics.sap_search_count.statistics]
+[metrics.search_count.statistics]
 deciles = {}
 bootstrap_mean = {}
 
