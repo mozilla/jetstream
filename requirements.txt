@@ -114,7 +114,7 @@ cloudpickle==1.6.0 \
     #   -r requirements.in
     #   dask
     #   distributed
-coverage[toml]==5.5 \
+coverage==5.5 \
     --hash=sha256:004d1880bed2d97151facef49f08e255a20ceb6f9432df75f4eef018fdd5a78c \
     --hash=sha256:01d84219b5cdbfc8122223b39a954820929497a1cb1422824bb86b07b74594b6 \
     --hash=sha256:040af6c32813fa3eae5305d53f18875bedd079960822ef8ec067a66dd8afcd45 \
@@ -446,9 +446,9 @@ mccabe==0.6.1 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2021.5.2 \
-    --hash=sha256:e4fb87e47c7382d3118cf2924f0a66829561f4b9ac3d97bee1dc8e76f5b0d225 \
-    --hash=sha256:ec8a2cd4212c692f45f3f451d3e29db12d4a6500b41acecb8575b36d92afd92c
+mozanalysis==2021.6.1 \
+    --hash=sha256:01bba488c0e7d81181caf4af7a4840d63d825d65da5de84d1156cca69020725f \
+    --hash=sha256:625d06111d187b206ea1ae11b6e139ce3b320c2e06034044b9994fee0c39914c
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
@@ -751,9 +751,9 @@ pyrsistent==0.17.3 \
 pytest-black==0.3.12 \
     --hash=sha256:1d339b004f764d6cd0f06e690f6dd748df3d62e6fe1a692d6a5500ac2c5b75a5
     # via -r requirements.in
-pytest-cov==2.12.0 \
-    --hash=sha256:8535764137fecce504a49c2b742288e3d34bc09eed298ad65963616cc98fd45e \
-    --hash=sha256:95d4933dcbbacfa377bb60b29801daa30d90c33981ab2a79e9ab4452c165066e
+pytest-cov==2.12.1 \
+    --hash=sha256:261bb9e47e65bd099c89c3edf92972865210c36813f80ede5277dceb77a4a62a \
+    --hash=sha256:261ceeb8c227b726249b376b8526b600f38667ee314f910353fa318caa01f4d7
     # via -r requirements.in
 pytest-flake8==1.0.7 \
     --hash=sha256:c28cf23e7d359753c896745fd4ba859495d02e16c84bac36caa8b1eec58f5bc1 \
@@ -963,9 +963,9 @@ toml==0.10.2 \
     # via
     #   -r requirements.in
     #   black
-    #   coverage
     #   pytest
     #   pytest-black
+    #   pytest-cov
 toolz==0.11.1 \
     --hash=sha256:1bc473acbf1a1db4e72a1ce587be347450e8f08324908b8a266b486f408f04d5 \
     --hash=sha256:c7a47921f07822fe534fb1c01c9931ab335a4390c782bd28c6bcc7c2f71f3fbf
