@@ -335,6 +335,8 @@ class Analysis:
             limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
+            None,
+            None,
             self.config.experiment.segments,
         )
 
@@ -482,6 +484,8 @@ class Analysis:
             time_limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
+            None,
+            None,
             self.config.experiment.segments,
         )
 
