@@ -147,12 +147,15 @@ def test_regression_20200316(monkeypatch):
       ]
     }
     """
+    outcomes_resolver = Mock()
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
-    config = AnalysisSpec().resolve(experiment)
+    config = AnalysisSpec().resolve(experiment, outcomes_resolver)
 
-    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    ensure_enrollments = Mock()
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", ensure_enrollments)
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
+    ensure_enrollments.assert_called_once()
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
