@@ -121,7 +121,7 @@ markupsafe==2.0.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mozanalysis==2021.4.3
+mozanalysis==2021.5.2
     # via mozilla-jetstream
     # via -r -
 msgpack==1.0.2
