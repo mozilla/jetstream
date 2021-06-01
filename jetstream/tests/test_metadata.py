@@ -1,7 +1,7 @@
 import json
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import requests
 import toml
@@ -32,8 +32,8 @@ def test_metadata_from_config(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[4])
-    metadata = ExperimentMetadata.from_config(config)
+    config = spec.resolve(experiments[4], Mock())
+    metadata = ExperimentMetadata.from_config(config, Mock())
 
     assert "view_about_logins" in metadata.metrics
     assert metadata.metrics["view_about_logins"].bigger_is_better
@@ -55,8 +55,8 @@ def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[5])
-    metadata = ExperimentMetadata.from_config(config)
+    config = spec.resolve(experiments[5], fake_outcome_resolver)
+    metadata = ExperimentMetadata.from_config(config, fake_outcome_resolver)
 
     assert "view_about_logins" in metadata.metrics
     assert metadata.metrics["view_about_logins"].bigger_is_better
@@ -87,8 +87,8 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[0])
-    metadata = ExperimentMetadata.from_config(config)
+    config = spec.resolve(experiments[0], Mock())
+    metadata = ExperimentMetadata.from_config(config, Mock())
 
     assert "my_cool_metric" in metadata.metrics
     assert metadata.metrics["my_cool_metric"].bigger_is_better
@@ -114,7 +114,7 @@ def test_export_metadata(mock_storage_client, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[0])
+    config = spec.resolve(experiments[0], Mock())
 
     mock_client = MagicMock()
     mock_storage_client.return_value = mock_client
@@ -124,7 +124,7 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
 
-    export_metadata(config, "test_bucket", "project")
+    export_metadata(config, "test_bucket", "project", outcomes_resolver=Mock())
 
     mock_client.get_bucket.assert_called_once()
     mock_bucket.blob.assert_called_once()

@@ -6,8 +6,9 @@ import attr
 import cattr
 import google.cloud.storage as storage
 
-from jetstream import bq_normalize_name, outcomes
+from jetstream import bq_normalize_name
 from jetstream.config import AnalysisConfiguration
+from jetstream.outcomes import OutcomesResolver, OutcomesResolverType
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,11 @@ class ExperimentMetadata:
     outcomes: Dict[str, OutcomeMetadata]
 
     @classmethod
-    def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":
+    def from_config(
+        cls,
+        config: AnalysisConfiguration,
+        outcomes_resolver: Optional[OutcomesResolverType] = None,
+    ) -> "ExperimentMetadata":
         all_metrics = [
             summary.metric for period, summaries in config.metrics.items() for summary in summaries
         ]
@@ -51,7 +56,7 @@ class ExperimentMetadata:
             for metric in all_metrics_distinct
         }
 
-        all_outcomes = outcomes.OutcomesResolver.data
+        all_outcomes = (outcomes_resolver or OutcomesResolver).data
 
         outcomes_metadata = {
             external_outcome.slug: OutcomeMetadata(
@@ -69,12 +74,17 @@ class ExperimentMetadata:
         return cls(metrics=metrics_metadata, outcomes=outcomes_metadata)
 
 
-def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
+def export_metadata(
+    config: AnalysisConfiguration,
+    bucket_name: str,
+    project_id: str,
+    outcomes_resolver: Optional[OutcomesResolverType] = None,
+):
     """Export experiment metadata to GCS."""
     if config.experiment.normandy_slug is None:
         return
 
-    metadata = ExperimentMetadata.from_config(config)
+    metadata = ExperimentMetadata.from_config(config, outcomes_resolver)
 
     storage_client = storage.Client(project_id)
     bucket = storage_client.get_bucket(bucket_name)
