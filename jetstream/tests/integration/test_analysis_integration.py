@@ -163,6 +163,8 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch1", "point"] == 1.0
         assert count_by_branch.loc["branch2", "point"] == 1.0
 
+        assert count_by_branch.loc["branch2", "analysis_basis"] == "exposures"
+
         assert (
             client.client.get_table(
                 f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
@@ -223,6 +225,7 @@ class TestAnalysisIntegration:
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
         assert count_by_branch.loc["a", "point"] == 0.0
         assert count_by_branch.loc["b", "point"] == 0.0
+        assert count_by_branch.loc["b", "analysis_basis"] == "enrollments"
 
         assert (
             client.client.get_table(
@@ -332,6 +335,7 @@ class TestAnalysisIntegration:
         )
         assert count_by_branch.loc["branch1", "point"] == 1.0
         assert count_by_branch.loc["branch2", "point"] == 1.0
+        assert count_by_branch.loc["branch2", "analysis_basis"] == "enrollments"
 
         assert len(stats.query("segment == 'regular_user_v3'")) > 0
 

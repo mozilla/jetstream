@@ -242,22 +242,30 @@ class Analysis:
         """
         Run statistics on metric.
         """
-        return metric.run(segment_data, self.config.experiment).set_segment(segment)
+        return (
+            metric.run(segment_data, self.config.experiment)
+            .set_segment(segment)
+            .set_analysis_basis(metric.metric.analysis_basis)
+        )
 
     @dask.delayed
-    def counts(self, segment_data: DataFrame, segment: str) -> StatisticResultCollection:
+    def counts(
+        self, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
+    ) -> StatisticResultCollection:
         """Count and missing count statistics."""
+        metric = analysis_basis.value + "_identity"
         counts = (
             Count()
-            .transform(segment_data, "*", "*", self.config.experiment.normandy_slug)
+            .transform(segment_data, metric, "*", self.config.experiment.normandy_slug)
             .set_segment(segment)
+            .set_analysis_basis(analysis_basis)
         ).to_dict()["data"]
 
         return StatisticResultCollection(
             counts
             + [
                 StatisticResult(
-                    metric="identity",
+                    metric=metric,
                     statistic="count",
                     parameter=None,
                     branch=b.slug,
@@ -268,6 +276,7 @@ class Analysis:
                     lower=None,
                     upper=None,
                     segment=segment,
+                    analysis_basis=analysis_basis,
                 )
                 for b in self.config.experiment.branches
                 if b.slug not in {c["branch"] for c in counts}
@@ -516,14 +525,16 @@ class Analysis:
             for segment in segment_labels:
                 segment_data = self.subset_to_segment(segment, metrics_data)
                 for m in self.config.metrics[period]:
-                    if m.metric.analysis_basis == analysis_basis:
-                        segment_results += self.calculate_statistics(
-                            m,
-                            segment_data,
-                            segment,
-                        ).to_dict()["data"]
+                    segment_results += self.calculate_statistics(
+                        m,
+                        segment_data,
+                        segment,
+                    ).to_dict()["data"]
 
-                segment_results += self.counts(segment_data, segment).to_dict()["data"]
+                for analysis_basis in analysis_bases:
+                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
+                        "data"
+                    ]
 
             results.append(
                 self.save_statistics(

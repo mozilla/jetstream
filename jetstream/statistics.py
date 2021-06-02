@@ -15,6 +15,7 @@ import mozanalysis.metrics
 import numpy as np
 import statsmodels.api as sm
 from google.cloud import bigquery
+from mozanalysis.experiment import AnalysisBasis
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
@@ -73,6 +74,7 @@ class StatisticResult:
     lower: Optional[float] = None
     upper: Optional[float] = None
     segment: Optional[str] = None
+    analysis_basis: Optional[str] = None
 
     def __attrs_post_init__(self):
         for k in ("ci_width", "point", "lower", "upper"):
@@ -94,6 +96,7 @@ class StatisticResult:
         bigquery.SchemaField("lower", "FLOAT64"),
         bigquery.SchemaField("upper", "FLOAT64"),
         bigquery.SchemaField("segment", "STRING"),
+        bigquery.SchemaField("analysis_basis", "STRING"),
     )
 
 
@@ -121,6 +124,12 @@ class StatisticResultCollection:
         """Sets the `segment` field in-place on all children."""
         for result in self.data:
             result.segment = segment
+        return self
+
+    def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
+        """Sets the `analysis_basis` field in-place on all children."""
+        for result in self.data:
+            result.analysis_basis = analysis_basis.value
         return self
 
 
