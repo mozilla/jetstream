@@ -1,6 +1,6 @@
 # Publishing statistics data with different analysis bases
 
-* Status: Draft
+* Status: accepted
 * Deciders: emtwo, tdsmith, scholtzan
 * Date: 2021-06-01
 
@@ -17,7 +17,7 @@ This has an impact on the structure of the datasets Jetstream publishes and adds
 
 ## Options
 
-### Per-analysis-basis metrics tables, single statistics table
+### 1. Per-analysis-basis metrics tables, single statistics table
 
 * When analysing an experiments, results for computed metrics get stored in separate tables based on their analysis basis. This means that enrollments-based metrics are stored in a table named `<slug>_enrollments_<period>` and exposure-based metrics are stored in `<slug>_exposures_<period>`.
 * When calculating the statistics, all of the results are combined and stored in a `statistics_<slug>_<period>` table.
@@ -29,7 +29,7 @@ This has an impact on the structure of the datasets Jetstream publishes and adds
 * +: This option doesn't require any immediate changes in the visualization front-end. Nothing will break since the datasets that Experimenter uses still have the same structure.
 * -: We rely on the metadata to determine which analysis basis results are based on
 
-### Per-analysis-basis metrics and statistics tables
+### 2. Per-analysis-basis metrics and statistics tables
 
 * When analysing an experiments, results for computed metrics get stored in separate tables based on their analysis basis. This means that enrollments-based metrics are stored in a table named `<slug>_enrollments_<period>` and exposure-based metrics are stored in `<slug>_exposures_<period>`.
 * When calculating the statistics, all of the results are again stored in separate tables based on the analysis basis, e.g. `statistics_<slug>_enrollments_<period>` and `statistics_<slug>_exposures_<period>`.
@@ -41,25 +41,25 @@ This has an impact on the structure of the datasets Jetstream publishes and adds
 * -: This is a breaking change. Experimenter would need to implement changes to combine the enrollments and exposure data it fetches from GCS
 * -: A lot more data products. We'd have separate tables for each period and analysis basis for both metrics and statistics. Same for the data that is exported to GCS
 
-### Per-analysis-basis metrics tables, single statistics table with prefixes
+### 3. Per-analysis-basis metrics tables, single statistics table with prefixes
 
 * This option is almost identical to the _"Per-analysis-basis metrics tables, single statistics table"_ option, however the columns in the statistics tables will be prefixed with either `enrollments_` or `exposures_`.
 
 * +: It is clear from looking at the column names what the analysis basis is for the computed metrics.
 * -: This might cause some breakage on the Experimenter side.
 
-### Handling the analysis basis like segments
+### 4. Handling the analysis basis like segments
 
 * For this option, metrics are still stored in separate tables based on their analysis basis.
-* Statistics results will combine metrics from all analysis bases, however the structure of the statistics table would change. A new column `analysis_basis` would be added to the table and would work similar to segments, but instead of having a boolean value, values would be either `enrollments` or `exposures`. For each row in the results table, values that are not based on the current analysis basis are set to `NULL`
+* Statistics results will combine metrics from all analysis bases, however the structure of the statistics table would change. A new column `analysis_basis` would be added to the table and would work similar to segments, but instead of having a boolean value, values would be either `enrollments` or `exposures`.
 * Views for statistic results will be created and results and metadata to GCS will be exported to GCS
+* This is similar to option _Per-analysis-basis metrics tables, single statistics table_
 
 * +: It's clear from the `analysis_basis` column what analysis basis statistics are based on.
-* -: This is a breaking change. Experimenter would need to implement changes to combine the enrollments and exposure data it fetches from GCS
-* -: A lot of rows with mainly `NULL` values in statistics tables. The table format might potentially be confusing(?)
+* +: No breaking Experimenter changes.
 
 ## Decision Outcome
 
-TBD
+Data scientists might access result tables via Redash (and possibly Looker). Information about the analysis basis used is pretty important.
 
-Are there any use cases where consumers might access the data but do not have access to the published metadata? How important is it to indicate the analysis basis in the BigQuery tables?
+**Option 4** wins for having analysis basis information as part of the results and for not being a breaking change for Experimenter.
