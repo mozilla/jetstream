@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
+from functools import reduce
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
@@ -10,11 +11,9 @@ import dask
 import google
 import mozanalysis
 from dask.distributed import Client, LocalCluster
-from functools import reduce
-from google.cloud.exceptions import Conflict
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
-from mozanalysis.experiment import TimeLimits, AnalysisBasis
+from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
 

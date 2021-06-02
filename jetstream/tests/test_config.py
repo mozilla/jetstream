@@ -1,14 +1,13 @@
 import datetime as dt
 from textwrap import dedent
 
+import mozanalysis.exposure
+import mozanalysis.metrics.desktop
 import mozanalysis.segments
 import pytest
 import pytz
 import toml
-
 from mozanalysis.experiment import AnalysisBasis
-import mozanalysis.exposure
-import mozanalysis.metrics.desktop
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS
