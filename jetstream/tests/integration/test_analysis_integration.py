@@ -3,11 +3,9 @@ import datetime as dt
 from pathlib import Path
 
 import dask
-
 import mozanalysis
 import pytz
 from mozanalysis.metrics import AnalysisBasis, DataSource, agg_sum
-
 from mozanalysis.segments import Segment, SegmentDataSource
 
 from jetstream import AnalysisPeriod

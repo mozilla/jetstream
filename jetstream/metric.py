@@ -1,9 +1,8 @@
-import attr
+from typing import Optional
 
+import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
-
-from typing import Optional
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
