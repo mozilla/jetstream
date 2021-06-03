@@ -1,7 +1,9 @@
-import attr
 import logging
-
 from typing import Optional
+
+import attr
+import dask.distributed
+from distributed.diagnostics.plugin import WorkerPlugin
 
 from .bigquery_log_handler import BigQueryLogHandler
 
@@ -29,3 +31,17 @@ class LogConfiguration:
             )
             bigquery_handler.setLevel(logging.WARNING)
             logger.addHandler(bigquery_handler)
+
+
+class LogPlugin(WorkerPlugin):
+    """
+    Dask worker plugin for initializing the logger.
+
+    This ensures that the BigQuery logging handler gets initialized.
+    """
+
+    def __init__(self, log_config: LogConfiguration):
+        self.log_config = log_config
+
+    def setup(self, _worker: dask.distributed.Worker):
+        self.log_config.setup_logger()

@@ -38,7 +38,6 @@ from .logging import LogConfiguration
 from .metadata import export_metadata
 from .util import inclusive_date_range
 
-
 logger = logging.getLogger(__name__)
 
 

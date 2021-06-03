@@ -420,7 +420,7 @@ class TestSerialExecutorStrategy:
         config = spec.resolve(experiment)
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(config, run_date)])
-        fake_analysis.assert_called_once_with("spam", "eggs", config)
+        fake_analysis.assert_called_once_with("spam", "eggs", config, None)
         fake_analysis().run.assert_called_once_with(run_date)
 
 
