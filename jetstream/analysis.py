@@ -20,7 +20,7 @@ import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
-from jetstream.logging import LogConfiguration
+from jetstream.logging import LogConfiguration, LogPlugin
 from jetstream.statistics import (
     Count,
     StatisticResult,
@@ -413,8 +413,8 @@ class Analysis:
         results = []
 
         if self.log_config:
-            setup_logger = dask.delayed(self.log_config.setup_logger)
-            results.append(setup_logger)
+            log_plugin = LogPlugin(self.log_config)
+            client.register_worker_plugin(log_plugin)
 
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
