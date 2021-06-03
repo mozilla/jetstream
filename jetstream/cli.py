@@ -34,26 +34,9 @@ from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_statistics_tables
 from .external_config import ExternalConfigCollection
-from .logging.bigquery_log_handler import BigQueryLogHandler
+from .logging import LogConfiguration
 from .metadata import export_metadata
 from .util import inclusive_date_range
-
-
-def setup_logger(
-    log_project_id, log_dataset_id, log_table_id, log_to_bigquery, client=None, capacity=50
-):
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
-    )
-    logger = logging.getLogger()
-
-    if log_to_bigquery:
-        bigquery_handler = BigQueryLogHandler(
-            log_project_id, log_dataset_id, log_table_id, client, capacity
-        )
-        bigquery_handler.setLevel(logging.WARNING)
-        logger.addHandler(bigquery_handler)
 
 
 logger = logging.getLogger(__name__)
@@ -139,6 +122,7 @@ class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
     bucket: str
+    log_config: Optional[LogConfiguration] = None
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: Callable[
@@ -153,7 +137,9 @@ class SerialExecutorStrategy:
         failed = False
         for config, date in worklist:
             try:
-                analysis = self.analysis_class(self.project_id, self.dataset_id, config)
+                analysis = self.analysis_class(
+                    self.project_id, self.dataset_id, config, self.log_config
+                )
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id)
             except ValidationException as e:
@@ -362,8 +348,12 @@ class AnalysisExecutor:
 )
 @click.option("--log_table_id", "--log-table-id", default="logs", help="Table to write logs to")
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
-def cli(log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
-    setup_logger(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
+@click.pass_context
+def cli(ctx, log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
+    log_config = LogConfiguration(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
+    log_config.setup_logger()
+    ctx.ensure_object(dict)
+    ctx.obj["log_config"] = log_config
 
 
 class ClickDate(click.ParamType):
@@ -463,7 +453,9 @@ recreate_enrollments_option = click.option(
 @bucket_option
 @secret_config_file_option
 @recreate_enrollments_option
+@click.pass_context
 def run(
+    ctx,
     project_id,
     dataset_id,
     date,
@@ -484,7 +476,7 @@ def run(
     )
 
     success = analysis_executor.execute(
-        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket)
+        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
     )
 
     sys.exit(0 if success else 1)
@@ -556,7 +548,9 @@ def run_argo(
 @cluster_ip_option
 @cluster_cert_option
 @recreate_enrollments_option
+@click.pass_context
 def rerun(
+    ctx,
     project_id,
     dataset_id,
     experiment_slug,
@@ -571,7 +565,7 @@ def rerun(
     recreate_enrollments,
 ):
     """Rerun all available analyses for a specific experiment."""
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -619,7 +613,9 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @cluster_cert_option
 @return_status_option
 @recreate_enrollments_option
+@click.pass_context
 def rerun_config_changed(
+    ctx,
     project_id,
     dataset_id,
     bucket,
@@ -634,7 +630,7 @@ def rerun_config_changed(
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket)
+    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()

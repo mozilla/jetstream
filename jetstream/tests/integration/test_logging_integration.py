@@ -3,7 +3,7 @@ import logging
 import pytest
 from google.cloud import bigquery
 
-from jetstream.cli import setup_logger
+from jetstream.logging import LogConfiguration
 
 
 class TestLoggingIntegration:
@@ -23,7 +23,10 @@ class TestLoggingIntegration:
         table = bigquery.Table(f"{project_id}.{temporary_dataset}.logs", schema=schema)
         table = client.client.create_table(table)
 
-        setup_logger(project_id, temporary_dataset, "logs", log_to_bigquery=True, capacity=1)
+        log_config = LogConfiguration(
+            project_id, temporary_dataset, "logs", log_to_bigquery=True, capacity=1
+        )
+        log_config.setup_logger()
 
         yield
         client.client.delete_table(table, not_found_ok=True)

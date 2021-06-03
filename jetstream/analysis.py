@@ -20,6 +20,7 @@ import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
+from jetstream.logging import LogConfiguration
 from jetstream.statistics import (
     Count,
     StatisticResult,
@@ -44,6 +45,7 @@ class Analysis:
     project: str
     dataset: str
     config: AnalysisConfiguration
+    log_config: Optional[LogConfiguration] = None
 
     @property
     def bigquery(self):
@@ -409,6 +411,11 @@ class Analysis:
 
         # prepare dask tasks
         results = []
+
+        if self.log_config:
+            setup_logger = dask.delayed(self.log_config.setup_logger)
+            results.append(setup_logger)
+
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
         for period in self.config.metrics:
