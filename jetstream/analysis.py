@@ -465,7 +465,9 @@ class Analysis:
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
 
         if time_limits is None:
-            logger.info("Skipping %s (%s); not ready", self.config.experiment.normandy_slug)
+            logger.info(
+                "Skipping enrollments for %s; not ready", self.config.experiment.normandy_slug
+            )
             return
 
         if self.config.experiment.start_date is None:
