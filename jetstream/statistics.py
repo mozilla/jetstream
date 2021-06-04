@@ -172,7 +172,8 @@ class Statistic(ABC):
                         ).data
                     except Exception as e:
                         logger.error(
-                            f"Error while computing statistic {self.name} for metric {metric}: {e}",
+                            f"Error while computing statistic {self.name()} "
+                            + f"for metric {metric}: {e}",
                             extra={"experiment": experiment.normandy_slug},
                         )
 
