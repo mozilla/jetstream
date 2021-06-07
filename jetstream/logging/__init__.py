@@ -43,5 +43,5 @@ class LogPlugin(WorkerPlugin):
     def __init__(self, log_config: LogConfiguration):
         self.log_config = log_config
 
-    def setup(self, _worker: dask.distributed.Worker):
+    def setup(self, worker: dask.distributed.Worker):
         self.log_config.setup_logger()
