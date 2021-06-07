@@ -1060,10 +1060,10 @@ typing-extensions==3.10.0.0 \
     #   libcst
     #   mypy
     #   typing-inspect
-typing-inspect==0.6.0 \
-    --hash=sha256:3b98390df4d999a28cf5b35d8b333425af5da2ece8a4ea9e98f71e7591347b4f \
-    --hash=sha256:8f1b1dd25908dbfd81d3bebc218011531e7ab614ba6e5bf7826d887c834afab7 \
-    --hash=sha256:de08f50a22955ddec353876df7b2545994d6df08a2f45d54ac8c05e530372ca0
+typing-inspect==0.7.0 \
+    --hash=sha256:118ebe93e4702647200ef946ea8bfd4508b4e5ff2cc8ed6e85a21f5c554dd660 \
+    --hash=sha256:b0879cbc15d086f0ca7066eb775c062333e96f6d4622193d2423d8649c778480 \
+    --hash=sha256:e942841c8ce2a80c5e5fbec88d7075c71487cb3cacb945de763094dc3e78be0c
     # via
     #   -r requirements.in
     #   libcst
