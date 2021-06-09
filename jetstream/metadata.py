@@ -6,7 +6,7 @@ import attr
 import cattr
 import google.cloud.storage as storage
 
-from jetstream import STATISTICS_SCHEMA_VERSION, bq_normalize_name, outcomes
+from jetstream import bq_normalize_name, outcomes
 from jetstream.config import AnalysisConfiguration
 from jetstream.statistics import StatisticResult
 
