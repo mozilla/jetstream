@@ -386,6 +386,10 @@ class Analysis:
             segment_results, f"statistics_{metrics_table}", job_config=job_config
         )
 
+        self.bigquery.add_labels_to_table(
+            f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
+        )
+
         self._publish_view(period, table_prefix="statistics")
 
     def run(self, current_date: datetime, dry_run: bool = False) -> None:

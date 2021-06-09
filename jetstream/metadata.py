@@ -8,6 +8,7 @@ import google.cloud.storage as storage
 
 from jetstream import bq_normalize_name, outcomes
 from jetstream.config import AnalysisConfiguration
+from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class OutcomeMetadata:
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
     outcomes: Dict[str, OutcomeMetadata]
+    schema_version: int = StatisticResult.SCHEMA_VERSION
 
     @classmethod
     def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":

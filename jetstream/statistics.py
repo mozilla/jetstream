@@ -59,6 +59,8 @@ class StatisticResult:
     to metric data.
     """
 
+    SCHEMA_VERSION = 1
+
     metric: str
     statistic: str
     branch: str
