@@ -226,6 +226,7 @@ class Analysis:
                     m.metric.to_mozanalysis_metric()
                     for m in self.config.metrics[period]
                     if m.metric.analysis_basis == analysis_basis
+                    or analysis_basis in m.metric.analysis_basis
                 },
                 last_window_limits,
                 table_name,
@@ -258,7 +259,7 @@ class Analysis:
         self, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
     ) -> StatisticResultCollection:
         """Count and missing count statistics."""
-        metric = analysis_basis.value + "_identity"
+        metric = "identity"
         counts = (
             Count()
             .transform(segment_data, metric, "*", self.config.experiment.normandy_slug)
@@ -476,10 +477,16 @@ class Analysis:
             )
 
             metrics_dataframes = []
+            analysis_bases = []
 
-            analysis_bases = list(
-                set([m.metric.analysis_basis for m in self.config.metrics[period]])
-            )
+            for m in self.config.metrics[period]:
+                if isinstance(m.metric.analysis_basis, list):
+                    for analysis_basis in m.metric.analysis_basis:
+                        analysis_bases.append(analysis_basis)
+                else:
+                    analysis_bases.append(m.metric.analysis_basis)
+
+            analysis_bases = list(set(analysis_bases))
 
             if len(analysis_bases) == 0:
                 continue

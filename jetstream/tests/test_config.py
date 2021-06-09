@@ -385,6 +385,28 @@ class TestAnalysisSpec:
 
         assert metric.analysis_basis == AnalysisBasis.EXPOSURES
 
+    def test_exposure_and_enrollments_based_metric(self, experiments):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+            analysis_basis = ["exposures", "enrollments"]
+
+            [metrics.spam.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0])
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
+
+        assert AnalysisBasis.EXPOSURES in metric.analysis_basis
+        assert AnalysisBasis.ENROLLMENTS in metric.analysis_basis
+
     def test_change_metric_to_exposure(self, experiments):
         config_str = dedent(
             """

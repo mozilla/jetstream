@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import attr
 import cattr
@@ -18,7 +18,7 @@ class MetricsMetadata:
     friendly_name: Optional[str]
     description: Optional[str]
     bigger_is_better: bool
-    analysis_basis: str
+    analysis_basis: Union[str, List[str]]
 
 
 @attr.s(auto_attribs=True)
@@ -50,7 +50,9 @@ class ExperimentMetadata:
                 friendly_name=metric.friendly_name,
                 description=metric.description,
                 bigger_is_better=metric.bigger_is_better,
-                analysis_basis=metric.analysis_basis.value,
+                analysis_basis=[a.value for a in metric.analysis_basis]
+                if isinstance(metric.analysis_basis, list)
+                else metric.analysis_basis.value,
             )
             for metric in all_metrics_distinct
         }

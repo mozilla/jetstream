@@ -24,7 +24,17 @@ from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 import cattr
@@ -423,7 +433,9 @@ class MetricDefinition:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
-    analysis_basis: mozanalysis.experiment.AnalysisBasis = None
+    analysis_basis: Optional[
+        Union[mozanalysis.experiment.AnalysisBasis, List[mozanalysis.experiment.AnalysisBasis]]
+    ] = None
 
     def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
@@ -486,6 +498,43 @@ class MetricDefinition:
             raise ValueError(f"Metric {self.name} has no statistical treatment defined.")
 
         return metrics_with_treatments
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "MetricDefinition":
+        # Only unions of attr classes supported currently in cattr
+        # structuring analysis_basis needs to be done manually
+        params: Dict[str, Any] = {}
+        params["name"] = d["name"]
+        params["friendly_name"] = d.get("friendly_name", None)
+        params["description"] = d.get("description", None)
+        params["bigger_is_better"] = d.get("bigger_is_better", True)
+        params["select_expression"] = d.get("select_expression", None)
+        params["statistics"] = d["statistics"]
+        params["data_source"] = (
+            _converter.structure(d["data_source"], DataSourceReference)
+            if "data_source" in d
+            else None
+        )
+
+        if "analysis_basis" in d:
+            if isinstance(d["analysis_basis"], list):
+                params["analysis_basis"] = [
+                    _converter.structure(a, mozanalysis.experiment.AnalysisBasis)
+                    for a in d["analysis_basis"]
+                ]
+            else:
+                params["analysis_basis"] = _converter.structure(
+                    d["analysis_basis"], mozanalysis.experiment.AnalysisBasis
+                )
+        else:
+            params["analysis_basis"] = None
+
+        return cls(**params)
+
+
+_converter.register_structure_hook(
+    MetricDefinition, lambda obj, _type: MetricDefinition.from_dict(obj)
+)
 
 
 MetricsConfigurationType = Dict[AnalysisPeriod, List[Summary]]
