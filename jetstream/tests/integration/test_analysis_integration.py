@@ -99,7 +99,7 @@ class TestAnalysisIntegration:
             name="active_hours",
             data_source=test_clients_daily,
             select_expression=agg_sum("active_hours_sum"),
-            analysis_basis=AnalysisBasis.EXPOSURES,
+            analysis_basis=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
         )
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
@@ -148,6 +148,12 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
+                f"{project_id}.{temporary_dataset}.test_experiment_enrollments_weekly"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
                 f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
             )
             is not None
@@ -158,10 +164,11 @@ class TestAnalysisIntegration:
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["branch1", "point"] == 1.0
-        assert count_by_branch.loc["branch2", "point"] == 1.0
+        assert count_by_branch.loc["branch1", "point"][0] == 1.0
+        assert count_by_branch.loc["branch2", "point"][0] == 1.0
 
-        assert count_by_branch.loc["branch2", "analysis_basis"] == "exposures"
+        assert count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures"
+        assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
 
         assert (
             client.client.get_table(
