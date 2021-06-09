@@ -16,7 +16,7 @@ class Metric:
 
     name: str
     data_source: mozanalysis.metrics.DataSource
-    select_expr: str
+    select_expression: str
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
@@ -29,7 +29,7 @@ class Metric:
         return mozanalysis.metrics.Metric(
             name=self.name,
             data_source=self.data_source,
-            select_expr=self.select_expr,
+            select_expr=self.select_expression,
             friendly_name=self.friendly_name,
             description=self.description,
             bigger_is_better=self.bigger_is_better,
@@ -39,12 +39,14 @@ class Metric:
     def from_mozanalysis_metric(
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
-        analysis_basis: Optional[mozanalysis.experiment.AnalysisBasis] = None,
+        analysis_basis: Optional[
+            mozanalysis.experiment.AnalysisBasis
+        ] = mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
     ) -> "Metric":
         return cls(
             name=mozanalysis_metric.name,
             data_source=mozanalysis_metric.data_source,
-            select_expr=mozanalysis_metric.select_expr,
+            select_expression=mozanalysis_metric.select_expr,
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
