@@ -1,6 +1,8 @@
 import enum
 import re
 
+STATISTICS_SCHEMA_VERSION = 1
+
 
 class AnalysisPeriod(enum.Enum):
     DAY = "day"
