@@ -22,7 +22,6 @@ from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
 from jetstream.dryrun import dry_run_query
 from jetstream.logging import LogConfiguration, LogPlugin
-from jetstream.metric import Metric
 from jetstream.statistics import (
     Count,
     StatisticResult,
@@ -133,6 +132,13 @@ class Analysis:
     def _table_name(
         self, window_period: str, window_index: int, analysis_basis: Optional[AnalysisBasis] = None
     ) -> str:
+        """
+        Returns the Bigquery table name for statistics and metrics result tables.
+
+        Tables names are based on analysis period, analysis window and optionally analysis basis.
+        Metric aggregate tables should have analysis basis specified, while statistic tables
+        should not.
+        """
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
 

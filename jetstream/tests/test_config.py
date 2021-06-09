@@ -53,8 +53,8 @@ class TestAnalysisSpec:
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "my_cool_metric"][
             0
         ].metric
-        assert "agg_histogram_mean" not in metric.select_expr
-        assert "json_extract_histogram" in metric.select_expr
+        assert "agg_histogram_mean" not in metric.select_expression
+        assert "json_extract_histogram" in metric.select_expression
 
     def test_recognizes_metrics(self, experiments):
         config_str = dedent(
@@ -167,8 +167,8 @@ class TestAnalysisSpec:
         ].metric
 
         assert stock != custom
-        assert custom.select_expr == "spam"
-        assert stock.select_expr != custom.select_expr
+        assert custom.select_expression == "spam"
+        assert stock.select_expression != custom.select_expression
 
     def test_unknown_statistic_failure(self, experiments):
         config_str = dedent(
@@ -359,7 +359,7 @@ class TestAnalysisSpec:
 
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "events"
-        assert spam.metric.select_expr == "2"
+        assert spam.metric.select_expression == "2"
         assert spam.metric.analysis_basis == AnalysisBasis.ENROLLMENTS
         assert spam.statistic.name() == "bootstrap_mean"
         assert spam.statistic.num_samples == 100
@@ -414,7 +414,7 @@ class TestAnalysisSpec:
             [experiment.exposure_signal]
             name = "ad_exposure"
             data_source = "search_clients_daily"
-            select_expr = "ad_click > 0"
+            select_expression = "ad_click > 0"
             friendly_name = "Ad exposure"
             description = "Clients have clicked on ad"
 

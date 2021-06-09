@@ -349,9 +349,9 @@ class ExposureSignalDefinition:
 
     name: str
     data_source: DataSourceReference
-    select_expr: str
-    friendly_name: Optional[str] = None
-    description: Optional[str] = None
+    select_expression: str
+    friendly_name: str
+    description: str
 
     def resolve(
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
@@ -359,7 +359,7 @@ class ExposureSignalDefinition:
         return mozanalysis.exposure.ExposureSignal(
             name=self.name,
             data_source=self.data_source.resolve(spec, experiment=experiment),
-            select_expr=self.select_expr,
+            select_expr=self.select_expression,
             friendly_name=self.friendly_name,
             description=self.description,
         )
@@ -447,7 +447,7 @@ class MetricDefinition:
             metric = Metric(
                 name=self.name,
                 data_source=self.data_source.resolve(spec, experiment),
-                select_expr=select_expression,
+                select_expression=select_expression,
                 friendly_name=self.friendly_name,
                 description=self.description,
                 bigger_is_better=self.bigger_is_better,

@@ -10,7 +10,7 @@ class TestMetric:
         metric = Metric(
             name="test",
             data_source=DataSource(name="test_data_source", from_expr="test.test"),
-            select_expr="test",
+            select_expression="test",
             analysis_basis=AnalysisBasis.EXPOSURES,
         )
 

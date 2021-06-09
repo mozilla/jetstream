@@ -98,7 +98,7 @@ class TestAnalysisIntegration:
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
-            select_expr=agg_sum("active_hours_sum"),
+            select_expression=agg_sum("active_hours_sum"),
             analysis_basis=AnalysisBasis.EXPOSURES,
         )
 
@@ -198,7 +198,7 @@ class TestAnalysisIntegration:
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
-            select_expr=agg_sum("active_hours_sum"),
+            select_expression=agg_sum("active_hours_sum"),
         )
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
@@ -260,7 +260,7 @@ class TestAnalysisIntegration:
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
-            select_expr=agg_sum("active_hours_sum"),
+            select_expression=agg_sum("active_hours_sum"),
         )
 
         test_clients_last_seen = SegmentDataSource(
