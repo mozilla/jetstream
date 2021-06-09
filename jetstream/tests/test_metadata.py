@@ -8,6 +8,7 @@ import toml
 
 from jetstream.config import AnalysisSpec
 from jetstream.metadata import ExperimentMetadata, export_metadata
+from jetstream.statistics import StatisticResult
 
 
 @patch.object(requests.Session, "get")
@@ -35,6 +36,7 @@ def test_metadata_from_config(mock_get, experiments):
     config = spec.resolve(experiments[4])
     metadata = ExperimentMetadata.from_config(config)
 
+    assert StatisticResult.SCHEMA_VERSION == metadata.schema_version
     assert "view_about_logins" in metadata.metrics
     assert metadata.metrics["view_about_logins"].bigger_is_better
     assert metadata.metrics["view_about_logins"].description != ""
@@ -144,7 +146,10 @@ def test_export_metadata(mock_storage_client, experiments):
                     "bigger_is_better": true
                 }
             },
-            "outcomes": {}
+            "outcomes": {},
+            "schema_version":"""
+        + str(StatisticResult.SCHEMA_VERSION)
+        + """
         }
     """
     )
