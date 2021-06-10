@@ -12,13 +12,16 @@ from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec, Summary
 from jetstream.experimenter import Branch, Experiment
+from jetstream.logging import LogConfiguration
 from jetstream.statistics import BootstrapMean
 
 TEST_DIR = Path(__file__).parent.parent
 
 
 class TestAnalysisIntegration:
-    def analysis_mock_run(self, monkeypatch, config, static_dataset, temporary_dataset, project_id):
+    def analysis_mock_run(
+        self, monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config=None
+    ):
         orig_enrollments = mozanalysis.experiment.Experiment.build_enrollments_query
         orig_metrics = mozanalysis.experiment.Experiment.build_metrics_query
 
@@ -51,7 +54,7 @@ class TestAnalysisIntegration:
                 threads_per_worker=threads_per_worker,
             )
 
-        analysis = Analysis(project_id, temporary_dataset, config)
+        analysis = Analysis(project_id, temporary_dataset, config, log_config)
 
         monkeypatch.setattr(
             mozanalysis.experiment.Experiment,
@@ -317,3 +320,57 @@ class TestAnalysisIntegration:
             )
             is not None
         )
+
+    def test_logging(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        )
+
+        config = AnalysisSpec().resolve(experiment)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expr=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expr=agg_sum("active_hours_sum"),
+        )
+
+        config.metrics = {
+            AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean(confidence_interval=10))]
+        }
+
+        log_config = LogConfiguration(
+            log_project_id=project_id,
+            log_dataset_id=temporary_dataset,
+            log_table_id="logs",
+            log_to_bigquery=True,
+            capacity=1,
+        )
+        self.analysis_mock_run(
+            monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config
+        )
+
+        assert client.client.get_table(f"{project_id}.{temporary_dataset}.logs") is not None
+
+        logs = list(client.client.list_rows(f"{project_id}.{temporary_dataset}.logs"))
+
+        assert len(logs) == 1
+        assert "Error while computing statistic bootstrap_mean for metric active_hours" in logs[
+            0
+        ].get("message")
+        assert logs[0].get("log_level") == "ERROR"
