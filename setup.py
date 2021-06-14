@@ -15,6 +15,14 @@ test_dependencies = [
     "pytest-cov",
     "pytest-flake8",
     "mypy",
+    "types-futures",
+    "types-pkg-resources",
+    "types-protobuf",
+    "types-pytz",
+    "types-PyYAML",
+    "types-requests",
+    "types-six",
+    "types-toml",
 ]
 
 extras = {
