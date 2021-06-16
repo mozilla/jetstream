@@ -35,7 +35,7 @@ data_source = "baseline"
 
 [metrics.days_of_use.statistics]
 deciles = {}
-bootstrap_mean = { drop_highest = 0 }
+bootstrap_mean = { drop_highest=0 }
 empirical_cdf = {}
 
 ##
