@@ -35,7 +35,7 @@ data_source = "baseline"
 
 [metrics.days_of_use.statistics]
 deciles = {}
-bootstrap_mean = { drop_highest = 0 }
+bootstrap_mean = { drop_highest=0 }
 empirical_cdf = {}
 
 ##
@@ -52,7 +52,7 @@ bootstrap_mean = {}
 
 [metrics.serp_ad_clicks]
 select_expression = "{{agg_sum('ad_click')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.serp_ad_clicks.statistics]
 deciles = {}
@@ -62,7 +62,7 @@ bootstrap_mean = {}
 
 [metrics.organic_searches]
 select_expression = "{{agg_sum('organic')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.organic_searches.statistics]
 deciles = {}
@@ -74,7 +74,7 @@ bootstrap_mean = {}
 friendly_name = "SAP search count"
 description = "Number of searches performed through a Search Access Point."
 select_expression = "{{agg_sum('search_count')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.search_count.statistics]
 deciles = {}
@@ -84,7 +84,7 @@ bootstrap_mean = {}
 
 [metrics.searches_with_ads]
 select_expression = "{{agg_sum('search_with_ads')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.searches_with_ads.statistics]
 deciles = {}
@@ -94,7 +94,7 @@ bootstrap_mean = {}
 
 [metrics.tagged_sap_searches]
 select_expression = "{{agg_sum('tagged_sap')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.tagged_sap_searches.statistics]
 deciles = {}
@@ -104,7 +104,7 @@ bootstrap_mean = {}
 
 [metrics.tagged_follow_on_searches]
 select_expression = "{{agg_sum('tagged_follow_on')}}"
-data_source = "mobile_search_clients_daily"
+data_source = "mobile_search_clients_engines_sources_daily"
 
 [metrics.tagged_follow_on_searches.statistics]
 deciles = {}
@@ -113,8 +113,8 @@ bootstrap_mean = {}
 ##
 
 [metrics.total_uri_count]
-select_expression = "{{agg_sum('total_uri_count')}}"
-data_source = "mobile_search_clients_daily"
+select_expression = "{{agg_sum('metrics.counter.events_total_uri_count')}}"
+data_source = "metrics"
 
 [metrics.total_uri_count.statistics]
 deciles = {}
@@ -122,6 +122,6 @@ bootstrap_mean = {}
 
 ##
 
-[data_sources.mobile_search_clients_daily]
-from_expression = "mozdata.search.mobile_search_clients_daily"
+[data_sources.mobile_search_clients_engines_sources_daily]
+from_expression = "mozdata.search.mobile_search_clients_engines_sources_daily"
 experiments_column_type = "simple"
