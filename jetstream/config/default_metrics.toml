@@ -59,7 +59,7 @@ description = "Records whether a client submitted any pings (i.e. used Firefox).
 
 [metrics.separate_search_engine]
 select_expression = "COALESCE(ANY_VALUE(default_search_engine != default_private_search_engine), false)"
-data_source = "search_clients_daily"
+data_source = "search_clients_engines_sources_daily"
 friendly_name = "Split PBM search engine"
 description = "Indicates whether the client configured separate search engines for regular browsing and private browsing mode."
 [metrics.separate_search_engine.statistics.binomial]
