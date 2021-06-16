@@ -170,7 +170,7 @@ coverage==5.5 \
     # via
     #   -r requirements.in
     #   pytest-cov
-dask==2021.06.0 \
+dask[distributed]==2021.06.0 \
     --hash=sha256:234f62f8e9e5fd60cd669de16ad29b2c7bdad76c3a2ff0ac1eb854e80106f5af \
     --hash=sha256:ac4ec1e622bc220a057ad424ec5303f8ad96a70d672ccdb4ad60bf56d00fa1b7
     # via
@@ -179,7 +179,9 @@ dask==2021.06.0 \
 distributed==2021.06.0 \
     --hash=sha256:0ad3db5d2618fc29291b02e8ebc7a1ff6cfce5013455143c3e1bce438b2b5a48 \
     --hash=sha256:3f4b1ab97a4027c57314ab9e546dae6e4ce4dc61c7ea47e80abe32cfd475c05f
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   dask
 flake8==3.9.2 \
     --hash=sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b \
     --hash=sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907
@@ -198,9 +200,9 @@ gitdb==4.0.7 \
     # via
     #   -r requirements.in
     #   gitpython
-gitpython==3.1.17 \
-    --hash=sha256:29fe82050709760081f588dd50ce83504feddbebdc4da6956d02351552b1c135 \
-    --hash=sha256:ee24bdc93dce357630764db659edaf6b8d664d4ff5447ccfeedd2dc5c253f41e
+gitpython==3.1.14 \
+    --hash=sha256:3283ae2fba31c913d857e12e5ba5f9a7772bbc064ae2bb09efafa71b0dd4939b \
+    --hash=sha256:be27633e7509e58391f10207cd32b2a6cf5b908f92d9cd30da2e514e1137af61
     # via -r requirements.in
 google-api-core[grpc]==1.30.0 \
     --hash=sha256:0724d354d394b3d763bc10dfee05807813c5210f0bd9b8e2ddf6b6925603411c \
@@ -235,9 +237,9 @@ google-cloud-container==2.4.1 \
     --hash=sha256:534f13c6911a909eb33a99e6f910c884d0c6ee144917682d3cde6b9349fe1950 \
     --hash=sha256:e7d93ca399dd6fb5fd0f99190248531c9c583d1a85e7cd2c9ee485495459ee78
     # via -r requirements.in
-google-cloud-core==1.6.0 \
-    --hash=sha256:40d9c2da2d03549b5ac3dcccf289d4f15e6d1210044c6381ce45c92913e62904 \
-    --hash=sha256:c6abb18527545379fc82efc4de75ce9a3772ccad2fc645adace593ba097cbb02
+google-cloud-core==1.7.0 \
+    --hash=sha256:2ab0cf260c11d0cc334573301970419abb6a1f3909c6cd136e4be996616372fe \
+    --hash=sha256:9bd528810423aeaa428a9a178e7320883bbb690a8b0bb38297b794dc319c415a
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
@@ -444,9 +446,9 @@ mccabe==0.6.1 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2021.6.1 \
-    --hash=sha256:01bba488c0e7d81181caf4af7a4840d63d825d65da5de84d1156cca69020725f \
-    --hash=sha256:625d06111d187b206ea1ae11b6e139ce3b320c2e06034044b9994fee0c39914c
+mozanalysis==2021.6.2 \
+    --hash=sha256:d7e40e185e70b9a875c6a32fb59daf0cb42d8d5cd6ec6941227adfd956aa2551 \
+    --hash=sha256:d880783454a0aea9479360b779206c709e9d9883522c3df1094692bda8eb85c2
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
@@ -1033,8 +1035,8 @@ types-protobuf==0.1.12 \
 types-pytz==0.1.1 \
     --hash=sha256:1f444521f32c02ec18f17b3ae2b0dffcfb10c0e92f9d93ace14daf6b646edac4
     # via -r requirements.in
-types-pyyaml==0.1.9 \
-    --hash=sha256:0ad719fa27fb97ee0aef7866ae90f80aaba226a7e6b900b3e1eb562a85c0e4da
+types-pyyaml==5.4.2 \
+    --hash=sha256:56cf695a6b8ae6dff37bbd31d749ab8097a70b8191274303614d3c6455767c91
     # via -r requirements.in
 types-requests==0.1.11 \
     --hash=sha256:e79c09e5866c6520cdf23dc260573a0a190444f36b112116fadc5542656c8309
