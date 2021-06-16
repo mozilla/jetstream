@@ -113,8 +113,8 @@ bootstrap_mean = {}
 ##
 
 [metrics.total_uri_count]
-select_expression = "{{agg_sum('total_uri_count')}}"
-data_source = "mobile_search_clients_daily"
+select_expression = "{{agg_sum('metrics.counter.events_total_uri_count')}}"
+data_source = "metrics"
 
 [metrics.total_uri_count.statistics]
 deciles = {}
