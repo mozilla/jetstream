@@ -360,7 +360,7 @@ class TestAnalysisSpec:
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "events"
         assert spam.metric.select_expression == "2"
-        assert spam.metric.analysis_basis == AnalysisBasis.ENROLLMENTS
+        assert spam.metric.analysis_bases == [AnalysisBasis.ENROLLMENTS]
         assert spam.statistic.name() == "bootstrap_mean"
         assert spam.statistic.num_samples == 100
 
@@ -373,7 +373,7 @@ class TestAnalysisSpec:
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
-            analysis_basis = "exposures"
+            analysis_bases = ["exposures"]
 
             [metrics.spam.statistics.bootstrap_mean]
             """
@@ -383,7 +383,7 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
 
-        assert metric.analysis_basis == AnalysisBasis.EXPOSURES
+        assert AnalysisBasis.EXPOSURES in metric.analysis_bases
 
     def test_exposure_and_enrollments_based_metric(self, experiments):
         config_str = dedent(
@@ -394,7 +394,7 @@ class TestAnalysisSpec:
             [metrics.spam]
             data_source = "main"
             select_expression = "1"
-            analysis_basis = ["exposures", "enrollments"]
+            analysis_bases = ["exposures", "enrollments"]
 
             [metrics.spam.statistics.bootstrap_mean]
             """
@@ -404,8 +404,8 @@ class TestAnalysisSpec:
         cfg = spec.resolve(experiments[0])
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
 
-        assert AnalysisBasis.EXPOSURES in metric.analysis_basis
-        assert AnalysisBasis.ENROLLMENTS in metric.analysis_basis
+        assert AnalysisBasis.EXPOSURES in metric.analysis_bases
+        assert AnalysisBasis.ENROLLMENTS in metric.analysis_bases
 
     def test_change_metric_to_exposure(self, experiments):
         config_str = dedent(
@@ -414,7 +414,7 @@ class TestAnalysisSpec:
             weekly = ["ad_clicks"]
 
             [metrics.ad_clicks]
-            analysis_basis = "exposures"
+            analysis_bases = ["exposures"]
 
             [metrics.ad_clicks.statistics.bootstrap_mean]
             num_samples = 10
@@ -427,7 +427,7 @@ class TestAnalysisSpec:
             0
         ].metric
 
-        assert metric.analysis_basis == AnalysisBasis.EXPOSURES
+        assert AnalysisBasis.EXPOSURES in metric.analysis_bases
         assert cfg.experiment.exposure_signal is None
 
     def test_exposure_signal(self, experiments):

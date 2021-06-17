@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import attr
 import cattr
@@ -18,7 +18,7 @@ class MetricsMetadata:
     friendly_name: Optional[str]
     description: Optional[str]
     bigger_is_better: bool
-    analysis_basis: Union[str, List[str]]
+    analysis_bases: List[str]
 
 
 @attr.s(auto_attribs=True)
@@ -41,20 +41,15 @@ class ExperimentMetadata:
         all_metrics = [
             summary.metric for period, summaries in config.metrics.items() for summary in summaries
         ]
-        all_metrics_distinct = list(
-            set(all_metrics)
-        )  # some metrics are used in multiple analysis periods
 
         metrics_metadata = {
             metric.name: MetricsMetadata(
                 friendly_name=metric.friendly_name,
                 description=metric.description,
                 bigger_is_better=metric.bigger_is_better,
-                analysis_basis=[a.value for a in metric.analysis_basis]
-                if isinstance(metric.analysis_basis, list)
-                else metric.analysis_basis.value,
+                analysis_bases=[a.value for a in metric.analysis_bases],
             )
-            for metric in all_metrics_distinct
+            for metric in all_metrics
         }
 
         all_outcomes = outcomes.OutcomesResolver.data

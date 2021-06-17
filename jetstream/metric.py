@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import attr
 import mozanalysis.experiment
@@ -20,9 +20,9 @@ class Metric:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
-    analysis_basis: Union[
-        mozanalysis.experiment.AnalysisBasis, List[mozanalysis.experiment.AnalysisBasis]
-    ] = mozanalysis.experiment.AnalysisBasis.ENROLLMENTS
+    analysis_bases: List[mozanalysis.experiment.AnalysisBasis] = [
+        mozanalysis.experiment.AnalysisBasis.ENROLLMENTS
+    ]
 
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
         """Return Jetstream metric as mozanalysis metric."""
@@ -39,9 +39,9 @@ class Metric:
     def from_mozanalysis_metric(
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
-        analysis_basis: Optional[
-            Union[mozanalysis.experiment.AnalysisBasis, List[mozanalysis.experiment.AnalysisBasis]]
-        ] = mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
+        analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = [
+            mozanalysis.experiment.AnalysisBasis.ENROLLMENTS
+        ],
     ) -> "Metric":
         return cls(
             name=mozanalysis_metric.name,
@@ -50,5 +50,5 @@ class Metric:
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_basis=analysis_basis or mozanalysis.experiment.AnalysisBasis.ENROLLMENTS,
+            analysis_bases=analysis_bases or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
         )
