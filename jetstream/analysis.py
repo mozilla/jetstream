@@ -2,7 +2,6 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
-from functools import reduce
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
@@ -149,14 +148,14 @@ class Analysis:
         else:
             return "_".join([normalized_slug, window_period, str(window_index)])
 
-    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None, table_postfix=None):
+    def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None, analysis_basis=None):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.table_suffix])
         wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
-        if table_postfix:
-            normalized_postfix = bq_normalize_name(table_postfix)
+        if analysis_basis:
+            normalized_postfix = bq_normalize_name(analysis_basis)
             view_name = "_".join([normalized_slug, normalized_postfix, window_period.table_suffix])
             wildcard_expr = "_".join(
                 [normalized_slug, normalized_postfix, window_period.value, "*"]
@@ -219,31 +218,28 @@ class Analysis:
                 period.value,
             )
 
-            table_name = f"enrollments_{normalized_slug}"
+            enrollments_table_name = f"enrollments_{normalized_slug}"
 
             metrics_sql = exp.build_metrics_query(
                 {
                     m.metric.to_mozanalysis_metric()
                     for m in self.config.metrics[period]
-                    if m.metric.analysis_basis == analysis_basis
-                    or analysis_basis in m.metric.analysis_basis
+                    if m.metric.analysis_bases == analysis_basis
+                    or analysis_basis in m.metric.analysis_bases
                 },
                 last_window_limits,
-                table_name,
+                enrollments_table_name,
                 analysis_basis,
             )
 
             self.bigquery.execute(metrics_sql, res_table_name)
-            self._publish_view(period, table_postfix=analysis_basis.value)
+            self._publish_view(period, analysis_basis=analysis_basis.value)
 
         return res_table_name
 
     @dask.delayed
     def calculate_statistics(
-        self,
-        metric: Summary,
-        segment_data: DataFrame,
-        segment: str,
+        self, metric: Summary, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
@@ -251,7 +247,7 @@ class Analysis:
         return (
             metric.run(segment_data, self.config.experiment)
             .set_segment(segment)
-            .set_analysis_basis(metric.metric.analysis_basis)
+            .set_analysis_basis(analysis_basis)
         )
 
     @dask.delayed
@@ -376,7 +372,7 @@ class Analysis:
             limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
-            self.config.experiment.exposure_query,
+            None,
             self.config.experiment.exposure_signal,
             self.config.experiment.segments,
         )
@@ -460,6 +456,7 @@ class Analysis:
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
         for period in self.config.metrics:
+            segment_results = []
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
@@ -476,15 +473,11 @@ class Analysis:
                 app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
             )
 
-            metrics_dataframes = []
             analysis_bases = []
 
             for m in self.config.metrics[period]:
-                if isinstance(m.metric.analysis_basis, list):
-                    for analysis_basis in m.metric.analysis_basis:
-                        analysis_bases.append(analysis_basis)
-                else:
-                    analysis_bases.append(m.metric.analysis_basis)
+                for analysis_basis in m.metric.analysis_bases:
+                    analysis_bases.append(analysis_basis)
 
             analysis_bases = list(set(analysis_bases))
 
@@ -499,54 +492,30 @@ class Analysis:
                 if dry_run:
                     results.append(metrics_table)
                 else:
-                    metrics_dataframes.append(table_to_dataframe(metrics_table))
+                    metrics_dataframe = table_to_dataframe(metrics_table)
 
-            if dry_run:
-                logger.info(
-                    "Not calculating statistics %s (%s); dry run",
-                    self.config.experiment.normandy_slug,
-                    period.value,
-                )
-                continue
+                if dry_run:
+                    logger.info(
+                        "Not calculating statistics %s (%s); dry run",
+                        self.config.experiment.normandy_slug,
+                        period.value,
+                    )
+                    continue
 
-            segment_labels = [s.name for s in self.config.experiment.segments]
-            join_fields = [
-                "client_id",
-                "branch",
-                "enrollment_date",
-                "num_enrollment_events",
-                "analysis_window_start",
-                "analysis_window_end",
-                "exposure_date",
-                "num_exposure_events",
-            ] + segment_labels
+                segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+                for segment in segment_labels:
+                    segment_data = self.subset_to_segment(segment, metrics_dataframe)
+                    for m in self.config.metrics[period]:
+                        segment_results += self.calculate_statistics(
+                            m,
+                            segment_data,
+                            segment,
+                            analysis_basis,
+                        ).to_dict()["data"]
 
-            metrics_data = reduce(
-                lambda mdf1, mdf2: mdf1.merge(
-                    mdf2,
-                    right_on=join_fields,
-                    left_on=join_fields,
-                    how="outer",
-                ),
-                metrics_dataframes,
-            )
-
-            segment_results = []
-
-            segment_labels = ["all"] + segment_labels
-            for segment in segment_labels:
-                segment_data = self.subset_to_segment(segment, metrics_data)
-                for m in self.config.metrics[period]:
-                    segment_results += self.calculate_statistics(
-                        m,
-                        segment_data,
-                        segment,
-                    ).to_dict()["data"]
-
-                for analysis_basis in analysis_bases:
-                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
-                        "data"
-                    ]
+                        segment_results += self.counts(
+                            segment_data, segment, analysis_basis
+                        ).to_dict()["data"]
 
             results.append(
                 self.save_statistics(
@@ -585,7 +554,7 @@ class Analysis:
             time_limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
-            self.config.experiment.exposure_query,
+            None,
             self.config.experiment.exposure_signal,
             self.config.experiment.segments,
         )

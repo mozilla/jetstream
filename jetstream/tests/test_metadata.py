@@ -44,7 +44,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].bigger_is_better is False
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
-    assert metadata.metrics["my_cool_metric"].analysis_basis == "enrollments"
+    assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments"]
 
 
 def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
@@ -82,7 +82,7 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
         [metrics.my_cool_metric]
         data_source = "main"
         select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
-        analysis_basis = "exposures"
+        analysis_bases = ["exposures"]
 
         [metrics.my_cool_metric.statistics.bootstrap_mean]
 
@@ -98,7 +98,7 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].bigger_is_better
     assert metadata.metrics["my_cool_metric"].friendly_name is None
     assert metadata.metrics["my_cool_metric"].description is None
-    assert metadata.metrics["my_cool_metric"].analysis_basis == "exposures"
+    assert metadata.metrics["my_cool_metric"].analysis_bases == ["exposures"]
 
 
 @mock.patch("google.cloud.storage.Client")
@@ -142,13 +142,13 @@ def test_export_metadata(mock_storage_client, experiments):
                     "friendly_name": "about:logins viewers",
                     "description": "Counts the number of clients that viewed about:logins.\n",
                     "bigger_is_better": true,
-                    "analysis_basis": "enrollments"
+                    "analysis_bases": ["enrollments"]
                 },
                 "my_cool_metric": {
                     "friendly_name": null,
                     "description": null,
                     "bigger_is_better": true,
-                    "analysis_basis": "enrollments"
+                    "analysis_bases": ["enrollments"]
                 }
             },
             "outcomes": {},

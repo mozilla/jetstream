@@ -99,7 +99,7 @@ class TestAnalysisIntegration:
             name="active_hours",
             data_source=test_clients_daily,
             select_expression=agg_sum("active_hours_sum"),
-            analysis_basis=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
         )
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
@@ -167,8 +167,11 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch1", "point"][0] == 1.0
         assert count_by_branch.loc["branch2", "point"][0] == 1.0
 
-        assert count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures"
-        assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
+        if count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures":
+            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
+        else:
+            assert count_by_branch.loc["branch2", "analysis_basis"][0] == "enrollments"
+            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "exposures"
 
         assert (
             client.client.get_table(
@@ -342,39 +345,6 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch2", "point"] == 1.0
         assert count_by_branch.loc["branch2", "analysis_basis"] == "enrollments"
 
-        assert len(stats.query("segment == 'regular_user_v3'")) > 0
-
-        assert (
-            client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
-            )
-            is not None
-        )
-            client.client.get_table(f"{project_id}.{temporary_dataset}.test_experiment_weekly")
-            is not None
-        )
-        assert (
-            client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
-            )
-            is not None
-        )
-
-        stats = client.client.list_rows(
-            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
-        ).to_dataframe()
-
-        count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["branch1", "point"] == 1.0
-        assert count_by_branch.loc["branch2", "point"] == 1.0
-
-        assert (
-            client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
-            )
-            is not None
-        )
-
     def test_logging(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -401,7 +371,7 @@ class TestAnalysisIntegration:
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
-            select_expr=agg_sum("active_hours_sum"),
+            select_expression=agg_sum("active_hours_sum"),
         )
 
         config.metrics = {
