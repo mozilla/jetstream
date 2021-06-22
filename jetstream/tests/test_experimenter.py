@@ -14,6 +14,7 @@ from jetstream.experimenter import (
     ExperimentCollection,
     ExperimentV1,
     ExperimentV6,
+    Outcome,
     Variant,
 )
 
@@ -290,7 +291,10 @@ FENIX_EXPERIMENT_FIXTURE = """
     "total": 10000
   },
   "probeSets": [],
-  "outcomes": [],
+  "outcomes": [{
+    "slug": "default-browser",
+    "priority": "primary"
+  }],
   "branches": [
     {
       "slug": "control",
@@ -465,6 +469,7 @@ def test_convert_experiment_v6_to_experiment():
     assert len(experiment.branches) == 2
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
+    assert experiment.outcomes == []
 
 
 def test_fixture_validates():
@@ -501,9 +506,13 @@ def test_app_name():
     x = ExperimentV6.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
     assert x.appName == "fenix"
     assert x.appId == "org.mozilla.fenix"
+    assert Outcome(slug="default-browser") in x.outcomes
+    assert "default-browser" in x.to_experiment().outcomes
 
 
 def test_ios_app_name():
     x = ExperimentV6.from_dict(json.loads(FIREFOX_IOS_EXPERIMENT_FIXTURE))
     assert x.appName == "firefox_ios"
     assert x.appId == "org.mozilla.ios.FirefoxBeta"
+    assert x.outcomes == []
+    assert x.to_experiment().outcomes == []
