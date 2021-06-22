@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 @attr.s(auto_attribs=True)
 class MetricsMetadata:
-    friendly_name: Optional[str]
-    description: Optional[str]
+    friendly_name: str
+    description: str
     bigger_is_better: bool
     analysis_bases: List[str]
 
@@ -44,8 +44,8 @@ class ExperimentMetadata:
 
         metrics_metadata = {
             metric.name: MetricsMetadata(
-                friendly_name=metric.friendly_name,
-                description=metric.description,
+                friendly_name=metric.friendly_name or "",
+                description=metric.description or "",
                 bigger_is_better=metric.bigger_is_better,
                 analysis_bases=[a.value for a in metric.analysis_bases],
             )
