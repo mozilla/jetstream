@@ -1,6 +1,7 @@
 import random
 import string
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from google.api_core.exceptions import NotFound
@@ -16,6 +17,11 @@ def pytest_runtest_setup(item):
         return
     if not item.config.getoption("--integration", False):
         pytest.skip("Skipping integration test")
+
+
+@pytest.fixture(autouse=True)
+def setup(monkeypatch):
+    monkeypatch.setattr("jetstream.metric.Metric.__attrs_post_init__", Mock())
 
 
 @pytest.fixture
