@@ -30,6 +30,11 @@ class Branch:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Outcome:
+    slug: str
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     """
     Common Experimenter experiment representation.
@@ -60,7 +65,7 @@ class Experiment:
     is_high_population: bool
     app_name: str
     app_id: str
-    outcomes: List[str] = attr.Factory(list)  # todo: TBD in Experimenter
+    outcomes: List[str] = attr.Factory(list)
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -76,6 +81,7 @@ class ExperimentV1:
     variants: List[Variant]
     normandy_slug: Optional[str] = None
     is_high_population: Optional[bool] = None
+    outcomes: Optional[List[Outcome]] = None
 
     @staticmethod
     def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
@@ -114,6 +120,7 @@ class ExperimentV1:
             is_high_population=self.is_high_population or False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
         )
 
 
@@ -129,6 +136,7 @@ class ExperimentV6:
     referenceBranch: Optional[str]
     _appName: Optional[str] = None
     _appId: Optional[str] = None
+    outcomes: Optional[List[Outcome]] = None
 
     @property
     def appName(self) -> str:
@@ -174,6 +182,7 @@ class ExperimentV6:
             is_high_population=False,
             app_name=self.appName,
             app_id=self.appId,
+            outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
         )
 
 
