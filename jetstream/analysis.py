@@ -513,9 +513,9 @@ class Analysis:
                             analysis_basis,
                         ).to_dict()["data"]
 
-                        segment_results += self.counts(
-                            segment_data, segment, analysis_basis
-                        ).to_dict()["data"]
+                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
+                        "data"
+                    ]
 
             results.append(
                 self.save_statistics(
