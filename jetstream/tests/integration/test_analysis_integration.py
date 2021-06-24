@@ -338,6 +338,14 @@ class TestAnalysisIntegration:
             f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
         ).to_dataframe()
 
+        # Only one count per segment and branch, please
+        assert (
+            stats.query("metric == 'identity' and statistic == 'count'")
+            .groupby(["segment", "analysis_basis", "window_index", "branch"])
+            .size()
+            == 1
+        ).all()
+
         count_by_branch = stats.query("segment == 'all' and statistic == 'count'").set_index(
             "branch"
         )
