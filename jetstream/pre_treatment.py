@@ -75,7 +75,7 @@ class CensorLowestValues(PreTreatment):
 class CensorValuesBelowThreshold(PreTreatment):
     """Removes rows with values below the provided threshold."""
 
-    threshold: float = 0.5
+    threshold: float
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         mask = df[col] > self.threshold
@@ -86,7 +86,7 @@ class CensorValuesBelowThreshold(PreTreatment):
 class CensorValuesAboveThreshold(PreTreatment):
     """Removes rows with values above the provided threshold."""
 
-    threshold: float = 0.5
+    threshold: float
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         mask = df[col] < self.threshold
