@@ -147,7 +147,7 @@ packaging==20.9
     #   google-cloud-bigquery
     #   google-cloud-container
     #   pytest
-pandas==1.2.4
+pandas==1.2.5
     # via
     #   mozanalysis
     #   statsmodels
