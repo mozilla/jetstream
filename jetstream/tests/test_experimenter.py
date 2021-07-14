@@ -193,7 +193,7 @@ EXPERIMENTER_FIXTURE_V6 = r"""
     "count":100,
     "total":10000 
   },
-  "startDate":"2020-07-29T20:05:16.271480Z",
+  "startDate":"2020-07-29",
   "endDate":null,
   "branches":[{
       "slug":"treatment",
@@ -230,7 +230,7 @@ EXPERIMENTER_FIXTURE_V6 = r"""
       "count":0,
       "total":10000
     },
-    "startDate":"2020-07-28T20:05:16.271480Z",
+    "startDate":"2020-07-28",
     "endDate":null,
     "branches":[{
       "slug":"treatment",
@@ -306,8 +306,8 @@ FENIX_EXPERIMENT_FIXTURE = """
     }
   ],
   "targeting": "true",
-  "startDate": "2021-02-09T19:36:51.667812Z",
-  "endDate": "2021-03-11T12:53:30.039190Z",
+  "startDate": "2021-02-09",
+  "endDate": "2021-03-11",
   "proposedDuration": 28,
   "proposedEnrollment": 7,
   "referenceBranch": "control",
@@ -347,7 +347,7 @@ FIREFOX_IOS_EXPERIMENT_FIXTURE = """
       }
    ],
    "targeting":"true",
-   "startDate":"2021-04-01T17:06:02.362199Z",
+   "startDate":"2021-04-01",
    "endDate":null,
    "proposedDuration":28,
    "proposedEnrollment":7,
@@ -432,8 +432,8 @@ def test_convert_experiment_v1_to_experiment():
         normandy_slug="test_slug",
         status="Live",
         type="cfr",
-        start_date=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
-        end_date=dt.datetime(2019, 1, 10, tzinfo=pytz.utc),
+        start_date=dt.datetime(2019, 1, 1),
+        end_date=dt.datetime(2019, 1, 10),
         proposed_enrollment=14,
         variants=[
             Variant(is_control=True, slug="control", ratio=2),
@@ -453,8 +453,8 @@ def test_convert_experiment_v1_to_experiment():
 def test_convert_experiment_v6_to_experiment():
     experiment_v6 = ExperimentV6(
         slug="test_slug",
-        startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
-        endDate=dt.datetime(2019, 1, 10, tzinfo=pytz.utc),
+        startDate=dt.datetime(2019, 1, 1),
+        endDate=dt.datetime(2019, 1, 10),
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
@@ -481,8 +481,8 @@ def test_fixture_validates():
 def test_experiment_v6_status():
     experiment_live = ExperimentV6(
         slug="test_slug",
-        startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
-        endDate=pytz.utc.localize(dt.datetime.now() + timedelta(days=1)),
+        startDate=dt.datetime(2019, 1, 1),
+        endDate=dt.datetime.now() + timedelta(days=1),
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
@@ -492,8 +492,8 @@ def test_experiment_v6_status():
 
     experiment_complete = ExperimentV6(
         slug="test_slug",
-        startDate=dt.datetime(2019, 1, 1, tzinfo=pytz.utc),
-        endDate=pytz.utc.localize(dt.datetime.now() - timedelta(minutes=1)),
+        startDate=dt.datetime(2019, 1, 1),
+        endDate=dt.datetime.now() - timedelta(minutes=1),
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",

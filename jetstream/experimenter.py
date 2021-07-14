@@ -151,7 +151,7 @@ class ExperimentV6:
         converter = cattr.GenConverter()
         converter.register_structure_hook(
             dt.datetime,
-            lambda num, _: dt.datetime.fromisoformat(num.replace("Z", "+00:00")),
+            lambda num, _: dt.datetime.strptime(num, "%Y-%m-%d"),
         )
         converter.register_structure_hook(
             cls,
@@ -171,11 +171,14 @@ class ExperimentV6:
             experimenter_slug=None,
             type="v6",
             status="Live"
-            if (self.endDate and self.endDate >= pytz.utc.localize(dt.datetime.now()))
+            if (
+                self.endDate
+                and pytz.utc.localize(self.endDate) >= pytz.utc.localize(dt.datetime.now())
+            )
             or self.endDate is None
             else "Complete",
-            start_date=self.startDate,
-            end_date=self.endDate,
+            start_date=pytz.utc.localize(self.startDate) if self.startDate else None,
+            end_date=pytz.utc.localize(self.endDate) if self.endDate else None,
             proposed_enrollment=self.proposedEnrollment,
             branches=self.branches,
             reference_branch=self.referenceBranch,
