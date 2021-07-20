@@ -175,6 +175,7 @@ def fake_outcome_resolver(monkeypatch):
         """
         friendly_name = "Performance outcomes"
         description = "Outcomes related to performance"
+        default_metrics = ["speed"]
 
         [metrics.speed]
         data_source = "main"

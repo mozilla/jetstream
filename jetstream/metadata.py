@@ -27,6 +27,7 @@ class OutcomeMetadata:
     friendly_name: str
     description: str
     metrics: List[str]
+    default_metrics: List[str]
     commit_hash: Optional[str]
 
 
@@ -60,6 +61,9 @@ class ExperimentMetadata:
                 friendly_name=external_outcome.spec.friendly_name,
                 description=external_outcome.spec.description,
                 metrics=[m for m, _ in external_outcome.spec.metrics.items()],
+                default_metrics=[m.name for m in external_outcome.spec.default_metrics]
+                if external_outcome.spec.default_metrics
+                else [],
                 commit_hash=external_outcome.commit_hash,
             )
             for experiment_outcome in config.experiment.outcomes
