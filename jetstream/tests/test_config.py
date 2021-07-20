@@ -707,6 +707,7 @@ class TestOutcomes:
             """
             friendly_name = "Test outcome"
             description = "Outcome for testing"
+            default_metrics = ["spam", "organic_search_count"]
 
             [metrics.spam]
             data_source = "main"
@@ -718,6 +719,8 @@ class TestOutcomes:
 
             [metrics.organic_search_count.statistics.bootstrap_mean]
 
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+
             [data_sources.eggs]
             from_expression = "england.camelot"
             client_id_column = "client_info.client_id"
@@ -727,7 +730,27 @@ class TestOutcomes:
         outcome_spec = config.OutcomeSpec.from_dict(toml.loads(config_str))
         assert "spam" in outcome_spec.metrics
         assert "organic_search_count" in outcome_spec.metrics
+        assert "ad_clicks" in outcome_spec.metrics
         assert "eggs" in outcome_spec.data_sources.definitions
+
+        default_metrics = [m.name for m in outcome_spec.default_metrics]
+        assert "spam" in default_metrics
+        assert "organic_search_count" in default_metrics
+        assert "ad_clicks" not in default_metrics
+
+    def test_invalid_default_metrics(self):
+        config_str = dedent(
+            """
+            friendly_name = "Test outcome"
+            description = "Outcome for testing"
+            default_metrics = ["spam"]
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            """
+        )
+
+        with pytest.raises(ValueError):
+            config.OutcomeSpec.from_dict(toml.loads(config_str))
 
     def test_resolving_outcomes(self, experiments, fake_outcome_resolver):
         config_str = dedent(

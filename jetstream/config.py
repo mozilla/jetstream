@@ -795,6 +795,7 @@ class OutcomeSpec:
     friendly_name: str
     description: str
     metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
+    default_metrics: Optional[List[MetricReference]] = attr.ib(None)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
 
     @classmethod
@@ -807,4 +808,13 @@ class OutcomeSpec:
             k: _converter.structure({"name": k, **v}, MetricDefinition)
             for k, v in d.get("metrics", {}).items()
         }
+        params["default_metrics"] = [
+            _converter.structure(m, MetricReference) for m in d.get("default_metrics", [])
+        ]
+
+        # check that default metrics are actually defined in outcome
+        for default_metric in params["default_metrics"]:
+            if default_metric.name not in params["metrics"].keys():
+                raise ValueError(f"Default metric {default_metric} is not defined in outcome.")
+
         return cls(**params)

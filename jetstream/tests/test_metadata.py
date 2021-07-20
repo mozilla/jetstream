@@ -67,8 +67,10 @@ def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
 
     assert "tastiness" in metadata.outcomes
     assert "performance" in metadata.outcomes
+    assert "speed" in metadata.outcomes["performance"].default_metrics
     assert metadata.outcomes["tastiness"].friendly_name == "Tastiness outcomes"
     assert "meals_eaten" in metadata.outcomes["tastiness"].metrics
+    assert metadata.outcomes["tastiness"].default_metrics == []
 
 
 @patch.object(requests.Session, "get")
