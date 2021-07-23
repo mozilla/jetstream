@@ -170,6 +170,46 @@ def firefox_ios_experiments():
 
 
 @pytest.fixture
+def klar_android_experiments():
+    return [
+        Experiment(
+            experimenter_slug="my_klar_experiment",
+            normandy_slug="my_klar_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="foo", ratio=1), Branch(slug="bar", ratio=1)],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=pytz.UTC),
+            end_date=dt.datetime(2020, 10, 10, tzinfo=pytz.UTC),
+            proposed_enrollment=7,
+            reference_branch="foo",
+            app_name="klar_android",
+            app_id="org.mozilla.klar",
+            is_high_population=False,
+        )
+    ]
+
+
+@pytest.fixture
+def focus_android_experiments():
+    return [
+        Experiment(
+            experimenter_slug="my_focus_experiment",
+            normandy_slug="my_focus_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="foo", ratio=1), Branch(slug="bar", ratio=1)],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=pytz.UTC),
+            end_date=dt.datetime(2020, 10, 10, tzinfo=pytz.UTC),
+            proposed_enrollment=7,
+            reference_branch="foo",
+            app_name="focus_android",
+            app_id="org.mozilla.focus",
+            is_high_population=False,
+        )
+    ]
+
+
+@pytest.fixture
 def fake_outcome_resolver(monkeypatch):
     performance_config = dedent(
         """

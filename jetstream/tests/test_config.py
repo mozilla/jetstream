@@ -701,6 +701,28 @@ class TestFirefoxIosConfiguration:
             assert found
 
 
+class TestKlarAndroidConfiguration:
+    def test_default_metrics(self, klar_android_experiments):
+        for experiment in klar_android_experiments:
+            default = config.AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+            found = False
+            for summary in default.metrics[AnalysisPeriod.WEEK]:
+                if summary.metric.data_source.name == "baseline":
+                    found = True
+            assert found
+
+
+class TestFocusAndroidConfiguration:
+    def test_default_metrics(self, focus_android_experiments):
+        for experiment in focus_android_experiments:
+            default = config.AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+            found = False
+            for summary in default.metrics[AnalysisPeriod.WEEK]:
+                if summary.metric.data_source.name == "baseline":
+                    found = True
+            assert found
+
+
 class TestOutcomes:
     def test_outcomes(self):
         config_str = dedent(

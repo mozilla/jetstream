@@ -58,26 +58,26 @@ google-api-core[grpc]==1.31.0
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
-google-auth==1.33.0
+google-auth==1.33.1
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.21.0
+google-cloud-bigquery==2.22.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.6.0
+google-cloud-bigquery-storage==2.6.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.6.0
+google-cloud-container==2.7.0
     # via mozilla-jetstream
 google-cloud-core==1.7.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==1.41.0
+google-cloud-storage==1.41.1
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -93,7 +93,7 @@ googleapis-common-protos[grpc]==1.53.0
     #   grpc-google-iam-v1
 grpc-google-iam-v1==0.12.3
     # via google-cloud-container
-grpcio==1.38.1
+grpcio==1.39.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -122,7 +122,7 @@ markupsafe==2.0.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mozanalysis==2021.6.2
+mozanalysis==2021.7.1
     # via mozilla-jetstream
     # via -r -
 msgpack==1.0.2
@@ -263,7 +263,7 @@ toml==0.10.2
     #   pytest
     #   pytest-black
     #   pytest-cov
-tomli==1.0.4
+tomli==1.1.0
     # via black
 toolz==0.11.1
     # via
