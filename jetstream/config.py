@@ -35,6 +35,8 @@ import mozanalysis.metrics
 import mozanalysis.metrics.desktop
 import mozanalysis.metrics.fenix
 import mozanalysis.metrics.firefox_ios
+import mozanalysis.metrics.focus_android
+import mozanalysis.metrics.klar_android
 import mozanalysis.segments
 import mozanalysis.segments.desktop
 import pytz
@@ -85,6 +87,20 @@ PLATFORM_CONFIGS = {
         None,
         "glean-event",
         "org.mozilla.ios.FirefoxBeta",
+    ),
+    "focus_android": Platform(
+        Path(__file__).parent / "config" / "focus_android.toml",
+        mozanalysis.metrics.focus_android,
+        None,
+        "glean-event",
+        "org.mozilla.focus",
+    ),
+    "klar_android": Platform(
+        Path(__file__).parent / "config" / "klar_android.toml",
+        mozanalysis.metrics.klar_android,
+        None,
+        "glean-event",
+        "org.mozilla.klar",
     ),
 }
 

@@ -358,6 +358,92 @@ FIREFOX_IOS_EXPERIMENT_FIXTURE = """
 }
 """  # noqa:E501
 
+KLAR_ANDROID_EXPERIMENT_FIXTURE = """
+{
+   "schemaVersion":"1.4.0",
+   "slug":"klar-test",
+   "id":"klar-test",
+   "application":"org.mozilla.klar",
+   "appName":"klar_android",
+   "appId":"org.mozilla.klar",
+   "channel":"beta",
+   "userFacingName":"Klar test",
+   "userFacingDescription":"Is Nimbus working? This experiment tries to find out.",
+   "isEnrollmentPaused":true,
+   "bucketConfig":{
+      "randomizationUnit":"nimbus_id",
+      "namespace":"klar-test-1",
+      "start":0,
+      "count":8000,
+      "total":10000
+   },
+   "probeSets":[],
+   "outcomes":[],
+   "branches":[
+      {
+         "slug":"a1",
+         "ratio":60
+      },
+      {
+         "slug":"a2",
+         "ratio":40
+      }
+   ],
+   "targeting":"true",
+   "startDate":"2021-04-01",
+   "endDate":null,
+   "proposedDuration":28,
+   "proposedEnrollment":7,
+   "referenceBranch":"a1",
+   "featureIds":[
+      "nimbusValidation"
+   ]
+}
+"""  # noqa:E501
+
+FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
+{
+   "schemaVersion":"1.4.0",
+   "slug":"focus-test",
+   "id":"focus-test",
+   "application":"org.mozilla.focus",
+   "appName":"focus_android",
+   "appId":"org.mozilla.focus",
+   "channel":"beta",
+   "userFacingName":"Focus test",
+   "userFacingDescription":"Is Nimbus working? This experiment tries to find out.",
+   "isEnrollmentPaused":true,
+   "bucketConfig":{
+      "randomizationUnit":"nimbus_id",
+      "namespace":"focus-test-1",
+      "start":0,
+      "count":8000,
+      "total":10000
+   },
+   "probeSets":[],
+   "outcomes":[],
+   "branches":[
+      {
+         "slug":"a1",
+         "ratio":60
+      },
+      {
+         "slug":"a2",
+         "ratio":40
+      }
+   ],
+   "targeting":"true",
+   "startDate":"2021-04-01",
+   "endDate":null,
+   "proposedDuration":28,
+   "proposedEnrollment":7,
+   "referenceBranch":"a1",
+   "featureIds":[
+      "nimbusValidation"
+   ]
+}
+"""  # noqa:E501
+
 
 @pytest.fixture
 def mock_session():
@@ -514,5 +600,21 @@ def test_ios_app_name():
     x = ExperimentV6.from_dict(json.loads(FIREFOX_IOS_EXPERIMENT_FIXTURE))
     assert x.appName == "firefox_ios"
     assert x.appId == "org.mozilla.ios.FirefoxBeta"
+    assert x.outcomes == []
+    assert x.to_experiment().outcomes == []
+
+
+def test_klar_android_app_name():
+    x = ExperimentV6.from_dict(json.loads(KLAR_ANDROID_EXPERIMENT_FIXTURE))
+    assert x.appName == "klar_android"
+    assert x.appId == "org.mozilla.klar"
+    assert x.outcomes == []
+    assert x.to_experiment().outcomes == []
+
+
+def test_focus_android_app_name():
+    x = ExperimentV6.from_dict(json.loads(FOCUS_ANDROID_EXPERIMENT_FIXTURE))
+    assert x.appName == "focus_android"
+    assert x.appId == "org.mozilla.focus"
     assert x.outcomes == []
     assert x.to_experiment().outcomes == []

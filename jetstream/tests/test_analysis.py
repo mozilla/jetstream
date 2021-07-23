@@ -235,3 +235,37 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
         config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
+
+
+def test_focus_android_experiments_use_right_datasets(focus_android_experiments, monkeypatch):
+    for experiment in focus_android_experiments:
+        called = 0
+
+        def dry_run_query(query):
+            nonlocal called
+            called = called + 1
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
+            assert dataset in query
+            assert query.count(dataset) == query.count("org_mozilla_focus")
+
+        monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
+        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        Analysis("spam", "eggs", config).validate()
+        assert called == 2
+
+
+def test_klar_android_experiments_use_right_datasets(klar_android_experiments, monkeypatch):
+    for experiment in klar_android_experiments:
+        called = 0
+
+        def dry_run_query(query):
+            nonlocal called
+            called = called + 1
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
+            assert dataset in query
+            assert query.count(dataset) == query.count("org_mozilla_klar")
+
+        monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
+        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        Analysis("spam", "eggs", config).validate()
+        assert called == 2
