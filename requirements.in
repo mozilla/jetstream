@@ -106,7 +106,7 @@ idna==3.2
     # via requests
 iniconfig==1.1.1
     # via pytest
-isort==5.9.2
+isort==5.9.3
     # via mozilla-jetstream
 jinja2==3.0.1
     # via mozilla-jetstream
