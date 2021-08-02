@@ -177,7 +177,7 @@ psutil==5.8.0
     # via distributed
 py==1.10.0
     # via pytest
-pyarrow==4.0.1
+pyarrow==5.0.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
