@@ -67,7 +67,7 @@ google-cloud-bigquery==2.22.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.6.1
+google-cloud-bigquery-storage==2.6.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
