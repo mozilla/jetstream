@@ -264,7 +264,7 @@ toml==0.10.2
     #   pytest
     #   pytest-black
     #   pytest-cov
-tomli==1.1.0
+tomli==1.2.0
     # via black
 toolz==0.11.1
     # via
