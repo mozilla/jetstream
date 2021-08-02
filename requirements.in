@@ -232,7 +232,7 @@ requests==2.26.0
     #   mozilla-jetstream
 rsa==4.7.2
     # via google-auth
-scipy==1.7.0
+scipy==1.7.1
     # via
     #   mozanalysis
     #   statsmodels
