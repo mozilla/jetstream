@@ -35,6 +35,7 @@ class OutcomeMetadata:
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
     outcomes: Dict[str, OutcomeMetadata]
+    reference_branch: Optional[str]
     schema_version: int = StatisticResult.SCHEMA_VERSION
 
     @classmethod
@@ -71,7 +72,11 @@ class ExperimentMetadata:
             if external_outcome.slug == experiment_outcome
         }
 
-        return cls(metrics=metrics_metadata, outcomes=outcomes_metadata)
+        return cls(
+            metrics=metrics_metadata,
+            outcomes=outcomes_metadata,
+            reference_branch=config.experiment.reference_branch,
+        )
 
 
 def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):

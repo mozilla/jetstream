@@ -61,7 +61,7 @@ class StatisticResult:
     to metric data.
     """
 
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     metric: str
     statistic: str
