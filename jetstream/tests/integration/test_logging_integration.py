@@ -24,7 +24,12 @@ class TestLoggingIntegration:
         table = client.client.create_table(table)
 
         log_config = LogConfiguration(
-            project_id, temporary_dataset, "logs", log_to_bigquery=True, capacity=1
+            project_id,
+            temporary_dataset,
+            "logs",
+            "task_profiling_logs",
+            log_to_bigquery=True,
+            capacity=1,
         )
         log_config.setup_logger()
 

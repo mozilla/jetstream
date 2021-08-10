@@ -1,3 +1,4 @@
+from jetstream.diagnostics.task_profiler import TaskProfiler
 import logging
 import os
 import re
@@ -12,6 +13,7 @@ import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
+from mozanalysis import experiment
 from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -447,86 +449,94 @@ class Analysis:
         client = Client(_dask_cluster)
 
         # prepare dask tasks
-        results = []
+        with TaskProfiler(
+            project_id=self.log_config.log_project_id if self.log_config else None,
+            dataset_id=self.log_config.log_dataset_id if self.log_config else None,
+            table_id=self.log_config.task_profiling_log_table_id if self.log_config else None,
+        ) as task_profiler:
+            results = []
 
-        if self.log_config:
-            log_plugin = LogPlugin(self.log_config)
-            client.register_worker_plugin(log_plugin)
+            if self.log_config:
+                log_plugin = LogPlugin(self.log_config)
+                client.register_worker_plugin(log_plugin)
 
-        table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
+            table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
-        for period in self.config.metrics:
-            segment_results = []
-            time_limits = self._get_timelimits_if_ready(period, current_date)
+            for period in self.config.metrics:
+                segment_results = []
+                time_limits = self._get_timelimits_if_ready(period, current_date)
 
-            if time_limits is None:
-                logger.info(
-                    "Skipping %s (%s); not ready",
-                    self.config.experiment.normandy_slug,
-                    period.value,
-                )
-                continue
-
-            exp = mozanalysis.experiment.Experiment(
-                experiment_slug=self.config.experiment.normandy_slug,
-                start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
-                app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
-            )
-
-            analysis_bases = []
-
-            for m in self.config.metrics[period]:
-                for analysis_basis in m.metric.analysis_bases:
-                    analysis_bases.append(analysis_basis)
-
-            analysis_bases = list(set(analysis_bases))
-
-            if len(analysis_bases) == 0:
-                continue
-
-            for analysis_basis in analysis_bases:
-                metrics_table = self.calculate_metrics(
-                    exp, time_limits, period, analysis_basis, dry_run
-                )
-
-                if dry_run:
-                    results.append(metrics_table)
-                else:
-                    metrics_dataframe = table_to_dataframe(metrics_table)
-
-                if dry_run:
+                if time_limits is None:
                     logger.info(
-                        "Not calculating statistics %s (%s); dry run",
+                        "Skipping %s (%s); not ready",
                         self.config.experiment.normandy_slug,
                         period.value,
                     )
                     continue
 
-                segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
-                for segment in segment_labels:
-                    segment_data = self.subset_to_segment(segment, metrics_dataframe)
-                    for m in self.config.metrics[period]:
-                        segment_results += self.calculate_statistics(
-                            m,
-                            segment_data,
-                            segment,
-                            analysis_basis,
+                exp = mozanalysis.experiment.Experiment(
+                    experiment_slug=self.config.experiment.normandy_slug,
+                    start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
+                    app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
+                )
+
+                analysis_bases = []
+
+                for m in self.config.metrics[period]:
+                    for analysis_basis in m.metric.analysis_bases:
+                        analysis_bases.append(analysis_basis)
+
+                analysis_bases = list(set(analysis_bases))
+
+                if len(analysis_bases) == 0:
+                    continue
+
+                for analysis_basis in analysis_bases:
+                    metrics_table = self.calculate_metrics(
+                        exp, time_limits, period, analysis_basis, dry_run
+                    )
+
+                    if dry_run:
+                        results.append(metrics_table)
+                    else:
+                        metrics_dataframe = table_to_dataframe(metrics_table)
+
+                    if dry_run:
+                        logger.info(
+                            "Not calculating statistics %s (%s); dry run",
+                            self.config.experiment.normandy_slug,
+                            period.value,
+                        )
+                        continue
+
+                    segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+                    for segment in segment_labels:
+                        segment_data = self.subset_to_segment(segment, metrics_dataframe)
+                        for m in self.config.metrics[period]:
+                            segment_results += self.calculate_statistics(
+                                m,
+                                segment_data,
+                                segment,
+                                analysis_basis,
+                            ).to_dict()["data"]
+
+                        segment_results += self.counts(
+                            segment_data, segment, analysis_basis
                         ).to_dict()["data"]
 
-                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
-                        "data"
-                    ]
-
-            results.append(
-                self.save_statistics(
-                    period,
-                    segment_results,
-                    self._table_name(period.value, len(time_limits.analysis_windows)),
+                results.append(
+                    self.save_statistics(
+                        period,
+                        segment_results,
+                        self._table_name(period.value, len(time_limits.analysis_windows)),
+                    )
                 )
-            )
 
-        result_futures = client.compute(results)
-        client.gather(result_futures)  # block until futures have finished
+            result_futures = client.compute(results)
+            client.gather(result_futures)  # block until futures have finished
+            print(client.profile())
+
+        task_profiler.write_to_bigquery(experiment=self.config.experiment.normandy_slug)
 
     def ensure_enrollments(self, current_date: datetime) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
