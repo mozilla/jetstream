@@ -399,7 +399,10 @@ class TestAnalysisIntegration:
         )
 
         assert client.client.get_table(f"{project_id}.{temporary_dataset}.logs") is not None
-        assert client.client.get_table(f"{project_id}.{temporary_dataset}.task_profiling_logs") is not None
+        assert (
+            client.client.get_table(f"{project_id}.{temporary_dataset}.task_profiling_logs")
+            is not None
+        )
 
         logs = list(client.client.list_rows(f"{project_id}.{temporary_dataset}.logs"))
 
@@ -409,5 +412,7 @@ class TestAnalysisIntegration:
         ].get("message")
         assert logs[0].get("log_level") == "ERROR"
 
-        task_profiling_logs = list(client.client.list_rows(f"{project_id}.{temporary_dataset}.task_profiling_logs"))
+        task_profiling_logs = list(
+            client.client.list_rows(f"{project_id}.{temporary_dataset}.task_profiling_logs")
+        )
         print(task_profiling_logs)
