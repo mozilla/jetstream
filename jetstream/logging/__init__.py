@@ -15,6 +15,7 @@ class LogConfiguration:
     log_project_id: Optional[str]
     log_dataset_id: Optional[str]
     log_table_id: Optional[str]
+    task_profiling_log_table_id: Optional[str]
     log_to_bigquery: bool = False
     capacity: int = 50
 

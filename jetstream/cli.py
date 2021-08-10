@@ -346,6 +346,12 @@ class AnalysisExecutor:
     help="Dataset to write logs to",
 )
 @click.option("--log_table_id", "--log-table-id", default="logs", help="Table to write logs to")
+@click.option(
+    "--task_profiling_log_table_id",
+    "--task-profiling-log-table-id",
+    default="task_profiling_logs",
+    help="Table to write task profiling logs to",
+)
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 @click.pass_context
 def cli(ctx, log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
