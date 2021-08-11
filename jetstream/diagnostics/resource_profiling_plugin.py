@@ -1,5 +1,7 @@
 import os
+import pickle
 from collections import defaultdict
+from datetime import datetime
 from threading import Lock, Thread
 from time import sleep
 from typing import Dict, List, Optional
@@ -11,7 +13,6 @@ from distributed.scheduler import Scheduler
 from distributed.utils import Any
 from google.cloud import bigquery
 from psutil import Process
-import pickle
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
@@ -28,16 +29,13 @@ class ResourceUsage:
 def _process_memory():
     """Return process memory usage, in MB."""
     proc = Process(os.getpid())
-    return sum(
-        [p.memory_info().rss / (1024 * 1024) for p in [proc]]
-    )
+    return sum([p.memory_info().rss / (1024 * 1024) for p in [proc]])
 
 
 def _process_cpu():
     """Return process CPU usage."""
     proc = Process(os.getpid())
-    print(proc.children(recursive=True))
-    return sum([p.cpu_percent(interval=0.1) for p in [proc]])
+    return sum([p.cpu_percent(interval=0.01) for p in [proc]])
 
 
 class WorkerResourceUsage(object):
@@ -109,37 +107,66 @@ class ResourceProfilingPlugin(SchedulerPlugin):
         project_id: Optional[str],
         dataset_id: Optional[str],
         table_id: Optional[str],
-        client: Optional[bigquery.Client] = None,
-        update_freq: float = 10 #10000.0,  # fetch resource usage every 10 seconds
+        experiment: Optional[str],
+        update_freq: float = 10,  # 10000.0,  # fetch resource usage every 10 seconds
     ):
         SchedulerPlugin.__init__(self)
+        self.results: List[Dict] = []
         self.memory_usage = None
         self.scheduler = scheduler
         self.project_id = project_id
         self.dataset_id = dataset_id
         self.table_id = table_id
-        self.client = client
-
-        if self.client is None:
-            self.client = bigquery.Client(project_id)
+        self.experiment = experiment
 
         self._worker_resources = WorkerResourceUsage(scheduler.address, update_freq)
         self._worker_resources.start()
+
+    def remove_worker(self, scheduler, worker, **kwargs):
+        self._write_to_bigquery()
+        return super().remove_worker(scheduler=scheduler, worker=worker, **kwargs)
 
     def transition(self, key, start, finish, *args, **kwargs):
         """Called by the scheduler every time a task changes status."""
         # if the task finished, record its memory usage:
         if start == "processing" and finish in ("memory", "erred"):
             worker_address = kwargs["worker"]
-            self.resource_usage = self._worker_resources.resources_for_task(worker_address)
-            print(key)
-            print([str(pickle.loads(t.run_spec['function'])) for _, t in self.scheduler.tasks.items()])
-            print([pickle.loads(t.run_spec['args']) for _, t in self.scheduler.tasks.items()])
-            # print([pickle.loads(t.run_spec['function']) for _, t in self.scheduler.tasks.items() for a in t])
+            resource_usage = self._worker_resources.resources_for_task(worker_address)
+            self.results.append(
+                {
+                    "experiment": self.experiment,
+                    "key": key,
+                    "function": str(pickle.loads(self.scheduler.tasks[key].run_spec["function"])),
+                    "args": str(pickle.loads(self.scheduler.tasks[key].run_spec["args"])),
+                    "start": datetime.fromtimestamp(kwargs["startstops"][0]["start"]).isoformat(),
+                    "end": datetime.fromtimestamp(kwargs["startstops"][0]["stop"]).isoformat(),
+                    "worker_address": worker_address,
+                    "max_memory": float(max(resource_usage.memory_usage)),
+                    "min_memory": float(min(resource_usage.memory_usage)),
+                    "max_cpu": float(max(resource_usage.cpu_usage)),
+                    "min_cpu": float(min(resource_usage.cpu_usage)),
+                }
+            )
+
+        # make sure that all tasks have finished and write all usage stats to BigQuery at once
+        # this improves performances vs. writing results on every transition
+        # https://distributed.dask.org/en/latest/scheduling-state.html#task-state
+        finished_tasks = [
+            task.state in ["released", "erred", "forgotten"]
+            for _, task in self.scheduler.tasks.items()
+        ]
+        if all(finished_tasks):
             self._write_to_bigquery()
-            # max_memory_usage = max(memory_usage)
-            # min_memory_usage = min(memory_usage)
 
     def _write_to_bigquery(self):
         """Write resource usage results to BigQuery."""
-        print(self.resource_usage)
+        try:
+            if self.project_id and self.results != []:
+                client = bigquery.Client(self.project_id)
+                destination_table = f"{self.project_id}.{self.dataset_id}.{self.table_id}"
+                client.load_table_from_json(self.results, destination_table).result()
+                self.results = []
+            else:
+                print("ResourceProfilingPlugin not configured to write results to BigQuery.")
+        except Exception as e:
+            print(f"Exception while writing resource usage profiling data to BigQuery: {e}")

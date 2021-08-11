@@ -12,7 +12,6 @@ import mozanalysis
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
-from mozanalysis import experiment
 from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
@@ -460,6 +459,7 @@ class Analysis:
                 project_id=self.log_config.log_project_id,
                 dataset_id=self.log_config.log_dataset_id,
                 table_id=self.log_config.task_profiling_log_table_id,
+                experiment=self.config.experiment.normandy_slug,
             )
             _dask_cluster.scheduler.add_plugin(resource_profiling_plugin)
 
