@@ -414,7 +414,7 @@ class TestAnalysisIntegration:
 
         # wait for profiling results to land in BigQuery
         # todo: improve this test as it might lead to flakiness
-        sleep(5)
+        sleep(10)
 
         assert (
             client.client.get_table(f"{project_id}.{temporary_dataset}.task_profiling_logs")
