@@ -166,7 +166,7 @@ class ResourceProfilingPlugin(SchedulerPlugin):
                 destination_table = f"{self.project_id}.{self.dataset_id}.{self.table_id}"
                 client.load_table_from_json(self.results, destination_table).result()
                 self.results = []
-            else:
+            elif self.project_id is None:
                 print("ResourceProfilingPlugin not configured to write results to BigQuery.")
         except Exception as e:
             print(f"Exception while writing resource usage profiling data to BigQuery: {e}")
