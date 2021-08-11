@@ -393,6 +393,7 @@ class TestAnalysisIntegration:
             log_table_id="logs",
             log_to_bigquery=True,
             task_profiling_log_table_id="task_profiling_logs",
+            task_monitoring_log_table_id="task_monitoring_logs",
             capacity=1,
         )
         self.analysis_mock_run(
@@ -424,3 +425,13 @@ class TestAnalysisIntegration:
             client.client.list_rows(f"{project_id}.{temporary_dataset}.task_profiling_logs")
         )
         assert task_profiling_logs[0].get("max_cpu") >= 0
+
+        assert (
+            client.client.get_table(f"{project_id}.{temporary_dataset}.task_monitoring_logs")
+            is not None
+        )
+
+        task_monitoring_logs = list(
+            client.client.list_rows(f"{project_id}.{temporary_dataset}.task_monitoring_logs")
+        )
+        assert len(task_monitoring_logs) > 0

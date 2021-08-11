@@ -108,7 +108,7 @@ class ResourceProfilingPlugin(SchedulerPlugin):
         dataset_id: Optional[str],
         table_id: Optional[str],
         experiment: Optional[str],
-        update_freq: float = 10,  # 10000.0,  # fetch resource usage every 10 seconds
+        update_freq: float = 10000.0,  # fetch resource usage every 10 seconds
     ):
         SchedulerPlugin.__init__(self)
         self.results: List[Dict] = []

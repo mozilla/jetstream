@@ -352,13 +352,30 @@ class AnalysisExecutor:
     default="task_profiling_logs",
     help="Table to write task profiling logs to",
 )
+@click.option(
+    "--task_monitoring_log_table_id",
+    "--task-monitoring-log-table-id",
+    default="task_monitoring_logs",
+    help="Table to write task monitoring logs to",
+)
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 @click.pass_context
 def cli(
-    ctx, log_project_id, log_dataset_id, log_table_id, task_profiling_log_table_id, log_to_bigquery
+    ctx,
+    log_project_id,
+    log_dataset_id,
+    log_table_id,
+    task_profiling_log_table_id,
+    task_monitoring_log_table_id,
+    log_to_bigquery,
 ):
     log_config = LogConfiguration(
-        log_project_id, log_dataset_id, log_table_id, task_profiling_log_table_id, log_to_bigquery
+        log_project_id,
+        log_dataset_id,
+        log_table_id,
+        task_profiling_log_table_id,
+        task_monitoring_log_table_id,
+        log_to_bigquery,
     )
     log_config.setup_logger()
     ctx.ensure_object(dict)
