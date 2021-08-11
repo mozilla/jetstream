@@ -28,6 +28,7 @@ class TestLoggingIntegration:
             temporary_dataset,
             "logs",
             "task_profiling_logs",
+            "task_monitoring_logs",
             log_to_bigquery=True,
             capacity=1,
         )
