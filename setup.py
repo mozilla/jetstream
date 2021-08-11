@@ -42,6 +42,7 @@ setup(
         "jetstream.tests.integration",
         "jetstream.logging",
         "jetstream.workflows",
+        "jetstream.diagnostics",
     ],
     package_data={
         "jetstream.config": ["*.toml"],

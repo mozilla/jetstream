@@ -202,7 +202,6 @@ class ExperimentCollection:
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
-
         legacy_experiments_json = retry_get(session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES)
         legacy_experiments = []
 

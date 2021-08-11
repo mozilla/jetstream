@@ -354,8 +354,12 @@ class AnalysisExecutor:
 )
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 @click.pass_context
-def cli(ctx, log_project_id, log_dataset_id, log_table_id, log_to_bigquery):
-    log_config = LogConfiguration(log_project_id, log_dataset_id, log_table_id, log_to_bigquery)
+def cli(
+    ctx, log_project_id, log_dataset_id, log_table_id, task_profiling_log_table_id, log_to_bigquery
+):
+    log_config = LogConfiguration(
+        log_project_id, log_dataset_id, log_table_id, task_profiling_log_table_id, log_to_bigquery
+    )
     log_config.setup_logger()
     ctx.ensure_object(dict)
     ctx.obj["log_config"] = log_config
