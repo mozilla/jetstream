@@ -134,7 +134,7 @@ mypy-extensions==0.4.3
     #   black
     #   mypy
     #   typing-inspect
-numpy==1.21.1
+numpy==1.21.2
     # via
     #   mozanalysis
     #   pandas
