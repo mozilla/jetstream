@@ -38,7 +38,7 @@ coverage==5.5
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask==2021.08.0
+dask[distributed]==2021.08.0
     # via
     #   distributed
     #   mozilla-jetstream
@@ -52,14 +52,14 @@ gitdb==4.0.7
     # via gitpython
 gitpython==3.1.18
     # via mozilla-jetstream
-google-api-core[grpc]==1.31.1
+google-api-core[grpc]==1.31.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==1.34.0
+google-auth==1.35.0
     # via
     #   google-api-core
     #   google-cloud-core

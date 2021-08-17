@@ -161,7 +161,7 @@ coverage==5.5 \
     # via
     #   -r requirements.in
     #   pytest-cov
-dask==2021.08.0 \
+dask[distributed]==2021.08.0 \
     --hash=sha256:3d4c7f4c29f20ed8ee7bc4ed98b7fb8384accd9a1a166716392d81db9d9e2782 \
     --hash=sha256:8c1cb9771231bb04d07ed497875e7c62b35faba783e23e3a817fb627aa0afa5c
     # via
@@ -170,7 +170,9 @@ dask==2021.08.0 \
 distributed==2021.08.0 \
     --hash=sha256:492a447ce98e7077687c25442251023f76bdc4ad5f5c485342a1c30326a09738 \
     --hash=sha256:d2011547f9105e33cee8736a06163d0463fa59ba57dfc30924ffc73c40636329
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   dask
 flake8==3.9.2 \
     --hash=sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b \
     --hash=sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907
@@ -193,9 +195,9 @@ gitpython==3.1.18 \
     --hash=sha256:b838a895977b45ab6f0cc926a9045c8d1c44e2b653c1fcc39fe91f42c6e8f05b \
     --hash=sha256:fce760879cd2aebd2991b3542876dc5c4a909b30c9d69dfc488e504a8db37ee8
     # via -r requirements.in
-google-api-core[grpc]==1.31.1 \
-    --hash=sha256:108cf94336aed7e614eafc53933ef02adf63b9f0fd87e8f8212acaa09eaca456 \
-    --hash=sha256:1d63e2b28057d79d64795c9a70abcecb5b7e96da732d011abf09606a39b48701
+google-api-core[grpc]==1.31.2 \
+    --hash=sha256:384459a0dc98c1c8cd90b28dc5800b8705e0275a673a7144a513ae80fc77950b \
+    --hash=sha256:8500aded318fdb235130bf183c726a05a9cb7c4b09c266bd5119b86cdb8a4d10
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
@@ -203,9 +205,9 @@ google-api-core[grpc]==1.31.1 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==1.34.0 \
-    --hash=sha256:bd6aa5916970a823e76ffb3d5c3ad3f0bedafca0a7fa53bc15149ab21cb71e05 \
-    --hash=sha256:f1094088bae046fb06f3d1a3d7df14717e8d959e9105b79c57725bd4e17597a2
+google-auth==1.35.0 \
+    --hash=sha256:997516b42ecb5b63e8d80f5632c1a61dddf41d2a4c2748057837e06e00014258 \
+    --hash=sha256:b7033be9028c188ee30200b204ea00ed82ea1162e8ac1df4aa6ded19a191d88e
     # via
     #   -r requirements.in
     #   google-api-core
