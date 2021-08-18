@@ -319,6 +319,15 @@ class ExperimentConfiguration:
     def exposure_signal(self) -> Optional[mozanalysis.exposure.ExposureSignal]:
         return self.experiment_spec.exposure_signal
 
+    def has_external_config_overrides(self) -> bool:
+        """Check whether the external config overrides Experimenter configuration."""
+        return (
+            self.reference_branch != self.experimenter_experiment.reference_branch
+            or self.start_date != self.experimenter_experiment.start_date
+            or self.end_date != self.experimenter_experiment.end_date
+            or self.proposed_enrollment != self.experimenter_experiment.proposed_enrollment
+        )
+
     # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
     # python-returns-typeerror-object-no
     def __getstate__(self):
