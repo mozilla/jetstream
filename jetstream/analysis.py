@@ -19,8 +19,9 @@ from pandas import DataFrame
 import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import AnalysisConfiguration
-from jetstream.diagnostics.resource_profiling_plugin import ResourceProfilingPlugin
-from jetstream.diagnostics.task_monitoring_plugin import TaskMonitoringPlugin
+
+# from jetstream.diagnostics.resource_profiling_plugin import ResourceProfilingPlugin
+# from jetstream.diagnostics.task_monitoring_plugin import TaskMonitoringPlugin
 from jetstream.dryrun import dry_run_query
 from jetstream.logging import LogConfiguration, LogPlugin
 from jetstream.statistics import (
@@ -455,23 +456,23 @@ class Analysis:
             client.register_worker_plugin(log_plugin)
 
             # add profiling plugins
-            resource_profiling_plugin = ResourceProfilingPlugin(
-                scheduler=_dask_cluster.scheduler,
-                project_id=self.log_config.log_project_id,
-                dataset_id=self.log_config.log_dataset_id,
-                table_id=self.log_config.task_profiling_log_table_id,
-                experiment=self.config.experiment.normandy_slug,
-            )
-            _dask_cluster.scheduler.add_plugin(resource_profiling_plugin)
+            # resource_profiling_plugin = ResourceProfilingPlugin(
+            #     scheduler=_dask_cluster.scheduler,
+            #     project_id=self.log_config.log_project_id,
+            #     dataset_id=self.log_config.log_dataset_id,
+            #     table_id=self.log_config.task_profiling_log_table_id,
+            #     experiment=self.config.experiment.normandy_slug,
+            # )
+            # _dask_cluster.scheduler.add_plugin(resource_profiling_plugin)
 
-            task_monitoring_plugin = TaskMonitoringPlugin(
-                scheduler=_dask_cluster.scheduler,
-                project_id=self.log_config.log_project_id,
-                dataset_id=self.log_config.log_dataset_id,
-                table_id=self.log_config.task_monitoring_log_table_id,
-                experiment=self.config.experiment.normandy_slug,
-            )
-            _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
+            # task_monitoring_plugin = TaskMonitoringPlugin(
+            #     scheduler=_dask_cluster.scheduler,
+            #     project_id=self.log_config.log_project_id,
+            #     dataset_id=self.log_config.log_dataset_id,
+            #     table_id=self.log_config.task_monitoring_log_table_id,
+            #     experiment=self.config.experiment.normandy_slug,
+            # )
+            # _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
 
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
