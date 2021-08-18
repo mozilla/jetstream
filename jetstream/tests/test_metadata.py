@@ -1,4 +1,3 @@
-from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 import json
 from textwrap import dedent
 from unittest import mock
@@ -8,6 +7,7 @@ import requests
 import toml
 
 from jetstream.config import AnalysisSpec
+from jetstream.external_config import ExternalConfigCollection
 from jetstream.metadata import ExperimentMetadata, export_metadata
 from jetstream.statistics import StatisticResult
 
@@ -149,6 +149,9 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
 def test_export_metadata(mock_storage_client, experiments):
     config_str = dedent(
         """
+        [experiment]
+        end_date = "2021-07-01"
+
         [metrics]
         weekly = ["view_about_logins", "my_cool_metric"]
 
@@ -196,7 +199,15 @@ def test_export_metadata(mock_storage_client, experiments):
                 }
             },
             "outcomes": {},
-            "external_config": null,
+            "external_config": {
+                "end_date": "2021-07-01",
+                "enrollment_period": null,
+                "reference_branch": null,
+                "skip": false,
+                "start_date": null,
+                "url": """
+        + '"https://github.com/mozilla/jetstream-config/blob/main/normandy-test-slug.toml"'
+        + r"""},
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """

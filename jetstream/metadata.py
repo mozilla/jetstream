@@ -1,8 +1,7 @@
 import datetime as dt
-from jetstream.external_config import ExternalConfigCollection
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import attr
 import cattr
@@ -10,6 +9,7 @@ import google.cloud.storage as storage
 
 from jetstream import bq_normalize_name, outcomes
 from jetstream.config import AnalysisConfiguration
+from jetstream.external_config import ExternalConfigCollection
 from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
@@ -133,6 +133,9 @@ def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id:
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
     converter = cattr.Converter()
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
+
     blob.upload_from_string(
         data=json.dumps(converter.unstructure(metadata), sort_keys=True, indent=4),
         content_type="application/json",
