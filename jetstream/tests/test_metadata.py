@@ -1,3 +1,4 @@
+from jetstream.external_config import ExternalConfig, ExternalConfigCollection
 import json
 from textwrap import dedent
 from unittest import mock
@@ -45,7 +46,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
     assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments"]
-    assert metadata.reference_branch == "b"
+    assert metadata.external_config is None
 
 
 @patch.object(requests.Session, "get")
@@ -66,7 +67,11 @@ def test_metadata_reference_branch(mock_get, experiments):
     config = spec.resolve(experiments[4])
     metadata = ExperimentMetadata.from_config(config)
 
-    assert metadata.reference_branch == "a"
+    assert metadata.external_config.reference_branch == "a"
+    assert (
+        metadata.external_config.url
+        == ExternalConfigCollection.JETSTREAM_CONFIG_URL + "/blob/main/normandy-test-slug.toml"
+    )
 
     config_str = dedent(
         """
@@ -81,7 +86,7 @@ def test_metadata_reference_branch(mock_get, experiments):
     config = spec.resolve(experiments[2])
     metadata = ExperimentMetadata.from_config(config)
 
-    assert metadata.reference_branch is None
+    assert metadata.external_config is None
 
 
 def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
@@ -191,7 +196,7 @@ def test_export_metadata(mock_storage_client, experiments):
                 }
             },
             "outcomes": {},
-            "reference_branch": "b",
+            "external_config": null,
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """

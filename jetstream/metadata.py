@@ -1,3 +1,5 @@
+import datetime as dt
+from jetstream.external_config import ExternalConfigCollection
 import json
 import logging
 from typing import Dict, List, Optional
@@ -32,10 +34,20 @@ class OutcomeMetadata:
 
 
 @attr.s(auto_attribs=True)
+class ExternalConfigMetadata:
+    reference_branch: Optional[str]
+    end_date: Optional[dt.datetime]
+    start_date: Optional[dt.datetime]
+    enrollment_period: Optional[int]
+    skip: Optional[bool]
+    url: str
+
+
+@attr.s(auto_attribs=True)
 class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
     outcomes: Dict[str, OutcomeMetadata]
-    reference_branch: Optional[str]
+    external_config: Optional[ExternalConfigMetadata]
     schema_version: int = StatisticResult.SCHEMA_VERSION
 
     @classmethod
@@ -72,10 +84,36 @@ class ExperimentMetadata:
             if external_outcome.slug == experiment_outcome
         }
 
+        # determine parameters that have been overridden by external config in jetstream-config
+        external_config = None
+        if config.experiment.has_external_config_overrides():
+            external_config = ExternalConfigMetadata(
+                reference_branch=config.experiment.reference_branch
+                if config.experiment.reference_branch
+                != config.experiment.experimenter_experiment.reference_branch
+                else None,
+                end_date=config.experiment.end_date
+                if config.experiment.end_date != config.experiment.experimenter_experiment.end_date
+                else None,
+                start_date=config.experiment.start_date
+                if config.experiment.start_date
+                != config.experiment.experimenter_experiment.start_date
+                else None,
+                enrollment_period=config.experiment.proposed_enrollment
+                if config.experiment.proposed_enrollment
+                != config.experiment.experimenter_experiment.proposed_enrollment
+                else None,
+                skip=config.experiment.skip,
+                url=ExternalConfigCollection.JETSTREAM_CONFIG_URL
+                + "/blob/main/"
+                + config.experiment.normandy_slug
+                + ".toml",
+            )
+
         return cls(
             metrics=metrics_metadata,
             outcomes=outcomes_metadata,
-            reference_branch=config.experiment.reference_branch,
+            external_config=external_config,
         )
 
 
