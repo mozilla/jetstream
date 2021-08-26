@@ -211,9 +211,9 @@ google-auth==2.0.1 \
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.24.1 \
-    --hash=sha256:8111d23e2af87a96c0646a82a83f62d694b6c8829e7881eb4e437b754471649f \
-    --hash=sha256:f9d118a0e408d213f00eb3b5bfb07027a79a6604b078dae86276f6c4938a9c9a
+google-cloud-bigquery==2.25.1 \
+    --hash=sha256:5ecf7c802cc6cf9cd79e79924616d8b7d35ba026f3313a4d90b8b4a28c72d93d \
+    --hash=sha256:f7b9bcd94cabe66523475993c2442aa5b9ed709ffcf5e734bbbb6a604ae120df
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -439,9 +439,9 @@ mccabe==0.6.1 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2021.7.1 \
-    --hash=sha256:46b36c4b2f43237b81ccf03b13cb24166e9918044d9f3666cac4d632e42ef540 \
-    --hash=sha256:7e4372239dd5698b57b87168c9a0ad5d74b3cc28027a5b817d63ed70624fef5b
+mozanalysis==2021.8.1 \
+    --hash=sha256:7f5a1b6d767b26c9acb8f0e4e5c457aa28d331133a50faf298d3c9208827095a \
+    --hash=sha256:9286d8404fbb1156ad1fcf69c435a49b4b89e46b98cad8de7715614d3dc3fdb4
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
