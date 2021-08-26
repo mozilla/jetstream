@@ -64,7 +64,7 @@ google-auth==2.0.1
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.24.1
+google-cloud-bigquery==2.25.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -125,7 +125,7 @@ markupsafe==2.0.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mozanalysis==2021.7.1
+mozanalysis==2021.8.1
     # via mozilla-jetstream
     # via -r -
 msgpack==1.0.2

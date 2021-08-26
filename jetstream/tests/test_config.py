@@ -54,7 +54,7 @@ class TestAnalysisSpec:
             0
         ].metric
         assert "agg_histogram_mean" not in metric.select_expression
-        assert "json_extract_histogram" in metric.select_expression
+        assert "hist.extract" in metric.select_expression
 
     def test_recognizes_metrics(self, experiments):
         config_str = dedent(
