@@ -288,7 +288,7 @@ types-six==1.16.1
     # via mozilla-jetstream
 types-toml==0.1.5
     # via mozilla-jetstream
-typing-extensions==3.10.0.1
+typing-extensions==3.10.0.2
     # via
     #   black
     #   libcst
