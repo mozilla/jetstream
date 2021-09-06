@@ -82,7 +82,7 @@ google-cloud-storage==1.42.0
     #   smart-open
 google-crc32c==1.1.2
     # via google-resumable-media
-google-resumable-media==2.0.0
+google-resumable-media==2.0.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
