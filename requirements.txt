@@ -92,9 +92,9 @@ click==8.0.1 \
     #   -r requirements.in
     #   black
     #   distributed
-cloudpickle==1.6.0 \
-    --hash=sha256:3a32d0eb0bc6f4d0c57fbc4f3e3780f7a81e6fee0fa935072884d58ae8e1cc7c \
-    --hash=sha256:9bc994f9e9447593bd0a45371f0e7ac7333710fcf64a4eb9834bf149f4ef2f32
+cloudpickle==2.0.0 \
+    --hash=sha256:5cd02f3b417a783ba84a4ec3e290ff7929009fe51f6405423cfccfadd43ba4a4 \
+    --hash=sha256:6b2df9741d06f43839a3275c4e6632f7df6487a1f181f5f46a052d3c917c3d11
     # via
     #   -r requirements.in
     #   dask

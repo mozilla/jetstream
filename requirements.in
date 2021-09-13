@@ -28,7 +28,7 @@ click==8.0.1
     #   black
     #   distributed
     #   mozilla-jetstream
-cloudpickle==1.6.0
+cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
