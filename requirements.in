@@ -279,7 +279,7 @@ types-pytz==2021.1.2
     # via mozilla-jetstream
 types-pyyaml==5.4.10
     # via mozilla-jetstream
-types-requests==2.25.7
+types-requests==2.25.9
     # via mozilla-jetstream
 types-six==1.16.1
     # via mozilla-jetstream
