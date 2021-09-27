@@ -34,15 +34,15 @@ coverage==5.5
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.09.0
+dask[distributed]==2021.09.1
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.09.0
+distributed==2021.09.1
     # via dask
 flake8==3.9.2
     # via pytest-flake8
-fsspec==2021.8.1
+fsspec==2021.9.0
     # via dask
 gitdb==4.0.7
     # via gitpython
@@ -55,12 +55,12 @@ google-api-core[grpc]==2.0.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.1.0
+google-auth==2.2.0
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.26.0
+google-cloud-bigquery==2.27.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -68,7 +68,7 @@ google-cloud-bigquery-storage==2.8.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.7.1
+google-cloud-container==2.8.0
     # via mozilla-jetstream
 google-cloud-core==2.0.0
     # via
@@ -111,7 +111,7 @@ jinja2==3.0.1
     #   mozilla-jetstream
 jsonschema==3.2.0
     # via mozilla-jetstream
-libcst==0.3.20
+libcst==0.3.21
     # via
     #   google-cloud-bigquery-storage
     #   google-cloud-container
@@ -156,9 +156,9 @@ partd==1.2.0
     # via dask
 pathspec==0.9.0
     # via black
-patsy==0.5.1
+patsy==0.5.2
     # via statsmodels
-platformdirs==2.3.0
+platformdirs==2.4.0
     # via black
 pluggy==1.0.0
     # via pytest
@@ -220,7 +220,7 @@ pyyaml==5.4.1
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.8.28
+regex==2021.9.24
     # via black
 requests==2.26.0
     # via
@@ -279,7 +279,7 @@ types-pytz==2021.1.2
     # via mozilla-jetstream
 types-pyyaml==5.4.10
     # via mozilla-jetstream
-types-requests==2.25.7
+types-requests==2.25.9
     # via mozilla-jetstream
 types-six==1.16.1
     # via mozilla-jetstream
@@ -294,7 +294,7 @@ typing-extensions==3.10.0.2
     #   typing-inspect
 typing-inspect==0.7.1
     # via libcst
-urllib3==1.26.6
+urllib3==1.26.7
     # via requests
 zict==2.0.0
     # via distributed
