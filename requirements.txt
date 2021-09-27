@@ -155,9 +155,9 @@ google-api-core[grpc]==2.0.1 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.1.0 \
-    --hash=sha256:7ae5eda089d393ca01658b550df24913cbbbdd34e9e6dedc1cea747485ae0c04 \
-    --hash=sha256:bde03220ed56e4e147dec92339c90ce95159dce657e2cccd0ac1fe82f6a96284
+google-auth==2.2.0 \
+    --hash=sha256:4fa902dd577169dab41881db2b01293a41f3600d1520e4896eaaeb26e72c6eb9 \
+    --hash=sha256:c4b177443571b282dfc9236ec747da6e28669257efdb622a3b48daeaa0891442
     # via
     #   -r requirements.in
     #   google-api-core
