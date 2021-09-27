@@ -554,9 +554,9 @@ pathspec==0.9.0 \
     # via
     #   -r requirements.in
     #   black
-patsy==0.5.1 \
-    --hash=sha256:5465be1c0e670c3a965355ec09e9a502bf2c4cbe4875e8528b0221190a8a5d40 \
-    --hash=sha256:f115cec4201e1465cd58b9866b0b0e7b941caafec129869057405bfe5b5e3991
+patsy==0.5.2 \
+    --hash=sha256:5053de7804676aba62783dbb0f23a2b3d74e35e5bfa238b88b7cbf148a38b69d \
+    --hash=sha256:cc80955ae8c13a7e7c4051eda7b277c8f909f50bc7d73e124bc38e2ee3d95041
     # via
     #   -r requirements.in
     #   statsmodels
