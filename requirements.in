@@ -167,7 +167,7 @@ proto-plus==1.19.2
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.18.0
+protobuf==3.18.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
