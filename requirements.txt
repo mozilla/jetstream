@@ -555,9 +555,9 @@ pluggy==1.0.0 \
     # via
     #   -r requirements.in
     #   pytest
-proto-plus==1.19.2 \
-    --hash=sha256:08f17aed1bc38b8bccb1e50021cf8a8dd738278d0f3f74cb8597074858eaa5d1 \
-    --hash=sha256:ca530b0718c625ba63f151ab3fcdc836b59343d149b7dfd15ec2dceb3844c22d
+proto-plus==1.19.4 \
+    --hash=sha256:0217edff861e94af5132e3a402e1a0406646cd5a6a080a52b2311c3be1021072 \
+    --hash=sha256:416dc38b090ca2093f6fac74977ac4a5599e496483a43c0076e6f6a4dd77ed9c
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
