@@ -36,7 +36,9 @@ import mozanalysis.metrics.desktop
 import mozanalysis.metrics.fenix
 import mozanalysis.metrics.firefox_ios
 import mozanalysis.metrics.focus_android
+import mozanalysis.metrics.focus_ios
 import mozanalysis.metrics.klar_android
+import mozanalysis.metrics.klar_ios
 import mozanalysis.segments
 import mozanalysis.segments.desktop
 import pytz
