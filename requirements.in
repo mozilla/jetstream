@@ -34,7 +34,7 @@ coverage[toml]==6.0.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.10.0
+dask==2021.10.0
     # via
     #   distributed
     #   mozilla-jetstream
@@ -55,7 +55,7 @@ google-api-core[grpc]==2.1.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.3.0
+google-auth==2.3.1
     # via
     #   google-api-core
     #   google-cloud-core
@@ -80,7 +80,7 @@ google-cloud-storage==1.42.3
     #   smart-open
 google-crc32c==1.3.0
     # via google-resumable-media
-google-resumable-media==2.0.3
+google-resumable-media==2.1.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -90,7 +90,7 @@ googleapis-common-protos[grpc]==1.53.0
     #   grpc-google-iam-v1
 grpc-google-iam-v1==0.12.3
     # via google-cloud-container
-grpcio==1.41.0
+grpcio==1.41.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -121,7 +121,7 @@ markupsafe==2.0.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mozanalysis==2021.9.1
+mozanalysis==2021.10.1
     # via mozilla-jetstream
     # via -r -
 msgpack==1.0.2
@@ -162,7 +162,7 @@ platformdirs==2.4.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.19.5
+proto-plus==1.19.6
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -236,6 +236,7 @@ scipy==1.7.1
     #   statsmodels
 six==1.16.0
     # via
+    #   google-auth
     #   google-cloud-storage
     #   grpcio
     #   patsy
