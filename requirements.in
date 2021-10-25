@@ -34,17 +34,17 @@ coverage[toml]==6.0.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask==2021.09.1
+dask[distributed]==2021.10.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.09.1
+distributed==2021.10.0
     # via dask
 flake8==4.0.1
     # via pytest-flake8
 fsspec==2021.10.1
     # via dask
-gitdb==4.0.7
+gitdb==4.0.9
     # via gitpython
 gitpython==3.1.24
     # via mozilla-jetstream
@@ -109,7 +109,7 @@ jinja2==3.0.2
     # via
     #   distributed
     #   mozilla-jetstream
-jsonschema==4.1.0
+jsonschema==4.1.2
     # via mozilla-jetstream
 libcst==0.3.21
     # via
@@ -133,7 +133,7 @@ mypy-extensions==0.4.3
     #   black
     #   mypy
     #   typing-inspect
-numpy==1.21.2
+numpy==1.21.3
     # via
     #   mozanalysis
     #   pandas
@@ -167,7 +167,7 @@ proto-plus==1.19.5
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.18.1
+protobuf==3.19.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -192,7 +192,7 @@ pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
     # via flake8
-pyparsing==2.4.7
+pyparsing==3.0.1
     # via packaging
 pyrsistent==0.18.0
     # via jsonschema
@@ -220,7 +220,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.10.8
+regex==2021.10.23
     # via black
 requests==2.26.0
     # via
@@ -242,7 +242,7 @@ six==1.16.0
     #   python-dateutil
 smart-open[gcs]==5.2.1
     # via mozilla-jetstream
-smmap==4.0.0
+smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
@@ -256,7 +256,7 @@ toml==0.10.2
     #   mypy
     #   pytest
     #   pytest-black
-tomli==1.2.1
+tomli==1.2.2
     # via
     #   black
     #   coverage
@@ -277,7 +277,7 @@ types-protobuf==3.18.0
     # via mozilla-jetstream
 types-pytz==2021.3.0
     # via mozilla-jetstream
-types-pyyaml==5.4.12
+types-pyyaml==6.0.0
     # via mozilla-jetstream
 types-requests==2.25.11
     # via mozilla-jetstream
