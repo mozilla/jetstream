@@ -102,6 +102,20 @@ PLATFORM_CONFIGS = {
         "glean-event",
         "org.mozilla.klar",
     ),
+    "focus_ios": Platform(
+        Path(__file__).parent / "config" / "focus_ios.toml",
+        mozanalysis.metrics.focus_ios,
+        None,
+        "glean-event",
+        "org.mozilla.ios.Focus",
+    ),
+    "klar_ios": Platform(
+        Path(__file__).parent / "config" / "klar_ios.toml",
+        mozanalysis.metrics.klar_ios,
+        None,
+        "glean-event",
+        "org.mozilla.ios.Klar",
+    ),
 }
 
 TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
