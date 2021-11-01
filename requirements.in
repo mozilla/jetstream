@@ -11,7 +11,7 @@ attrs==21.2.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.9b0
+black==21.10b0
     # via pytest-black
 cachetools==4.2.4
     # via google-auth
@@ -30,11 +30,11 @@ cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.0.2
+coverage[toml]==6.1.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask==2021.10.0
+dask[distributed]==2021.10.0
     # via
     #   distributed
     #   mozilla-jetstream
@@ -48,19 +48,19 @@ gitdb==4.0.9
     # via gitpython
 gitpython==3.1.24
     # via mozilla-jetstream
-google-api-core[grpc]==2.1.1
+google-api-core[grpc]==2.2.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.3.1
+google-auth==2.3.2
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.28.1
+google-cloud-bigquery==2.29.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -88,6 +88,7 @@ googleapis-common-protos[grpc]==1.53.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1
+    #   grpcio-status
 grpc-google-iam-v1==0.12.3
     # via google-cloud-container
 grpcio==1.41.1
@@ -96,7 +97,10 @@ grpcio==1.41.1
     #   google-cloud-bigquery
     #   googleapis-common-protos
     #   grpc-google-iam-v1
+    #   grpcio-status
     #   mozilla-jetstream
+grpcio-status==1.41.1
+    # via google-api-core
 heapdict==1.0.1
     # via zict
 idna==3.3
@@ -141,7 +145,7 @@ numpy==1.21.3
     #   pyarrow
     #   scipy
     #   statsmodels
-packaging==21.0
+packaging==21.2
     # via
     #   dask
     #   google-cloud-bigquery
@@ -162,23 +166,24 @@ platformdirs==2.4.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.19.6
+proto-plus==1.19.7
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.19.0
+protobuf==3.19.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   googleapis-common-protos
+    #   grpcio-status
     #   proto-plus
 psutil==5.8.0
     # via distributed
 py==1.10.0
     # via pytest
-pyarrow==5.0.0
+pyarrow==6.0.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -192,7 +197,7 @@ pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
     # via flake8
-pyparsing==3.0.1
+pyparsing==2.4.7
     # via packaging
 pyrsistent==0.18.0
     # via jsonschema
@@ -209,7 +214,9 @@ pytest-cov==3.0.0
 pytest-flake8==1.0.7
     # via mozilla-jetstream
 python-dateutil==2.8.2
-    # via pandas
+    # via
+    #   google-cloud-bigquery
+    #   pandas
 pytz==2021.3
     # via
     #   mozilla-jetstream
