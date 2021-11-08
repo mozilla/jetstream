@@ -34,41 +34,41 @@ coverage[toml]==6.1.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.10.0
+dask[distributed]==2021.11.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.10.0
+distributed==2021.11.0
     # via dask
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2021.10.1
+fsspec==2021.11.0
     # via dask
 gitdb==4.0.9
     # via gitpython
 gitpython==3.1.24
     # via mozilla-jetstream
-google-api-core[grpc]==2.2.1
+google-api-core[grpc]==2.2.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.3.2
+google-auth==2.3.3
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.29.0
+google-cloud-bigquery==2.30.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.9.1
+google-cloud-bigquery-storage==2.10.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.10.0
+google-cloud-container==2.10.1
     # via mozilla-jetstream
 google-cloud-core==2.1.0
     # via
@@ -105,15 +105,17 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
+importlib-resources==5.4.0
+    # via jsonschema
 iniconfig==1.1.1
     # via pytest
-isort==5.9.3
+isort==5.10.0
     # via mozilla-jetstream
 jinja2==3.0.2
     # via
     #   distributed
     #   mozilla-jetstream
-jsonschema==4.1.2
+jsonschema==4.2.1
     # via mozilla-jetstream
 libcst==0.3.21
     # via
@@ -137,7 +139,7 @@ mypy-extensions==0.4.3
     #   black
     #   mypy
     #   typing-inspect
-numpy==1.21.3
+numpy==1.21.4
     # via
     #   mozanalysis
     #   pandas
@@ -149,8 +151,6 @@ packaging==21.2
     # via
     #   dask
     #   google-cloud-bigquery
-    #   google-cloud-bigquery-storage
-    #   google-cloud-container
     #   pytest
 pandas==1.3.4
     # via
@@ -181,7 +181,7 @@ protobuf==3.19.1
     #   proto-plus
 psutil==5.8.0
     # via distributed
-py==1.10.0
+py==1.11.0
     # via pytest
 pyarrow==6.0.0
     # via
@@ -227,7 +227,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.10.23
+regex==2021.11.2
     # via black
 requests==2.26.0
     # via
@@ -237,7 +237,7 @@ requests==2.26.0
     #   mozilla-jetstream
 rsa==4.7.2
     # via google-auth
-scipy==1.7.1
+scipy==1.7.2
     # via
     #   mozanalysis
     #   statsmodels
@@ -268,7 +268,7 @@ tomli==1.2.2
     # via
     #   black
     #   coverage
-toolz==0.11.1
+toolz==0.11.2
     # via
     #   dask
     #   distributed
@@ -306,6 +306,8 @@ urllib3==1.26.7
     # via requests
 zict==2.0.0
     # via distributed
+zipp==3.6.0
+    # via importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
