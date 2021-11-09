@@ -233,6 +233,7 @@ class Analysis:
                 last_window_limits,
                 enrollments_table_name,
                 analysis_basis,
+                # pass in segments
             )
 
             self.bigquery.execute(metrics_sql, res_table_name)
