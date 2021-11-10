@@ -14,7 +14,7 @@ Instead, we would want to allow arbitrary timelimits for segmenting clients, whi
 
 ### mozanalysis
 
-It is possible to defined segments clients are being assigned to. Currently, this assignment happens during the enrollment period and cannot be changed during the analysis periods. The segment assignments are stored as part of the `enrollment_` tables.
+It is possible to define segments clients are being assigned to. Currently, this assignment happens during the enrollment period and cannot be changed during the analysis periods. The segment assignments are stored as part of the `enrollment_` tables.
 
 To allow segmentation after the enrollment period, the segmentation condition needs to be re-evaluated for every analysis period when computing metrics. The `build_metrics_query()` method will need to accept an additional optional parameter `segment_list` which is a list of `Segment`s. Each `Segment` specifies a `SegmentDataSource` which defines the time frame for which the segment should be recomputed.
 
