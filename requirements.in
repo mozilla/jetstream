@@ -111,7 +111,7 @@ iniconfig==1.1.1
     # via pytest
 isort==5.10.0
     # via mozilla-jetstream
-jinja2==3.0.2
+jinja2==3.0.3
     # via
     #   distributed
     #   mozilla-jetstream
