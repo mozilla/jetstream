@@ -227,7 +227,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.11.2
+regex==2021.11.10
     # via black
 requests==2.26.0
     # via
