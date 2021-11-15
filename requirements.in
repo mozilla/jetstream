@@ -293,7 +293,7 @@ types-six==1.16.2
     # via mozilla-jetstream
 types-toml==0.10.1
     # via mozilla-jetstream
-typing-extensions==3.10.0.2
+typing-extensions==4.0.0
     # via
     #   black
     #   gitpython
