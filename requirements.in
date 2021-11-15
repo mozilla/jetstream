@@ -166,7 +166,7 @@ platformdirs==2.4.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.19.7
+proto-plus==1.19.8
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
