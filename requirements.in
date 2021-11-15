@@ -254,7 +254,7 @@ smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
-statsmodels==0.13.0
+statsmodels==0.13.1
     # via mozilla-jetstream
 tblib==1.7.0
     # via distributed
