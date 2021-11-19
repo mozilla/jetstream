@@ -11,7 +11,7 @@ attrs==21.2.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.10b0
+black==21.11b1
     # via pytest-black
 cachetools==4.2.4
     # via google-auth
@@ -30,15 +30,15 @@ cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.1.1
+coverage[toml]==6.1.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.11.0
+dask[distributed]==2021.11.1
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.11.0
+distributed==2021.11.1
     # via dask
 flake8==4.0.1
     # via pytest-flake8
@@ -64,17 +64,17 @@ google-cloud-bigquery==2.30.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.10.0
+google-cloud-bigquery-storage==2.10.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
 google-cloud-container==2.10.1
     # via mozilla-jetstream
-google-cloud-core==2.1.0
+google-cloud-core==2.2.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==1.42.3
+google-cloud-storage==1.43.0
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -91,7 +91,7 @@ googleapis-common-protos[grpc]==1.53.0
     #   grpcio-status
 grpc-google-iam-v1==0.12.3
     # via google-cloud-container
-grpcio==1.41.1
+grpcio==1.42.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -99,7 +99,7 @@ grpcio==1.41.1
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.41.1
+grpcio-status==1.42.0
     # via google-api-core
 heapdict==1.0.1
     # via zict
@@ -109,9 +109,9 @@ importlib-resources==5.4.0
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
-isort==5.10.0
+isort==5.10.1
     # via mozilla-jetstream
-jinja2==3.0.2
+jinja2==3.0.3
     # via
     #   distributed
     #   mozilla-jetstream
@@ -147,7 +147,7 @@ numpy==1.21.4
     #   pyarrow
     #   scipy
     #   statsmodels
-packaging==21.2
+packaging==21.3
     # via
     #   dask
     #   google-cloud-bigquery
@@ -166,7 +166,7 @@ platformdirs==2.4.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.19.7
+proto-plus==1.19.8
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -183,7 +183,7 @@ psutil==5.8.0
     # via distributed
 py==1.11.0
     # via pytest
-pyarrow==6.0.0
+pyarrow==6.0.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -197,7 +197,7 @@ pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
     # via flake8
-pyparsing==2.4.7
+pyparsing==3.0.6
     # via packaging
 pyrsistent==0.18.0
     # via jsonschema
@@ -227,7 +227,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.11.2
+regex==2021.11.10
     # via black
 requests==2.26.0
     # via
@@ -254,7 +254,7 @@ smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
-statsmodels==0.13.0
+statsmodels==0.13.1
     # via mozilla-jetstream
 tblib==1.7.0
     # via distributed
@@ -285,15 +285,15 @@ types-protobuf==3.18.0
     # via mozilla-jetstream
 types-pytz==2021.3.0
     # via mozilla-jetstream
-types-pyyaml==6.0.0
+types-pyyaml==6.0.1
     # via mozilla-jetstream
-types-requests==2.25.11
+types-requests==2.26.0
     # via mozilla-jetstream
 types-six==1.16.2
     # via mozilla-jetstream
 types-toml==0.10.1
     # via mozilla-jetstream
-typing-extensions==3.10.0.2
+typing-extensions==4.0.0
     # via
     #   black
     #   gitpython
