@@ -10,7 +10,7 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import PLATFORM_CONFIGS
+from jetstream.config import PLATFORM_CONFIGS, AnalysisWindow
 from jetstream.experimenter import Experiment
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
@@ -449,6 +449,9 @@ class TestAnalysisSpec:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        assert spec.experiment.exposure_signal.window_start is None
+        assert spec.experiment.exposure_signal.window_end is None
+
         cfg = spec.resolve(experiments[0])
 
         assert cfg.experiment.exposure_signal == mozanalysis.exposure.ExposureSignal(
@@ -458,6 +461,52 @@ class TestAnalysisSpec:
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
         )
+
+    def test_exposure_signal_windows(self, experiments):
+        config_str = dedent(
+            """
+            [experiment.exposure_signal]
+            name = "ad_exposure"
+            data_source = "search_clients_daily"
+            select_expression = "ad_click > 0"
+            friendly_name = "Ad exposure"
+            description = "Clients have clicked on ad"
+            window_end = "enrollment_end"
+
+            [metrics]
+            weekly = ["ad_clicks"]
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        assert spec.experiment.exposure_signal.window_start is None
+        assert spec.experiment.exposure_signal.window_end == AnalysisWindow.ENROLLMENT_END
+
+    def test_exposure_signal_invalid_windows(self, experiments):
+        config_str = dedent(
+            """
+            [experiment.exposure_signal]
+            name = "ad_exposure"
+            data_source = "search_clients_daily"
+            select_expression = "ad_click > 0"
+            friendly_name = "Ad exposure"
+            description = "Clients have clicked on ad"
+            window_start = 1
+            window_end = "invalid"
+
+            [metrics]
+            weekly = ["ad_clicks"]
+
+            [metrics.ad_clicks.statistics.bootstrap_mean]
+            num_samples = 10
+            """
+        )
+
+        with pytest.raises(Exception):
+            config.AnalysisSpec.from_dict(toml.loads(config_str))
 
 
 class TestExperimentSpec:

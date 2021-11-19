@@ -24,10 +24,11 @@ from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
 
 import attr
 import cattr
+import enum
 import jinja2
 import mozanalysis.experiment
 import mozanalysis.exposure
@@ -362,6 +363,22 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
     instance.parse_date(value)
 
 
+class AnalysisWindow(enum.Enum):
+    ANALYSIS_WINDOW_START = "analysis_window_start"
+    ANALYSIS_WINDOW_END = "analysis_window_end"
+    ENROLLMENT_START = "enrollment_start"
+    ENROLLMENT_END = "enrollment_end"
+
+WindowLimit = Union[int, AnalysisWindow, None]
+
+def structure_window_limit(value: Any, _klass: Type) -> WindowLimit:
+    try:
+        return AnalysisWindow(value)
+    except Exception as e:
+        return int(value)
+
+_converter.register_structure_hook(WindowLimit, structure_window_limit)
+
 @attr.s(auto_attribs=True)
 class ExposureSignalDefinition:
     """Describes the interface for defining an exposure signal in configuration."""
@@ -371,6 +388,8 @@ class ExposureSignalDefinition:
     select_expression: str
     friendly_name: str
     description: str
+    window_start: WindowLimit = None
+    window_end: WindowLimit = None
 
     def resolve(
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
