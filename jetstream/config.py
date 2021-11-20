@@ -47,6 +47,7 @@ import toml
 from jinja2 import StrictUndefined
 
 from jetstream.errors import NoStartDateException
+from jetstream.exposure_signal import AnalysisWindow, WindowLimit, ExposureSignal
 from jetstream.metric import Metric
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
@@ -363,21 +364,15 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
     instance.parse_date(value)
 
 
-class AnalysisWindow(enum.Enum):
-    ANALYSIS_WINDOW_START = "analysis_window_start"
-    ANALYSIS_WINDOW_END = "analysis_window_end"
-    ENROLLMENT_START = "enrollment_start"
-    ENROLLMENT_END = "enrollment_end"
-
-WindowLimit = Union[int, AnalysisWindow, None]
-
 def structure_window_limit(value: Any, _klass: Type) -> WindowLimit:
     try:
         return AnalysisWindow(value)
     except Exception as e:
         return int(value)
 
+
 _converter.register_structure_hook(WindowLimit, structure_window_limit)
+
 
 @attr.s(auto_attribs=True)
 class ExposureSignalDefinition:
@@ -391,13 +386,11 @@ class ExposureSignalDefinition:
     window_start: WindowLimit = None
     window_end: WindowLimit = None
 
-    def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
-    ) -> mozanalysis.exposure.ExposureSignal:
-        return mozanalysis.exposure.ExposureSignal(
+    def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> ExposureSignal:
+        return ExposureSignal(
             name=self.name,
             data_source=self.data_source.resolve(spec, experiment=experiment),
-            select_expr=self.select_expression,
+            select_expression=self.select_expression,
             friendly_name=self.friendly_name,
             description=self.description,
         )
