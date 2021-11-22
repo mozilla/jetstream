@@ -24,11 +24,10 @@ from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
 
 import attr
 import cattr
-import enum
 import jinja2
 import mozanalysis.experiment
 import mozanalysis.exposure
@@ -47,7 +46,7 @@ import toml
 from jinja2 import StrictUndefined
 
 from jetstream.errors import NoStartDateException
-from jetstream.exposure_signal import AnalysisWindow, WindowLimit, ExposureSignal
+from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
 from jetstream.metric import Metric
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
@@ -247,6 +246,7 @@ class ExperimentConfiguration:
     experiment_spec: "ExperimentSpec"
     experimenter_experiment: "jetstream.experimenter.Experiment"
     segments: List[mozanalysis.segments.Segment]
+    exposure_signal: Optional[ExposureSignal] = None
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -333,10 +333,6 @@ class ExperimentConfiguration:
     def skip(self) -> bool:
         return self.experiment_spec.skip
 
-    @property
-    def exposure_signal(self) -> Optional[mozanalysis.exposure.ExposureSignal]:
-        return self.experiment_spec.exposure_signal
-
     def has_external_config_overrides(self) -> bool:
         """Check whether the external config overrides Experimenter configuration."""
         return (
@@ -367,7 +363,7 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
 def structure_window_limit(value: Any, _klass: Type) -> WindowLimit:
     try:
         return AnalysisWindow(value)
-    except Exception as e:
+    except Exception:
         return int(value)
 
 
@@ -426,9 +422,7 @@ class ExperimentSpec:
         experiment.segments = [ref.resolve(spec, experiment) for ref in self.segments]
 
         if self.exposure_signal:
-            experiment.experiment_spec.exposure_signal = self.exposure_signal.resolve(
-                spec, experiment=experiment
-            )
+            experiment.exposure_signal = self.exposure_signal.resolve(spec, experiment=experiment)
 
         return experiment
 

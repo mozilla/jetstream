@@ -15,7 +15,6 @@ from google.cloud.exceptions import Conflict
 from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
-from jetstream import exposure_signal
 
 import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
@@ -223,9 +222,14 @@ class Analysis:
             )
 
             enrollments_table_name = f"enrollments_{normalized_slug}"
-            exposure_signal = self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
-                last_window_limits
-            )
+            exposure_signal = None
+
+            if self.config.experiment.exposure_signal:
+                exposure_signal = (
+                    self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
+                        last_window_limits
+                    )
+                )
 
             metrics_sql = exp.build_metrics_query(
                 {
