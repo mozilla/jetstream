@@ -1,7 +1,7 @@
-from typing import Optional, Union
+import enum
+from typing import Union
 
 import attr
-import enum
 import mozanalysis.experiment
 import mozanalysis.metrics
 
@@ -21,6 +21,7 @@ class AnalysisWindow(enum.Enum):
 WindowLimit = Union[int, AnalysisWindow, None]
 
 
+@attr.s(auto_attribs=True, frozen=True, slots=True)
 class ExposureSignal:
     """
     Jetstream exposure signal representation.
