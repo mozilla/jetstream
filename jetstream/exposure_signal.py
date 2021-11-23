@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 from typing import Union
 
 import attr
@@ -35,8 +36,14 @@ class ExposureSignal:
     select_expression: str
     friendly_name: str
     description: str
-    window_start: WindowLimit = None
-    window_end: WindowLimit = None
+    window_start: WindowLimit = attr.ib(None)
+    window_end: WindowLimit = attr.ib(None)
+
+    @window_end.validator
+    @window_start.validator
+    def validate_window(self, _attribute, value):
+        if value is not None and not isinstance(value, int):
+            AnalysisWindow(value)
 
     def to_mozanalysis_exposure_signal(
         self, time_limits: mozanalysis.experiment.TimeLimits
@@ -57,13 +64,21 @@ class ExposureSignal:
     def _window_limit_to_int(
         self, window_limit: WindowLimit, time_limits: mozanalysis.experiment.TimeLimits
     ):
-        if window_limit == AnalysisWindow.ENROLLMENT_START:
-            return 0
-        elif window_limit == AnalysisWindow.ENROLLMENT_END:
-            return abs(time_limits.last_enrollment_date - time_limits.first_enrollment_date).days
-        elif window_limit == AnalysisWindow.ANALYSIS_WINDOW_START:
-            return time_limits.analysis_windows[0].start
-        elif window_limit == AnalysisWindow.ANALYSIS_WINDOW_END:
-            return time_limits.analysis_windows[0].end
-        else:
+        last_enrollment_date = datetime.strptime(time_limits.last_enrollment_date, "%Y-%m-%d")
+        first_enrollment_date = datetime.strptime(time_limits.first_enrollment_date, "%Y-%m-%d")
+        num_dates_enrollment = abs(last_enrollment_date - first_enrollment_date).days
+
+        try:
+            limit = AnalysisWindow(window_limit)
+            if limit == AnalysisWindow.ENROLLMENT_START:
+                return 0
+            elif limit == AnalysisWindow.ENROLLMENT_END:
+                return num_dates_enrollment
+            elif limit == AnalysisWindow.ANALYSIS_WINDOW_START:
+                return time_limits.analysis_windows[0].start + num_dates_enrollment
+            elif limit == AnalysisWindow.ANALYSIS_WINDOW_END:
+                return time_limits.analysis_windows[0].end + num_dates_enrollment
+        except Exception:
+            if not isinstance(window_limit, int) and window_limit is not None:
+                raise ValueError(f"Invalid window limit: {window_limit}")
             return window_limit

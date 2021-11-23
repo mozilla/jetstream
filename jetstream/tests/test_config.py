@@ -12,6 +12,7 @@ from mozanalysis.experiment import AnalysisBasis
 from jetstream import AnalysisPeriod, config
 from jetstream.config import PLATFORM_CONFIGS, AnalysisWindow
 from jetstream.experimenter import Experiment
+from jetstream.exposure_signal import ExposureSignal
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
@@ -454,10 +455,10 @@ class TestAnalysisSpec:
 
         cfg = spec.resolve(experiments[0])
 
-        assert cfg.experiment.exposure_signal == mozanalysis.exposure.ExposureSignal(
+        assert cfg.experiment.exposure_signal == ExposureSignal(
             name="ad_exposure",
             data_source=mozanalysis.metrics.desktop.search_clients_daily,
-            select_expr="ad_click > 0",
+            select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
         )
