@@ -25,12 +25,9 @@ class Metric:
     ]
 
     def __attrs_post_init__(self):
-        # Throw an error if exposure analysis basis is used.
-        # Exposure analysis basis is not supported in Experimenter, so
-        # prevent it from being used.
-        # Support will be implemented soon.
+        # Print warning if exposures is used
         if mozanalysis.experiment.AnalysisBasis.EXPOSURES in self.analysis_bases:
-            raise ValueError(f"Exposures analysis basis is not supported for {self.name}")
+            print(f"Using exposures analysis basis for {self.name}. Not supported in Experimenter")
 
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
         """Return Jetstream metric as mozanalysis metric."""

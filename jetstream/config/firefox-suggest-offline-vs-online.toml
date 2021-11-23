@@ -1,0 +1,47 @@
+[experiment]
+
+[experiment.exposure_signal]
+name = "exposure"
+data_source = "events_unnested"
+select_expression = """(
+    event_category = 'normandy'
+    AND event_method = 'expose'
+    AND event_object = 'nimbus_experiment'
+    AND event_string_value = 'firefox-suggest-offline-vs-online'
+    AND normalized_channel = 'release')
+"""
+window_start = "enrollment_start"
+window_end = "analysis_window_end"
+friendly_name = "Ad exposure"
+description = "Clients have clicked on ad"
+
+
+[data_sources.events_unnested]
+from_expression = """(
+  SELECT
+    *
+  FROM
+    `moz-fx-data-shared-prod.telemetry.events`
+)"""
+
+
+[metrics]
+daily = ["active_hours", "uri_count", "search_count"]
+
+
+
+[metrics.active_hours]
+analysis_bases = ["exposures", "enrollments"]
+[metrics.active_hours.statistics.bootstrap_mean]
+[metrics.active_hours.statistics.deciles]
+
+[metrics.uri_count]
+analysis_bases = ["exposures", "enrollments"]
+[metrics.uri_count.statistics.bootstrap_mean]
+[metrics.uri_count.statistics.deciles]
+
+[metrics.search_count]
+analysis_bases = ["exposures", "enrollments"]
+[metrics.search_count.statistics.bootstrap_mean]
+[metrics.search_count.statistics.deciles]
+

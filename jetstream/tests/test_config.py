@@ -472,7 +472,8 @@ class TestAnalysisSpec:
             select_expression = "ad_click > 0"
             friendly_name = "Ad exposure"
             description = "Clients have clicked on ad"
-            window_end = "enrollment_end"
+            window_start = "enrollment_start"
+            window_end = "analysis_window_end"
 
             [metrics]
             weekly = ["ad_clicks"]
@@ -483,8 +484,8 @@ class TestAnalysisSpec:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        assert spec.experiment.exposure_signal.window_start is None
-        assert spec.experiment.exposure_signal.window_end == AnalysisWindow.ENROLLMENT_END
+        assert spec.experiment.exposure_signal.window_start is AnalysisWindow.ENROLLMENT_START
+        assert spec.experiment.exposure_signal.window_end == AnalysisWindow.ANALYSIS_WINDOW_END
 
     def test_exposure_signal_invalid_windows(self, experiments):
         config_str = dedent(
