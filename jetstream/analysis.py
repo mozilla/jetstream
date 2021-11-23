@@ -404,11 +404,13 @@ class Analysis:
             """WITH enrollments_table AS (
                 SELECT '00000' AS client_id,
                     'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date
+                    DATE('2020-01-01') AS enrollment_date,
+                    DATE('2020-01-01') AS exposure_date
                 UNION ALL
                 SELECT '00000' AS client_id,
                     'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date
+                    DATE('2020-01-01') AS enrollment_date,
+                    DATE('2020-01-01') AS exposure_date
             ), analysis_windows AS (""",
         )
 
