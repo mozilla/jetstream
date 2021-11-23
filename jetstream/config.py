@@ -389,6 +389,8 @@ class ExposureSignalDefinition:
             select_expression=self.select_expression,
             friendly_name=self.friendly_name,
             description=self.description,
+            window_start=self.window_start,
+            window_end=self.window_end,
         )
 
 
