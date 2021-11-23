@@ -77,3 +77,4 @@ class TestExposureSignal:
             exposure_signal.to_mozanalysis_exposure_signal(time_limits),
             mozanalysis.exposure.ExposureSignal,
         )
+        assert exposure_signal.to_mozanalysis_exposure_signal(time_limits).build_query(time_limits)
