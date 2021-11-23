@@ -225,6 +225,8 @@ class Analysis:
             exposure_signal = None
 
             if self.config.experiment.exposure_signal:
+                # if a custom exposure signal has been defined in the config, we'll
+                # need to pass it into the metrics computation
                 exposure_signal = (
                     self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
                         last_window_limits
@@ -380,12 +382,18 @@ class Analysis:
         for v in self.config.metrics.values():
             metrics |= {m.metric.to_mozanalysis_metric() for m in v}
 
+        exposure_signal = None
+        if self.config.experiment.exposure_signal:
+            exposure_signal = self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
+                limits
+            )
+
         enrollments_sql = exp.build_enrollments_query(
             limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
-            self.config.experiment.exposure_signal,
+            exposure_signal,
             self.config.experiment.segments,
         )
 
@@ -582,12 +590,19 @@ class Analysis:
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
         )
+
+        exposure_signal = None
+        if self.config.experiment.exposure_signal:
+            exposure_signal = self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
+                time_limits
+            )
+
         enrollments_sql = exp.build_enrollments_query(
             time_limits,
             self.config.experiment.platform.enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
-            self.config.experiment.exposure_signal,
+            exposure_signal,
             self.config.experiment.segments,
         )
 

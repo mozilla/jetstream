@@ -12,6 +12,7 @@ from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec, Summary
 from jetstream.experimenter import Branch, Experiment
+from jetstream.exposure_signal import ExposureSignal
 from jetstream.logging import LogConfiguration
 from jetstream.metric import Metric
 from jetstream.statistics import BootstrapMean
@@ -175,6 +176,105 @@ class TestAnalysisIntegration:
         else:
             assert count_by_branch.loc["branch2", "analysis_basis"][0] == "enrollments"
             assert count_by_branch.loc["branch2", "analysis_basis"][1] == "exposures"
+
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
+            )
+            is not None
+        )
+
+    def test_metrics_with_exposure(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        )
+
+        config = AnalysisSpec().resolve(experiment)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expr=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+            analysis_bases=[AnalysisBasis.EXPOSURES],
+        )
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        config.experiment.exposure_signal = ExposureSignal(
+            name="ad_exposure",
+            data_source=mozanalysis.metrics.desktop.search_clients_daily,
+            select_expression="ad_click > 0",
+            friendly_name="Ad exposure",
+            description="Clients have clicked on ad",
+            window_start="enrollment_start",
+            window_end="analysis_window_end",
+        )
+
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+
+        query_job = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_week_1`
+            ORDER BY enrollment_date DESC
+        """
+        )
+
+        expected_metrics_results = [
+            {
+                "client_id": "bbbb",
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+            {
+                "client_id": "aaaa",
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+        ]
+
+        r = query_job.result()
+
+        for i, row in enumerate(r):
+            for k, v in expected_metrics_results[i].items():
+                assert row[k] == v
+
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.test_experiment_exposures_weekly"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            )
+            is not None
+        )
 
         assert (
             client.client.get_table(
