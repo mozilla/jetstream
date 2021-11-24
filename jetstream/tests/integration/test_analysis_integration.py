@@ -219,8 +219,8 @@ class TestAnalysisIntegration:
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
         config.experiment.exposure_signal = ExposureSignal(
             name="ad_exposure",
-            data_source=mozanalysis.metrics.desktop.search_clients_daily,
-            select_expression="ad_click > 0",
+            data_source=test_clients_daily,
+            select_expression="active_hours_sum > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
             window_start="enrollment_start",
