@@ -48,6 +48,7 @@ class ExposureSignal:
     def to_mozanalysis_exposure_signal(
         self, time_limits: mozanalysis.experiment.TimeLimits
     ) -> mozanalysis.exposure.ExposureSignal:
+        """Converts the Jetstream `ExposureSignal` to the corresponding mozanalysis instance."""
         window_start = self._window_limit_to_int(self.window_start, time_limits)
         window_end = self._window_limit_to_int(self.window_end, time_limits)
 
@@ -64,6 +65,12 @@ class ExposureSignal:
     def _window_limit_to_int(
         self, window_limit: WindowLimit, time_limits: mozanalysis.experiment.TimeLimits
     ):
+        """
+        Convert the `WindowLimit` to an integer value representing the window.
+
+        These window values are representing the number of days before or after the
+        first enrollment date.
+        """
         last_enrollment_date = datetime.strptime(time_limits.last_enrollment_date, "%Y-%m-%d")
         first_enrollment_date = datetime.strptime(time_limits.first_enrollment_date, "%Y-%m-%d")
         num_dates_enrollment = abs(last_enrollment_date - first_enrollment_date).days
