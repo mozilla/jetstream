@@ -413,12 +413,16 @@ class Analysis:
                 SELECT '00000' AS client_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
-                    DATE('2020-01-01') AS exposure_date
+                    DATE('2020-01-01') AS exposure_date,
+                    1 AS num_enrollment_events,
+                    1 AS num_exposure_events
                 UNION ALL
                 SELECT '00000' AS client_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
-                    DATE('2020-01-01') AS exposure_date
+                    DATE('2020-01-01') AS exposure_date,
+                    1 AS num_enrollment_events,
+                    1 AS num_exposure_events
             ), analysis_windows AS (""",
         )
 
