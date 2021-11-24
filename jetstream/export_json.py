@@ -60,8 +60,9 @@ def _export_table(
         f"""
         SELECT *
         FROM {dataset_id}.{table}
+        WHERE analysis_basis = 'enrollments'
     """
-    )
+    )  # todo: once experimenter supports different analysis_bases, remove filter
 
     job.result()
 
