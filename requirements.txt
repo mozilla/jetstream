@@ -122,9 +122,9 @@ flake8==4.0.1 \
     # via
     #   -r requirements.in
     #   pytest-flake8
-fsspec==2021.11.0 \
-    --hash=sha256:8843f31c7a7bb1afc4add371948f10701814594d407ee1b0bb4facec8b517efa \
-    --hash=sha256:cbb7bafd59aa33684a92e843877f4adc0109fb0722b1a26e7d08f5a6e2500904
+fsspec==2021.11.1 \
+    --hash=sha256:03683e606651d5e4bd9180525d57477bd5430e5dc68d2e459835dc14cecc3dd4 \
+    --hash=sha256:bcb136caa37e1470dd8314a7d3917cb9b25dd9da44c10d36df556ab4ef038185
     # via
     #   -r requirements.in
     #   dask
@@ -1077,7 +1077,6 @@ typing-extensions==4.0.0 \
     # via
     #   -r requirements.in
     #   black
-    #   gitpython
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1100,10 +1099,6 @@ zict==2.0.0 \
     # via
     #   -r requirements.in
     #   distributed
-zipp==3.6.0 \
-    --hash=sha256:71c644c5369f4a6e07636f0aa966270449561fcea2e3d6747b8d23efaa9d7832 \
-    --hash=sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc
-    # via importlib-resources
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.

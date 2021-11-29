@@ -42,7 +42,7 @@ distributed==2021.11.2
     # via dask
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2021.11.0
+fsspec==2021.11.1
     # via dask
 gitdb==4.0.9
     # via gitpython
