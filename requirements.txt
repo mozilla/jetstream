@@ -1059,9 +1059,9 @@ types-pyyaml==6.0.1 \
     --hash=sha256:2e27b0118ca4248a646101c5c318dc02e4ca2866d6bc42e84045dbb851555a76 \
     --hash=sha256:d5b318269652e809b5c30a5fe666c50159ab80bfd41cd6bafe655bf20b29fcba
     # via -r requirements.in
-types-requests==2.26.0 \
-    --hash=sha256:809b5dcd3c408ac39d11d593835b6aff32420b3e7ddb79c7f3e823330f040466 \
-    --hash=sha256:df5ec8c34b413a42ebb38e4f96bdeb68090b875bdfcc5138dc82989c95445883
+types-requests==2.26.1 \
+    --hash=sha256:0893e112e1510bbb67f537941c92192de7472e51bf7f236e0e583866f0ed933e \
+    --hash=sha256:853571b3accc188976c0f4feffcaebf6cdfc170082b5e43f3358aa78de61f531
     # via -r requirements.in
 types-six==1.16.2 \
     --hash=sha256:606dd8c7edff3100fae8277c270e65285e5cdb6a7819c0b1ea6a8973690e68da \
@@ -1077,7 +1077,6 @@ typing-extensions==4.0.0 \
     # via
     #   -r requirements.in
     #   black
-    #   gitpython
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1100,10 +1099,6 @@ zict==2.0.0 \
     # via
     #   -r requirements.in
     #   distributed
-zipp==3.6.0 \
-    --hash=sha256:71c644c5369f4a6e07636f0aa966270449561fcea2e3d6747b8d23efaa9d7832 \
-    --hash=sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc
-    # via importlib-resources
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
