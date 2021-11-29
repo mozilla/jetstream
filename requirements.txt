@@ -1051,9 +1051,9 @@ types-protobuf==3.18.1 \
     --hash=sha256:364f6437238a99a2f868bc60777c6a149d8540c902e4dba581ad71e5687735c8 \
     --hash=sha256:6696bf3cabc51dcc076e8de025c405dbdea7488c5268c2febd14527dac82c233
     # via -r requirements.in
-types-pytz==2021.3.0 \
-    --hash=sha256:86a61967834dceeaaf98b6902ed8357efdd262bb8afcaf4bc8ccecf748592778 \
-    --hash=sha256:b5027e5de50a4c978cd60ca16849d934d44c44ebd7d29cf13ada009efaa9feef
+types-pytz==2021.3.1 \
+    --hash=sha256:d58a0688094b768d8e21c044e45861cbcaecba0494fd5b9c5feb3e1739211606 \
+    --hash=sha256:dffd77f3efecd3b1555f187a9bf3a638d55fac296700b829c41bd51ec72a6eb7
     # via -r requirements.in
 types-pyyaml==6.0.1 \
     --hash=sha256:2e27b0118ca4248a646101c5c318dc02e4ca2866d6bc42e84045dbb851555a76 \
@@ -1077,7 +1077,6 @@ typing-extensions==4.0.0 \
     # via
     #   -r requirements.in
     #   black
-    #   gitpython
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1100,10 +1099,6 @@ zict==2.0.0 \
     # via
     #   -r requirements.in
     #   distributed
-zipp==3.6.0 \
-    --hash=sha256:71c644c5369f4a6e07636f0aa966270449561fcea2e3d6747b8d23efaa9d7832 \
-    --hash=sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc
-    # via importlib-resources
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
