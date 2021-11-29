@@ -19,7 +19,7 @@ cattrs==1.8.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
-charset-normalizer==2.0.7
+charset-normalizer==2.0.8
     # via requests
 click==8.0.3
     # via
@@ -30,7 +30,7 @@ cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.1.2
+coverage[toml]==6.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
@@ -42,7 +42,7 @@ distributed==2021.11.2
     # via dask
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2021.11.0
+fsspec==2021.11.1
     # via dask
 gitdb==4.0.9
     # via gitpython
@@ -117,7 +117,7 @@ jinja2==3.0.3
     #   mozilla-jetstream
 jsonschema==4.2.1
     # via mozilla-jetstream
-libcst==0.3.22
+libcst==0.3.23
     # via
     #   google-cloud-bigquery-storage
     #   google-cloud-container
@@ -130,7 +130,7 @@ mccabe==0.6.1
 mozanalysis==2021.11.2
     # via mozilla-jetstream
     # via -r -
-msgpack==1.0.2
+msgpack==1.0.3
     # via distributed
 mypy==0.910
     # via mozilla-jetstream
@@ -235,9 +235,9 @@ requests==2.26.0
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   mozilla-jetstream
-rsa==4.7.2
+rsa==4.8
     # via google-auth
-scipy==1.7.2
+scipy==1.7.3
     # via
     #   mozanalysis
     #   statsmodels
@@ -281,15 +281,15 @@ types-futures==3.3.1
     #   types-protobuf
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==3.18.1
+types-protobuf==3.18.2
     # via mozilla-jetstream
-types-pytz==2021.3.0
+types-pytz==2021.3.1
     # via mozilla-jetstream
 types-pyyaml==6.0.1
     # via mozilla-jetstream
-types-requests==2.26.0
+types-requests==2.26.1
     # via mozilla-jetstream
-types-six==1.16.2
+types-six==1.16.3
     # via mozilla-jetstream
 types-toml==0.10.1
     # via mozilla-jetstream
