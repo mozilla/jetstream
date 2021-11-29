@@ -19,7 +19,7 @@ cattrs==1.8.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
-charset-normalizer==2.0.7
+charset-normalizer==2.0.8
     # via requests
 click==8.0.3
     # via
