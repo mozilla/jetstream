@@ -11,7 +11,7 @@ attrs==21.2.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==21.11b1
+black==21.12b0
     # via pytest-black
 cachetools==4.2.4
     # via google-auth
@@ -19,7 +19,7 @@ cattrs==1.8.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
-charset-normalizer==2.0.8
+charset-normalizer==2.0.9
     # via requests
 click==8.0.3
     # via
@@ -34,7 +34,7 @@ coverage[toml]==6.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask==2021.11.2
+dask[distributed]==2021.11.2
     # via
     #   distributed
     #   mozilla-jetstream
@@ -60,7 +60,7 @@ google-auth==2.3.3
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.30.1
+google-cloud-bigquery==2.31.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -106,7 +106,7 @@ heapdict==1.0.1
 idna==3.3
     # via requests
 importlib-resources==5.4.0
-    # via -r -
+    # via jsonschema
 iniconfig==1.1.1
     # via pytest
 isort==5.10.1
@@ -227,8 +227,6 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-regex==2021.11.10
-    # via black
 requests==2.26.0
     # via
     #   google-api-core
@@ -293,7 +291,7 @@ types-six==1.16.3
     # via mozilla-jetstream
 types-toml==0.10.1
     # via mozilla-jetstream
-typing-extensions==4.0.0
+typing-extensions==4.0.1
     # via
     #   black
     #   gitpython
@@ -306,6 +304,8 @@ urllib3==1.26.7
     # via requests
 zict==2.0.0
     # via distributed
+zipp==3.6.0
+    # via importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
