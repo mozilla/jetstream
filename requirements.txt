@@ -13,9 +13,9 @@ attrs==21.2.0 \
     #   jsonschema
     #   mozanalysis
     #   pytest
-black==21.11b1 \
-    --hash=sha256:802c6c30b637b28645b7fde282ed2569c0cd777dbe493a41b6a03c1d903f99ac \
-    --hash=sha256:a042adbb18b3262faad5aff4e834ff186bb893f95ba3a8013f09de1e5569def2
+black==21.12b0 \
+    --hash=sha256:77b80f693a569e2e527958459634f18df9b0ba2625ba4e0c2d5da5be42e6f2b3 \
+    --hash=sha256:a615e69ae185e08fdd73e4715e260e2479c861b5740057fde6e8b4e3b7dd589f
     # via
     #   -r requirements.in
     #   pytest-black
@@ -877,9 +877,7 @@ regex==2021.11.10 \
     --hash=sha256:fa8c626d6441e2d04b6ee703ef2d1e17608ad44c7cb75258c09dd42bacdfc64b \
     --hash=sha256:fbb9dc00e39f3e6c0ef48edee202f9520dafb233e8b51b06b8428cfcb92abd30 \
     --hash=sha256:fff55f3ce50a3ff63ec8e2a8d3dd924f1941b250b0aac3d3d42b687eeff07a8e
-    # via
-    #   -r requirements.in
-    #   black
+    # via -r requirements.in
 requests==2.26.0 \
     --hash=sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24 \
     --hash=sha256:b8aa58f8cf793ffd8782d3d8cb19e66ef36f7aba4353eec859e74678b01b07a7
@@ -1089,7 +1087,6 @@ typing-extensions==4.0.0 \
     # via
     #   -r requirements.in
     #   black
-    #   gitpython
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1112,10 +1109,6 @@ zict==2.0.0 \
     # via
     #   -r requirements.in
     #   distributed
-zipp==3.6.0 \
-    --hash=sha256:71c644c5369f4a6e07636f0aa966270449561fcea2e3d6747b8d23efaa9d7832 \
-    --hash=sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc
-    # via importlib-resources
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
