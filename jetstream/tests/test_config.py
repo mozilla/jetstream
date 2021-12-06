@@ -10,7 +10,13 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import PLATFORM_CONFIGS, AnalysisWindow
+from jetstream.config import (
+    CONFIG_DIRECTORY,
+    PLATFORM_CONFIGS,
+    AnalysisWindow,
+    Platform,
+    _generate_platform_config,
+)
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
@@ -874,3 +880,90 @@ class TestOutcomes:
 
         with pytest.raises(ValueError):
             spec.resolve(experiment)
+
+
+class TestGeneratePlatformConfig:
+    """
+    Test cases for checking that platform configuration objects are generated correctly
+    """
+
+    config_path = CONFIG_DIRECTORY / "default_metrics.toml"
+
+    @pytest.mark.parametrize(
+        "test_input,expected",
+        [
+            (
+                {
+                    "firefox_desktop": {
+                        "config_spec_path": config_path,
+                        "metrics_module": mozanalysis.metrics.desktop,
+                        "segments_module": mozanalysis.segments.desktop,
+                        "enrollments_query_type": "normandy",
+                        "validation_app_id": "firefox-desktop",
+                    }
+                },
+                {
+                    "firefox_desktop": Platform(
+                        config_spec_path=config_path,
+                        metrics_module=mozanalysis.metrics.desktop,
+                        segments_module=mozanalysis.segments.desktop,
+                        enrollments_query_type="normandy",
+                        validation_app_id="firefox-desktop",
+                    )
+                },
+            ),
+            (
+                {
+                    "firefox_desktop": {
+                        "config_spec_path": config_path,
+                        "enrollments_query_type": "normandy",
+                        "validation_app_id": "firefox-desktop",
+                    }
+                },
+                {
+                    "firefox_desktop": Platform(
+                        config_spec_path=config_path,
+                        metrics_module=None,
+                        segments_module=None,
+                        enrollments_query_type="normandy",
+                        validation_app_id="firefox-desktop",
+                    )
+                },
+            ),
+            (
+                {
+                    "firefox_desktop": {
+                        "config_spec_path": config_path,
+                        "metrics_module": mozanalysis.metrics.desktop,
+                        "segments_module": None,
+                        "enrollments_query_type": "normandy",
+                        "validation_app_id": "firefox-desktop",
+                    },
+                    "dummy_app": {
+                        "config_spec_path": config_path,
+                        "enrollments_query_type": "Normandy-class SR",
+                        "validation_app_id": "EDI",
+                    },
+                },
+                {
+                    "firefox_desktop": Platform(
+                        config_spec_path=config_path,
+                        metrics_module=mozanalysis.metrics.desktop,
+                        segments_module=None,
+                        enrollments_query_type="normandy",
+                        validation_app_id="firefox-desktop",
+                    ),
+                    "dummy_app": Platform(
+                        config_spec_path=config_path,
+                        metrics_module=None,
+                        segments_module=None,
+                        enrollments_query_type="Normandy-class SR",
+                        validation_app_id="EDI",
+                    ),
+                },
+            ),
+        ],
+    )
+    def test_generate_platform_config(self, test_input, expected):
+        actual = _generate_platform_config(test_input)
+        assert actual == expected

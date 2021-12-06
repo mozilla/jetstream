@@ -62,64 +62,77 @@ if TYPE_CHECKING:
 @attr.s(auto_attribs=True)
 class Platform:
     config_spec_path: PathLike
-    metrics_module: Optional[ModuleType]
-    segments_module: Optional[ModuleType]
     enrollments_query_type: str
     # app_id to use to validate Outcomes.
     validation_app_id: str
+    metrics_module: Optional[ModuleType] = attr.ib(default=None)
+    segments_module: Optional[ModuleType] = attr.ib(default=None)
 
 
-PLATFORM_CONFIGS = {
-    "firefox_desktop": Platform(
-        Path(__file__).parent / "config" / "default_metrics.toml",
-        mozanalysis.metrics.desktop,
-        mozanalysis.segments.desktop,
-        "normandy",
-        "firefox-desktop",
-    ),
-    "fenix": Platform(
-        Path(__file__).parent / "config" / "fenix.toml",
-        mozanalysis.metrics.fenix,
-        None,
-        "glean-event",
-        "org.mozilla.fenix",
-    ),
-    "firefox_ios": Platform(
-        Path(__file__).parent / "config" / "firefox_ios.toml",
-        mozanalysis.metrics.firefox_ios,
-        None,
-        "glean-event",
-        "org.mozilla.ios.FirefoxBeta",
-    ),
-    "focus_android": Platform(
-        Path(__file__).parent / "config" / "focus_android.toml",
-        mozanalysis.metrics.focus_android,
-        None,
-        "glean-event",
-        "org.mozilla.focus",
-    ),
-    "klar_android": Platform(
-        Path(__file__).parent / "config" / "klar_android.toml",
-        mozanalysis.metrics.klar_android,
-        None,
-        "glean-event",
-        "org.mozilla.klar",
-    ),
-    "focus_ios": Platform(
-        Path(__file__).parent / "config" / "focus_ios.toml",
-        mozanalysis.metrics.focus_ios,
-        None,
-        "glean-event",
-        "org.mozilla.ios.Focus",
-    ),
-    "klar_ios": Platform(
-        Path(__file__).parent / "config" / "klar_ios.toml",
-        mozanalysis.metrics.klar_ios,
-        None,
-        "glean-event",
-        "org.mozilla.ios.Klar",
-    ),
+# TODO: the below two vars can now be extracted into a separate config file
+CONFIG_DIRECTORY = Path(__file__).parent / "config"
+PLATFORM_CONFIGS_RAW = {  # TODO: after it will be extracted into a separate toml file
+    "firefox_desktop": {
+        "config_spec_path": CONFIG_DIRECTORY / "default_metrics.toml",
+        "metrics_module": mozanalysis.metrics.desktop,
+        "segments_module": mozanalysis.segments.desktop,
+        "enrollments_query_type": "normandy",
+        "validation_app_id": "firefox-desktop",
+    },
+    "fenix": {
+        "config_spec_path": CONFIG_DIRECTORY / "fenix.toml",
+        "metrics_module": mozanalysis.metrics.fenix,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.fenix",
+    },
+    "firefox_ios": {
+        "config_spec_path": CONFIG_DIRECTORY / "firefox_ios.toml",
+        "metrics_module": mozanalysis.metrics.firefox_ios,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.ios.FirefoxBeta",
+    },
+    "focus_android": {
+        "config_spec_path": CONFIG_DIRECTORY / "focus_android.toml",
+        "metrics_module": mozanalysis.metrics.focus_android,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.focus",
+    },
+    "klar_android": {
+        "config_spec_path": CONFIG_DIRECTORY / "klar_android.toml",
+        "metrics_module": mozanalysis.metrics.klar_android,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.klar",
+    },
+    "focus_ios": {
+        "config_spec_path": CONFIG_DIRECTORY / "focus_ios.toml",
+        "metrics_module": mozanalysis.metrics.focus_ios,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.ios.Focus",
+    },
+    "klar_ios": {
+        "config_spec_path": CONFIG_DIRECTORY / "klar_ios.toml",
+        "metrics_module": mozanalysis.metrics.klar_ios,
+        "segments_module": None,
+        "enrollments_query_type": "glean-event",
+        "validation_app_id": "org.mozilla.ios.Klar",
+    },
 }
+
+
+def _generate_platform_config(config: Dict[str, Dict[str, Any]]) -> Dict[str, Platform]:
+    """
+    Takes platform configuration and generates platform object map
+    """
+
+    return {key: Platform(**val) for key, val in config.items()}
+
+
+PLATFORM_CONFIGS = _generate_platform_config(PLATFORM_CONFIGS_RAW)
 
 TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
 
