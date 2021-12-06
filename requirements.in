@@ -60,7 +60,7 @@ google-auth==2.3.3
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.30.1
+google-cloud-bigquery==2.31.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
