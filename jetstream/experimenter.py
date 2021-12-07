@@ -199,10 +199,15 @@ class ExperimentCollection:
     # for nimbus experiments
     EXPERIMENTER_API_URL_V6 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
 
+    # user agent sent to the Experimenter API
+    USER_AGENT = "jetstream"
+
     @classmethod
     def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
         session = session or requests.Session()
-        legacy_experiments_json = retry_get(session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES)
+        legacy_experiments_json = retry_get(
+            session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES, cls.USER_AGENT
+        )
         legacy_experiments = []
 
         for experiment in legacy_experiments_json:
@@ -212,7 +217,9 @@ class ExperimentCollection:
                 except Exception as e:
                     logger.exception(str(e), exc_info=e, extra={"experiment": experiment["slug"]})
 
-        nimbus_experiments_json = retry_get(session, cls.EXPERIMENTER_API_URL_V6, cls.MAX_RETRIES)
+        nimbus_experiments_json = retry_get(
+            session, cls.EXPERIMENTER_API_URL_V6, cls.MAX_RETRIES, cls.USER_AGENT
+        )
         nimbus_experiments = []
 
         for experiment in nimbus_experiments_json:
