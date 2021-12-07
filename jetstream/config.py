@@ -20,7 +20,9 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
+import importlib
 import logging
+import os
 from inspect import isabstract
 from os import PathLike
 from pathlib import Path
@@ -42,16 +44,7 @@ import cattr
 import jinja2
 import mozanalysis.experiment
 import mozanalysis.exposure
-import mozanalysis.metrics
-import mozanalysis.metrics.desktop
-import mozanalysis.metrics.fenix
-import mozanalysis.metrics.firefox_ios
-import mozanalysis.metrics.focus_android
-import mozanalysis.metrics.focus_ios
-import mozanalysis.metrics.klar_android
-import mozanalysis.metrics.klar_ios
-import mozanalysis.segments
-import mozanalysis.segments.desktop
+
 import pytz
 import toml
 from jinja2 import StrictUndefined
@@ -63,6 +56,7 @@ from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
 from . import AnalysisPeriod
+
 
 if TYPE_CHECKING:
     import jetstream.experimenter
@@ -84,40 +78,73 @@ PARENT_DIR = Path(__file__).parent
 CONFIG_DIRECTORY = PARENT_DIR / "config"
 
 
+def get_modules(package_name: str, namespace: str) -> List[str]:
+    module_extensions = (".py", ".pyc", ".pyo")
+
+    _package = importlib.util.find_spec("mozanalysis." + namespace)
+
+    if not _package:
+        raise ImportError("Not a package: %r", package_name)
+
+    # Use a set because some may be both source and compiled.
+    return list(
+        set(
+            [
+                os.path.splitext(module)[0]
+                for module in os.listdir(os.path.dirname(str(_package.origin)))
+                if (module.endswith(module_extensions) and not module.endswith("__init__.py"))
+            ]
+        )
+    )
+
+
+def load_modules(package_name: str, namespace: str, modules: list) -> Dict[str, ModuleType]:
+    return {
+        f"{package_name}.{namespace}.{module}": importlib.import_module(
+            f"{package_name}.{namespace}.{module}"
+        )
+        for module in modules
+    }
+
+
 def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
     """
     Takes platform configuration and generates platform object map
     """
 
-    _module_mapping_metrics = {
-        "mozanalysis.metrics.desktop": mozanalysis.metrics.desktop,
-        "mozanalysis.metrics.fenix": mozanalysis.metrics.fenix,
-        "mozanalysis.metrics.focus_android": mozanalysis.metrics.focus_android,
-        "mozanalysis.metrics.klar_android": mozanalysis.metrics.klar_android,
-        "mozanalysis.metrics.firefox_ios": mozanalysis.metrics.firefox_ios,
-        "mozanalysis.metrics.focus_ios": mozanalysis.metrics.focus_ios,
-        "mozanalysis.metrics.klar_ios": mozanalysis.metrics.klar_ios,
-        "None": None,
-        "none": None,
-        None: None,
-    }
+    valid_modules_segments = get_modules(package_name="mozanalysis", namespace="segments")
+    loaded_modules_segments = load_modules(
+        package_name="mozanalysis", namespace="segments", modules=valid_modules_segments
+    )
 
-    _module_mapping_segment = {
-        "mozanalysis.segments.desktop": mozanalysis.segments.desktop,
-        "None": None,
-        "none": None,
-        None: None,
-    }
+    valid_modules_metrics = get_modules(package_name="mozanalysis", namespace="metrics")
+    loaded_modules_metrics = load_modules(
+        package_name="mozanalysis", namespace="metrics", modules=valid_modules_metrics
+    )
 
     _valid_entrollments_query_types = (
         "glean-event",
         "normandy",
     )
 
+    _none_values = [
+        "none",
+        "None",
+        None,
+    ]
+
     processed_config = dict()
     _errors = list()
 
     for platform, platform_config in config["platform"].items():
+        if metrics_module := platform_config.get("metrics_module"):
+            if metrics_module not in [*list(loaded_modules_metrics.keys()), *_none_values]:
+                raise Exception()  # TODO: fix up
+
+        if segments_module := platform_config.get("segments_module"):
+            if segments_module not in [*list(loaded_modules_segments.keys()), *_none_values]:
+                raise Exception()  # TODO: fix up
+
         enrollments_query_type = platform_config["enrollments_query_type"]
         if enrollments_query_type not in _valid_entrollments_query_types:
             raise AttributeError(
@@ -133,8 +160,8 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
         try:
             processed_config[platform] = {
                 "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
-                "metrics_module": _module_mapping_metrics[platform_config.get("metrics_module")],
-                "segments_module": _module_mapping_segment[platform_config.get("segments_module")],
+                "metrics_module": loaded_modules_metrics.get(metrics_module),
+                "segments_module": loaded_modules_segments.get(segments_module),
                 "enrollments_query_type": enrollments_query_type,
                 "validation_app_id": platform_config["validation_app_id"],
             }
