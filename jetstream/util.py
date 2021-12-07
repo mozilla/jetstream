@@ -5,7 +5,7 @@ import time
 from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from requests import Session
 
@@ -29,12 +29,18 @@ def inclusive_date_range(start_date, end_date):
         yield start_date + timedelta(n)
 
 
-def retry_get(session: Session, url: str, max_retries: int) -> Any:
+def retry_get(
+    session: Session, url: str, max_retries: int, user_agent: Optional[str] = None
+) -> Any:
     for _i in range(max_retries):
         try:
+            if user_agent:
+                session.headers.update("user-agent", user_agent)
+
             blob = session.get(url).json()
             break
-        except Exception:
+        except Exception as e:
+            print(e)
             logger.info(f"Error fetching from {url}. Retrying...")
             time.sleep(1)
     else:
