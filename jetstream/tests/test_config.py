@@ -887,24 +887,26 @@ class TestGeneratePlatformConfig:
     Test cases for checking that platform configuration objects are generated correctly
     """
 
-    config_path = CONFIG_DIRECTORY / "default_metrics.toml"
+    config_file = "default_metrics.toml"
 
     @pytest.mark.parametrize(
         "test_input,expected",
         [
             (
                 {
-                    "firefox_desktop": {
-                        "config_spec_path": config_path,
-                        "metrics_module": mozanalysis.metrics.desktop,
-                        "segments_module": mozanalysis.segments.desktop,
-                        "enrollments_query_type": "normandy",
-                        "validation_app_id": "firefox-desktop",
+                    "platform": {
+                        "firefox_desktop": {
+                            "config_spec": config_file,
+                            "metrics_module": "mozanalysis.metrics.desktop",
+                            "segments_module": "mozanalysis.segments.desktop",
+                            "enrollments_query_type": "normandy",
+                            "validation_app_id": "firefox-desktop",
+                        }
                     }
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=config_path,
+                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
@@ -914,15 +916,17 @@ class TestGeneratePlatformConfig:
             ),
             (
                 {
-                    "firefox_desktop": {
-                        "config_spec_path": config_path,
-                        "enrollments_query_type": "normandy",
-                        "validation_app_id": "firefox-desktop",
-                    }
+                    "platform": {
+                        "firefox_desktop": {
+                            "config_spec": config_file,
+                            "enrollments_query_type": "normandy",
+                            "validation_app_id": "firefox-desktop",
+                        }
+                    },
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=config_path,
+                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=None,
                         segments_module=None,
                         enrollments_query_type="normandy",
@@ -932,32 +936,34 @@ class TestGeneratePlatformConfig:
             ),
             (
                 {
-                    "firefox_desktop": {
-                        "config_spec_path": config_path,
-                        "metrics_module": mozanalysis.metrics.desktop,
-                        "segments_module": None,
-                        "enrollments_query_type": "normandy",
-                        "validation_app_id": "firefox-desktop",
-                    },
-                    "dummy_app": {
-                        "config_spec_path": config_path,
-                        "enrollments_query_type": "Normandy-class SR",
-                        "validation_app_id": "EDI",
-                    },
+                    "platform": {
+                        "firefox_desktop": {
+                            "config_spec": config_file,
+                            "metrics_module": "mozanalysis.metrics.desktop",
+                            "segments_module": "none",
+                            "enrollments_query_type": "glean-event",
+                            "validation_app_id": "firefox-desktop",
+                        },
+                        "dummy_app": {
+                            "config_spec": config_file,
+                            "enrollments_query_type": "normandy",
+                            "validation_app_id": "EDI",
+                        },
+                    }
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=config_path,
+                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=None,
-                        enrollments_query_type="normandy",
+                        enrollments_query_type="glean-event",
                         validation_app_id="firefox-desktop",
                     ),
                     "dummy_app": Platform(
-                        config_spec_path=config_path,
+                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=None,
                         segments_module=None,
-                        enrollments_query_type="Normandy-class SR",
+                        enrollments_query_type="normandy",
                         validation_app_id="EDI",
                     ),
                 },
@@ -966,4 +972,12 @@ class TestGeneratePlatformConfig:
     )
     def test_generate_platform_config(self, test_input, expected):
         actual = _generate_platform_config(test_input)
+
+        for platform_config in actual.values():
+            assert isinstance(platform_config, Platform)
+
         assert actual == expected
+
+    def test_generate_platform_config_invalid_config(self):
+        # TODO: add tests for exceptions being raised
+        pass

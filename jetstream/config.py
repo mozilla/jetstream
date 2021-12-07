@@ -20,11 +20,22 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
+import logging
 from inspect import isabstract
 from os import PathLike
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import attr
 import cattr
@@ -69,70 +80,84 @@ class Platform:
     segments_module: Optional[ModuleType] = attr.ib(default=None)
 
 
-# TODO: the below two vars can now be extracted into a separate config file
-CONFIG_DIRECTORY = Path(__file__).parent / "config"
-PLATFORM_CONFIGS_RAW = {  # TODO: after it will be extracted into a separate toml file
-    "firefox_desktop": {
-        "config_spec_path": CONFIG_DIRECTORY / "default_metrics.toml",
-        "metrics_module": mozanalysis.metrics.desktop,
-        "segments_module": mozanalysis.segments.desktop,
-        "enrollments_query_type": "normandy",
-        "validation_app_id": "firefox-desktop",
-    },
-    "fenix": {
-        "config_spec_path": CONFIG_DIRECTORY / "fenix.toml",
-        "metrics_module": mozanalysis.metrics.fenix,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.fenix",
-    },
-    "firefox_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "firefox_ios.toml",
-        "metrics_module": mozanalysis.metrics.firefox_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.FirefoxBeta",
-    },
-    "focus_android": {
-        "config_spec_path": CONFIG_DIRECTORY / "focus_android.toml",
-        "metrics_module": mozanalysis.metrics.focus_android,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.focus",
-    },
-    "klar_android": {
-        "config_spec_path": CONFIG_DIRECTORY / "klar_android.toml",
-        "metrics_module": mozanalysis.metrics.klar_android,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.klar",
-    },
-    "focus_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "focus_ios.toml",
-        "metrics_module": mozanalysis.metrics.focus_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.Focus",
-    },
-    "klar_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "klar_ios.toml",
-        "metrics_module": mozanalysis.metrics.klar_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.Klar",
-    },
-}
+PARENT_DIR = Path(__file__).parent
+CONFIG_DIRECTORY = PARENT_DIR / "config"
 
 
-def _generate_platform_config(config: Dict[str, Dict[str, Any]]) -> Dict[str, Platform]:
+def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
     """
     Takes platform configuration and generates platform object map
     """
 
-    return {key: Platform(**val) for key, val in config.items()}
+    _module_mapping_metrics = {
+        "mozanalysis.metrics.desktop": mozanalysis.metrics.desktop,
+        "mozanalysis.metrics.fenix": mozanalysis.metrics.fenix,
+        "mozanalysis.metrics.focus_android": mozanalysis.metrics.focus_android,
+        "mozanalysis.metrics.klar_android": mozanalysis.metrics.klar_android,
+        "mozanalysis.metrics.firefox_ios": mozanalysis.metrics.firefox_ios,
+        "mozanalysis.metrics.focus_ios": mozanalysis.metrics.focus_ios,
+        "mozanalysis.metrics.klar_ios": mozanalysis.metrics.klar_ios,
+        "None": None,
+        "none": None,
+        None: None,
+    }
+
+    _module_mapping_segment = {
+        "mozanalysis.segments.desktop": mozanalysis.segments.desktop,
+        "None": None,
+        "none": None,
+        None: None,
+    }
+
+    _valid_entrollments_query_types = (
+        "glean-event",
+        "normandy",
+    )
+
+    processed_config = dict()
+    _errors = list()
+
+    for platform, platform_config in config["platform"].items():
+        enrollments_query_type = platform_config["enrollments_query_type"]
+        if enrollments_query_type not in _valid_entrollments_query_types:
+            raise AttributeError(
+                "%s is not a valid selection. Valid options are: %s. \
+                    If this is correct please add %s to _valid_entrollments_query_types"
+                % (
+                    enrollments_query_type,
+                    _valid_entrollments_query_types,
+                    _valid_entrollments_query_types,
+                )
+            )
+
+        try:
+            processed_config[platform] = {
+                "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
+                "metrics_module": _module_mapping_metrics[platform_config.get("metrics_module")],
+                "segments_module": _module_mapping_segment[platform_config.get("segments_module")],
+                "enrollments_query_type": enrollments_query_type,
+                "validation_app_id": platform_config["validation_app_id"],
+            }
+        except KeyError as _err:
+            _errors.append(_err)
+            logging.error(
+                "%s is not a valid selection. Please ensure that this \
+                    metric or segment have a mapping defined inside \
+                    _module_mapping_metrics or _module_mapping_segment"
+                % (_err)
+            )
+
+    if _errors:
+        raise AttributeError(
+            "Please ensure that the metric(s) and/or segment(s) have \
+                a mapping defined inside _module_mapping_metrics and/or _module_mapping_segment"
+        )
+
+    return {key: Platform(**val) for key, val in processed_config.items()}
 
 
-PLATFORM_CONFIGS = _generate_platform_config(PLATFORM_CONFIGS_RAW)
+platform_config = toml.load(PARENT_DIR.parent / "platform_config.toml")
+PLATFORM_CONFIGS = _generate_platform_config(platform_config)
 
 TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
 
