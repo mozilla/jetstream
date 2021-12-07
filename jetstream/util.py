@@ -35,7 +35,7 @@ def retry_get(
     for _i in range(max_retries):
         try:
             if user_agent:
-                session.headers.update("user-agent", user_agent)
+                session.headers.update({"user-agent": user_agent})
 
             blob = session.get(url).json()
             break
