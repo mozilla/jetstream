@@ -897,8 +897,8 @@ class TestGeneratePlatformConfig:
                     "platform": {
                         "firefox_desktop": {
                             "config_spec": config_file,
-                            "metrics_module": "mozanalysis.metrics.desktop",
-                            "segments_module": "mozanalysis.segments.desktop",
+                            "metrics_module": "desktop",
+                            "segments_module": "desktop",
                             "enrollments_query_type": "normandy",
                             "validation_app_id": "firefox-desktop",
                         }
@@ -939,7 +939,7 @@ class TestGeneratePlatformConfig:
                     "platform": {
                         "firefox_desktop": {
                             "config_spec": config_file,
-                            "metrics_module": "mozanalysis.metrics.desktop",
+                            "metrics_module": "desktop",
                             "segments_module": "none",
                             "enrollments_query_type": "glean-event",
                             "validation_app_id": "firefox-desktop",

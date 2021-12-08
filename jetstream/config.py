@@ -22,7 +22,6 @@ import copy
 import datetime as dt
 import importlib
 import logging
-import os
 from inspect import isabstract
 from os import PathLike
 from pathlib import Path
@@ -44,6 +43,8 @@ import cattr
 import jinja2
 import mozanalysis.experiment
 import mozanalysis.exposure
+import mozanalysis.metrics
+import mozanalysis.segments
 
 import pytz
 import toml
@@ -78,49 +79,14 @@ PARENT_DIR = Path(__file__).parent
 CONFIG_DIRECTORY = PARENT_DIR / "config"
 
 
-def get_modules(package_name: str, namespace: str) -> List[str]:
-    module_extensions = (".py", ".pyc", ".pyo")
-
-    _package = importlib.util.find_spec("mozanalysis." + namespace)
-
-    if not _package:
-        raise ImportError("Not a package: %r", package_name)
-
-    # Use a set because some may be both source and compiled.
-    return list(
-        set(
-            [
-                os.path.splitext(module)[0]
-                for module in os.listdir(os.path.dirname(str(_package.origin)))
-                if (module.endswith(module_extensions) and not module.endswith("__init__.py"))
-            ]
-        )
-    )
-
-
-def load_modules(package_name: str, namespace: str, modules: list) -> Dict[str, ModuleType]:
-    return {
-        f"{package_name}.{namespace}.{module}": importlib.import_module(
-            f"{package_name}.{namespace}.{module}"
-        )
-        for module in modules
-    }
-
 
 def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
     """
     Takes platform configuration and generates platform object map
     """
 
-    valid_modules_segments = get_modules(package_name="mozanalysis", namespace="segments")
-    loaded_modules_segments = load_modules(
-        package_name="mozanalysis", namespace="segments", modules=valid_modules_segments
-    )
-
-    valid_modules_metrics = get_modules(package_name="mozanalysis", namespace="metrics")
-    loaded_modules_metrics = load_modules(
-        package_name="mozanalysis", namespace="metrics", modules=valid_modules_metrics
-    )
+    valid_modules_metrics = mozanalysis.metrics.__all__
+    valid_modules_segments = mozanalysis.segments.__all__
 
     _valid_entrollments_query_types = (
         "glean-event",
@@ -138,11 +104,13 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
 
     for platform, platform_config in config["platform"].items():
         if metrics_module := platform_config.get("metrics_module"):
-            if metrics_module not in [*list(loaded_modules_metrics.keys()), *_none_values]:
+            if metrics_module in _none_values: metrics_module = None
+            if metrics_module not in [*valid_modules_metrics, *_none_values]:
                 raise Exception()  # TODO: fix up
 
         if segments_module := platform_config.get("segments_module"):
-            if segments_module not in [*list(loaded_modules_segments.keys()), *_none_values]:
+            if segments_module in _none_values: segments_module = None
+            if segments_module not in [*valid_modules_segments, *_none_values]:
                 raise Exception()  # TODO: fix up
 
         enrollments_query_type = platform_config["enrollments_query_type"]
@@ -160,8 +128,8 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
         try:
             processed_config[platform] = {
                 "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
-                "metrics_module": loaded_modules_metrics.get(metrics_module),
-                "segments_module": loaded_modules_segments.get(segments_module),
+                "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}") if metrics_module else None,
+                "segments_module":importlib.import_module(f"mozanalysis.segments.{segments_module}")  if segments_module else None,
                 "enrollments_query_type": enrollments_query_type,
                 "validation_app_id": platform_config["validation_app_id"],
             }
