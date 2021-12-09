@@ -21,7 +21,6 @@ which produce concrete mozanalysis classes when resolved.
 import copy
 import datetime as dt
 import importlib
-import logging
 from inspect import isabstract
 from os import PathLike
 from pathlib import Path
@@ -45,7 +44,6 @@ import mozanalysis.experiment
 import mozanalysis.exposure
 import mozanalysis.metrics
 import mozanalysis.segments
-
 import pytz
 import toml
 from jinja2 import StrictUndefined
@@ -57,7 +55,6 @@ from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
 from . import AnalysisPeriod
-
 
 if TYPE_CHECKING:
     import jetstream.experimenter
@@ -77,7 +74,6 @@ class Platform:
 
 PARENT_DIR = Path(__file__).parent
 CONFIG_DIRECTORY = PARENT_DIR / "config"
-
 
 
 def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
@@ -100,16 +96,17 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
     ]
 
     processed_config = dict()
-    _errors = list()
 
     for platform, platform_config in config["platform"].items():
         if metrics_module := platform_config.get("metrics_module"):
-            if metrics_module in _none_values: metrics_module = None
+            if metrics_module in _none_values:
+                metrics_module = None
             if metrics_module not in [*valid_modules_metrics, *_none_values]:
                 raise Exception()  # TODO: fix up
 
         if segments_module := platform_config.get("segments_module"):
-            if segments_module in _none_values: segments_module = None
+            if segments_module in _none_values:
+                segments_module = None
             if segments_module not in [*valid_modules_segments, *_none_values]:
                 raise Exception()  # TODO: fix up
 
@@ -125,28 +122,17 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
                 )
             )
 
-        try:
-            processed_config[platform] = {
-                "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
-                "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}") if metrics_module else None,
-                "segments_module":importlib.import_module(f"mozanalysis.segments.{segments_module}")  if segments_module else None,
-                "enrollments_query_type": enrollments_query_type,
-                "validation_app_id": platform_config["validation_app_id"],
-            }
-        except KeyError as _err:
-            _errors.append(_err)
-            logging.error(
-                "%s is not a valid selection. Please ensure that this \
-                    metric or segment have a mapping defined inside \
-                    _module_mapping_metrics or _module_mapping_segment"
-                % (_err)
-            )
-
-    if _errors:
-        raise AttributeError(
-            "Please ensure that the metric(s) and/or segment(s) have \
-                a mapping defined inside _module_mapping_metrics and/or _module_mapping_segment"
-        )
+        processed_config[platform] = {
+            "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
+            "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}")
+            if metrics_module
+            else None,
+            "segments_module": importlib.import_module(f"mozanalysis.segments.{segments_module}")
+            if segments_module
+            else None,
+            "enrollments_query_type": enrollments_query_type,
+            "validation_app_id": platform_config["validation_app_id"],
+        }
 
     return {key: Platform(**val) for key, val in processed_config.items()}
 
