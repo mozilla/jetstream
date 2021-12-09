@@ -9,6 +9,7 @@ enrollments_query_type = "normandy"
 validation_app_id = "firefox-desktop"
 
 
+# Android platforms configuration
 [platform.fenix]
 config_spec = "fenix.toml"
 metrics_module = "fenix"
@@ -16,8 +17,6 @@ segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.fenix"
 
-
-# Android platforms configuration
 [platform.focus_android]
 config_spec = "focus_android.toml"
 metrics_module = "focus_android"
