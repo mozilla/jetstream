@@ -40,10 +40,9 @@ from typing import (
 import attr
 import cattr
 import jinja2
+import mozanalysis
 import mozanalysis.experiment
 import mozanalysis.exposure
-import mozanalysis.metrics
-import mozanalysis.segments
 import pytz
 import toml
 from jinja2 import StrictUndefined
@@ -81,8 +80,14 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
     Takes platform configuration and generates platform object map
     """
 
-    valid_modules_metrics = mozanalysis.metrics.__all__
-    valid_modules_segments = mozanalysis.segments.__all__
+    valid_modules_metrics = [
+        metric.split(".")[-1]
+        for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
+    ]
+    valid_modules_segments = [
+        segment.split(".")[-1]
+        for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
+    ]
 
     _valid_entrollments_query_types = (
         "glean-event",
