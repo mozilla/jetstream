@@ -15,6 +15,7 @@ from jetstream.config import (
     PLATFORM_CONFIGS,
     AnalysisWindow,
     Platform,
+    PlatformConfigurationException,
     _generate_platform_config,
 )
 from jetstream.experimenter import Experiment
@@ -896,7 +897,7 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec": config_file,
+                            "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "desktop",
                             "enrollments_query_type": "normandy",
@@ -918,7 +919,7 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec": config_file,
+                            "config_spec_path": config_file,
                             "enrollments_query_type": "normandy",
                             "validation_app_id": "firefox-desktop",
                         }
@@ -938,14 +939,14 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec": config_file,
+                            "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "none",
                             "enrollments_query_type": "glean-event",
                             "validation_app_id": "firefox-desktop",
                         },
                         "dummy_app": {
-                            "config_spec": config_file,
+                            "config_spec_path": config_file,
                             "enrollments_query_type": "normandy",
                             "validation_app_id": "EDI",
                         },
@@ -978,6 +979,71 @@ class TestGeneratePlatformConfig:
 
         assert actual == expected
 
-    def test_generate_platform_config_invalid_config(self):
-        # TODO: add tests for exceptions being raised
-        pass
+    @pytest.mark.parametrize(
+        "test_input",
+        [
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "metrics_module": "desktop",
+                        "segments_module": "none",
+                        "enrollments_query_type": "glean-event",
+                        "validation_app_id": "firefox-desktop",
+                    },
+                }
+            },
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "config_spec_path": config_file,
+                        "validation_app_id": "firefox-desktop",
+                    },
+                }
+            },
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "config_spec_path": config_file,
+                        "metrics_module": "desktop",
+                        "segments_module": "none",
+                        "enrollments_query_type": "glean-event",
+                    },
+                }
+            },
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "config_spec_path": config_file,
+                        "metrics_module": "desktop",
+                        "segments_module": "desktop",
+                        "enrollments_query_type": "N7",
+                        "validation_app_id": "firefox-desktop",
+                    },
+                }
+            },
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "config_spec_path": config_file,
+                        "metrics_module": "random_module_name",
+                        "segments_module": "desktop",
+                        "enrollments_query_type": "N7",
+                        "validation_app_id": "firefox-desktop",
+                    },
+                }
+            },
+            {
+                "platform": {
+                    "firefox_desktop": {
+                        "config_spec_path": config_file,
+                        "segments_module": "random_segment",
+                        "enrollments_query_type": "N7",
+                        "validation_app_id": "firefox-desktop",
+                    },
+                }
+            },
+        ],
+    )
+    def test_generate_platform_config_invalid_config(self, test_input):
+        with pytest.raises(PlatformConfigurationException):
+            _generate_platform_config(test_input)

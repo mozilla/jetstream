@@ -23,7 +23,7 @@ import datetime as dt
 import importlib
 from inspect import isabstract
 from os import PathLike
-from pathlib import Path
+from pathlib import Path, PosixPath
 from types import ModuleType
 from typing import (
     TYPE_CHECKING,
@@ -43,6 +43,7 @@ import jinja2
 import mozanalysis
 import mozanalysis.experiment
 import mozanalysis.exposure
+import mozanalysis.segments
 import pytz
 import toml
 from jinja2 import StrictUndefined
@@ -61,14 +62,101 @@ if TYPE_CHECKING:
     from .external_config import ExternalConfigCollection
 
 
+class PlatformConfigurationException(Exception):
+    pass
+
+
 @attr.s(auto_attribs=True)
 class Platform:
-    config_spec_path: PathLike
-    enrollments_query_type: str
+    VALID_MODULES_METRICS = [
+        f"mozanalysis.{metric}"
+        for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
+    ]
+
+    VALID_MODULES_SEGMENTS = [
+        f"mozanalysis.{segment}"
+        for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
+    ]
+
+    def _check_value_not_null(self, attribute, value):
+        if not value and str(value).lower() == "none":
+            raise PlatformConfigurationException(
+                "'%s' attribute requires a value, please double check \
+                    platform configuration file. Value provided: %s"
+                % (attribute.name, str(value))
+            )
+
+    def validate_config_spec_path(self, attribute, value):
+        if type(value) != PosixPath:
+            raise PlatformConfigurationException(
+                "'%s' attribute contains invalid type. Type required: %s, got: %s"
+                % (attribute.name, "pathlib.PosixPath", type(value))
+            )
+
+        self._check_value_not_null(attribute, value)
+
+        return value
+
+    def validate_enrollments_query_type(self, attribute, value):
+        self._check_value_not_null(attribute, value)
+
+        valid_entrollments_query_types = (
+            "glean-event",
+            "normandy",
+        )
+
+        if value not in valid_entrollments_query_types:
+            raise PlatformConfigurationException(
+                "Invalid value provided for %s, value provided: %s. Valid options are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    valid_entrollments_query_types,
+                )
+            )
+
+        return value
+
+    def validate_metrics_module(self, attribute, value):
+        if not value or str(value).lower() == "none":
+            return
+
+        if value.__name__ not in self.VALID_MODULES_METRICS:
+            raise PlatformConfigurationException(
+                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    self.VALID_MODULES_METRICS,
+                )
+            )
+
+        return value
+
+    def validate_segments_module(self, attribute, value):
+        if not value or str(value).lower() == "none":
+            return
+
+        if value.__name__ not in self.VALID_MODULES_SEGMENTS:
+            raise PlatformConfigurationException(
+                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    self.VALID_MODULES_SEGMENTS,
+                )
+            )
+
+        return value
+
+    config_spec_path: PathLike = attr.ib(validator=validate_config_spec_path)
+    enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
     # app_id to use to validate Outcomes.
-    validation_app_id: str
-    metrics_module: Optional[ModuleType] = attr.ib(default=None)
-    segments_module: Optional[ModuleType] = attr.ib(default=None)
+    validation_app_id: str = attr.ib(validator=_check_value_not_null)
+    metrics_module: Optional[ModuleType] = attr.ib(default=None, validator=validate_metrics_module)
+    segments_module: Optional[ModuleType] = attr.ib(
+        default=None, validator=validate_segments_module
+    )
 
 
 PARENT_DIR = Path(__file__).parent
@@ -80,66 +168,36 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
     Takes platform configuration and generates platform object map
     """
 
-    valid_modules_metrics = [
-        metric.split(".")[-1]
-        for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
-    ]
-    valid_modules_segments = [
-        segment.split(".")[-1]
-        for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
-    ]
-
-    _valid_entrollments_query_types = (
-        "glean-event",
-        "normandy",
-    )
-
-    _none_values = [
-        "none",
-        "None",
-        None,
-    ]
-
     processed_config = dict()
 
     for platform, platform_config in config["platform"].items():
-        if metrics_module := platform_config.get("metrics_module"):
-            if metrics_module in _none_values:
-                metrics_module = None
-            if metrics_module not in [*valid_modules_metrics, *_none_values]:
-                raise Exception()  # TODO: fix up
+        config_spec_path = platform_config.get("config_spec_path")
+        metrics_module = platform_config.get("metrics_module")
+        segments_module = platform_config.get("segments_module")
 
-        if segments_module := platform_config.get("segments_module"):
-            if segments_module in _none_values:
-                segments_module = None
-            if segments_module not in [*valid_modules_segments, *_none_values]:
-                raise Exception()  # TODO: fix up
-
-        enrollments_query_type = platform_config["enrollments_query_type"]
-        if enrollments_query_type not in _valid_entrollments_query_types:
-            raise AttributeError(
-                "%s is not a valid selection. Valid options are: %s. \
-                    If this is correct please add %s to _valid_entrollments_query_types"
-                % (
-                    enrollments_query_type,
-                    _valid_entrollments_query_types,
-                    _valid_entrollments_query_types,
+        try:
+            processed_config[platform] = {
+                "config_spec_path": CONFIG_DIRECTORY / config_spec_path
+                if config_spec_path and str(config_spec_path).lower() != "none"
+                else None,
+                "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}")
+                if metrics_module and metrics_module.lower() != "none"
+                else None,
+                "segments_module": importlib.import_module(
+                    f"mozanalysis.segments.{segments_module}"
                 )
-            )
+                if segments_module and segments_module.lower() != "none"
+                else None,
+                "enrollments_query_type": platform_config.get("enrollments_query_type"),
+                "validation_app_id": platform_config.get("validation_app_id"),
+            }
+        except ModuleNotFoundError as _err:
+            raise PlatformConfigurationException(_err)
 
-        processed_config[platform] = {
-            "config_spec_path": CONFIG_DIRECTORY / platform_config["config_spec"],
-            "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}")
-            if metrics_module
-            else None,
-            "segments_module": importlib.import_module(f"mozanalysis.segments.{segments_module}")
-            if segments_module
-            else None,
-            "enrollments_query_type": enrollments_query_type,
-            "validation_app_id": platform_config["validation_app_id"],
-        }
-
-    return {key: Platform(**val) for key, val in processed_config.items()}
+    return {
+        platform: Platform(**platform_config)
+        for platform, platform_config in processed_config.items()
+    }
 
 
 platform_config = toml.load(PARENT_DIR.parent / "platform_config.toml")
