@@ -63,11 +63,34 @@ if TYPE_CHECKING:
 
 
 class PlatformConfigurationException(Exception):
+    """
+    Custom exception type for Jetstream platform configuration related issues.
+    """
+
     pass
 
 
 @attr.s(auto_attribs=True)
 class Platform:
+    """
+    Platform configuration object. Contains all required settings for jetstream.
+    More info about Jetstream configuration: https://experimenter.info/jetstream/configuration
+
+    :param config_spec_path: toml configuration file name (found inside jetstream/config)
+    :type config_spec_path: PathLike
+    :param enrollments_query_type: "glean-event" or "normandy"
+    :type enrollments_query_type: str
+    :param validation_app_id:
+    :type validation_app_id: str
+    :param metrics_module: (Optional) name of metrics module to use
+    :type metrics_module: Optional[ModuleType]
+    :param segments_module: (Optional) name of segments module to use \
+    :type segments_module: Optional[ModuleType]
+
+    :returns: returns an instance of the object with all configuration settings as attributes
+    :rtype: Platform
+    """
+
     VALID_MODULES_METRICS = [
         f"mozanalysis.{metric}"
         for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
