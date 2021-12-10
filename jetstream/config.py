@@ -20,27 +20,30 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
+import importlib
 from inspect import isabstract
 from os import PathLike
-from pathlib import Path
+from pathlib import Path, PosixPath
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import attr
 import cattr
 import jinja2
+import mozanalysis
 import mozanalysis.experiment
 import mozanalysis.exposure
-import mozanalysis.metrics
-import mozanalysis.metrics.desktop
-import mozanalysis.metrics.fenix
-import mozanalysis.metrics.firefox_ios
-import mozanalysis.metrics.focus_android
-import mozanalysis.metrics.focus_ios
-import mozanalysis.metrics.klar_android
-import mozanalysis.metrics.klar_ios
 import mozanalysis.segments
-import mozanalysis.segments.desktop
 import pytz
 import toml
 from jinja2 import StrictUndefined
@@ -59,80 +62,169 @@ if TYPE_CHECKING:
     from .external_config import ExternalConfigCollection
 
 
+class PlatformConfigurationException(Exception):
+    """
+    Custom exception type for Jetstream platform configuration related issues.
+    """
+
+    pass
+
+
 @attr.s(auto_attribs=True)
 class Platform:
-    config_spec_path: PathLike
-    enrollments_query_type: str
+    """
+    Platform configuration object. Contains all required settings for jetstream.
+    More info about Jetstream configuration: https://experimenter.info/jetstream/configuration
+
+    :param config_spec_path: toml configuration file name (found inside jetstream/config)
+    :type config_spec_path: PathLike
+    :param enrollments_query_type: "glean-event" or "normandy"
+    :type enrollments_query_type: str
+    :param validation_app_id:
+    :type validation_app_id: str
+    :param metrics_module: (Optional) name of metrics module to use
+    :type metrics_module: Optional[ModuleType]
+    :param segments_module: (Optional) name of segments module to use \
+    :type segments_module: Optional[ModuleType]
+
+    :returns: returns an instance of the object with all configuration settings as attributes
+    :rtype: Platform
+    """
+
+    VALID_MODULES_METRICS = [
+        f"mozanalysis.{metric}"
+        for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
+    ]
+
+    VALID_MODULES_SEGMENTS = [
+        f"mozanalysis.{segment}"
+        for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
+    ]
+
+    def _check_value_not_null(self, attribute, value):
+        if not value and str(value).lower() == "none":
+            raise PlatformConfigurationException(
+                "'%s' attribute requires a value, please double check \
+                    platform configuration file. Value provided: %s"
+                % (attribute.name, str(value))
+            )
+
+    def validate_config_spec_path(self, attribute, value):
+        if type(value) != PosixPath:
+            raise PlatformConfigurationException(
+                "'%s' attribute contains invalid type. Type required: %s, got: %s"
+                % (attribute.name, "pathlib.PosixPath", type(value))
+            )
+
+        self._check_value_not_null(attribute, value)
+
+        return value
+
+    def validate_enrollments_query_type(self, attribute, value):
+        self._check_value_not_null(attribute, value)
+
+        valid_entrollments_query_types = (
+            "glean-event",
+            "normandy",
+        )
+
+        if value not in valid_entrollments_query_types:
+            raise PlatformConfigurationException(
+                "Invalid value provided for %s, value provided: %s. Valid options are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    valid_entrollments_query_types,
+                )
+            )
+
+        return value
+
+    def validate_metrics_module(self, attribute, value):
+        if not value or str(value).lower() == "none":
+            return
+
+        if value.__name__ not in self.VALID_MODULES_METRICS:
+            raise PlatformConfigurationException(
+                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    self.VALID_MODULES_METRICS,
+                )
+            )
+
+        return value
+
+    def validate_segments_module(self, attribute, value):
+        if not value or str(value).lower() == "none":
+            return
+
+        if value.__name__ not in self.VALID_MODULES_SEGMENTS:
+            raise PlatformConfigurationException(
+                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
+                % (
+                    attribute.name,
+                    value,
+                    self.VALID_MODULES_SEGMENTS,
+                )
+            )
+
+        return value
+
+    config_spec_path: PathLike = attr.ib(validator=validate_config_spec_path)
+    enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
     # app_id to use to validate Outcomes.
-    validation_app_id: str
-    metrics_module: Optional[ModuleType] = attr.ib(default=None)
-    segments_module: Optional[ModuleType] = attr.ib(default=None)
+    validation_app_id: str = attr.ib(validator=_check_value_not_null)
+    metrics_module: Optional[ModuleType] = attr.ib(default=None, validator=validate_metrics_module)
+    segments_module: Optional[ModuleType] = attr.ib(
+        default=None, validator=validate_segments_module
+    )
 
 
-# TODO: the below two vars can now be extracted into a separate config file
-CONFIG_DIRECTORY = Path(__file__).parent / "config"
-PLATFORM_CONFIGS_RAW = {  # TODO: after it will be extracted into a separate toml file
-    "firefox_desktop": {
-        "config_spec_path": CONFIG_DIRECTORY / "default_metrics.toml",
-        "metrics_module": mozanalysis.metrics.desktop,
-        "segments_module": mozanalysis.segments.desktop,
-        "enrollments_query_type": "normandy",
-        "validation_app_id": "firefox-desktop",
-    },
-    "fenix": {
-        "config_spec_path": CONFIG_DIRECTORY / "fenix.toml",
-        "metrics_module": mozanalysis.metrics.fenix,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.fenix",
-    },
-    "firefox_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "firefox_ios.toml",
-        "metrics_module": mozanalysis.metrics.firefox_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.FirefoxBeta",
-    },
-    "focus_android": {
-        "config_spec_path": CONFIG_DIRECTORY / "focus_android.toml",
-        "metrics_module": mozanalysis.metrics.focus_android,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.focus",
-    },
-    "klar_android": {
-        "config_spec_path": CONFIG_DIRECTORY / "klar_android.toml",
-        "metrics_module": mozanalysis.metrics.klar_android,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.klar",
-    },
-    "focus_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "focus_ios.toml",
-        "metrics_module": mozanalysis.metrics.focus_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.Focus",
-    },
-    "klar_ios": {
-        "config_spec_path": CONFIG_DIRECTORY / "klar_ios.toml",
-        "metrics_module": mozanalysis.metrics.klar_ios,
-        "segments_module": None,
-        "enrollments_query_type": "glean-event",
-        "validation_app_id": "org.mozilla.ios.Klar",
-    },
-}
+PARENT_DIR = Path(__file__).parent
+CONFIG_DIRECTORY = PARENT_DIR / "config"
 
 
-def _generate_platform_config(config: Dict[str, Dict[str, Any]]) -> Dict[str, Platform]:
+def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
     """
     Takes platform configuration and generates platform object map
     """
 
-    return {key: Platform(**val) for key, val in config.items()}
+    processed_config = dict()
+
+    for platform, platform_config in config["platform"].items():
+        config_spec_path = platform_config.get("config_spec_path")
+        metrics_module = platform_config.get("metrics_module")
+        segments_module = platform_config.get("segments_module")
+
+        try:
+            processed_config[platform] = {
+                "config_spec_path": CONFIG_DIRECTORY / config_spec_path
+                if config_spec_path and str(config_spec_path).lower() != "none"
+                else None,
+                "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}")
+                if metrics_module and metrics_module.lower() != "none"
+                else None,
+                "segments_module": importlib.import_module(
+                    f"mozanalysis.segments.{segments_module}"
+                )
+                if segments_module and segments_module.lower() != "none"
+                else None,
+                "enrollments_query_type": platform_config.get("enrollments_query_type"),
+                "validation_app_id": platform_config.get("validation_app_id"),
+            }
+        except ModuleNotFoundError as _err:
+            raise PlatformConfigurationException(_err)
+
+    return {
+        platform: Platform(**platform_config)
+        for platform, platform_config in processed_config.items()
+    }
 
 
-PLATFORM_CONFIGS = _generate_platform_config(PLATFORM_CONFIGS_RAW)
+platform_config = toml.load(PARENT_DIR.parent / "platform_config.toml")
+PLATFORM_CONFIGS = _generate_platform_config(platform_config)
 
 TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
 
