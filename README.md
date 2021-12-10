@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/mozilla/jetstream/tree/master.svg?style=shield)](https://circleci.com/gh/mozilla/jetstream/tree/master)
+[![CircleCI](https://circleci.com/gh/mozilla/jetstream/tree/main.svg?style=shield)](https://circleci.com/gh/mozilla/jetstream/tree/main)
 
 # jetstream
 
