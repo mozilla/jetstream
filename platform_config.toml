@@ -11,22 +11,22 @@ validation_app_id = "firefox-desktop"
 
 # Android platforms configuration
 [platform.fenix]
-config_spec_path = "fenix.toml"
-metrics_module = "fenix"
+# config_spec_path = "fenix.toml"
+# metrics_module = "fenix"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.fenix"
 
 [platform.focus_android]
-config_spec_path = "focus_android.toml"
-metrics_module = "focus_android"
+# config_spec_path = "focus_android.toml"
+# metrics_module = "focus_android"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.focus"
 
 [platform.klar_android]
-config_spec_path = "klar_android.toml"
-metrics_module = "klar_android"
+# config_spec_path = "klar_android.toml"
+# metrics_module = "klar_android"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.klar"
@@ -34,22 +34,22 @@ validation_app_id = "org.mozilla.klar"
 
 # ios platforms configuration
 [platform.firefox_ios]
-config_spec_path = "firefox_ios.toml"
-metrics_module = "firefox_ios"
+# config_spec_path = "firefox_ios.toml"
+# metrics_module = "firefox_ios"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.ios.FirefoxBeta"
 
 [platform.focus_ios]
-config_spec_path = "focus_ios.toml"
-metrics_module = "focus_ios"
+# config_spec_path = "focus_ios.toml"
+# metrics_module = "focus_ios"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.ios.Focus"
 
 [platform.klar_ios]
-config_spec_path = "klar_ios.toml"
-metrics_module = "klar_ios"
+# config_spec_path = "klar_ios.toml"
+# metrics_module = "klar_ios"
 segments_module = "None"
 enrollments_query_type = "glean-event"
 validation_app_id = "org.mozilla.ios.Klar"
