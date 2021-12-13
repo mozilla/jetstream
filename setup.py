@@ -48,7 +48,7 @@ setup(
         "jetstream.config": ["*.toml"],
         "jetstream.tests": ["data/*"],
         "jetstream.workflows": ["*.yaml"],
-        "jetstream": ["*.toml"],
+        "jetstream": ["../*.toml"],
     },
     install_requires=[
         "attrs",
@@ -71,6 +71,7 @@ setup(
         "statsmodels",
         "toml",
     ],
+    include_package_data=True,
     tests_require=test_dependencies,
     extras_require=extras,
     long_description=text_from_file("README.md"),
