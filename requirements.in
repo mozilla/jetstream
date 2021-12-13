@@ -34,11 +34,11 @@ coverage[toml]==6.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2021.11.2
+dask[distributed]==2021.12.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2021.11.2
+distributed==2021.12.0
     # via dask
 flake8==4.0.1
     # via pytest-flake8
@@ -152,7 +152,7 @@ packaging==21.3
     #   dask
     #   google-cloud-bigquery
     #   pytest
-pandas==1.3.4
+pandas==1.3.5
     # via
     #   mozanalysis
     #   statsmodels
@@ -281,7 +281,7 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==3.18.2
     # via mozilla-jetstream
-types-pytz==2021.3.1
+types-pytz==2021.3.2
     # via mozilla-jetstream
 types-pyyaml==6.0.1
     # via mozilla-jetstream
