@@ -48,6 +48,7 @@ setup(
         "jetstream.config": ["*.toml"],
         "jetstream.tests": ["data/*"],
         "jetstream.workflows": ["*.yaml"],
+        "jetstream": ["*.toml"],
     },
     install_requires=[
         "attrs",
