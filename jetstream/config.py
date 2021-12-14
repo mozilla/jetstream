@@ -80,8 +80,8 @@ class Platform:
     :type config_spec_path: PathLike
     :param enrollments_query_type: "glean-event" or "normandy"
     :type enrollments_query_type: str
-    :param validation_app_id:
-    :type validation_app_id: str
+    :param app_id:
+    :type app_id: str
     :param metrics_module: (Optional) name of metrics module to use
     :type metrics_module: Optional[ModuleType]
     :param segments_module: (Optional) name of segments module to use \
@@ -175,7 +175,7 @@ class Platform:
     config_spec_path: PathLike = attr.ib(validator=validate_config_spec_path)
     enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
     # app_id to use to validate Outcomes.
-    validation_app_id: str = attr.ib(validator=_check_value_not_null)
+    app_id: str = attr.ib(validator=_check_value_not_null)
     metrics_module: Optional[ModuleType] = attr.ib(default=None, validator=validate_metrics_module)
     segments_module: Optional[ModuleType] = attr.ib(
         default=None, validator=validate_segments_module
@@ -214,7 +214,7 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
                 "enrollments_query_type": platform_config.get(
                     "enrollments_query_type", "glean-event"
                 ),
-                "validation_app_id": platform_config.get("validation_app_id"),
+                "app_id": platform_config.get("app_id"),
             }
         except ModuleNotFoundError as _err:
             raise PlatformConfigurationException(

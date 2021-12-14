@@ -51,7 +51,7 @@ class ExternalOutcome:
     def validate(self) -> None:
         if self.platform not in PLATFORM_CONFIGS:
             raise ValueError(f"Platform '{self.platform}' is unsupported.")
-        app_id = PLATFORM_CONFIGS[self.platform].validation_app_id
+        app_id = PLATFORM_CONFIGS[self.platform].app_id
         dummy_experiment = jetstream.experimenter.Experiment(
             experimenter_slug="dummy-experiment",
             normandy_slug="dummy_experiment",

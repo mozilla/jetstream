@@ -22,7 +22,7 @@ class TestDefaultConfigs:
             is_high_population=False,
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
-            app_id=platform.validation_app_id,
+            app_id=platform.app_id,
             app_name=platform_name,
         )
 

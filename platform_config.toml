@@ -6,32 +6,32 @@ config_spec_path = "default_metrics.toml"
 metrics_module = "desktop"
 segments_module = "desktop"
 enrollments_query_type = "normandy"
-validation_app_id = "firefox-desktop"
+app_id = "firefox-desktop"
 
 
 # Android platforms configuration
 [platform.fenix]
 segments_module = "None"
-validation_app_id = "org.mozilla.fenix"
+app_id = "org.mozilla.fenix"
 
 [platform.focus_android]
 segments_module = "None"
-validation_app_id = "org.mozilla.focus"
+app_id = "org.mozilla.focus"
 
 [platform.klar_android]
 segments_module = "None"
-validation_app_id = "org.mozilla.klar"
+app_id = "org.mozilla.klar"
 
 
 # ios platforms configuration
 [platform.firefox_ios]
 segments_module = "None"
-validation_app_id = "org.mozilla.ios.FirefoxBeta"
+app_id = "org.mozilla.ios.FirefoxBeta"
 
 [platform.focus_ios]
 segments_module = "None"
-validation_app_id = "org.mozilla.ios.Focus"
+app_id = "org.mozilla.ios.Focus"
 
 [platform.klar_ios]
 segments_module = "None"
-validation_app_id = "org.mozilla.ios.Klar"
+app_id = "org.mozilla.ios.Klar"
