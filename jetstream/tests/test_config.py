@@ -901,7 +901,7 @@ class TestGeneratePlatformConfig:
                             "metrics_module": "desktop",
                             "segments_module": "desktop",
                             "enrollments_query_type": "normandy",
-                            "validation_app_id": "firefox-desktop",
+                            "app_id": "firefox-desktop",
                         }
                     }
                 },
@@ -911,7 +911,7 @@ class TestGeneratePlatformConfig:
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
-                        validation_app_id="firefox-desktop",
+                        app_id="firefox-desktop",
                     )
                 },
             ),
@@ -923,7 +923,7 @@ class TestGeneratePlatformConfig:
                             "metrics_module": "None",
                             "segments_module": "None",
                             "enrollments_query_type": "normandy",
-                            "validation_app_id": "firefox-desktop",
+                            "app_id": "firefox-desktop",
                         }
                     },
                 },
@@ -933,7 +933,7 @@ class TestGeneratePlatformConfig:
                         metrics_module=None,
                         segments_module=None,
                         enrollments_query_type="normandy",
-                        validation_app_id="firefox-desktop",
+                        app_id="firefox-desktop",
                     )
                 },
             ),
@@ -944,12 +944,12 @@ class TestGeneratePlatformConfig:
                             "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "none",
-                            "validation_app_id": "firefox-desktop",
+                            "app_id": "firefox-desktop",
                         },
                         "desktop": {
                             "config_spec_path": config_file,
                             "enrollments_query_type": "normandy",
-                            "validation_app_id": "EDI",
+                            "app_id": "EDI",
                         },
                     }
                 },
@@ -959,14 +959,14 @@ class TestGeneratePlatformConfig:
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=None,
                         enrollments_query_type="glean-event",
-                        validation_app_id="firefox-desktop",
+                        app_id="firefox-desktop",
                     ),
                     "desktop": Platform(
                         config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
-                        validation_app_id="EDI",
+                        app_id="EDI",
                     ),
                 },
             ),
@@ -989,7 +989,7 @@ class TestGeneratePlatformConfig:
                         "metrics_module": "desktop",
                         "segments_module": "test",
                         "enrollments_query_type": "glean-event",
-                        "validation_app_id": "firefox-desktop",
+                        "app_id": "firefox-desktop",
                     },
                 }
             },
@@ -997,7 +997,7 @@ class TestGeneratePlatformConfig:
                 "platform": {
                     "firefox_desktop": {
                         "config_spec_path": config_file,
-                        "validation_app_id": "firefox-desktop",
+                        "app_id": "firefox-desktop",
                     },
                 }
             },
@@ -1018,7 +1018,7 @@ class TestGeneratePlatformConfig:
                         "metrics_module": "desktop",
                         "segments_module": "desktop",
                         "enrollments_query_type": "N7",
-                        "validation_app_id": "firefox-desktop",
+                        "app_id": "firefox-desktop",
                     },
                 }
             },
@@ -1029,7 +1029,7 @@ class TestGeneratePlatformConfig:
                         "metrics_module": "random_module_name",
                         "segments_module": "desktop",
                         "enrollments_query_type": "N7",
-                        "validation_app_id": "firefox-desktop",
+                        "app_id": "firefox-desktop",
                     },
                 }
             },
@@ -1039,7 +1039,7 @@ class TestGeneratePlatformConfig:
                         "config_spec_path": config_file,
                         "segments_module": "random_segment",
                         "enrollments_query_type": "N7",
-                        "validation_app_id": "firefox-desktop",
+                        "app_id": "firefox-desktop",
                     },
                 }
             },
@@ -1048,7 +1048,7 @@ class TestGeneratePlatformConfig:
                     "dummy_app": {
                         "config_spec_path": config_file,
                         "enrollments_query_type": "normandy",
-                        "validation_app_id": "EDI",
+                        "app_id": "EDI",
                     },
                 },
             },
