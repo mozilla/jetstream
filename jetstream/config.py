@@ -194,9 +194,9 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
     processed_config = dict()
 
     for platform, platform_config in config["platform"].items():
-        config_spec_path = platform_config.get("config_spec_path")
-        metrics_module = platform_config.get("metrics_module")
-        segments_module = platform_config.get("segments_module")
+        config_spec_path = platform_config.get("config_spec_path", f"{platform}.toml")
+        metrics_module = platform_config.get("metrics_module", platform)
+        segments_module = platform_config.get("segments_module", platform)
 
         try:
             processed_config[platform] = {
@@ -211,11 +211,16 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
                 )
                 if segments_module and segments_module.lower() != "none"
                 else None,
-                "enrollments_query_type": platform_config.get("enrollments_query_type"),
+                "enrollments_query_type": platform_config.get(
+                    "enrollments_query_type", "glean-event"
+                ),
                 "validation_app_id": platform_config.get("validation_app_id"),
             }
         except ModuleNotFoundError as _err:
-            raise PlatformConfigurationException(_err)
+            raise PlatformConfigurationException(
+                f"{_err}\nIf metrics or segments module does not exist,"
+                'please set the value to "None" inside platform_config.toml'
+            )
 
     return {
         platform: Platform(**platform_config)

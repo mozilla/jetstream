@@ -920,6 +920,8 @@ class TestGeneratePlatformConfig:
                     "platform": {
                         "firefox_desktop": {
                             "config_spec_path": config_file,
+                            "metrics_module": "None",
+                            "segments_module": "None",
                             "enrollments_query_type": "normandy",
                             "validation_app_id": "firefox-desktop",
                         }
@@ -942,10 +944,9 @@ class TestGeneratePlatformConfig:
                             "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "none",
-                            "enrollments_query_type": "glean-event",
                             "validation_app_id": "firefox-desktop",
                         },
-                        "dummy_app": {
+                        "desktop": {
                             "config_spec_path": config_file,
                             "enrollments_query_type": "normandy",
                             "validation_app_id": "EDI",
@@ -960,10 +961,10 @@ class TestGeneratePlatformConfig:
                         enrollments_query_type="glean-event",
                         validation_app_id="firefox-desktop",
                     ),
-                    "dummy_app": Platform(
+                    "desktop": Platform(
                         config_spec_path=CONFIG_DIRECTORY / config_file,
-                        metrics_module=None,
-                        segments_module=None,
+                        metrics_module=mozanalysis.metrics.desktop,
+                        segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
                         validation_app_id="EDI",
                     ),
@@ -986,7 +987,7 @@ class TestGeneratePlatformConfig:
                 "platform": {
                     "firefox_desktop": {
                         "metrics_module": "desktop",
-                        "segments_module": "none",
+                        "segments_module": "test",
                         "enrollments_query_type": "glean-event",
                         "validation_app_id": "firefox-desktop",
                     },
@@ -1041,6 +1042,15 @@ class TestGeneratePlatformConfig:
                         "validation_app_id": "firefox-desktop",
                     },
                 }
+            },
+            {
+                "platform": {
+                    "dummy_app": {
+                        "config_spec_path": config_file,
+                        "enrollments_query_type": "normandy",
+                        "validation_app_id": "EDI",
+                    },
+                },
             },
         ],
     )
