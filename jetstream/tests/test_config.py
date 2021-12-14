@@ -944,7 +944,6 @@ class TestGeneratePlatformConfig:
                             "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "none",
-                            "enrollments_query_type": "glean-event",
                             "validation_app_id": "firefox-desktop",
                         },
                         "desktop": {

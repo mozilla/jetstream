@@ -211,12 +211,14 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
                 )
                 if segments_module and segments_module.lower() != "none"
                 else None,
-                "enrollments_query_type": platform_config.get("enrollments_query_type"),
+                "enrollments_query_type": platform_config.get(
+                    "enrollments_query_type", "glean-event"
+                ),
                 "validation_app_id": platform_config.get("validation_app_id"),
             }
         except ModuleNotFoundError as _err:
             raise PlatformConfigurationException(
-                str(_err) + "\nIf metrics or segments module does not exist,"
+                f"{_err}\nIf metrics or segments module does not exist,"
                 'please set the value to "None" inside platform_config.toml'
             )
 
