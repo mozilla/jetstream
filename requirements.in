@@ -262,7 +262,7 @@ toml==0.10.2
     #   mypy
     #   pytest
     #   pytest-black
-tomli==1.2.2
+tomli==1.2.3
     # via
     #   black
     #   coverage
