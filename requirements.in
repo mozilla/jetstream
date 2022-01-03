@@ -227,7 +227,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-requests==2.26.0
+requests==2.27.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
