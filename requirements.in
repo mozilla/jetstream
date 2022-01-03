@@ -179,7 +179,7 @@ protobuf==3.19.1
     #   googleapis-common-protos
     #   grpcio-status
     #   proto-plus
-psutil==5.8.0
+psutil==5.9.0
     # via distributed
 py==1.11.0
     # via pytest
