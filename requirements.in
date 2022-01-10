@@ -300,7 +300,7 @@ typing-extensions==4.0.1
     #   typing-inspect
 typing-inspect==0.7.1
     # via libcst
-urllib3==1.26.7
+urllib3==1.26.8
     # via requests
 zict==2.0.0
     # via distributed
