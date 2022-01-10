@@ -289,7 +289,7 @@ types-requests==2.26.3
     # via mozilla-jetstream
 types-six==1.16.6
     # via mozilla-jetstream
-types-toml==0.10.1
+types-toml==0.10.3
     # via mozilla-jetstream
 typing-extensions==4.0.1
     # via
