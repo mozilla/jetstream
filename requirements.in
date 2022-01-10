@@ -19,7 +19,7 @@ cattrs==1.8.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
-charset-normalizer==2.0.9
+charset-normalizer==2.0.10
     # via requests
 click==8.0.3
     # via
@@ -46,7 +46,7 @@ fsspec==2021.11.1
     # via dask
 gitdb==4.0.9
     # via gitpython
-gitpython==3.1.24
+gitpython==3.1.26
     # via mozilla-jetstream
 google-api-core[grpc]==2.3.2
     # via
@@ -74,7 +74,7 @@ google-cloud-core==2.2.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==1.43.0
+google-cloud-storage==1.44.0
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -132,7 +132,7 @@ mozanalysis==2021.12.2
     # via -r -
 msgpack==1.0.3
     # via distributed
-mypy==0.930
+mypy==0.931
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
@@ -227,7 +227,7 @@ pyyaml==6.0
     #   distributed
     #   libcst
     #   mozilla-jetstream
-requests==2.27.0
+requests==2.27.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -273,34 +273,35 @@ toolz==0.11.2
     #   partd
 tornado==6.1
     # via distributed
-types-futures==3.3.1
+types-futures==3.3.2
     # via
     #   mozilla-jetstream
     #   types-protobuf
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==3.18.2
+types-protobuf==3.19.0
     # via mozilla-jetstream
-types-pytz==2021.3.3
+types-pytz==2021.3.4
     # via mozilla-jetstream
-types-pyyaml==6.0.1
+types-pyyaml==6.0.3
     # via mozilla-jetstream
-types-requests==2.26.3
+types-requests==2.27.5
     # via mozilla-jetstream
-types-six==1.16.6
+types-six==1.16.9
     # via mozilla-jetstream
-types-toml==0.10.1
+types-toml==0.10.3
     # via mozilla-jetstream
+types-urllib3==1.26.3
+    # via types-requests
 typing-extensions==4.0.1
     # via
     #   black
-    #   gitpython
     #   libcst
     #   mypy
     #   typing-inspect
 typing-inspect==0.7.1
     # via libcst
-urllib3==1.26.7
+urllib3==1.26.8
     # via requests
 zict==2.0.0
     # via distributed
