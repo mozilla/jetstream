@@ -164,9 +164,9 @@ google-cloud-bigquery==2.31.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.10.1 \
-    --hash=sha256:80c39407d22b87e3dada48f8eaf001ebf3148f27057ae8b54a488fda0b87d215 \
-    --hash=sha256:cc2bfa102d67afc295bef1ce2c03253a82d4d6dbb76162a3c06008ac1935bd60
+google-cloud-bigquery-storage==2.11.0 \
+    --hash=sha256:36b6a3f595b609ba986c07edc8dee811328a5f319f26b6c701dc4bb95e46fc28 \
+    --hash=sha256:e89903bd751a141a6137cdcea620c050ffd9d0765138005199b1127323c3a40e
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -327,9 +327,7 @@ idna==3.3 \
 importlib-resources==5.4.0 \
     --hash=sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45 \
     --hash=sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1063,9 +1061,7 @@ zict==2.0.0 \
 zipp==3.7.0 \
     --hash=sha256:9f50f446828eb9d45b267433fd3e9da8d801f614129124863f9c51ebceafb87d \
     --hash=sha256:b47250dd24f92b7dd6a0a8fc5244da14608f3ca90a5efcd37a3b1642fac9a375
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
