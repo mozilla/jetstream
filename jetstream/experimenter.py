@@ -154,13 +154,13 @@ class ExperimentV6:
             lambda num, _: dt.datetime.strptime(num, "%Y-%m-%d"),
         )
         converter.register_structure_hook(
-            cls,
             cattr.gen.make_dict_structure_fn(
                 cls,
                 converter,
                 _appName=cattr.override(rename="appName"),
                 _appId=cattr.override(rename="appId"),
             ),
+            cls,
         )
         return converter.structure(d, cls)
 
