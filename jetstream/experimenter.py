@@ -160,7 +160,9 @@ class ExperimentV6:
                 converter,
                 _appName=cattr.override(rename="appName"),
                 _appId=cattr.override(rename="appId"),
-            ),
+            ),  # type: ignore
+            # Ignore type check for now as it appears to be a bug in cattrs library
+            # for more info see issue: https://github.com/mozilla/jetstream/issues/995
         )
         return converter.structure(d, cls)
 
