@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 # based on https://stackoverflow.com/a/22726782
 
 
+class RetryLimitExceededException(Exception):
+    pass
+
+
 @contextmanager
 def TemporaryDirectory():
     name = Path(tempfile.mkdtemp())
@@ -44,5 +48,9 @@ def retry_get(
             logger.info(f"Error fetching from {url}. Retrying...")
             time.sleep(1)
     else:
-        raise Exception(f"Too many retries for {url}")
+        exception = RetryLimitExceededException(f"Too many retries for {url}")
+
+        logger.exception(exception.__str__(), exc_info=exception)
+        raise exception
+
     return blob
