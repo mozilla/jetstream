@@ -150,7 +150,7 @@ class ExternalConfigCollection:
         """
         client = bigquery.Client(bq_project)
         job = client.query(
-            fr"""
+            rf"""
             SELECT
                 table_name,
                 REGEXP_EXTRACT_ALL(
