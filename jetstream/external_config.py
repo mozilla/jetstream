@@ -6,7 +6,7 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 
 import datetime as dt
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, MutableMapping, Optional, Union
 
 import attr
 import toml
@@ -17,6 +17,11 @@ from pytz import UTC
 import jetstream.experimenter
 from jetstream.analysis import Analysis
 from jetstream.config import PLATFORM_CONFIGS, AnalysisSpec, OutcomeSpec
+from jetstream.errors import (
+    MetricsConfigurationException,
+    SegmentsConfigurationException,
+    UnexpectedKeyConfigurationException,
+)
 from jetstream.util import TemporaryDirectory
 
 from . import bq_normalize_name
@@ -37,6 +42,256 @@ class ExternalConfig:
         spec.merge(self.spec)
         conf = spec.resolve(experiment)
         Analysis("no project", "no dataset", conf).validate()
+
+
+def check_all_keys_lowercase(config: MutableMapping[str, Any]) -> List[str]:
+    """
+    Recursively check that configuration keys are lowercase.
+
+        Returns a dictionary with a dict key path to key which is invalid.
+    """
+
+    invalid_keys = list()
+    for key, value in config.items():
+        if isinstance(value, dict):
+            invalid_keys.extend(check_all_keys_lowercase(value))
+
+        if key.lower() != key:
+            only_uppercase_letters = list(filter(str.isupper, key))
+            if (
+                "".join(sorted(set(only_uppercase_letters), key=only_uppercase_letters.index))
+                == "GB"
+            ):
+                # handling rare occasion where uppercase is used:
+                # example: https://github.com/mozilla/jetstream-config/blob/main/bug-1722551-pref-full-js-parsing-experiment-nightly-94-94.toml#L803  # noqa: E501
+                continue
+
+            invalid_keys.append(key)
+
+    return invalid_keys
+
+def validate_config_settings(config_file: Path) -> None:
+    """
+    Implemented to resolve a Github issue:
+        - https://github.com/mozilla/jetstream/issues/843
+
+    Loads external config file and runs a number of validation steps on it:
+    - Checks that all config keys/settings are lowercase
+    - Checks for missing core config keys
+    - Checks for unexpected core configuration keys
+    - Checks that all segments defined under experiment have configuration in segments section
+    - Checks if metric with custom config is defined in metrics.weekly or metrics.overall fields
+
+    Returns None, if issues found with the configuration an Exception is raised
+    """
+
+    config = toml.loads(config_file.read_text())
+
+    # if config_errors := check_all_keys_lowercase(config):
+    #     err_msg = (
+    #         "It appears some config settings/keys"
+    #         f"contain unexpected uppercase letters: {config_errors}"
+    #     )
+    #     raise WrongCaseConfigurationException(err_msg)
+
+    optional_core_config_keys = (
+        "metrics",
+        "experiment",
+        "segments",
+        "data_sources",
+        "friendly_name",
+        "description",
+    )  # TODO: double check that friendly_name and description are to be expected here
+
+    core_config_keys_specified = config.keys()
+
+    # checks for unexpected core configuration keys
+    if unexpected_config_keys := (set(core_config_keys_specified) - set(optional_core_config_keys)):
+        err_msg = f"Unexpected config key[s] found: {unexpected_config_keys}"
+        raise UnexpectedKeyConfigurationException(err_msg)
+
+    # checks that all segments defined under experiment have configuration in segments section
+    if experiment_config := config.get("experiment", dict()):
+        expected_segment_configuration = experiment_config.get("segments", list())
+
+        if expected_segment_configuration:
+            segments_config_keys = config.get("segments", dict()).keys()
+
+            # TODO: will desktop include all possible segments?
+            import mozanalysis.segments.desktop as desktop_segments
+
+            mozanalysis_segments = [
+                val
+                for val in desktop_segments.__dict__.keys()
+                if not (val.startswith("_") or val.startswith("Segment"))
+            ]
+
+            if missing_segment_configuration := (
+                set(expected_segment_configuration)
+                - set.union(set(segments_config_keys), set(mozanalysis_segments))
+            ):
+                docs_url = "https://experimenter.info/jetstream/configuration#defining-segments"
+                err_msg = (
+                    "It appears some configuration for specified "
+                    f"segments is missing: {missing_segment_configuration}. "
+                    f"Please refer to {docs_url} for Segments configuration guide."
+                )
+                raise SegmentsConfigurationException(err_msg)
+
+    # Checks if metric with custom config is defined in metrics.weekly or metrics.overall fields
+    if metrics_config := config.get("metrics"):
+        daily_metrics = metrics_config.get("daily", list())
+        weekly_metrics = metrics_config.get("weekly", list())
+        overall_metrics = metrics_config.get("overall", list())
+
+        specified_metrics = list(
+            set.union(set(weekly_metrics), set(overall_metrics), set(daily_metrics))
+        )
+        configured_metrics = list(set(metrics_config.keys()) - set(["daily", "weekly", "overall"]))
+
+        # TODO: will desktop include all possible metrics?
+        import mozanalysis.metrics.desktop as desktop_metrics
+
+        mozanalysis_metrics = [
+            val
+            for val in desktop_metrics.__dict__.keys()
+            if not (val.startswith("_") or val.startswith("Metric"))
+        ]
+
+        if metrics_missing_configuration := (
+            set(configured_metrics) - set.union(set(specified_metrics), set(mozanalysis_metrics))
+        ):
+            err_msg = (
+                "It appears some configuration for specified "
+                f"metrics is missing: {metrics_missing_configuration}"
+            )
+            raise MetricsConfigurationException(err_msg)
+
+    return None
+def check_all_keys_lowercase(config: dict) -> dict:
+    """
+    Recursively check that configuration keys are lowercase.
+
+        Returns a dictionary with a dict key path to key which is invalid.
+    """
+
+    invalid_keys = list()
+    for key, value in config.items():
+        if isinstance(value, dict):
+            invalid_keys.extend(check_all_keys_lowercase(value))
+
+        if key.lower() != key:
+            only_uppercase_letters = list(filter(str.isupper, key))
+            if (
+                "".join(sorted(set(only_uppercase_letters), key=only_uppercase_letters.index))
+                == "GB"
+            ):
+                # handling rare occasion where uppercase is used:
+                # example: https://github.com/mozilla/jetstream-config/blob/main/bug-1722551-pref-full-js-parsing-experiment-nightly-94-94.toml#L803  # noqa: E501
+                continue
+
+            invalid_keys.append(key)
+
+    return invalid_keys
+
+def validate_config_settings(config_file: Path) -> None:
+    """
+    Implemented to resolve a Github issue:
+        - https://github.com/mozilla/jetstream/issues/843
+
+    Loads external config file and runs a number of validation steps on it:
+    - Checks that all config keys/settings are lowercase
+    - Checks for missing core config keys
+    - Checks for unexpected core configuration keys
+    - Checks that all segments defined under experiment have configuration in segments section
+    - Checks if metric with custom config is defined in metrics.weekly or metrics.overall fields
+
+    Returns None, if issues found with the configuration an Exception is raised
+    """
+
+    config = toml.loads(config_file.read_text())
+
+    # if config_errors := check_all_keys_lowercase(config):
+    #     err_msg = (
+    #         "It appears some config settings/keys"
+    #         f"contain unexpected uppercase letters: {config_errors}"
+    #     )
+    #     raise WrongCaseConfigurationException(err_msg)
+
+    optional_core_config_keys = (
+        "metrics",
+        "experiment",
+        "segments",
+        "data_sources",
+        "friendly_name",
+        "description",
+    )  # TODO: double check that friendly_name and description are to be expected here
+
+    core_config_keys_specified = config.keys()
+
+    # checks for unexpected core configuration keys
+    if unexpected_config_keys := (set(core_config_keys_specified) - set(optional_core_config_keys)):
+        err_msg = f"Unexpected config key[s] found: {unexpected_config_keys}"
+        raise UnexpectedKeyConfigurationException(err_msg)
+
+    # checks that all segments defined under experiment have configuration in segments section
+    if experiment_config := config.get("experiment", dict()):
+        expected_segment_configuration = experiment_config.get("segments", list())
+
+        if expected_segment_configuration:
+            segments_config_keys = config.get("segments", dict()).keys()
+
+            # TODO: will desktop include all possible segments?
+            import mozanalysis.segments.desktop as desktop_segments
+
+            mozanalysis_segments = [
+                val
+                for val in desktop_segments.__dict__.keys()
+                if not (val.startswith("_") or val.startswith("Segment"))
+            ]
+
+            if missing_segment_configuration := (
+                set(expected_segment_configuration)
+                - set.union(set(segments_config_keys), set(mozanalysis_segments))
+            ):
+                docs_url = "https://experimenter.info/jetstream/configuration#defining-segments"
+                err_msg = (
+                    "It appears some configuration for specified "
+                    f"segments is missing: {missing_segment_configuration}. "
+                    f"Please refer to {docs_url} for Segments configuration guide."
+                )
+                raise SegmentsConfigurationException(err_msg)
+
+    # Checks if metric with custom config is defined in metrics.weekly or metrics.overall fields
+    if metrics_config := config.get("metrics"):
+        daily_metrics = metrics_config.get("daily", list())
+        weekly_metrics = metrics_config.get("weekly", list())
+        overall_metrics = metrics_config.get("overall", list())
+
+        specified_metrics = list(
+            set.union(set(weekly_metrics), set(overall_metrics), set(daily_metrics))
+        )
+        configured_metrics = list(set(metrics_config.keys()) - set(["daily", "weekly", "overall"]))
+
+        # TODO: will desktop include all possible metrics?
+        import mozanalysis.metrics.desktop as desktop_metrics
+
+        mozanalysis_metrics = [
+            val
+            for val in desktop_metrics.__dict__.keys()
+            if not (val.startswith("_") or val.startswith("Metric"))
+        ]
+
+        if metrics_missing_configuration := (
+            set(configured_metrics) - set.union(set(specified_metrics), set(mozanalysis_metrics))
+        ):
+            err_msg = (
+                "It appears some configuration for specified "
+                f"metrics is missing: {metrics_missing_configuration}"
+            )
+            raise MetricsConfigurationException(err_msg)
+
+    return None
 
 
 @attr.s(auto_attribs=True)
@@ -75,7 +330,11 @@ class ExternalOutcome:
 def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
     slug = path.stem
+
+    validate_config_settings(path)
+
     config_dict = toml.loads(path.read_text())
+
     if is_outcome:
         platform = path.parent.name
         spec = OutcomeSpec.from_dict(config_dict)
@@ -108,8 +367,20 @@ class ExternalConfigCollection:
 
             external_configs = []
 
+            config_files_to_skip = (
+                "bug-1695015-pref-new-tab-modernized-ux-region-1-release-86-88.toml",
+                "bug-1671484-pref-validation-of-relpreload-performance-impact-release-82-83.toml",
+                "bug-1726656-pref-tab-unloading-nightly-93-94.toml",
+            )  # TODO: temporary, remove once resolved issue with this specific config
+
             for config_file in tmp_dir.glob("*.toml"):
+
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
+
+                if (
+                    str(config_file).split("/")[-1] not in config_files_to_skip
+                ):  # TODO: temporary, remove once resolved issue with this specific config
+                    validate_config_settings(config_file)
 
                 external_configs.append(
                     ExternalConfig(

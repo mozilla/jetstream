@@ -38,3 +38,26 @@ class HighPopulationException(ValidationException):
 class ExplicitSkipException(ValidationException):
     def __init__(self, normandy_slug, message="Experiment is configured with skip=true."):
         super().__init__(f"{normandy_slug} -> {message}")
+
+
+class InvalidConfigurationException(Exception):
+    """Exception thrown when experiment configuration is invalid."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class WrongCaseConfigurationException(InvalidConfigurationException):
+    pass
+
+
+class UnexpectedKeyConfigurationException(InvalidConfigurationException):
+    pass
+
+
+class SegmentsConfigurationException(InvalidConfigurationException):
+    pass
+
+
+class MetricsConfigurationException(InvalidConfigurationException):
+    pass

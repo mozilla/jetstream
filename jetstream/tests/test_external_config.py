@@ -1,18 +1,27 @@
 import datetime as dt
 from pathlib import Path
 from textwrap import dedent
+
+# from threading import activeCount
 from typing import cast
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import toml
 
 from jetstream.config import AnalysisSpec, OutcomeSpec
+from jetstream.errors import (
+    MetricsConfigurationException,
+    SegmentsConfigurationException,
+    UnexpectedKeyConfigurationException,
+)
 from jetstream.external_config import (
     ExternalConfig,
     ExternalConfigCollection,
     ExternalOutcome,
+    check_all_keys_lowercase,
     entity_from_path,
+    validate_config_settings,
 )
 
 
@@ -99,3 +108,76 @@ class TestExternalConfig:
         )
         extern.validate(experiments[0])
         assert Analysis.validate.called_once()
+
+
+@pytest.mark.parametrize(
+    "test_input,expected",
+    (
+        (
+            {"experiment": dict(), "segments": dict(), "metrics": dict()},
+            None,
+        ),
+    ),
+)
+@patch("jetstream.external_config.toml.loads")
+def test_validate_config_settings(mock_toml_loads, test_input, expected):
+    mock_toml_loads.return_value = test_input
+
+    config_file = "README.md"
+    actual = validate_config_settings(Path(config_file))
+
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "test_input,exception_type",
+    (
+        # ({"tEst": {"dummy": {"hello": None}}}, WrongCaseConfigurationException),
+        # ({"test": {"dummY": {"hEllo": None}}}, WrongCaseConfigurationException),
+        # ({"test": {"dummy": {"hEllo": None}}}, WrongCaseConfigurationException),
+        # ({"test": {"lt_2GBS_UFF": {"hEllo": None}}}, WrongCaseConfigurationException),
+        (
+            {"metrics": {}, "experiment": {}, "segments": {}, "was_ist_das": {}},
+            UnexpectedKeyConfigurationException,
+        ),
+        (
+            {"metrics": {}, "experiment": {"segments": ["dummy_segment"]}, "segments": {}},
+            SegmentsConfigurationException,
+        ),
+        (
+            {"metrics": {"weekly": [], "overall": [], "dau": {}}, "experiment": {}, "segments": {}},
+            MetricsConfigurationException,
+        ),
+    ),
+)
+@patch("jetstream.external_config.toml.loads")
+def test_validate_config_settings_raises(mock_toml_loads, test_input, exception_type):
+    mock_toml_loads.return_value = test_input
+
+    with pytest.raises(exception_type):
+        validate_config_settings(Path("README.md"))
+
+
+@pytest.mark.parametrize(
+    "test_input,expected",
+    (
+        (dict(), list()),
+        ({"test": "hellO!"}, list()),
+        ({"test": "hellO!", "lt_2GB_in_memory": "nothing"}, list()),
+        ({"tEst": "hellO!"}, ["tEst"]),
+        (
+            {
+                "test": {
+                    "secoNd_depth": {
+                        "HeLLo": {"dummy": "hey"},
+                        "dummy": dict(),
+                    }
+                }
+            },
+            ["HeLLo", "secoNd_depth"],
+        ),
+    ),
+)
+def test_check_all_keys_lowercase(test_input, expected):
+    actual = check_all_keys_lowercase(test_input)
+    assert actual == expected
