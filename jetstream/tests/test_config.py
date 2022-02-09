@@ -68,7 +68,7 @@ class TestAnalysisSpec:
         config_str = dedent(
             """
             [metrics]
-            weekly = ["view_about_logins"]
+            weekly = ["view_about_logins", "who_this"]
 
             [metrics.view_about_logins.statistics.bootstrap_mean]
             """
@@ -124,6 +124,11 @@ class TestAnalysisSpec:
             [data_sources.silly_knight]
             from_expression = "france"
             experiments_column_type = "none"
+
+            [metrics.forgotten_metric]
+            data_source = "silly_knight"
+            select_expression = "1"
+            [metrics.forgotten_metric.statistics.bootstrap_mean]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -578,8 +583,10 @@ class TestExperimentSpec:
             segments = ["regular_users_v3"]
             """
         )
+        print(toml.loads(conf))
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
         configured = spec.resolve(experiments[0])
+        print(configured)
         assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
 
     def test_segment_definitions(self, experiments):
@@ -589,8 +596,8 @@ class TestExperimentSpec:
             segments = ["regular_users_v3", "my_cool_segment"]
 
             [segments.my_cool_segment]
-            data_source = "my_cool_data_source"
-            select_expression = "{{agg_any('1')}}"
+            Data_source = "my_cool_data_source"
+            Select_Expression = "{{agg_any('1')}}"
 
             [segments.data_sources.my_cool_data_source]
             from_expression = "(SELECT 1 WHERE submission_date BETWEEN {{experiment.start_date_str}} AND {{experiment.last_enrollment_date_str}})"
