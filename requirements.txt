@@ -342,9 +342,7 @@ idna==3.3 \
 importlib-resources==5.4.0 \
     --hash=sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45 \
     --hash=sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -614,9 +612,9 @@ pluggy==1.0.0 \
     # via
     #   -r requirements.in
     #   pytest
-proto-plus==1.19.9 \
-    --hash=sha256:4ca4055f7c5c1a2239ac7a12770a76a16269f58d3f01631523c20fc81dbb14a7 \
-    --hash=sha256:b21e901cee2fd27f63d7997f7f1d8c149804d59314803ebd491905da48251b91
+proto-plus==1.20.0 \
+    --hash=sha256:b98bad701a0d6c511af544a4271295bb499dd325a530d61f4bca9c1f1f06fbbb \
+    --hash=sha256:d98d61c9a8d50aa5253934f8b153535414eb75cd40d9724247395256d41d9cc7
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
@@ -1062,7 +1060,6 @@ typing-extensions==4.0.1 \
     --hash=sha256:7f001e5ac290a0c0401508864c7ec868be4e701886d5b573a9528ed3973d9d3b
     # via
     #   -r requirements.in
-    #   black
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1088,9 +1085,7 @@ zict==2.0.0 \
 zipp==3.7.0 \
     --hash=sha256:9f50f446828eb9d45b267433fd3e9da8d801f614129124863f9c51ebceafb87d \
     --hash=sha256:b47250dd24f92b7dd6a0a8fc5244da14608f3ca90a5efcd37a3b1642fac9a375
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
