@@ -342,9 +342,7 @@ idna==3.3 \
 importlib-resources==5.4.0 \
     --hash=sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45 \
     --hash=sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1057,12 +1055,11 @@ types-urllib3==1.26.9 \
     # via
     #   -r requirements.in
     #   types-requests
-typing-extensions==4.0.1 \
-    --hash=sha256:4ca091dea149f945ec56afb48dae714f21e8692ef22a395223bcd328961b6a0e \
-    --hash=sha256:7f001e5ac290a0c0401508864c7ec868be4e701886d5b573a9528ed3973d9d3b
+typing-extensions==4.1.1 \
+    --hash=sha256:1a9462dcc3347a79b1f1c0271fbe79e844580bb598bafa1ed208b94da3cdcd42 \
+    --hash=sha256:21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2
     # via
     #   -r requirements.in
-    #   black
     #   libcst
     #   mypy
     #   typing-inspect
@@ -1088,9 +1085,7 @@ zict==2.0.0 \
 zipp==3.7.0 \
     --hash=sha256:9f50f446828eb9d45b267433fd3e9da8d801f614129124863f9c51ebceafb87d \
     --hash=sha256:b47250dd24f92b7dd6a0a8fc5244da14608f3ca90a5efcd37a3b1642fac9a375
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
