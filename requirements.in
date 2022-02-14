@@ -19,7 +19,7 @@ cattrs==1.10.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
-charset-normalizer==2.0.11
+charset-normalizer==2.0.12
     # via requests
 click==8.0.3
     # via
@@ -34,11 +34,11 @@ coverage[toml]==6.3.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.01.1
+dask[distributed]==2022.02.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2022.01.1
+distributed==2022.02.0
     # via dask
 flake8==4.0.1
     # via pytest-flake8
@@ -68,7 +68,7 @@ google-cloud-bigquery-storage==2.11.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.10.1
+google-cloud-container==2.10.3
     # via mozilla-jetstream
 google-cloud-core==2.2.2
     # via
@@ -80,7 +80,7 @@ google-cloud-storage==2.1.0
     #   smart-open
 google-crc32c==1.3.0
     # via google-resumable-media
-google-resumable-media==2.1.0
+google-resumable-media==2.2.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -153,7 +153,8 @@ packaging==21.3
     #   distributed
     #   google-cloud-bigquery
     #   pytest
-pandas==1.4.0
+    #   statsmodels
+pandas==1.4.1
     # via
     #   mozanalysis
     #   statsmodels
@@ -163,11 +164,11 @@ pathspec==0.9.0
     # via black
 patsy==0.5.2
     # via statsmodels
-platformdirs==2.4.1
+platformdirs==2.5.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.19.9
+proto-plus==1.20.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -202,7 +203,7 @@ pyparsing==3.0.7
     # via packaging
 pyrsistent==0.18.1
     # via jsonschema
-pytest==7.0.0
+pytest==7.0.1
     # via
     #   mozilla-jetstream
     #   pytest-black
@@ -252,7 +253,7 @@ smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
-statsmodels==0.13.1
+statsmodels==0.13.2
     # via mozilla-jetstream
 tblib==1.7.0
     # via distributed
@@ -260,7 +261,7 @@ toml==0.10.2
     # via
     #   mozilla-jetstream
     #   pytest-black
-tomli==2.0.0
+tomli==2.0.1
     # via
     #   black
     #   coverage
@@ -274,18 +275,16 @@ toolz==0.11.2
 tornado==6.1
     # via distributed
 types-futures==3.3.8
-    # via
-    #   mozilla-jetstream
-    #   types-protobuf
+    # via mozilla-jetstream
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==3.19.10
+types-protobuf==3.19.12
     # via mozilla-jetstream
-types-pytz==2021.3.4
+types-pytz==2021.3.5
     # via mozilla-jetstream
 types-pyyaml==6.0.4
     # via mozilla-jetstream
-types-requests==2.27.8
+types-requests==2.27.9
     # via mozilla-jetstream
 types-six==1.16.10
     # via mozilla-jetstream
@@ -293,7 +292,7 @@ types-toml==0.10.3
     # via mozilla-jetstream
 types-urllib3==1.26.9
     # via types-requests
-typing-extensions==4.0.1
+typing-extensions==4.1.1
     # via
     #   black
     #   libcst
