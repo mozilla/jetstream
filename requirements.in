@@ -289,7 +289,7 @@ types-requests==2.27.8
     # via mozilla-jetstream
 types-six==1.16.10
     # via mozilla-jetstream
-types-toml==0.10.3
+types-toml==0.10.4
     # via mozilla-jetstream
 types-urllib3==1.26.9
     # via types-requests
