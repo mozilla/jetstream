@@ -260,7 +260,7 @@ toml==0.10.2
     # via
     #   mozilla-jetstream
     #   pytest-black
-tomli==2.0.0
+tomli==2.0.1
     # via
     #   black
     #   coverage
