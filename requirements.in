@@ -153,7 +153,7 @@ packaging==21.3
     #   distributed
     #   google-cloud-bigquery
     #   pytest
-pandas==1.4.0
+pandas==1.4.1
     # via
     #   mozanalysis
     #   statsmodels
