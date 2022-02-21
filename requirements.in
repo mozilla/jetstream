@@ -123,7 +123,7 @@ libcst==0.4.1
     #   google-cloud-container
 locket==0.2.1
     # via partd
-markupsafe==2.0.1
+markupsafe==2.1.0
     # via jinja2
 mccabe==0.6.1
     # via flake8
