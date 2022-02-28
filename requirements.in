@@ -34,15 +34,15 @@ coverage[toml]==6.3.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.02.0
+dask[distributed]==2022.02.1
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2022.02.0
+distributed==2022.02.1
     # via dask
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2022.1.0
+fsspec==2022.2.0
     # via dask
 gitdb==4.0.9
     # via gitpython
@@ -80,11 +80,11 @@ google-cloud-storage==2.1.0
     #   smart-open
 google-crc32c==1.3.0
     # via google-resumable-media
-google-resumable-media==2.2.1
+google-resumable-media==2.3.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.54.0
+googleapis-common-protos[grpc]==1.55.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1
@@ -292,7 +292,7 @@ typing-extensions==4.1.1
     #   mypy
 urllib3==1.26.8
     # via requests
-zict==2.0.0
+zict==2.1.0
     # via distributed
 zipp==3.7.0
     # via importlib-resources
