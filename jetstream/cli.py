@@ -100,7 +100,7 @@ class ArgoExecutorStrategy:
         ]
 
         return submit_workflow(
-            project_id=self.project_id,
+            project_id='moz-fx-data-experiments',
             zone=self.zone,
             cluster_id=self.cluster_id,
             workflow_file=self.RUN_WORKFLOW,
