@@ -121,6 +121,7 @@ class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
     bucket: str
+    dry_run: bool = False
     log_config: Optional[LogConfiguration] = None
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
@@ -139,7 +140,7 @@ class SerialExecutorStrategy:
                 analysis = self.analysis_class(
                     self.project_id, self.dataset_id, config, self.log_config
                 )
-                analysis.run(date)
+                analysis.run(date, dry_run=self.dry_run)
                 export_metadata(config, self.bucket, self.project_id)
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
@@ -464,6 +465,13 @@ recreate_enrollments_option = click.option(
     default=False,
 )
 
+dry_run_option = click.option(
+    "--dry_run",
+    "--dry-run",
+    help="Dry run analysis portion",
+    default=False,
+)
+
 
 @cli.command()
 @project_id_option
@@ -479,6 +487,7 @@ recreate_enrollments_option = click.option(
 @bucket_option
 @secret_config_file_option
 @recreate_enrollments_option
+@dry_run_option
 @click.pass_context
 def run(
     ctx,
@@ -489,6 +498,7 @@ def run(
     bucket,
     config_file,
     recreate_enrollments,
+    dry_run
 ):
     """Runs analysis for the provided date."""
     analysis_executor = AnalysisExecutor(
@@ -502,7 +512,7 @@ def run(
     )
 
     success = analysis_executor.execute(
-        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
+        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, dry_run, ctx.obj["log_config"])
     )
 
     sys.exit(0 if success else 1)
@@ -537,7 +547,7 @@ def run_argo(
     monitor_status,
     cluster_ip,
     cluster_cert,
-    recreate_enrollments,
+    recreate_enrollments
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(

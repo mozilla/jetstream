@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
+from venv import create
 
 import attr
 import dask
@@ -188,7 +189,7 @@ class Analysis:
         time_limits: TimeLimits,
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
-        dry_run: bool,
+        dry_run: False,
     ):
         """
         Calculate metrics for a specific experiment.
@@ -245,6 +246,13 @@ class Analysis:
                 analysis_basis,
                 exposure_signal,
             )
+
+            metrics_sql = metrics_sql.replace(
+                "mozdata.telemetry.clients_daily",
+                "`moz-fx-data-experiments.dberry_simulated_AA_tests_shared.clients_daily`"
+            )
+
+            print(metrics_sql)
 
             self.bigquery.execute(metrics_sql, res_table_name)
             self._publish_view(period, analysis_basis=analysis_basis.value)
@@ -455,6 +463,7 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
+
         global _dask_cluster
         logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
 
@@ -587,6 +596,7 @@ class Analysis:
 
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         enrollments_table = f"enrollments_{normalized_slug}"
+        enrollments_table_tmp = enrollments_table + '_tmp'
 
         logger.info(f"Create {enrollments_table}")
         exp = mozanalysis.experiment.Experiment(
@@ -610,11 +620,33 @@ class Analysis:
             self.config.experiment.segments,
         )
 
+        create_fake_enrollments = '''
+        SELECT 
+            client_id,
+            CASE WHEN (RAND() < 0.3333) THEN 'control' WHEN (RAND() < 0.4999) THEN 'treatment-a' ELSE 'treatment-b' END AS branch,
+            branch AS branch_orig,
+            enrollment_date,
+            num_enrollment_events,
+            exposure_date,
+            num_exposure_events
+        FROM {enrollments_table}
+        '''.format(
+            enrollments_table=enrollments_table_tmp
+        )
+
         try:
             self.bigquery.execute(
                 enrollments_sql,
-                enrollments_table,
+                enrollments_table_tmp,
                 google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
             )
+
+            self.bigquery.execute(
+                create_fake_enrollments,
+                enrollments_table,
+                google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
+            )     
+
+            self.bigquery.delete_table(self.dataset + '.' + enrollments_table_tmp)       
         except Conflict:
             pass
