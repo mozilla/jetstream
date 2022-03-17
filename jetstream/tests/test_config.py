@@ -126,7 +126,7 @@ class TestAnalysisSpec:
             experiments_column_type = "none"
 
             [metrics.forgotten_metric]
-            data_source = "silly_knight"
+            data_souRce = "silly_knight"
             select_expression = "1"
             [metrics.forgotten_metric.statistics.bootstrap_mean]
             """

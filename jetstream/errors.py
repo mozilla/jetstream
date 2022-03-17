@@ -47,10 +47,6 @@ class InvalidConfigurationException(Exception):
         super().__init__(message)
 
 
-class WrongCaseConfigurationException(InvalidConfigurationException):
-    pass
-
-
 class UnexpectedKeyConfigurationException(InvalidConfigurationException):
     pass
 

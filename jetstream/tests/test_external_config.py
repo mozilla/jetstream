@@ -19,7 +19,6 @@ from jetstream.external_config import (
     ExternalConfig,
     ExternalConfigCollection,
     ExternalOutcome,
-    check_all_keys_lowercase,
     entity_from_path,
     validate_config_settings,
 )
@@ -132,10 +131,6 @@ def test_validate_config_settings(mock_toml_loads, test_input, expected):
 @pytest.mark.parametrize(
     "test_input,exception_type",
     (
-        # ({"tEst": {"dummy": {"hello": None}}}, WrongCaseConfigurationException),
-        # ({"test": {"dummY": {"hEllo": None}}}, WrongCaseConfigurationException),
-        # ({"test": {"dummy": {"hEllo": None}}}, WrongCaseConfigurationException),
-        # ({"test": {"lt_2GBS_UFF": {"hEllo": None}}}, WrongCaseConfigurationException),
         (
             {"metrics": {}, "experiment": {}, "segments": {}, "was_ist_das": {}},
             UnexpectedKeyConfigurationException,
@@ -156,28 +151,3 @@ def test_validate_config_settings_raises(mock_toml_loads, test_input, exception_
 
     with pytest.raises(exception_type):
         validate_config_settings(Path("README.md"))
-
-
-@pytest.mark.parametrize(
-    "test_input,expected",
-    (
-        (dict(), list()),
-        ({"test": "hellO!"}, list()),
-        ({"test": "hellO!", "lt_2GB_in_memory": "nothing"}, list()),
-        ({"tEst": "hellO!"}, ["tEst"]),
-        (
-            {
-                "test": {
-                    "secoNd_depth": {
-                        "HeLLo": {"dummy": "hey"},
-                        "dummy": dict(),
-                    }
-                }
-            },
-            ["HeLLo", "secoNd_depth"],
-        ),
-    ),
-)
-def test_check_all_keys_lowercase(test_input, expected):
-    actual = check_all_keys_lowercase(test_input)
-    assert actual == expected

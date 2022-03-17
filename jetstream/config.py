@@ -650,14 +650,7 @@ class MetricsSpec:
     overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.ib(
-        default=attr.Factory(dict),
-        validator=validate_metric_definitions
-    )
-
-    definitions: Dict[str, MetricDefinition] = attr.ib(
-        default=attr.Factory(dict),
-        validator=validate_metric_definitions
-        # default=attr.Factory(dict)
+        default=attr.Factory(dict), validator=validate_metric_definitions
     )
 
     @classmethod
