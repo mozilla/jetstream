@@ -48,7 +48,7 @@ import pytz
 import toml
 from jinja2 import StrictUndefined
 
-from jetstream.errors import NoStartDateException, ValidationException
+from jetstream.errors import NoStartDateException
 from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
 from jetstream.metric import Metric
 from jetstream.pre_treatment import PreTreatment
@@ -627,19 +627,6 @@ class MetricDefinition:
 MetricsConfigurationType = Dict[AnalysisPeriod, List[Summary]]
 
 
-def validate_metric_definitions(instance: Any, attribute: Any, value: Any) -> None:
-    known_keys = instance.__dict__.keys()
-    for metric_definition in instance.definitions.keys():
-        for k in known_keys:
-            if k != "definitions":
-                if (
-                    metric_definition in [m.name for m in getattr(instance, k)]
-                    or metric_definition == "active_hours"
-                ):  # TODO: seems like active_hours gets injected at some point for some configs?
-                    return
-        raise ValidationException(f"Metric definition: {metric_definition} never used")
-
-
 @attr.s(auto_attribs=True)
 class MetricsSpec:
     """Describes the interface for the metrics section in configuration."""
@@ -649,9 +636,7 @@ class MetricsSpec:
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
 
-    definitions: Dict[str, MetricDefinition] = attr.ib(
-        default=attr.Factory(dict), validator=validate_metric_definitions
-    )
+    definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
