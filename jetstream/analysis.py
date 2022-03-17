@@ -630,6 +630,7 @@ class Analysis:
             exposure_date,
             num_exposure_events
         FROM {enrollments_table}
+        WHERE branch = 'control'
         '''.format(
             enrollments_table=enrollments_table_tmp
         )
