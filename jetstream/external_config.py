@@ -225,20 +225,8 @@ class ExternalConfigCollection:
 
             external_configs = []
 
-            # 2022-03-18
-            # @kik: those existing config contain errors causing unit tests to fail with:
-            # "specified segments is missing"  error
-            config_files_to_skip = (
-                "bug-1695015-pref-new-tab-modernized-ux-region-1-release-86-88.toml",
-                "bug-1671484-pref-validation-of-relpreload-performance-impact-release-82-83.toml",
-                "bug-1726656-pref-tab-unloading-nightly-93-94.toml",
-            )
-
             for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
-
-                if str(config_file).split("/")[-1] not in config_files_to_skip:
-                    validate_config_settings(config_file)
 
                 external_configs.append(
                     ExternalConfig(
