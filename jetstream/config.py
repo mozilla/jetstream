@@ -652,7 +652,9 @@ class MetricsSpec:
             params[k] = [MetricReference(m) for m in v]
 
         params["definitions"] = {
-            k: _converter.structure({"name": k, **v}, MetricDefinition)
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, MetricDefinition
+            )
             for k, v in d.items()
             if k not in known_keys and k != "28_day"
         }
@@ -739,7 +741,10 @@ class DataSourcesSpec:
     @classmethod
     def from_dict(cls, d: dict) -> "DataSourcesSpec":
         definitions = {
-            k: _converter.structure({"name": k, **v}, DataSourceDefinition) for k, v in d.items()
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, DataSourceDefinition
+            )
+            for k, v in d.items()
         }
         return cls(definitions)
 
@@ -833,11 +838,17 @@ class SegmentsSpec:
     @classmethod
     def from_dict(cls, d: dict) -> "SegmentsSpec":
         data_sources = {
-            k: _converter.structure({"name": k, **v}, SegmentDataSourceDefinition)
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())},
+                SegmentDataSourceDefinition,
+            )
             for k, v in d.pop("data_sources", {}).items()
         }
         definitions = {
-            k: _converter.structure({"name": k, **v}, SegmentDefinition) for k, v in d.items()
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, SegmentDefinition
+            )
+            for k, v in d.items()
         }
         return cls(definitions, data_sources)
 
@@ -964,7 +975,9 @@ class OutcomeSpec:
         params["description"] = d["description"]
         params["data_sources"] = _converter.structure(d.get("data_sources", {}), DataSourcesSpec)
         params["metrics"] = {
-            k: _converter.structure({"name": k, **v}, MetricDefinition)
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, MetricDefinition
+            )
             for k, v in d.get("metrics", {}).items()
         }
         params["default_metrics"] = [

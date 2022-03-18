@@ -55,7 +55,7 @@ google-api-core[grpc]==2.7.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.6.0
+google-auth==2.6.2
     # via
     #   google-api-core
     #   google-cloud-core
@@ -84,7 +84,7 @@ google-resumable-media==2.3.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.55.0
+googleapis-common-protos[grpc]==1.56.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1

@@ -124,6 +124,11 @@ class TestAnalysisSpec:
             [data_sources.silly_knight]
             from_expression = "france"
             experiments_column_type = "none"
+
+            [metrics.forgotten_metric]
+            data_souRce = "silly_knight"
+            select_expression = "1"
+            [metrics.forgotten_metric.statistics.bootstrap_mean]
             """
         )
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
@@ -589,8 +594,8 @@ class TestExperimentSpec:
             segments = ["regular_users_v3", "my_cool_segment"]
 
             [segments.my_cool_segment]
-            data_source = "my_cool_data_source"
-            select_expression = "{{agg_any('1')}}"
+            Data_Source = "my_cool_data_source"
+            Select_Expression = "{{agg_any('1')}}"
 
             [segments.data_sources.my_cool_data_source]
             from_expression = "(SELECT 1 WHERE submission_date BETWEEN {{experiment.start_date_str}} AND {{experiment.last_enrollment_date_str}})"
@@ -599,11 +604,15 @@ class TestExperimentSpec:
 
         spec = config.AnalysisSpec.from_dict(toml.loads(conf))
         configured = spec.resolve(experiments[0])
+
         assert len(configured.experiment.segments) == 2
+
         for segment in configured.experiment.segments:
             assert isinstance(segment, mozanalysis.segments.Segment)
+
         assert configured.experiment.segments[0].name == "regular_users_v3"
         assert configured.experiment.segments[1].name == "my_cool_segment"
+
         assert "agg_any" not in configured.experiment.segments[1].select_expr
         assert "1970" not in configured.experiment.segments[1].data_source._from_expr
         assert "{{" not in configured.experiment.segments[1].data_source._from_expr
