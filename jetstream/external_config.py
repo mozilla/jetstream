@@ -5,10 +5,12 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
+import importlib
 from pathlib import Path
 from typing import List, Optional, Union
 
 import attr
+import mozanalysis
 import toml
 from git import Repo
 from google.cloud import bigquery
@@ -68,13 +70,16 @@ def validate_config_settings(config_file: Path) -> None:
         "data_sources",
         "friendly_name",
         "description",
-    )  # TODO: double check that friendly_name and description are to be expected here
+    )
 
     core_config_keys_specified = config.keys()
 
     # checks for unexpected core configuration keys
     if unexpected_config_keys := (set(core_config_keys_specified) - set(optional_core_config_keys)):
-        err_msg = f"Unexpected config key[s] found: {unexpected_config_keys}"
+        err_msg = (
+            f"Unexpected config key[s] found: {unexpected_config_keys}. "
+            f"config_file: {str(config_file).split('/')[-1]}"
+        )
         raise UnexpectedKeyConfigurationException(err_msg)
 
     # checks that all segments defined under experiment have configuration in segments section
@@ -84,14 +89,16 @@ def validate_config_settings(config_file: Path) -> None:
         if expected_segment_configuration:
             segments_config_keys = config.get("segments", dict()).keys()
 
-            # TODO: will desktop include all possible segments?
-            import mozanalysis.segments.desktop as desktop_segments
+            mozanalysis_segments = list()
 
-            mozanalysis_segments = [
-                val
-                for val in desktop_segments.__dict__.keys()
-                if not (val.startswith("_") or val.startswith("Segment"))
-            ]
+            for mozanalysis_segment in [
+                f"mozanalysis.{segment}"
+                for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
+            ]:
+                _segments = importlib.import_module(mozanalysis_segment)
+                mozanalysis_segments.extend(
+                    list(filter(lambda _segment: not _segment.startswith("__"), dir(_segments)))
+                )
 
             if missing_segment_configuration := (
                 set(expected_segment_configuration)
@@ -101,6 +108,7 @@ def validate_config_settings(config_file: Path) -> None:
                 err_msg = (
                     "It appears some configuration for specified "
                     f"segments is missing: {missing_segment_configuration}. "
+                    f"config_file: {str(config_file).split('/')[-1]}. "
                     f"Please refer to {docs_url} for Segments configuration guide."
                 )
                 raise SegmentsConfigurationException(err_msg)
@@ -116,14 +124,21 @@ def validate_config_settings(config_file: Path) -> None:
         )
         configured_metrics = list(set(metrics_config.keys()) - set(["daily", "weekly", "overall"]))
 
-        # TODO: will desktop include all possible metrics?
-        import mozanalysis.metrics.desktop as desktop_metrics
-
         mozanalysis_metrics = [
-            val
-            for val in desktop_metrics.__dict__.keys()
-            if not (val.startswith("_") or val.startswith("Metric"))
+            f"mozanalysis.{metric}"
+            for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
         ]
+
+        mozanalysis_metrics = list()
+
+        for mozanalysis_metric in [
+            f"mozanalysis.{metric}"
+            for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
+        ]:
+            _metrics = importlib.import_module(mozanalysis_metric)
+            mozanalysis_metrics.extend(
+                list(filter(lambda _metric: not _metric.startswith("__"), dir(_metrics)))
+            )
 
         if metrics_missing_configuration := (
             set(configured_metrics) - set.union(set(specified_metrics), set(mozanalysis_metrics))
@@ -210,18 +225,19 @@ class ExternalConfigCollection:
 
             external_configs = []
 
+            # 2022-03-18
+            # @kik: those existing config contain errors causing unit tests to fail with:
+            # "specified segments is missing"  error
             config_files_to_skip = (
                 "bug-1695015-pref-new-tab-modernized-ux-region-1-release-86-88.toml",
                 "bug-1671484-pref-validation-of-relpreload-performance-impact-release-82-83.toml",
                 "bug-1726656-pref-tab-unloading-nightly-93-94.toml",
-            )  # TODO: temporary, remove once resolved issue with this specific config
+            )
 
             for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
 
-                if (
-                    str(config_file).split("/")[-1] not in config_files_to_skip
-                ):  # TODO: temporary, remove once resolved issue with this specific config
+                if str(config_file).split("/")[-1] not in config_files_to_skip:
                     validate_config_settings(config_file)
 
                 external_configs.append(
