@@ -196,9 +196,9 @@ google-cloud-core==2.2.3 \
     #   -r requirements.in
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==2.1.0 \
-    --hash=sha256:0a5e7ab1a38d2c24be8e566e50b8b0daa8af8fd49d4ab312b1fda5c147429893 \
-    --hash=sha256:53e4f6030d771526e4dbe9c6000cca44eab812f39ae8c7a810be999473e4f02c
+google-cloud-storage==2.2.1 \
+    --hash=sha256:0244f4612710cb5ec445fc6774387564e23f9823363fb408b28724e2102401b7 \
+    --hash=sha256:abdf0fadf26516172e804e00b9c24819a3b3f7351cd32f35ca249bbfac965494
     # via
     #   -r requirements.in
     #   smart-open
@@ -342,9 +342,7 @@ idna==3.3 \
 importlib-resources==5.4.0 \
     --hash=sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45 \
     --hash=sha256:d756e2f85dd4de2ba89be0b21dba2a3bbec2e871a42a3a16719258a11f87506b
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1044,7 +1042,6 @@ typing-extensions==4.1.1 \
     --hash=sha256:21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.8 \
     --hash=sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed \
@@ -1061,9 +1058,7 @@ zict==2.1.0 \
 zipp==3.7.0 \
     --hash=sha256:9f50f446828eb9d45b267433fd3e9da8d801f614129124863f9c51ebceafb87d \
     --hash=sha256:b47250dd24f92b7dd6a0a8fc5244da14608f3ca90a5efcd37a3b1642fac9a375
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
