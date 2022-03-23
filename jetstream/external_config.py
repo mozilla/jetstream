@@ -5,12 +5,10 @@ Experiment-specific configuration files are stored in https://github.com/mozilla
 """
 
 import datetime as dt
-import importlib
 from pathlib import Path
 from typing import List, Optional, Union
 
 import attr
-import mozanalysis
 import toml
 from git import Repo
 from google.cloud import bigquery
@@ -19,11 +17,7 @@ from pytz import UTC
 import jetstream.experimenter
 from jetstream.analysis import Analysis
 from jetstream.config import PLATFORM_CONFIGS, AnalysisSpec, OutcomeSpec
-from jetstream.errors import (
-    MetricsConfigurationException,
-    SegmentsConfigurationException,
-    UnexpectedKeyConfigurationException,
-)
+from jetstream.errors import UnexpectedKeyConfigurationException
 from jetstream.util import TemporaryDirectory
 
 from . import bq_normalize_name
@@ -81,73 +75,6 @@ def validate_config_settings(config_file: Path) -> None:
             f"config_file: {str(config_file).split('/')[-1]}"
         )
         raise UnexpectedKeyConfigurationException(err_msg)
-
-    # checks that all segments defined under experiment have configuration in segments section
-    if experiment_config := config.get("experiment", dict()):
-        expected_segment_configuration = experiment_config.get("segments", list())
-
-        if expected_segment_configuration:
-            segments_config_keys = config.get("segments", dict()).keys()
-
-            mozanalysis_segments = list()
-
-            for mozanalysis_segment in [
-                f"mozanalysis.{segment}"
-                for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
-            ]:
-                _segments = importlib.import_module(mozanalysis_segment)
-                mozanalysis_segments.extend(
-                    list(filter(lambda _segment: not _segment.startswith("__"), dir(_segments)))
-                )
-
-            if missing_segment_configuration := (
-                set(expected_segment_configuration)
-                - set.union(set(segments_config_keys), set(mozanalysis_segments))
-            ):
-                docs_url = "https://experimenter.info/jetstream/configuration#defining-segments"
-                err_msg = (
-                    "It appears some configuration for specified "
-                    f"segments is missing: {missing_segment_configuration}. "
-                    f"config_file: {str(config_file).split('/')[-1]}. "
-                    f"Please refer to {docs_url} for Segments configuration guide."
-                )
-                raise SegmentsConfigurationException(err_msg)
-
-    # Checks if metric with custom config is defined in metrics.weekly or metrics.overall fields
-    if metrics_config := config.get("metrics"):
-        daily_metrics = metrics_config.get("daily", list())
-        weekly_metrics = metrics_config.get("weekly", list())
-        overall_metrics = metrics_config.get("overall", list())
-
-        specified_metrics = list(
-            set.union(set(weekly_metrics), set(overall_metrics), set(daily_metrics))
-        )
-        configured_metrics = list(set(metrics_config.keys()) - set(["daily", "weekly", "overall"]))
-
-        mozanalysis_metrics = [
-            f"mozanalysis.{metric}"
-            for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
-        ]
-
-        mozanalysis_metrics = list()
-
-        for mozanalysis_metric in [
-            f"mozanalysis.{metric}"
-            for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
-        ]:
-            _metrics = importlib.import_module(mozanalysis_metric)
-            mozanalysis_metrics.extend(
-                list(filter(lambda _metric: not _metric.startswith("__"), dir(_metrics)))
-            )
-
-        if metrics_missing_configuration := (
-            set(configured_metrics) - set.union(set(specified_metrics), set(mozanalysis_metrics))
-        ):
-            err_msg = (
-                "It appears some configuration for specified "
-                f"metrics is missing: {metrics_missing_configuration}"
-            )
-            raise MetricsConfigurationException(err_msg)
 
     return None
 

@@ -10,11 +10,6 @@ import pytest
 import toml
 
 from jetstream.config import AnalysisSpec, OutcomeSpec
-from jetstream.errors import (
-    MetricsConfigurationException,
-    SegmentsConfigurationException,
-    UnexpectedKeyConfigurationException,
-)
 from jetstream.external_config import (
     ExternalConfig,
     ExternalConfigCollection,
@@ -126,28 +121,3 @@ def test_validate_config_settings(mock_toml_loads, test_input, expected):
     actual = validate_config_settings(Path(config_file))
 
     assert actual == expected
-
-
-@pytest.mark.parametrize(
-    "test_input,exception_type",
-    (
-        (
-            {"metrics": {}, "experiment": {}, "segments": {}, "was_ist_das": {}},
-            UnexpectedKeyConfigurationException,
-        ),
-        (
-            {"metrics": {}, "experiment": {"segments": ["dummy_segment"]}, "segments": {}},
-            SegmentsConfigurationException,
-        ),
-        (
-            {"metrics": {"weekly": [], "overall": [], "dau": {}}, "experiment": {}, "segments": {}},
-            MetricsConfigurationException,
-        ),
-    ),
-)
-@patch("jetstream.external_config.toml.loads")
-def test_validate_config_settings_raises(mock_toml_loads, test_input, exception_type):
-    mock_toml_loads.return_value = test_input
-
-    with pytest.raises(exception_type):
-        validate_config_settings(Path("README.md"))
