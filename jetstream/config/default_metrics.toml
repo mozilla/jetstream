@@ -7,6 +7,7 @@ weekly = [
   "active_hours",
   "ad_clicks",
   "days_of_use",
+  "qualified_cumulative_days_of_use",
   "retained",
   "uri_count",
   "search_count",
@@ -16,13 +17,14 @@ overall = [
   "active_hours",
   "ad_clicks",
   "days_of_use",
+  "qualified_cumulative_days_of_use",
   "organic_search_count",
   "search_count",
   "searches_with_ads",
   "separate_search_engine",
   "tagged_search_count",
   "tagged_follow_on_search_count",
-  "uri_count",
+  "uri_count"
 ]
 
 [metrics.active_hours.statistics.bootstrap_mean]
@@ -71,3 +73,12 @@ description = "Indicates whether the client configured separate search engines f
 [metrics.tagged_follow_on_search_count.statistics.deciles]
 
 [metrics.unenroll.statistics.binomial]
+
+[metrics.qualified_cumulative_days_of_use]
+select_expression = "COUNTIF(active_hours_sum > 0 AND scalar_parent_browser_engagement_total_uri_count_normal_and_private_mode_sum > 0)"
+data_source = "clients_daily"
+friendly_name = "QCDOU"
+description = "Qualified Cumulative Days of Use"
+
+[metrics.qualified_cumulative_days_of_use.statistics.bootstrap_mean]
+[metrics.qualified_cumulative_days_of_use.statistics.deciles]
