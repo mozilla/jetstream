@@ -152,7 +152,7 @@ class ExternalOutcome:
 
 def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome, ExternalDefaultConfig]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
-    is_default_config = path.parent.parent.name == DEFAULTS_DIR
+    is_default_config = path.parent.name == DEFAULTS_DIR
     slug = path.stem
 
     validate_config_settings(path)

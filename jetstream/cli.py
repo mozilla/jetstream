@@ -712,7 +712,9 @@ def validate_config(path: Iterable[os.PathLike]):
         print(f"Evaluating {config_file}...")
         entity = external_config.entity_from_path(config_file)
         call = partial(entity.validate)
-        if isinstance(entity, external_config.ExternalConfig):
+        if isinstance(entity, external_config.ExternalConfig) and not isinstance(
+            entity, external_config.ExternalDefaultConfig
+        ):
             if (experiments := collection.with_slug(entity.slug).experiments) == []:
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
