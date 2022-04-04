@@ -661,6 +661,10 @@ def rerun_config_changed(
     # get experiment-specific external configs
     external_configs = ExternalConfigCollection.from_github_repo()
     updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
+    experiments_with_updated_defaults = external_configs.updated_defaults(project_id, dataset_id)
+    experiment_slugs = set(
+        experiments_with_updated_defaults + [conf.slug for conf in updated_external_configs]
+    )
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -679,13 +683,13 @@ def rerun_config_changed(
         dataset_id=dataset_id,
         bucket=bucket,
         date=All,
-        experiment_slugs=[config.slug for config in updated_external_configs],
+        experiment_slugs=experiment_slugs,
         recreate_enrollments=recreate_enrollments,
     ).execute(strategy=strategy)
 
     client = BigQueryClient(project_id, dataset_id)
-    for config in updated_external_configs:
-        client.touch_tables(config.slug)
+    for slug in experiment_slugs:
+        client.touch_tables(slug)
 
     if return_status:
         sys.exit(0 if success else 1)
