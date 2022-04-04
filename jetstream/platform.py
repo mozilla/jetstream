@@ -1,6 +1,6 @@
 import importlib
 from types import ModuleType
-from typing import Any, Dict, MutableMapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, MutableMapping, Optional
 
 import attr
 import mozanalysis
@@ -8,9 +8,8 @@ import mozanalysis.experiment
 import mozanalysis.exposure
 import mozanalysis.segments
 
-from jetstream.config import AnalysisSpec
-
-from . import default_config
+if TYPE_CHECKING:
+    from jetstream.config import AnalysisSpec
 
 
 class PlatformConfigurationException(Exception):
@@ -118,8 +117,11 @@ class Platform:
         default=None, validator=validate_segments_module
     )
 
-    def resolve_config(self) -> AnalysisSpec:
+    def resolve_config(self) -> "AnalysisSpec":
+        from . import default_config
+
         config = default_config.DefaultConfigsResolver.resolve(self.app_name)
+
         if config is None:
             raise PlatformConfigurationException(
                 f"No default config for platform {self.app_name} in jetstream-config."

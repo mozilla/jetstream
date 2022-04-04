@@ -18,7 +18,7 @@ from jetstream.platform import PlatformConfigurationException
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
-TEST_DIR = Path(__file__).parent.parent
+TEST_DIR = Path(__file__).parent
 DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"
 
 
@@ -902,7 +902,6 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "desktop",
                             "enrollments_query_type": "normandy",
@@ -924,7 +923,6 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec_path": config_file,
                             "metrics_module": "None",
                             "segments_module": "None",
                             "enrollments_query_type": "normandy",
@@ -946,13 +944,11 @@ class TestGeneratePlatformConfig:
                 {
                     "platform": {
                         "firefox_desktop": {
-                            "config_spec_path": config_file,
                             "metrics_module": "desktop",
                             "segments_module": "none",
                             "app_id": "firefox-desktop",
                         },
                         "desktop": {
-                            "config_spec_path": config_file,
                             "enrollments_query_type": "normandy",
                             "app_id": "EDI",
                         },
@@ -971,7 +967,7 @@ class TestGeneratePlatformConfig:
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
                         app_id="EDI",
-                        app_name="EDI",
+                        app_name="desktop",
                     ),
                 },
             ),
@@ -979,6 +975,7 @@ class TestGeneratePlatformConfig:
     )
     def test_generate_platform_config(self, test_input, expected):
         actual = _generate_platform_config(test_input)
+        print(actual)
 
         for platform_config in actual.values():
             assert isinstance(platform_config, Platform)

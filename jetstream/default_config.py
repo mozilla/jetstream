@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 
 import attr
+import copy
 
 from . import external_config
 
@@ -28,7 +29,7 @@ class _DefaultConfigsResolver:
         return self
 
     def resolve(self, slug: str) -> Optional[external_config.ExternalDefaultConfig]:
-        return self.data.get(slug, None)
+        return copy.deepcopy(self.data.get(slug, None))
 
 
 DefaultConfigsResolver = _DefaultConfigsResolver()
