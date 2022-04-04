@@ -259,7 +259,7 @@ class ExternalConfigCollection:
                 table_name,
                 REGEXP_EXTRACT_ALL(
                     option_value,
-                    '.*STRUCT\\(\"last_updated\", \"(.+)\"\\).*'
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
                 ) AS last_updated
             FROM
             {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
@@ -290,3 +290,60 @@ class ExternalConfigCollection:
                 updated_configs.append(config)
 
         return updated_configs
+
+    def updated_defaults(self, bq_project: str, bq_dataset: str) -> List[str]:
+        """
+        Return experiment slugs that are linked to default configs that have
+        been updated/added or updated.
+
+        Only return configs for experiments that are currently live.
+        """
+        client = bigquery.Client(bq_project)
+        job = client.query(
+            rf"""
+            WITH live_experiments AS (
+                SELECT
+                    normandy_slug,
+                    app_name
+                FROM
+                `{bq_project}.monitoring.experimenter_experiments_v1`
+                WHERE status = 'Live'
+                AND start_date IS NOT NULL
+                AND (end_date IS NULL OR end_date >= DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+            )
+            SELECT
+                table_name,
+                app_name,
+                normandy_slug,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            JOIN live_experiments
+            ON table_name LIKE CONCAT("%statistics_", REPLACE(normandy_slug, "-", "_"), "%")
+            WHERE option_name = 'labels'
+            """
+        )
+
+        result = list(job.result())
+
+        updated_experiments = []
+
+        for default_config in self.defaults:
+            app_name = default_config.slug
+            for row in result:
+                if row.app_name != app_name:
+                    continue
+                if not len(row.last_updated):
+                    continue
+                table_last_updated = UTC.localize(
+                    dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
+                )
+                if table_last_updated < default_config.last_modified:
+                    print(table_last_updated)
+                    print(default_config.last_modified)
+                    updated_experiments.append(row.normandy_slug)
+
+        return list(set(updated_experiments))
