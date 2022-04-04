@@ -11,6 +11,7 @@ from jetstream.dryrun import DryRunFailedError
 from jetstream.external_config import (
     ExternalConfig,
     ExternalConfigCollection,
+    ExternalDefaultConfig,
     ExternalOutcome,
 )
 
@@ -193,6 +194,35 @@ class TestExternalConfigIntegration:
             spec=spec,
             platform="firefox_desktop",
             commit_hash="0000000",
+        )
+        with pytest.raises(DryRunFailedError):
+            extern.validate()
+
+    def test_valid_default_config_validates(self):
+        extern = ExternalDefaultConfig(
+            slug="firefox_desktop",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        extern.validate()
+
+    def test_busted_default_config_fails(self):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+        extern = ExternalDefaultConfig(
+            slug="firefox_desktop",
+            spec=spec,
+            last_modified=datetime.datetime.now(),
         )
         with pytest.raises(DryRunFailedError):
             extern.validate()

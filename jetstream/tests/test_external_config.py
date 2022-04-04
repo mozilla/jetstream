@@ -13,6 +13,7 @@ from jetstream.config import AnalysisSpec, OutcomeSpec
 from jetstream.external_config import (
     ExternalConfig,
     ExternalConfigCollection,
+    ExternalDefaultConfig,
     ExternalOutcome,
     entity_from_path,
     validate_config_settings,
@@ -101,6 +102,18 @@ class TestExternalConfig:
             last_modified=dt.datetime.now(),
         )
         extern.validate(experiments[0])
+        assert Analysis.validate.called_once()
+
+    def test_validating_external_default_config(self, monkeypatch, experiments):
+        Analysis = Mock()
+        monkeypatch.setattr("jetstream.external_config.Analysis", Analysis)
+        spec = AnalysisSpec.from_dict({})
+        extern = ExternalDefaultConfig(
+            slug="firefox_desktop",
+            spec=spec,
+            last_modified=dt.datetime.now(),
+        )
+        extern.validate()
         assert Analysis.validate.called_once()
 
 

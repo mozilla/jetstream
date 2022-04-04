@@ -1,7 +1,7 @@
+import copy
 from typing import Dict, Optional
 
 import attr
-import copy
 
 from . import external_config
 
