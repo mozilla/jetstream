@@ -89,14 +89,14 @@ class ExternalDefaultConfig(ExternalConfig):
     they are applied to all experiments.
     """
 
-    @property
-    def platform(self):
-        return self.slug
-
     def validate(self, _experiment: jetstream.experimenter.Experiment = None) -> None:
-        if self.platform not in PLATFORM_CONFIGS:
-            raise ValueError(f"Platform '{self.platform}' is unsupported.")
-        app_id = PLATFORM_CONFIGS[self.platform].app_id
+        if self.slug in PLATFORM_CONFIGS:
+            app_id = PLATFORM_CONFIGS[self.slug].app_id
+            app_name = self.slug
+        else:
+            app_name = "firefox_desktop"
+            app_id = "firefox-desktop"
+
         dummy_experiment = jetstream.experimenter.Experiment(
             experimenter_slug="dummy-experiment",
             normandy_slug="dummy_experiment",
@@ -109,7 +109,7 @@ class ExternalDefaultConfig(ExternalConfig):
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
             app_id=app_id,
-            app_name=self.platform,
+            app_name=app_name,
         )
         spec = AnalysisSpec.default_for_experiment(dummy_experiment)
         spec.merge(self.spec)
