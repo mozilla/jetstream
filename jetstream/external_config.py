@@ -23,6 +23,7 @@ from jetstream.util import TemporaryDirectory
 from . import bq_normalize_name
 
 OUTCOMES_DIR = "outcomes"
+DEFAULTS_DIR = "defaults"
 
 
 @attr.s(auto_attribs=True)
@@ -80,6 +81,43 @@ def validate_config_settings(config_file: Path) -> None:
 
 
 @attr.s(auto_attribs=True)
+class ExternalDefaultConfig(ExternalConfig):
+    """
+    Represents an external config files with platform-specific defaults.
+
+    These config files are not associated to a specific experiment, since
+    they are applied to all experiments.
+    """
+
+    @property
+    def platform(self):
+        return self.slug
+
+    def validate(self, _experiment: jetstream.experimenter.Experiment = None) -> None:
+        if self.platform not in PLATFORM_CONFIGS:
+            raise ValueError(f"Platform '{self.platform}' is unsupported.")
+        app_id = PLATFORM_CONFIGS[self.platform].app_id
+        dummy_experiment = jetstream.experimenter.Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=dt.datetime.now(UTC),
+            proposed_enrollment=14,
+            app_id=app_id,
+            app_name=self.platform,
+        )
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment)
+        spec.merge(self.spec)
+        conf = spec.resolve(dummy_experiment)
+        Analysis("no project", "no dataset", conf).validate()
+
+
+@attr.s(auto_attribs=True)
 class ExternalOutcome:
     """Represents an external outcome snippet."""
 
@@ -104,7 +142,7 @@ class ExternalOutcome:
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
             app_id=app_id,
-            app_name=self.platform,  # seems to be unused
+            app_name=self.platform,
         )
         spec = AnalysisSpec.default_for_experiment(dummy_experiment)
         spec.merge_outcome(self.spec)
@@ -140,6 +178,7 @@ class ExternalConfigCollection:
 
     configs: List[ExternalConfig] = attr.Factory(list)
     outcomes: List[ExternalOutcome] = attr.Factory(list)
+    defaults: List[ExternalDefaultConfig] = attr.Factory(list)
 
     JETSTREAM_CONFIG_URL = "https://github.com/mozilla/jetstream-config"
 
@@ -177,7 +216,21 @@ class ExternalConfigCollection:
                     )
                 )
 
-        return cls(external_configs, outcomes)
+            default_configs = []
+            for default_config_file in tmp_dir.glob(f"**/{DEFAULTS_DIR}/*/*.toml"):
+                last_modified = next(
+                    repo.iter_commits("main", paths=default_config_file)
+                ).committed_date
+
+                default_configs.append(
+                    ExternalDefaultConfig(
+                        default_config_file.stem,
+                        AnalysisSpec.from_dict(toml.load(default_config_file)),
+                        UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                    )
+                )
+
+        return cls(external_configs, outcomes, default_configs)
 
     def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
         """Return the spec for a specific experiment."""

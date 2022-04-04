@@ -1,4 +1,5 @@
 import datetime as dt
+from pathlib import Path
 from textwrap import dedent
 
 import mozanalysis.exposure
@@ -10,20 +11,15 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import (
-    CONFIG_DIRECTORY,
-    PLATFORM_CONFIGS,
-    AnalysisWindow,
-    Platform,
-    PlatformConfigurationException,
-    _generate_platform_config,
-)
+from jetstream.config import AnalysisWindow, Platform, _generate_platform_config
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
+from jetstream.platform import PlatformConfigurationException
 from jetstream.pre_treatment import CensorHighestValues, Log, RemoveNulls
 from jetstream.statistics import BootstrapMean
 
-DEFAULT_METRICS_CONFIG = PLATFORM_CONFIGS["firefox_desktop"].config_spec_path
+TEST_DIR = Path(__file__).parent.parent
+DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"
 
 
 class TestAnalysisSpec:
@@ -916,11 +912,11 @@ class TestGeneratePlatformConfig:
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
                         app_id="firefox-desktop",
+                        app_name="firefox_desktop",
                     )
                 },
             ),
@@ -938,11 +934,11 @@ class TestGeneratePlatformConfig:
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=None,
                         segments_module=None,
                         enrollments_query_type="normandy",
                         app_id="firefox-desktop",
+                        app_name="firefox_desktop",
                     )
                 },
             ),
@@ -964,18 +960,18 @@ class TestGeneratePlatformConfig:
                 },
                 {
                     "firefox_desktop": Platform(
-                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=None,
                         enrollments_query_type="glean-event",
                         app_id="firefox-desktop",
+                        app_name="firefox_desktop",
                     ),
                     "desktop": Platform(
-                        config_spec_path=CONFIG_DIRECTORY / config_file,
                         metrics_module=mozanalysis.metrics.desktop,
                         segments_module=mozanalysis.segments.desktop,
                         enrollments_query_type="normandy",
                         app_id="EDI",
+                        app_name="EDI",
                     ),
                 },
             ),
@@ -1005,7 +1001,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "firefox_desktop": {
-                        "config_spec_path": config_file,
                         "app_id": "firefox-desktop",
                     },
                 }
@@ -1013,7 +1008,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "firefox_desktop": {
-                        "config_spec_path": config_file,
                         "metrics_module": "desktop",
                         "segments_module": "none",
                         "enrollments_query_type": "glean-event",
@@ -1023,7 +1017,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "firefox_desktop": {
-                        "config_spec_path": config_file,
                         "metrics_module": "desktop",
                         "segments_module": "desktop",
                         "enrollments_query_type": "N7",
@@ -1034,7 +1027,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "firefox_desktop": {
-                        "config_spec_path": config_file,
                         "metrics_module": "random_module_name",
                         "segments_module": "desktop",
                         "enrollments_query_type": "N7",
@@ -1045,7 +1037,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "firefox_desktop": {
-                        "config_spec_path": config_file,
                         "segments_module": "random_segment",
                         "enrollments_query_type": "N7",
                         "app_id": "firefox-desktop",
@@ -1055,7 +1046,6 @@ class TestGeneratePlatformConfig:
             {
                 "platform": {
                     "dummy_app": {
-                        "config_spec_path": config_file,
                         "enrollments_query_type": "normandy",
                         "app_id": "EDI",
                     },

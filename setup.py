@@ -37,7 +37,6 @@ setup(
     url="https://github.com/mozilla/jetstream",
     packages=[
         "jetstream",
-        "jetstream.config",
         "jetstream.tests",
         "jetstream.tests.integration",
         "jetstream.logging",
@@ -45,7 +44,6 @@ setup(
         "jetstream.diagnostics",
     ],
     package_data={
-        "jetstream.config": ["*.toml"],
         "jetstream.tests": ["data/*"],
         "jetstream.workflows": ["*.yaml"],
         "jetstream": ["../*.toml"],

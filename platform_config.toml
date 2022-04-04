@@ -2,7 +2,6 @@
 
 # Desktop platforms configuration
 [platform.firefox_desktop]
-config_spec_path = "default_metrics.toml"
 metrics_module = "desktop"
 segments_module = "desktop"
 enrollments_query_type = "normandy"
