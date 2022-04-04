@@ -20,22 +20,10 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
-import importlib
 from inspect import isabstract
-from os import PathLike
-from pathlib import Path, PosixPath
+from pathlib import Path
 from types import ModuleType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
 
 import attr
 import cattr
@@ -51,6 +39,7 @@ from jinja2 import StrictUndefined
 from jetstream.errors import NoStartDateException
 from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
 from jetstream.metric import Metric
+from jetstream.platform import Platform, _generate_platform_config
 from jetstream.pre_treatment import PreTreatment
 from jetstream.statistics import Statistic, Summary
 
@@ -61,177 +50,8 @@ if TYPE_CHECKING:
 
     from .external_config import ExternalConfigCollection
 
-
-class PlatformConfigurationException(Exception):
-    """
-    Custom exception type for Jetstream platform configuration related issues.
-    """
-
-    pass
-
-
-@attr.s(auto_attribs=True)
-class Platform:
-    """
-    Platform configuration object. Contains all required settings for jetstream.
-    More info about Jetstream configuration: https://experimenter.info/jetstream/configuration
-
-    :param config_spec_path: toml configuration file name (found inside jetstream/config)
-    :type config_spec_path: PathLike
-    :param enrollments_query_type: "glean-event" or "normandy"
-    :type enrollments_query_type: str
-    :param app_id:
-    :type app_id: str
-    :param metrics_module: (Optional) name of metrics module to use
-    :type metrics_module: Optional[ModuleType]
-    :param segments_module: (Optional) name of segments module to use \
-    :type segments_module: Optional[ModuleType]
-
-    :returns: returns an instance of the object with all configuration settings as attributes
-    :rtype: Platform
-    """
-
-    VALID_MODULES_METRICS = [
-        f"mozanalysis.{metric}"
-        for metric in filter(lambda module: "metrics." in module, mozanalysis.__all__)
-    ]
-
-    VALID_MODULES_SEGMENTS = [
-        f"mozanalysis.{segment}"
-        for segment in filter(lambda module: "segments." in module, mozanalysis.__all__)
-    ]
-
-    def _check_value_not_null(self, attribute, value):
-        if not value and str(value).lower() == "none":
-            raise PlatformConfigurationException(
-                "'%s' attribute requires a value, please double check \
-                    platform configuration file. Value provided: %s"
-                % (attribute.name, str(value))
-            )
-
-    def validate_config_spec_path(self, attribute, value):
-        if type(value) != PosixPath:
-            raise PlatformConfigurationException(
-                "'%s' attribute contains invalid type. Type required: %s, got: %s"
-                % (attribute.name, "pathlib.PosixPath", type(value))
-            )
-
-        self._check_value_not_null(attribute, value)
-
-        return value
-
-    def validate_enrollments_query_type(self, attribute, value):
-        self._check_value_not_null(attribute, value)
-
-        valid_entrollments_query_types = (
-            "glean-event",
-            "normandy",
-        )
-
-        if value not in valid_entrollments_query_types:
-            raise PlatformConfigurationException(
-                "Invalid value provided for %s, value provided: %s. Valid options are: %s"
-                % (
-                    attribute.name,
-                    value,
-                    valid_entrollments_query_types,
-                )
-            )
-
-        return value
-
-    def validate_metrics_module(self, attribute, value):
-        if not value or str(value).lower() == "none":
-            return
-
-        if value.__name__ not in self.VALID_MODULES_METRICS:
-            raise PlatformConfigurationException(
-                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
-                % (
-                    attribute.name,
-                    value,
-                    self.VALID_MODULES_METRICS,
-                )
-            )
-
-        return value
-
-    def validate_segments_module(self, attribute, value):
-        if not value or str(value).lower() == "none":
-            return
-
-        if value.__name__ not in self.VALID_MODULES_SEGMENTS:
-            raise PlatformConfigurationException(
-                "Invalid module provided for %s, module provided: %s. Valid modules are: %s"
-                % (
-                    attribute.name,
-                    value,
-                    self.VALID_MODULES_SEGMENTS,
-                )
-            )
-
-        return value
-
-    config_spec_path: PathLike = attr.ib(validator=validate_config_spec_path)
-    enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
-    # app_id to use to validate Outcomes.
-    app_id: str = attr.ib(validator=_check_value_not_null)
-    metrics_module: Optional[ModuleType] = attr.ib(default=None, validator=validate_metrics_module)
-    segments_module: Optional[ModuleType] = attr.ib(
-        default=None, validator=validate_segments_module
-    )
-
-
-PARENT_DIR = Path(__file__).parent
-CONFIG_DIRECTORY = PARENT_DIR / "config"
-
-
-def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
-    """
-    Takes platform configuration and generates platform object map
-    """
-
-    processed_config = dict()
-
-    for platform, platform_config in config["platform"].items():
-        config_spec_path = platform_config.get("config_spec_path", f"{platform}.toml")
-        metrics_module = platform_config.get("metrics_module", platform)
-        segments_module = platform_config.get("segments_module", platform)
-
-        try:
-            processed_config[platform] = {
-                "config_spec_path": CONFIG_DIRECTORY / config_spec_path
-                if config_spec_path and str(config_spec_path).lower() != "none"
-                else None,
-                "metrics_module": importlib.import_module(f"mozanalysis.metrics.{metrics_module}")
-                if metrics_module and metrics_module.lower() != "none"
-                else None,
-                "segments_module": importlib.import_module(
-                    f"mozanalysis.segments.{segments_module}"
-                )
-                if segments_module and segments_module.lower() != "none"
-                else None,
-                "enrollments_query_type": platform_config.get(
-                    "enrollments_query_type", "glean-event"
-                ),
-                "app_id": platform_config.get("app_id"),
-            }
-        except ModuleNotFoundError as _err:
-            raise PlatformConfigurationException(
-                f"{_err}\nIf metrics or segments module does not exist,"
-                'please set the value to "None" inside platform_config.toml'
-            )
-
-    return {
-        platform: Platform(**platform_config)
-        for platform, platform_config in processed_config.items()
-    }
-
-
-platform_config = toml.load(PARENT_DIR.parent / "platform_config.toml")
+platform_config = toml.load(Path(__file__).parent.parent / "platform_config.toml")
 PLATFORM_CONFIGS = _generate_platform_config(platform_config)
-
-TYPE_CONFIGS = {"message": Path(__file__).parent / "config" / "cfr_metrics.toml"}
 
 _converter = cattr.Converter()
 
@@ -899,14 +719,17 @@ class AnalysisSpec:
         cls, experiment: "jetstream.experimenter.Experiment"
     ) -> "AnalysisSpec":
         """Return the default spec based on the experiment type."""
+        from . import default_config
+
         if platform := PLATFORM_CONFIGS.get(experiment.app_name):
-            default_metrics = cls.from_dict(toml.load(platform.config_spec_path))
+            default_metrics = platform.resolve_config()
         else:
             default_metrics = cls()
 
-        if type_config := TYPE_CONFIGS.get(experiment.type):
-            type_metrics = cls.from_dict(toml.load(type_config))
-            default_metrics.merge(type_metrics)
+        type_metrics = default_config.DefaultConfigsResolver.resolve(experiment.type)
+
+        if type_metrics is not None:
+            default_metrics.merge(type_metrics.spec)
 
         return default_metrics
 
