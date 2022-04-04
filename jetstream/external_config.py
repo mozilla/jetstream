@@ -150,8 +150,9 @@ class ExternalOutcome:
         Analysis("no project", "no dataset", conf).validate()
 
 
-def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome]:
+def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome, ExternalDefaultConfig]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
+    is_default_config = path.parent.parent.name == DEFAULTS_DIR
     slug = path.stem
 
     validate_config_settings(path)
@@ -162,6 +163,12 @@ def entity_from_path(path: Path) -> Union[ExternalConfig, ExternalOutcome]:
         platform = path.parent.name
         spec = OutcomeSpec.from_dict(config_dict)
         return ExternalOutcome(slug=slug, spec=spec, platform=platform, commit_hash=None)
+    elif is_default_config:
+        return ExternalDefaultConfig(
+            slug=slug,
+            spec=AnalysisSpec.from_dict(config_dict),
+            last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+        )
     return ExternalConfig(
         slug=slug,
         spec=AnalysisSpec.from_dict(config_dict),
@@ -217,7 +224,7 @@ class ExternalConfigCollection:
                 )
 
             default_configs = []
-            for default_config_file in tmp_dir.glob(f"**/{DEFAULTS_DIR}/*/*.toml"):
+            for default_config_file in tmp_dir.glob(f"**/{DEFAULTS_DIR}/*.toml"):
                 last_modified = next(
                     repo.iter_commits("main", paths=default_config_file)
                 ).committed_date
