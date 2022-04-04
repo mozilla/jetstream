@@ -342,8 +342,6 @@ class ExternalConfigCollection:
                     dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
                 )
                 if table_last_updated < default_config.last_modified:
-                    print(table_last_updated)
-                    print(default_config.last_modified)
                     updated_experiments.append(row.normandy_slug)
 
         return list(set(updated_experiments))
