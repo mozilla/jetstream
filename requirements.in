@@ -11,17 +11,17 @@ attrs==21.4.0
     #   mozanalysis
     #   mozilla-jetstream
     #   pytest
-black==22.1.0
+black==22.3.0
     # via pytest-black
 cachetools==5.0.0
     # via google-auth
-cattrs==1.10.0
+cattrs==22.1.0
     # via mozilla-jetstream
 certifi==2021.10.8
     # via requests
 charset-normalizer==2.0.12
     # via requests
-click==8.0.4
+click==8.1.2
     # via
     #   black
     #   distributed
@@ -34,15 +34,20 @@ coverage[toml]==6.3.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.03.0
+dask[distributed]==2022.04.0
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2022.03.0
+db-dtypes==1.0.0 
+    # via
+    #   pandas
+distributed==2022.04.0
     # via dask
+exceptiongroup==1.0.0rc2
+    # via cattrs
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2022.2.0
+fsspec==2022.3.0
     # via dask
 gitdb==4.0.9
     # via gitpython
@@ -60,12 +65,13 @@ google-auth==2.6.2
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.34.2
+google-cloud-bigquery==3.0.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
 google-cloud-bigquery-storage==2.13.0
     # via
+    #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
 google-cloud-container==2.10.7
@@ -149,7 +155,7 @@ packaging==21.3
     #   google-cloud-bigquery
     #   pytest
     #   statsmodels
-pandas==1.4.1
+pandas==1.4.2
     # via
     #   mozanalysis
     #   statsmodels
@@ -168,7 +174,7 @@ proto-plus==1.20.3
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==3.19.4
+protobuf==3.20.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -182,6 +188,7 @@ py==1.11.0
     # via pytest
 pyarrow==7.0.0
     # via
+    #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
 pyasn1==0.4.8
@@ -278,7 +285,7 @@ types-pytz==2021.3.6
     # via mozilla-jetstream
 types-pyyaml==6.0.5
     # via mozilla-jetstream
-types-requests==2.27.15
+types-requests==2.27.16
     # via mozilla-jetstream
 types-six==1.16.12
     # via mozilla-jetstream
@@ -291,8 +298,10 @@ typing-extensions==4.1.1
     #   black
     #   mypy
 urllib3==1.26.9
-    # via requests
+    # via
+    #   distributed
+    #   requests
 zict==2.1.0
     # via distributed
-zipp==3.7.0
+zipp==3.8.0
     # via importlib-resources
