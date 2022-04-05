@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Dict, Iterable, Mapping, Optional
 
 import attr
 import google.cloud.bigquery
@@ -69,7 +69,7 @@ class BigQueryClient:
             self.dataset,
             default_project=self.project,
         )
-        kwargs: Dict[str, Any] = {}
+        kwargs = {}
         if destination_table:
             kwargs["destination"] = dataset.table(destination_table)
             kwargs["write_disposition"] = google.cloud.bigquery.job.WriteDisposition.WRITE_TRUNCATE
