@@ -46,9 +46,9 @@ cachetools==5.0.0 \
     # via
     #   -r requirements.in
     #   google-auth
-cattrs==1.10.0 \
-    --hash=sha256:211800f725cdecedcbcf4c753bbd22d248312b37d130f06045434acb7d9b34e1 \
-    --hash=sha256:35dd9063244263e63bd0bd24ea61e3015b00272cead084b2c40d788b0f857c46
+cattrs==22.1.0 \
+    --hash=sha256:94b67b64cf92c994f8784c40c082177dc916e0489a73a9a36b24eb18a9db40c6 \
+    --hash=sha256:d55c477b4672f93606e992049f15d526dc7867e6c756cd6256d4af92e2b1e364
     # via -r requirements.in
 certifi==2021.10.8 \
     --hash=sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872 \
@@ -133,6 +133,10 @@ distributed==2022.03.0 \
     # via
     #   -r requirements.in
     #   dask
+exceptiongroup==1.0.0rc2 \
+    --hash=sha256:4d254b05231bed1d43079bdcfe0f1d66c0ab4783e6777a329355f9b78de3ad83 \
+    --hash=sha256:83e465152bd0bc2bc40d9b75686854260f86946bb947c652b5cafc31cdff70e7
+    # via cattrs
 flake8==4.0.1 \
     --hash=sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d \
     --hash=sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d
