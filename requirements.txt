@@ -179,9 +179,9 @@ google-auth==2.6.3 \
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==2.34.2 \
-    --hash=sha256:0eb882df30a00f5a1ef3d339a23a670230800b2ab249459591a7e685aad6714f \
-    --hash=sha256:bd7de9e3126ea0975d1f5b25e69c28b644c69821c229327e64b38e44fb16497e
+google-cloud-bigquery==3.0.1 \
+    --hash=sha256:5265ba044578e1471d83f854192424fe4c839c1f87b32c78ab70174d07bcf612 \
+    --hash=sha256:86c3fe75d7381ab408ee7bda04c5a46debb973983e030bb555593d31f027d066
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -190,6 +190,7 @@ google-cloud-bigquery-storage==2.13.1 \
     --hash=sha256:7a25148f635a04ca9ff568d47e64be275d3a4a3c90772524879e8f88f270d92d
     # via
     #   -r requirements.in
+    #   google-cloud-bigquery
     #   mozanalysis
 google-cloud-container==2.10.7 \
     --hash=sha256:237a1895d8fdd79181097e552c4651a864bb8cc1d66ac406548be3e741144cae \
@@ -349,9 +350,7 @@ idna==3.3 \
 importlib-resources==5.6.0 \
     --hash=sha256:1b93238cbf23b4cde34240dd8321d99e9bf2eb4bc91c0c99b2886283e7baad85 \
     --hash=sha256:a9dd72f6cc106aeb50f6e66b86b69b454766dd6e39b69ac68450253058706bcc
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -713,6 +712,7 @@ pyarrow==7.0.0 \
     --hash=sha256:fcc8f934c7847a88f13ec35feecffb61fe63bb7a3078bd98dd353762e969ce60
     # via
     #   -r requirements.in
+    #   google-cloud-bigquery
     #   mozanalysis
 pyasn1==0.4.8 \
     --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d \
@@ -1049,7 +1049,6 @@ typing-extensions==4.1.1 \
     --hash=sha256:21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.9 \
     --hash=sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14 \
@@ -1067,6 +1066,4 @@ zict==2.1.0 \
 zipp==3.8.0 \
     --hash=sha256:56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad \
     --hash=sha256:c4f6e5bbf48e74f7a38e7cc5b0480ff42b0ae5178957d564d18932525d5cf099
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
