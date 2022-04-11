@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import json
+import jsonschema
 import pandas as pd
 import pytest
 
@@ -172,3 +174,56 @@ class TestStatistics:
         StatisticResult(**args)
         with pytest.raises(ValueError):
             StatisticResult(point=[3], **args)
+
+
+class TestStatisticExport:
+    def test_data_schema(self):
+        schema = json.loads((Path(__file__).parent / "data/Statistics_v1.0.json").read_text())
+
+        jsonschema.validate([], schema)
+
+        statistics_export_data = [
+            {
+                "metric": "tagged_sap_searches",
+                "statistic": "deciles",
+                "parameter": "0.8",
+                "branch": "treatment-a",
+                "comparison": "relative_uplift",
+                "comparison_to_branch": "control",
+                "ci_width": 0.95,
+                "point": 0,
+                "lower": 0,
+                "upper": 0,
+                "segment": "all",
+                "analysis_basis": "enrollments",
+                "window_index": "3",
+            },
+            {
+                "metric": "tagged_sap_searches",
+                "statistic": "deciles",
+                "branch": "treatment-a",
+                "comparison": "relative_uplift",
+                "comparison_to_branch": "control",
+                "ci_width": 0.95,
+                "point": 0,
+                "lower": 0,
+                "upper": 0,
+                "segment": "all",
+                "analysis_basis": "exposure",
+                "window_index": "3",
+            },
+            {
+                "metric": "tagged_sap_searches",
+                "statistic": "deciles",
+                "parameter": 0.8,
+                "branch": "treatment-a",
+                "ci_width": 0.95,
+                "point": 0,
+                "lower": 0,
+                "upper": 0,
+                "segment": "all",
+                "analysis_basis": "enrollments",
+                "window_index": "3",
+            },
+        ]
+        jsonschema.validate(statistics_export_data, schema)

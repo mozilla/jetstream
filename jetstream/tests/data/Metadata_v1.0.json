@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/Metadata",
+  "definitions": {
+    "Metadata": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "description": "Version of the schema used to represent statistic results."
+        },
+        "external_config": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ExternalConfigMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "jetstream-config URL to the external configuration file defined for the analysed experiment."
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/MetricMetadata"
+          },
+          "description": "Metadata for metrics that have been computed as part of the analysis."
+        },
+        "outcomes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/OutcomeMetadata"
+          },
+          "description": "Metadata for outcomes that have been used as part of the analysis."
+        }
+      },
+      "required": [
+        "schema_version",
+        "metrics",
+        "outcomes"
+      ],
+      "description": "Experiment analysis results metadata is accessible to: 1. Experimenter via the mozanalysis GCS bucket 2. partybal via the mozanalysis GCS bucket"
+    },
+    "ExternalConfigMetadata": {
+      "type": "object",
+      "properties": {
+        "reference_branch": {
+          "type": "string",
+          "description": "Slug of the branch that is configured as reference branch in the external config."
+        },
+        "end_date": {
+          "type": "string",
+          "description": "The end date that is configured in the external config.",
+          "format": "date"
+        },
+        "start_date": {
+          "type": "string",
+          "description": "The start date that is configured in the external config.",
+          "format": "date"
+        },
+        "enrollment_period": {
+          "type": "integer",
+          "description": "Enrollment period duration that has be defined in the external config."
+        },
+        "skip": {
+          "type": "boolean",
+          "description": "Whether the analysis for this experiment is skipped."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to the external config file in the jetstream-config repo."
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "MetricMetadata": {
+      "type": "object",
+      "properties": {
+        "friendly_name": {
+          "type": "string",
+          "description": "Descriptive name for the metric."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what the metric represents."
+        },
+        "bigger_is_better": {
+          "type": "boolean",
+          "description": "Whether larger result numbers indicate better results."
+        },
+        "analysis_bases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Analysis bases statistic results are based on."
+        }
+      },
+      "required": [
+        "friendly_name",
+        "description",
+        "bigger_is_better",
+        "analysis_bases"
+      ]
+    },
+    "OutcomeMetadata": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "Slug of the outcome."
+        },
+        "friendly_name": {
+          "type": "string",
+          "description": "Descriptive name of the outcome."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of what the outcome represents."
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of metric slugs that are defined and get computed as part of the outcome."
+        },
+        "default_metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of metric slugs that are not defined as part of the outcome but are referenced and get computed."
+        },
+        "commit_hash": {
+          "type": "string",
+          "description": "Commit hash of the outcome config version used for the analysis."
+        }
+      },
+      "required": [
+        "slug",
+        "friendly_name",
+        "description",
+        "metrics",
+        "default_metrics"
+      ]
+    }
+  }
+}

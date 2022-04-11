@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/Statistics",
+  "definitions": {
+    "Statistics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Statistic"
+      },
+      "description": "The experiment results accessible to: 1. Experimenter via the mozanalysis GCS bucket 2. partybal via the mozanalysis GCS bucket"
+    },
+    "Statistic": {
+      "type": "object",
+      "properties": {
+        "segment": {
+          "type": "string",
+          "description": "The segment of the population being analyzed. \"all\" for the entire population."
+        },
+        "metric": {
+          "type": "string",
+          "description": "The slug of the metric."
+        },
+        "statistic": {
+          "type": "string",
+          "description": "The slug of the statistic that was used to summarize the metric."
+        },
+        "parameter": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "description": "A statistic-dependent quantity. For two-dimensional statistics like \"decile,\" this represents the x axis of the plot. For one-dimensional statistics, this is NULL or not available."
+        },
+        "comparison": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "If this row represents a comparison between two branches, this row describes what kind of comparison, like difference or relative_uplift. If this row represents a measurement of a single branch, then this column is NULL or not available."
+        },
+        "comparison_to_branch": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "If this row represents a comparison between two branches, this row describes which branch is being compared to."
+        },
+        "ci_width": {
+          "type": "number",
+          "description": "A value between 0 and 1 describing the width of the confidence interval represented by the lower and upper columns."
+        },
+        "point": {
+          "type": "number",
+          "description": "The point estimate of the statistic for the metric given the parameter."
+        },
+        "lower": {
+          "type": "number",
+          "description": "The lower bound of the confidence interval for the estimate."
+        },
+        "upper": {
+          "type": "number",
+          "description": "The upper bound of the confidence interval for the estimate."
+        },
+        "window_index": {
+          "type": "string",
+          "description": "A base-1 index reflecting the analysis window from which the row is drawn."
+        },
+        "analysis_basis": {
+          "type": "string",
+          "description": "Analysis basis statistic result is based on."
+        }
+      },
+      "required": [
+        "segment",
+        "metric",
+        "statistic",
+        "point",
+        "window_index",
+        "analysis_basis"
+      ]
+    }
+  }
+}
