@@ -1,6 +1,6 @@
+import json
 from pathlib import Path
 
-import json
 import jsonschema
 import pandas as pd
 import pytest

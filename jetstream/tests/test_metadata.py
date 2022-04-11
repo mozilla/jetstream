@@ -1,8 +1,13 @@
+import datetime as dt
 import json
+from pathlib import Path
 from textwrap import dedent
+from typing import Callable
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import cattr
+import jsonschema
 import requests
 import toml
 
@@ -217,3 +222,29 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_blob.upload_from_string.assert_called_once_with(
         data=json.dumps(expected, sort_keys=True, indent=4), content_type="application/json"
     )
+
+
+def test_metadata_schema(experiments, fake_outcome_resolver):
+    schema = json.loads((Path(__file__).parent / "data/Metadata_v1.0.json").read_text())
+    converter = cattr.Converter()
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
+
+    config_str = dedent(
+        """
+        [experiment]
+
+        start_date = '2022-01-01'
+
+        [metrics]
+        weekly = ["view_about_logins"]
+
+        [metrics.view_about_logins.statistics.bootstrap_mean]
+        """
+    )
+
+    spec = AnalysisSpec.from_dict(toml.loads(config_str))
+    config = spec.resolve(experiments[5])
+    metadata = ExperimentMetadata.from_config(config)
+
+    jsonschema.validate(converter.unstructure(metadata), schema)

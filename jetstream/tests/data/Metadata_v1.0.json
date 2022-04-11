@@ -46,25 +46,40 @@
       "type": "object",
       "properties": {
         "reference_branch": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Slug of the branch that is configured as reference branch in the external config."
         },
         "end_date": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "The end date that is configured in the external config.",
           "format": "date"
         },
         "start_date": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "The start date that is configured in the external config.",
           "format": "date"
         },
         "enrollment_period": {
-          "type": "integer",
+          "type": [
+            "number",
+            "null"
+          ],
           "description": "Enrollment period duration that has be defined in the external config."
         },
         "skip": {
-          "type": "boolean",
+          "type": [
+            "boolean",
+            "null"
+          ],
           "description": "Whether the analysis for this experiment is skipped."
         },
         "url": {
