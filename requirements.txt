@@ -349,9 +349,7 @@ idna==3.3 \
 importlib-resources==5.6.0 \
     --hash=sha256:1b93238cbf23b4cde34240dd8321d99e9bf2eb4bc91c0c99b2886283e7baad85 \
     --hash=sha256:a9dd72f6cc106aeb50f6e66b86b69b454766dd6e39b69ac68450253058706bcc
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1022,9 +1020,9 @@ types-pytz==2021.3.6 \
     --hash=sha256:6805c72d51118923c5bf98633c39593d5b464d2ab49a803440e2d7ab6b8920df \
     --hash=sha256:74547fd90d8d8ab4f1eedf3a344a7d186d97486973895f81221a712e1e2cd993
     # via -r requirements.in
-types-pyyaml==6.0.5 \
-    --hash=sha256:2fd21310870addfd51db621ad9f3b373f33ee3cbb81681d70ef578760bd22d35 \
-    --hash=sha256:464e050914f3d1d83a8c038e1cf46da5cb96b7cd02eaa096bcaa03675edd8a2e
+types-pyyaml==6.0.6 \
+    --hash=sha256:53c4379c7c8199d4fc5098060c51d58d38283e93d7f27bb80c8abe663456317d \
+    --hash=sha256:d3d99e0a37a2fd37f35a9e4b4f794034192dac2aea2efc84c1bcde00ed66e150
     # via -r requirements.in
 types-requests==2.27.16 \
     --hash=sha256:2437a5f4d16c0c8bd7539a8126d492b7aeb41e6cda670d76b286c7f83a658d42 \
@@ -1049,7 +1047,6 @@ typing-extensions==4.1.1 \
     --hash=sha256:21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.9 \
     --hash=sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14 \
@@ -1067,6 +1064,4 @@ zict==2.1.0 \
 zipp==3.8.0 \
     --hash=sha256:56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad \
     --hash=sha256:c4f6e5bbf48e74f7a38e7cc5b0480ff42b0ae5178957d564d18932525d5cf099
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in

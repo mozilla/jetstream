@@ -280,7 +280,7 @@ types-protobuf==3.19.15
     # via mozilla-jetstream
 types-pytz==2021.3.6
     # via mozilla-jetstream
-types-pyyaml==6.0.5
+types-pyyaml==6.0.6
     # via mozilla-jetstream
 types-requests==2.27.16
     # via mozilla-jetstream
