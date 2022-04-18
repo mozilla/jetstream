@@ -34,13 +34,13 @@ coverage[toml]==6.3.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.04.0
+dask[distributed]==2022.04.1
     # via
     #   distributed
     #   mozilla-jetstream
-distributed==2022.04.0
+distributed==2022.04.1
     # via dask
-exceptiongroup==1.0.0rc2
+exceptiongroup==1.0.0rc3
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
@@ -50,14 +50,14 @@ gitdb==4.0.9
     # via gitpython
 gitpython==3.1.27
     # via mozilla-jetstream
-google-api-core[grpc]==2.7.1
+google-api-core[grpc]==2.7.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.6.3
+google-auth==2.6.5
     # via
     #   google-api-core
     #   google-cloud-core
@@ -77,7 +77,7 @@ google-cloud-core==2.3.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==2.2.1
+google-cloud-storage==2.3.0
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -108,7 +108,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-importlib-resources==5.6.0
+importlib-resources==5.7.1
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
@@ -162,7 +162,7 @@ pathspec==0.9.0
     # via black
 patsy==0.5.2
     # via statsmodels
-platformdirs==2.5.1
+platformdirs==2.5.2
     # via black
 pluggy==1.0.0
     # via pytest
@@ -276,21 +276,21 @@ types-futures==3.3.8
     # via mozilla-jetstream
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==3.19.15
+types-protobuf==3.19.17
     # via mozilla-jetstream
 types-pytz==2021.3.6
     # via mozilla-jetstream
-types-pyyaml==6.0.5
+types-pyyaml==6.0.6
     # via mozilla-jetstream
-types-requests==2.27.16
+types-requests==2.27.19
     # via mozilla-jetstream
-types-six==1.16.12
+types-six==1.16.15
     # via mozilla-jetstream
-types-toml==0.10.3
+types-toml==0.10.5
     # via mozilla-jetstream
-types-urllib3==1.26.11
+types-urllib3==1.26.13
     # via types-requests
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via
     #   black
     #   mypy
