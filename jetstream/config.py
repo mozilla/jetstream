@@ -99,9 +99,11 @@ def _lookup_name(
 class MetricReference:
     name: str
 
-    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
+    def resolve(
+        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", parameters
+    ) -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experiment)
+            return spec.metrics.definitions[self.name].resolve(spec, experiment, parameters)
         if hasattr(experiment.platform.metrics_module, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
@@ -380,8 +382,14 @@ class MetricDefinition:
     description: Optional[str] = None
     bigger_is_better: bool = True
     analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = None
+    # parameters: Optional[Dict[Any, Any]] = dict()
 
-    def resolve(self, spec: "AnalysisSpec", experiment: ExperimentConfiguration) -> List[Summary]:
+    def resolve(
+        self,
+        spec: "AnalysisSpec",
+        experiment: ExperimentConfiguration,
+        parameters: Optional[Dict[Any, Any]] = dict(),
+    ) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             search = experiment.platform.metrics_module
@@ -398,7 +406,9 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            select_expression = _metrics_environment.from_string(self.select_expression).render()
+            select_expression = _metrics_environment.from_string(self.select_expression).render(
+                parameters=parameters
+            )
 
             metric = Metric(
                 name=self.name,
@@ -457,6 +467,7 @@ class MetricsSpec:
     overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
+    parameters: Dict[Any, Any] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
@@ -478,18 +489,23 @@ class MetricsSpec:
             for k, v in d.items()
             if k not in known_keys and k != "28_day"
         }
+
+        params["parameters"] = d.get("parameters", dict())
+
         return cls(**params)
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
+        self,
+        spec: "AnalysisSpec",
+        experiment: ExperimentConfiguration,
+        parameters: Optional[Dict[Any, Any]] = dict(),
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
-            # these summaries might contain duplicates
             summaries = [
                 summary
                 for ref in getattr(self, period.table_suffix)
-                for summary in ref.resolve(spec, experiment)
+                for summary in ref.resolve(spec, experiment, parameters)
             ]
             unique_summaries = []
             seen_summaries = set()
@@ -708,6 +724,7 @@ class AnalysisSpec:
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
     segments: SegmentsSpec = attr.Factory(SegmentsSpec)
+    parameters: Dict[Any, Any] = attr.Factory(dict)
     _resolved: bool = False
 
     @classmethod
@@ -745,9 +762,11 @@ class AnalysisSpec:
         self._resolved = True
 
         outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
+        outcome_parameters: Dict[str, Any] = dict()
 
         for slug in experimenter.outcomes:
             outcome = outcomes_resolver.resolve(slug)
+            outcome_parameters.update(getattr(outcome.spec, "parameters", dict()).items())
 
             if outcome.platform == experimenter.app_name:
                 self.merge_outcome(outcome.spec)
@@ -757,7 +776,16 @@ class AnalysisSpec:
                 )
 
         experiment = self.experiment.resolve(self, experimenter)
-        metrics = self.metrics.resolve(self, experiment)
+
+        custom_config_params = getattr(self, "parameters", dict())
+        all_param_keys = list(set([*outcome_parameters.keys(), *custom_config_params.keys()]))
+
+        parameters = {
+            key: custom_config_params.get(key, dict()).get("value")
+            or outcome_parameters[key]["default"]
+            for key in all_param_keys
+        }
+        metrics = self.metrics.resolve(self, experiment, parameters=parameters)
         return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
@@ -790,6 +818,7 @@ class OutcomeSpec:
     metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
     default_metrics: Optional[List[MetricReference]] = attr.ib(None)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
+    parameters: Optional[Dict[Any, Any]] = attr.ib(dict())
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "OutcomeSpec":
@@ -806,6 +835,7 @@ class OutcomeSpec:
         params["default_metrics"] = [
             _converter.structure(m, MetricReference) for m in d.get("default_metrics", [])
         ]
+        params["parameters"] = d.get("parameters", dict())
 
         # check that default metrics are actually defined in outcome
         for default_metric in params["default_metrics"]:

@@ -112,6 +112,21 @@ def experiments():
             app_name="firefox_desktop",
             app_id="firefox-desktop",
         ),
+        Experiment(
+            experimenter_slug="test_slug",
+            type="pref",
+            status="Live",
+            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            branches=[],
+            normandy_slug="normandy-test-slug",
+            reference_branch=None,
+            is_high_population=True,
+            outcomes=["parameterized"],
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        ),
     ]
 
 
@@ -246,6 +261,31 @@ def fake_outcome_resolver(monkeypatch):
         """
     )
 
+    parameterised_config = dedent(
+        """
+        friendly_name = "Outcomes with params"
+        description = "Outcomes containing param values"
+
+        [parameters.pokemon]
+        friendly_name = "pokemon specie"
+        description = "Name of a Pokemon specie"
+        default = "Pikka"
+
+        [parameters.level]
+        friendly_name = "Pokemon level"
+        description = "Pokemon level"
+        default = "9001"
+
+        [metrics.pokemons]
+        data_source = "main"
+        select_expression = "{{ parameters.pokemon }} AND {{ parameters.level }}"
+        friendly_name = "Meals eaten"
+        description = "Number of consumed meals"
+
+        [metrics.pokemons.statistics.bootstrap_mean]
+        """
+    )
+
     class FakeOutcomeResolver:
         @property
         def data(self) -> Dict[str, external_config.ExternalOutcome]:
@@ -259,6 +299,12 @@ def fake_outcome_resolver(monkeypatch):
             data["tastiness"] = external_config.ExternalOutcome(
                 slug="tastiness",
                 spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
+                platform="firefox_desktop",
+                commit_hash="000000",
+            )
+            data["parameterized"] = external_config.ExternalOutcome(
+                slug="parameterized",
+                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config)),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
