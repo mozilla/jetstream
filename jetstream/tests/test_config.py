@@ -843,13 +843,7 @@ class TestOutcomes:
             [parameters]
 
             [parameters.pokemon]
-            distinct_by_branch = true
-
-            [parameters.pokemon.electric]
             value = "pikachu"
-
-            [parameters.pokemon.psychic]
-            value = "alakazam"
 
             # [parameters.level]
             # value = "test"  # default defined in outcome param settings is '9001'
@@ -876,20 +870,66 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "pokemon" in spec.parameters
-        assert "distinct_by_branch" in spec.parameters["pokemon"]
-
-        assert len(spec.parameters["pokemon"]) == 3  # 3 because of distinct_by_branch
-        assert spec.parameters["pokemon"]["electric"]["value"] == "pikachu"
-        assert spec.parameters["pokemon"]["psychic"]["value"] == "alakazam"
+        assert spec.parameters["pokemon"]["value"] == "pikachu"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
         assert "pokemons" in weekly_metrics
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-            "pokemon = pikachu AND e.pokemon_type = electric"
-            "OR pokemon = alakazam AND e.pokemon_type = psychic AND 9001"
+            "pikachu AND 9001"
         )  # 'test' overwritten value and '9001' coming from outcome's default
+
+    def test_resolving_outcomes_message_id_by_branch(self, experiments, fake_outcome_resolver):
+        config_str = dedent(
+            """
+            [parameters]
+
+            [parameters.message_id]
+            distinct_by_branch = true
+
+            [parameters.message_id.branch_1]
+            value = "1234"
+
+            [parameters.message_id.branch_2]
+            value = "56789"
+
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[7])
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+
+        assert "message_id" in spec.parameters
+        assert "distinct_by_branch" in spec.parameters["message_id"]
+
+        assert len(spec.parameters["message_id"]) == 3  # 3 because of distinct_by_branch
+        assert spec.parameters["message_id"]["branch_1"]["value"] == "1234"
+        assert spec.parameters["message_id"]["branch_2"]["value"] == "56789"
+
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
+        assert "spotlight" in weekly_metrics
+
+        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
+            "message_id = 1234 AND e.branch_name = branch_1"
+            " OR message_id = 56789 AND e.branch_name = branch_2"
+        )
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
