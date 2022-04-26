@@ -840,6 +840,13 @@ class TestOutcomes:
     def test_resolving_outcomes(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
+            [parameters]
+            [parameters.pokemon]
+            value = "test"
+
+            # [parameters.level]
+            # value = "test"  # default defined in outcome param settings is '9001'
+
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
             daily = ["my_cool_metric"]
@@ -858,13 +865,19 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[5])
-
+        cfg = spec.resolve(experiments[6])
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+
+        assert "pokemon" in spec.parameters
+        assert spec.parameters["pokemon"]["value"] == "test"
+
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
-        assert "meals_eaten" in weekly_metrics
-        assert "speed" in weekly_metrics
+        assert "pokemons" in weekly_metrics
+
+        assert (
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "test AND 9001"
+        )  # 'test' overwritten value and '9001' coming from outcome's default
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
@@ -975,7 +988,6 @@ class TestGeneratePlatformConfig:
     )
     def test_generate_platform_config(self, test_input, expected):
         actual = _generate_platform_config(test_input)
-        print(actual)
 
         for platform_config in actual.values():
             assert isinstance(platform_config, Platform)
