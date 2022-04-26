@@ -780,12 +780,31 @@ class AnalysisSpec:
         custom_config_params = getattr(self, "parameters", dict())
         all_param_keys = list(set([*outcome_parameters.keys(), *custom_config_params.keys()]))
 
-        parameters = {
-            key: custom_config_params.get(key, dict()).get("value")
-            or outcome_parameters[key]["default"]
-            for key in all_param_keys
+        distinct_by_branch_templates = {
+            "message_id": "message_id = {key} AND e.branch_name = {value}",
+            "pokemon": "pokemon = {key} AND e.pokemon_type = {value}",
         }
+
+        parameters = dict()
+        tmp_res = list()
+
+        for key in all_param_keys:
+            if custom_config_params.get(key, dict()).get("distinct_by_branch"):
+                for _key, _val in custom_config_params[key].items():
+                    if _key != "distinct_by_branch":
+                        tmp_res.append(
+                            distinct_by_branch_templates[key].format(key=_val["value"], value=_key)
+                        )
+
+                parameters[key] = " OR ".join(tmp_res)
+            else:
+                parameters[key] = (
+                    custom_config_params.get(key, dict()).get("value")
+                    or outcome_parameters[key]["default"]
+                )
+
         metrics = self.metrics.resolve(self, experiment, parameters=parameters)
+
         return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
