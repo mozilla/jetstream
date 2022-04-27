@@ -792,9 +792,14 @@ class AnalysisSpec:
             if custom_config_params.get(key, dict()).get("distinct_by_branch"):
                 for _key, _val in custom_config_params[key].items():
                     if _key != "distinct_by_branch":
-                        tmp_res.append(
-                            distinct_by_branch_templates[key].format(key=_val["value"], value=_key)
-                        )
+                        try:
+                            tmp_res.append(
+                                distinct_by_branch_templates[key].format(
+                                    key=_val["value"], value=_key
+                                )
+                            )
+                        except KeyError:
+                            raise ValueError(f"Failed to specify {key} for {_key}")
 
                 parameters[key] = " OR ".join(tmp_res)
             else:

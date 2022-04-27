@@ -931,6 +931,43 @@ class TestOutcomes:
             " OR message_id = 56789 AND e.branch_name = branch_2"
         )
 
+    def test_resolving_outcomes_message_id_by_branch_raises_no_value(
+        self, experiments, fake_outcome_resolver
+    ):
+        config_str = dedent(
+            """
+            [parameters]
+
+            [parameters.message_id]
+            distinct_by_branch = true
+
+            [parameters.message_id.branch_1]
+            value = "1234"
+
+            [parameters.message_id.branch_2]
+
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+
+        with pytest.raises(ValueError, match="Failed to specify message_id for branch_2"):
+            spec.resolve(experiments[7])
+
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
         experiment = Experiment(
