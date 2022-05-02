@@ -131,7 +131,7 @@ mozanalysis==2021.12.2
     # via -r -
 msgpack==1.0.3
     # via distributed
-mypy==0.942
+mypy==0.950
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
