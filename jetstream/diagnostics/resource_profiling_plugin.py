@@ -4,13 +4,12 @@ from collections import defaultdict
 from datetime import datetime
 from threading import Lock, Thread
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 from distributed.client import Client
 from distributed.diagnostics.plugin import SchedulerPlugin
 from distributed.scheduler import Scheduler
-from distributed.utils import Any
 from google.cloud import bigquery
 from psutil import Process
 
