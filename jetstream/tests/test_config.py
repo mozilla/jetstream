@@ -837,104 +837,46 @@ class TestOutcomes:
         with pytest.raises(ValueError):
             config.OutcomeSpec.from_dict(toml.loads(config_str))
 
-    # TODO: parameters tests
     def test_resolving_outcomes(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
-            default_metrics = ["spam"]
-
-            [metrics.ad_clicks.statistics.bootstrap_mean]
-
             [parameters.id]
-            value = 1234
+            value = "1234"
+
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
             """
         )
+        _config = toml.loads(config_str)
 
-        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[3])
-        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+        print(_config)
 
-        # assert "id" in spec.parameters
-        # assert spec.parameters["id"]["value"] == "1234"
-
-        print(spec)
-
-        # assert "sample_id_count" in weekly_metrics
-
-        # assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-        #     "pikachu AND 9001"
-        # )  # 'test' overwritten value and '9001' coming from outcome's default
-
-    def test_resolving_outcomes_message_id_by_branch(self, experiments, fake_outcome_resolver):
-        config_str = dedent(
-            """
-            default_metrics = ["spam"]
-
-            [metrics.ad_clicks.statistics.bootstrap_mean]
-
-            [parameters.id.branch_1]
-            value = 1234
-            """
-        )
-
-        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[6])
+        spec = config.AnalysisSpec.from_dict(_config)
+        # cfg = spec.resolve(experiments[6])
         # weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
-        # assert "message_id" in spec.parameters
-        # assert "distinct_by_branch" in spec.parameters["message_id"]
-
-        # assert len(spec.parameters["message_id"]) == 3  # 3 because of distinct_by_branch
-        # assert spec.parameters["message_id"]["branch_1"]["value"] == "1234"
-        # assert spec.parameters["message_id"]["branch_2"]["value"] == "56789"
+        # assert "pokemon" in spec.parameters
+        # assert spec.parameters["pokemon"]["value"] == "test"
 
         # assert "view_about_logins" in weekly_metrics
         # assert "my_cool_metric" in weekly_metrics
-        # assert "spotlight" in weekly_metrics
+        # assert "pokemons" in weekly_metrics
 
-        # assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-        #     "message_id = 1234 AND e.branch_name = branch_1"
-        #     " OR message_id = 56789 AND e.branch_name = branch_2"
-        # )
-
-    # def test_resolving_outcomes_message_id_by_branch_raises_no_value(
-    #     self, experiments, fake_outcome_resolver
-    # ):
-    #     config_str = dedent(
-    #         """
-    #         [parameters]
-
-    #         [parameters.message_id]
-    #         distinct_by_branch = true
-
-    #         [parameters.message_id.branch_1]
-    #         value = "1234"
-
-    #         [parameters.message_id.branch_2]
-
-    #         [metrics]
-    #         weekly = ["view_about_logins", "my_cool_metric"]
-    #         daily = ["my_cool_metric"]
-
-    #         [metrics.my_cool_metric]
-    #         data_source = "main"
-    #         select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
-    #         friendly_name = "Cool metric"
-    #         description = "Cool cool cool 😎"
-    #         bigger_is_better = false
-
-    #         [metrics.my_cool_metric.statistics.bootstrap_mean]
-
-    #         [metrics.view_about_logins.statistics.bootstrap_mean]
-    #         """
-    #     )
-
-    #     spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-
-    #     with pytest.raises(ValueError, match="Failed to specify message_id for branch_2"):
-    #         spec.resolve(experiments[7])
-
-    # TODO: parameters tests end
+        # assert (
+        #     cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "test AND 9001"
+        # )  # 'test' overwritten value and '9001' coming from outcome's default
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))

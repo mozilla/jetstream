@@ -108,35 +108,35 @@ class ParameterDefinition:
     default: Optional[Union[str, Dict[str, Any]]]
     distinct_by_branch: bool = False
 
-    def resolve():
-        parameters = dict()
-        tmp_res = list()
+    # def resolve():
+    #     parameters = dict()
+    #     tmp_res = list()
 
-        for key in all_param_keys:
-            if custom_config_params.get(key, dict()).get("distinct_by_branch"):
-                for _key, _val in custom_config_params[key].items():
-                    if _key != "distinct_by_branch":
-                        try:
-                            tmp_res.append(
-                                distinct_by_branch_templates[key].format(
-                                    key=_val["value"], value=_key
-                                )
-                            )
-                        except KeyError:
-                            raise ValueError(f"Failed to specify {key} for {_key}")
+        # for key in all_param_keys:
+        #     if custom_config_params.get(key, dict()).get("distinct_by_branch"):
+        #         for _key, _val in custom_config_params[key].items():
+        #             if _key != "distinct_by_branch":
+        #                 try:
+        #                     tmp_res.append(
+        #                         distinct_by_branch_templates[key].format(
+        #                             key=_val["value"], value=_key
+        #                         )
+        #                     )
+        #                 except KeyError:
+        #                     raise ValueError(f"Failed to specify {key} for {_key}")
 
-                parameters[key] = " OR ".join(tmp_res)
-            else:
-                parameters[key] = (
-                    custom_config_params.get(key, dict()).get("value")
-                    or outcome_parameters[key]["default"]
-                )
-        return None  # TODO: need to figure this out
+        #         parameters[key] = " OR ".join(tmp_res)
+        #     else:
+        #         parameters[key] = (
+        #             custom_config_params.get(key, dict()).get("value")
+        #             or outcome_parameters[key]["default"]
+        #         )
+        # return None  # TODO: need to figure this out
 
 
 @attr.s(auto_attribs=True)
 class ParameterSpec:
-    definitions: Dict[str, ParameterDefinition]
+    definitions: Dict[str, ParameterDefinition] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterSpec":
@@ -152,9 +152,7 @@ class ParameterSpec:
             for k, v in d.get("parameters", {}).items()
         }
 
-        print(params)
-
-        # return cls(**params)
+        return cls(**params)
 
 
 _converter.register_structure_hook(ParameterSpec, lambda obj, _type: ParameterSpec.from_dict(obj))
@@ -554,7 +552,7 @@ class MetricsSpec:
             if k not in known_keys and k != "28_day"
         }
 
-        params["parameters"] = d.get("parameters", dict())
+        # params["parameters"] = d.get("parameters", dict())
 
         return cls(**params)
 
@@ -840,17 +838,14 @@ class AnalysisSpec:
                     f"Outcome {slug} doesn't support the platform '{experimenter.app_name}'"
                 )
 
-        experiment = self.experiment.resolve(self, experimenter)
 
-        # outcome_parameters need merged with parameters?
+        print(outcome_parameters)
+        # ParameterSpec.from_dict(custom_config_params)
 
-        custom_config_params = getattr(self, "parameters", dict())
-        ParameterSpec.from_dict(custom_config_params)
-        # all_param_keys = list(set([*outcome_parameters.keys(), *custom_config_params.keys()]))
+        # experiment = self.experiment.resolve(self, experimenter)
+        # metrics = self.metrics.resolve(self, experiment)
 
-        metrics = self.metrics.resolve(self, experiment)
-
-        return AnalysisConfiguration(experiment, metrics)
+        # return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""

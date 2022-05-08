@@ -123,22 +123,7 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
-            outcomes=["parameterised_config_distinct_false"],
-            app_name="firefox_desktop",
-            app_id="firefox-desktop",
-        ),
-        Experiment(
-            experimenter_slug="test_slug",
-            type="pref",
-            status="Live",
-            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
-            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-            proposed_enrollment=7,
-            branches=[],
-            normandy_slug="normandy-test-slug",
-            reference_branch=None,
-            is_high_population=True,
-            outcomes=["parameterised_config_distinct_true"],
+            outcomes=["parameterized"],
             app_name="firefox_desktop",
             app_id="firefox-desktop",
         ),
@@ -276,46 +261,22 @@ def fake_outcome_resolver(monkeypatch):
         """
     )
 
-    parameterised_config_distinct_false = dedent(
+    parameterised_config = dedent(
         """
         friendly_name = "Outcome with parameter same across all branches"
         description = "Outcome that has a parameter that is the same across all branches"
         default_metrics = ["sample_id_count"]
-
-        [parameters.id]
-        friendly_name = "Some random ID"
-        description = "A random ID used to count samples"
-        # distinct_by_branch = false
 
         [metrics.sample_id_count]
         data_source = "main"
         select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
         [metrics.sample_id_count.statistics.bootstrap_mean]
-        num_samples = 10
-
-        [data_sources.main]
-        from_expression = "main"
-        client_id_column = "client_info.client_id"
-        """
-    )
-
-    parameterised_config_distinct_true = dedent(
-        """
-        friendly_name = "Outcome with parameters different for each branch"
-        description = "Outcome that has parameters that are different for each branch"
-        default_metrics = ["sample_id_count"]
-
-        [metrics.sample_id_count]
-        data_source = "main"
-        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
-
-        [metrics.spam.statistics.bootstrap_mean]
 
         [parameters.id]
         friendly_name = "Some random ID"
         description = "A random ID used to count samples"
-        distinct_by_branch = true
+        distinct_by_branch = false
         """
     )
 
@@ -335,15 +296,9 @@ def fake_outcome_resolver(monkeypatch):
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
-            data["parameterised_config_distinct_false"] = external_config.ExternalOutcome(
+            data["parameterized"] = external_config.ExternalOutcome(
                 slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config_distinct_false)),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            data["parameterised_config_distinct_true"] = external_config.ExternalOutcome(
-                slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config_distinct_true)),
+                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config)),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
