@@ -123,7 +123,7 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
-            outcomes=["parameterized"],
+            outcomes=["parameterised_config_distinct_false"],
             app_name="firefox_desktop",
             app_id="firefox-desktop",
         ),
@@ -138,7 +138,7 @@ def experiments():
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=True,
-            outcomes=["multi_message_id_config"],
+            outcomes=["parameterised_config_distinct_true"],
             app_name="firefox_desktop",
             app_id="firefox-desktop",
         ),
@@ -276,48 +276,46 @@ def fake_outcome_resolver(monkeypatch):
         """
     )
 
-    parameterised_config = dedent(
+    parameterised_config_distinct_false = dedent(
         """
-        friendly_name = "Outcomes with params"
-        description = "Outcomes containing param values"
+        friendly_name = "Outcome with parameter same across all branches"
+        description = "Outcome that has a parameter that is the same across all branches"
+        default_metrics = ["sample_id_count"]
 
-        [parameters.pokemon]
-        friendly_name = "pokemon specie"
-        description = "Name of a Pokemon specie"
-        default = "Pikka"
+        [parameters.id]
+        friendly_name = "Some random ID"
+        description = "A random ID used to count samples"
+        # distinct_by_branch = false
 
-        [parameters.level]
-        friendly_name = "Pokemon level"
-        description = "Pokemon level"
-        default = "9001"
-
-        [metrics.pokemons]
+        [metrics.sample_id_count]
         data_source = "main"
-        select_expression = "{{ parameters.pokemon }} AND {{ parameters.level }}"
-        friendly_name = "Meals eaten"
-        description = "Number of consumed meals"
+        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
-        [metrics.pokemons.statistics.bootstrap_mean]
+        [metrics.sample_id_count.statistics.bootstrap_mean]
+        num_samples = 10
+
+        [data_sources.main]
+        from_expression = "main"
+        client_id_column = "client_info.client_id"
         """
     )
 
-    multi_message_id_config = dedent(
+    parameterised_config_distinct_true = dedent(
         """
-        friendly_name = "Outcomes with params"
-        description = "Outcomes containing param values"
+        friendly_name = "Outcome with parameters different for each branch"
+        description = "Outcome that has parameters that are different for each branch"
+        default_metrics = ["sample_id_count"]
 
-        [parameters.message_id]
-        friendly_name = "test"
-        description = "Test dummy"
-        default = "'DIV(100 / 0)'"
-
-        [metrics.spotlight]
+        [metrics.sample_id_count]
         data_source = "main"
-        select_expression = "{{ parameters.message_id }}"
-        friendly_name = "Meals eaten"
-        description = "Number of consumed meals"
+        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
-        [metrics.spotlight.statistics.bootstrap_mean]
+        [metrics.spam.statistics.bootstrap_mean]
+
+        [parameters.id]
+        friendly_name = "Some random ID"
+        description = "A random ID used to count samples"
+        distinct_by_branch = true
         """
     )
 
@@ -337,15 +335,15 @@ def fake_outcome_resolver(monkeypatch):
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
-            data["parameterized"] = external_config.ExternalOutcome(
+            data["parameterised_config_distinct_false"] = external_config.ExternalOutcome(
                 slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config)),
+                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config_distinct_false)),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
-            data["multi_message_id_config"] = external_config.ExternalOutcome(
+            data["parameterised_config_distinct_true"] = external_config.ExternalOutcome(
                 slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(multi_message_id_config)),
+                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config_distinct_true)),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )

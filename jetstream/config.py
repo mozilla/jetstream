@@ -825,6 +825,7 @@ class AnalysisSpec:
             raise Exception("Can't resolve an AnalysisSpec twice")
         self._resolved = True
 
+        # should experimenter.outcomes be passed into parameters merge?
         outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
         outcome_parameters: Dict[str, Any] = dict()
 
