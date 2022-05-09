@@ -185,7 +185,7 @@ psutil==5.9.0
     # via distributed
 py==1.11.0
     # via pytest
-pyarrow==7.0.0
+pyarrow==8.0.0
     # via
     #   google-cloud-bigquery
     #   mozanalysis
