@@ -94,7 +94,7 @@ googleapis-common-protos[grpc]==1.56.0
     #   grpcio-status
 grpc-google-iam-v1==0.12.4
     # via google-cloud-container
-grpcio==1.44.0
+grpcio==1.46.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
