@@ -523,9 +523,7 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
-
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
-    # parameters: Dict[str, ParameterDefinition] = attr.Factory(ParameterSpec)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
@@ -548,15 +546,12 @@ class MetricsSpec:
             if k not in known_keys and k != "28_day"
         }
 
-        # params["parameters"] = d.get("parameters", dict())
-
         return cls(**params)
 
     def resolve(
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        # parameters: Optional[Dict[Any, Any]] = dict(),
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
