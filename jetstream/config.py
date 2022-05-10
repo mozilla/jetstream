@@ -869,11 +869,11 @@ class AnalysisSpec:
 
         self.parameters = ParameterSpec.from_dict({
             param: {
-                "friendly_name": self.parameters.definitions["id"].friendly_name or other.definitions["id"].friendly_name,
-                "description": self.parameters.definitions["id"].description or other.definitions["id"].description,
-                "value": self.parameters.definitions["id"].value or other.definitions["id"].value,
-                "default": self.parameters.definitions["id"].default or other.definitions["id"].default,
-                "distinct_by_branch": self.parameters.definitions["id"].distinct_by_branch or other.definitions["id"].distinct_by_branch,
+                "friendly_name": getattr(self.parameters.definitions.get(param), "friendly_name", None) or other.definitions[param].friendly_name,
+                "description": getattr(self.parameters.definitions.get(param), "description", None) or other.definitions[param].description,
+                "value": getattr(self.parameters.definitions.get(param), "value", None) or other.definitions[param].value,
+                "default": getattr(self.parameters.definitions.get(param), "default", None) or other.definitions[param].default,
+                "distinct_by_branch": getattr(self.parameters.definitions.get(param), "distinct_by_branch", None) or other.definitions[param].distinct_by_branch,
             }
             for param in other.definitions
          })
