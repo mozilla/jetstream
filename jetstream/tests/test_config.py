@@ -862,18 +862,17 @@ class TestOutcomes:
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[6])
-        # weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
-        # assert "pokemon" in spec.parameters
-        # assert spec.parameters["pokemon"]["value"] == "test"
+        assert "id" in spec.parameters.definitions
+        assert spec.parameters.definitions["id"].value == "1234"
 
-        # assert "view_about_logins" in weekly_metrics
-        # assert "my_cool_metric" in weekly_metrics
-        # assert "pokemons" in weekly_metrics
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
 
-        # assert (
-        #     cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "test AND 9001"
-        # )  # 'test' overwritten value and '9001' coming from outcome's default
+        assert (
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "COUNTIF(sample_id = 1234)"
+        )
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))

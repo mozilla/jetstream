@@ -461,7 +461,12 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            select_expression = _metrics_environment.from_string(self.select_expression).render(parameters={"id": "test"})
+            params = {
+                param: spec.parameters.definitions[param].value or spec.parameters.definitions[param].default
+                for param in spec.parameters.definitions
+            }
+
+            select_expression = _metrics_environment.from_string(self.select_expression).render(parameters=params)
 
             metric = Metric(
                 name=self.name,
@@ -710,6 +715,7 @@ class SegmentDefinition:
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
     ) -> mozanalysis.segments.Segment:
         data_source = self.data_source.resolve(spec, experiment)
+
         return mozanalysis.segments.Segment(
             name=self.name,
             data_source=data_source,
@@ -861,19 +867,16 @@ class AnalysisSpec:
         other contains outcome defined
         """
 
-        test = {
-            "name": self.parameters.definitions["id"].name or other.definitions["id"].name,
-            "friendly_name": self.parameters.definitions["id"].friendly_name or other.definitions["id"].friendly_name,
-            "description": self.parameters.definitions["id"].description or other.definitions["id"].description,
-            "value": self.parameters.definitions["id"].value or other.definitions["id"].value,
-            "default": self.parameters.definitions["id"].default or other.definitions["id"].default,
-            "distinct_by_branch": self.parameters.definitions["id"].distinct_by_branch or other.definitions["id"].distinct_by_branch,
-        }
-
-        print(test)
-
-        # print(self.parameters)
-        # print(other)
+        self.parameters = ParameterSpec.from_dict({
+            param: {
+                "friendly_name": self.parameters.definitions["id"].friendly_name or other.definitions["id"].friendly_name,
+                "description": self.parameters.definitions["id"].description or other.definitions["id"].description,
+                "value": self.parameters.definitions["id"].value or other.definitions["id"].value,
+                "default": self.parameters.definitions["id"].default or other.definitions["id"].default,
+                "distinct_by_branch": self.parameters.definitions["id"].distinct_by_branch or other.definitions["id"].distinct_by_branch,
+            }
+            for param in other.definitions
+         })
 
 
 @attr.s(auto_attribs=True)
