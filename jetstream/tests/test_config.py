@@ -859,12 +859,9 @@ class TestOutcomes:
             [metrics.view_about_logins.statistics.bootstrap_mean]
             """
         )
-        _config = toml.loads(config_str)
 
-        print(_config)
-
-        spec = config.AnalysisSpec.from_dict(_config)
-        # cfg = spec.resolve(experiments[6])
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[6])
         # weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         # assert "pokemon" in spec.parameters

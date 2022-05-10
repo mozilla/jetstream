@@ -95,6 +95,7 @@ def _lookup_name(
     raise ValueError(f"Could not locate {klass.__name__} {name}")
 
 
+@attr.s(auto_attribs=True)
 class ParameterDefinition:
     """
     * distinct_by_branch * indicates whether value for the parameter
@@ -104,34 +105,26 @@ class ParameterDefinition:
 
     name: str  # implicit in configuration
     friendly_name: str
-    description: Optional[str]
-    default: Optional[Union[str, Dict[str, Any]]]
-    distinct_by_branch: bool = False
+    description: Optional[str] = None
+    value: Optional[str] = None
+    distinct_by_branch: Optional[bool] = False
+    default: Optional[Union[str, Dict[str, Any]]] = None
 
-    # def resolve():
-    #     parameters = dict()
-    #     tmp_res = list()
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
+        definition = {
+            "name": d["name"],
+            "friendly_name": d.get("friendly_name"),
+            "description": d.get("description"),
+            "value": d.get("value"),
+            "distinct_by_branch": d.get("distinct_by_branch"),
+            "default": d.get("default"),
+        }
 
-        # for key in all_param_keys:
-        #     if custom_config_params.get(key, dict()).get("distinct_by_branch"):
-        #         for _key, _val in custom_config_params[key].items():
-        #             if _key != "distinct_by_branch":
-        #                 try:
-        #                     tmp_res.append(
-        #                         distinct_by_branch_templates[key].format(
-        #                             key=_val["value"], value=_key
-        #                         )
-        #                     )
-        #                 except KeyError:
-        #                     raise ValueError(f"Failed to specify {key} for {_key}")
+        return cls(**definition)
 
-        #         parameters[key] = " OR ".join(tmp_res)
-        #     else:
-        #         parameters[key] = (
-        #             custom_config_params.get(key, dict()).get("value")
-        #             or outcome_parameters[key]["default"]
-        #         )
-        # return None  # TODO: need to figure this out
+
+_converter.register_structure_hook(ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj))
 
 
 @attr.s(auto_attribs=True)
@@ -140,7 +133,7 @@ class ParameterSpec:
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterSpec":
-        params: Dict[str, Any] = {}
+        params: Dict[str, Any] = {"definitions": dict()}
 
         if not d:
             return cls(definitions=dict())
@@ -149,7 +142,7 @@ class ParameterSpec:
             k: _converter.structure(
                 {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, ParameterDefinition
             )
-            for k, v in d.get("parameters", {}).items()
+            for k, v in d.items()
         }
 
         return cls(**params)
@@ -163,10 +156,10 @@ class MetricReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", parameters
+        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
     ) -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experiment, parameters)
+            return spec.metrics.definitions[self.name].resolve(spec, experiment)
         if hasattr(experiment.platform.metrics_module, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
@@ -450,7 +443,7 @@ class MetricDefinition:
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        parameters: ParameterSpec = attr.Factory(ParameterSpec)
+        # parameters: ParameterSpec = attr.Factory(ParameterSpec)
     ) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
@@ -468,9 +461,7 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            select_expression = _metrics_environment.from_string(self.select_expression).render(
-                parameters=parameters
-            )
+            select_expression = _metrics_environment.from_string(self.select_expression).render(parameters={"id": "test"})
 
             metric = Metric(
                 name=self.name,
@@ -529,7 +520,7 @@ class MetricsSpec:
     overall: List[MetricReference] = attr.Factory(list)
 
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
-    parameters: Dict[str, ParameterDefinition] = attr.Factory(ParameterSpec)
+    # parameters: Dict[str, ParameterDefinition] = attr.Factory(ParameterSpec)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
@@ -560,14 +551,14 @@ class MetricsSpec:
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        parameters: Optional[Dict[Any, Any]] = dict(),
+        # parameters: Optional[Dict[Any, Any]] = dict(),
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
             summaries = [
                 summary
                 for ref in getattr(self, period.table_suffix)
-                for summary in ref.resolve(spec, experiment, parameters)
+                for summary in ref.resolve(spec, experiment)
             ]
             unique_summaries = []
             seen_summaries = set()
@@ -825,11 +816,9 @@ class AnalysisSpec:
 
         # should experimenter.outcomes be passed into parameters merge?
         outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
-        outcome_parameters: Dict[str, Any] = dict()
 
         for slug in experimenter.outcomes:
             outcome = outcomes_resolver.resolve(slug)
-            outcome_parameters.update(getattr(outcome.spec, "parameters", dict()).items())
 
             if outcome.platform == experimenter.app_name:
                 self.merge_outcome(outcome.spec)
@@ -838,14 +827,12 @@ class AnalysisSpec:
                     f"Outcome {slug} doesn't support the platform '{experimenter.app_name}'"
                 )
 
+            self.merge_parameters(outcome.spec.parameters)
 
-        print(outcome_parameters)
-        # ParameterSpec.from_dict(custom_config_params)
+        experiment = self.experiment.resolve(self, experimenter)
+        metrics = self.metrics.resolve(self, experiment)
 
-        # experiment = self.experiment.resolve(self, experimenter)
-        # metrics = self.metrics.resolve(self, experiment)
-
-        # return AnalysisConfiguration(experiment, metrics)
+        return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""
@@ -866,6 +853,27 @@ class AnalysisSpec:
             )
         )
         self.data_sources.merge(other.data_sources)
+
+    def merge_parameters(self, other: "ParameterSpec"):
+        """
+        Merges Outcome parameters into external config parameters.
+        self.parameters contains custom config defined parameters
+        other contains outcome defined
+        """
+
+        test = {
+            "name": self.parameters.definitions["id"].name or other.definitions["id"].name,
+            "friendly_name": self.parameters.definitions["id"].friendly_name or other.definitions["id"].friendly_name,
+            "description": self.parameters.definitions["id"].description or other.definitions["id"].description,
+            "value": self.parameters.definitions["id"].value or other.definitions["id"].value,
+            "default": self.parameters.definitions["id"].default or other.definitions["id"].default,
+            "distinct_by_branch": self.parameters.definitions["id"].distinct_by_branch or other.definitions["id"].distinct_by_branch,
+        }
+
+        print(test)
+
+        # print(self.parameters)
+        # print(other)
 
 
 @attr.s(auto_attribs=True)
@@ -894,7 +902,8 @@ class OutcomeSpec:
         params["default_metrics"] = [
             _converter.structure(m, MetricReference) for m in d.get("default_metrics", [])
         ]
-        params["parameters"] = d.get("parameters", dict())
+
+        params["parameters"] = ParameterSpec.from_dict(d.get("parameters", dict()))
 
         # check that default metrics are actually defined in outcome
         for default_metric in params["default_metrics"]:
