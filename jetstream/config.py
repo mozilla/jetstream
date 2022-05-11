@@ -23,7 +23,17 @@ import datetime as dt
 from inspect import isabstract
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 import cattr
@@ -96,14 +106,67 @@ def _lookup_name(
 
 
 @attr.s(auto_attribs=True)
+class ParameterDefinition:
+    """
+    * distinct_by_branch * indicates whether value for the parameter
+        needs to be specified for each branch
+        or if the value can be applied across all configuration branches (default: False)
+    """
+
+    name: str  # implicit in configuration
+    friendly_name: str
+    description: Optional[str] = None
+    value: Optional[str] = None
+    distinct_by_branch: Optional[bool] = False
+    default: Optional[Union[str, Dict[str, Any]]] = None
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
+        definition = {
+            "name": d["name"],
+            "friendly_name": d.get("friendly_name"),
+            "description": d.get("description"),
+            "value": d.get("value"),
+            "distinct_by_branch": d.get("distinct_by_branch"),
+            "default": d.get("default"),
+        }
+
+        return cls(**definition)
+
+
+_converter.register_structure_hook(
+    ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj)
+)
+
+
+@attr.s(auto_attribs=True)
+class ParameterSpec:
+    definitions: Dict[str, ParameterDefinition] = attr.Factory(dict)
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "ParameterSpec":
+        params: Dict[str, Any] = {"definitions": dict()}
+
+        params["definitions"] = {
+            k: _converter.structure(
+                {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, ParameterDefinition
+            )
+            for k, v in d.items()
+        }
+
+        return cls(**params)
+
+
+_converter.register_structure_hook(ParameterSpec, lambda obj, _type: ParameterSpec.from_dict(obj))
+
+
+@attr.s(auto_attribs=True)
 class MetricReference:
     name: str
 
-    def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", parameters
-    ) -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experiment, parameters)
+            return spec.metrics.definitions[self.name].resolve(spec, experiment)
         if hasattr(experiment.platform.metrics_module, self.name):
             raise ValueError(f"Please define a statistical treatment for the metric {self.name}")
         raise ValueError(f"Could not locate metric {self.name}")
@@ -382,13 +445,11 @@ class MetricDefinition:
     description: Optional[str] = None
     bigger_is_better: bool = True
     analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = None
-    # parameters: Optional[Dict[Any, Any]] = dict()
 
     def resolve(
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        parameters: Optional[Dict[Any, Any]] = dict(),
     ) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
@@ -406,8 +467,14 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
+            select_expr_params = {
+                param: spec.parameters.definitions[param].value
+                or spec.parameters.definitions[param].default
+                for param in spec.parameters.definitions
+            }
+
             select_expression = _metrics_environment.from_string(self.select_expression).render(
-                parameters=parameters
+                parameters=select_expr_params
             )
 
             metric = Metric(
@@ -465,9 +532,7 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
-
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
-    parameters: Dict[Any, Any] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MetricsSpec":
@@ -490,22 +555,19 @@ class MetricsSpec:
             if k not in known_keys and k != "28_day"
         }
 
-        params["parameters"] = d.get("parameters", dict())
-
         return cls(**params)
 
     def resolve(
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        parameters: Optional[Dict[Any, Any]] = dict(),
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:
             summaries = [
                 summary
                 for ref in getattr(self, period.table_suffix)
-                for summary in ref.resolve(spec, experiment, parameters)
+                for summary in ref.resolve(spec, experiment)
             ]
             unique_summaries = []
             seen_summaries = set()
@@ -657,6 +719,7 @@ class SegmentDefinition:
         self, spec: "AnalysisSpec", experiment: ExperimentConfiguration
     ) -> mozanalysis.segments.Segment:
         data_source = self.data_source.resolve(spec, experiment)
+
         return mozanalysis.segments.Segment(
             name=self.name,
             data_source=data_source,
@@ -724,7 +787,7 @@ class AnalysisSpec:
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
     segments: SegmentsSpec = attr.Factory(SegmentsSpec)
-    parameters: Dict[Any, Any] = attr.Factory(dict)
+    parameters: ParameterSpec = attr.Factory(ParameterSpec)
     _resolved: bool = False
 
     @classmethod
@@ -762,11 +825,9 @@ class AnalysisSpec:
         self._resolved = True
 
         outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
-        outcome_parameters: Dict[str, Any] = dict()
 
         for slug in experimenter.outcomes:
             outcome = outcomes_resolver.resolve(slug)
-            outcome_parameters.update(getattr(outcome.spec, "parameters", dict()).items())
 
             if outcome.platform == experimenter.app_name:
                 self.merge_outcome(outcome.spec)
@@ -775,17 +836,11 @@ class AnalysisSpec:
                     f"Outcome {slug} doesn't support the platform '{experimenter.app_name}'"
                 )
 
+            self.merge_parameters(outcome.spec.parameters)
+
         experiment = self.experiment.resolve(self, experimenter)
+        metrics = self.metrics.resolve(self, experiment)
 
-        custom_config_params = getattr(self, "parameters", dict())
-        all_param_keys = list(set([*outcome_parameters.keys(), *custom_config_params.keys()]))
-
-        parameters = {
-            key: custom_config_params.get(key, dict()).get("value")
-            or outcome_parameters[key]["default"]
-            for key in all_param_keys
-        }
-        metrics = self.metrics.resolve(self, experiment, parameters=parameters)
         return AnalysisConfiguration(experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
@@ -808,6 +863,37 @@ class AnalysisSpec:
         )
         self.data_sources.merge(other.data_sources)
 
+    def merge_parameters(self, other: "ParameterSpec"):
+        """
+        Merges Outcome parameters into external config parameters.
+        self.parameters contains custom config defined parameters
+        other contains outcome defined
+        """
+
+        self.parameters = ParameterSpec.from_dict(
+            {
+                param: {
+                    "friendly_name": getattr(
+                        self.parameters.definitions.get(param), "friendly_name", None
+                    )
+                    or other.definitions[param].friendly_name,
+                    "description": getattr(
+                        self.parameters.definitions.get(param), "description", None
+                    )
+                    or other.definitions[param].description,
+                    "value": getattr(self.parameters.definitions.get(param), "value", None)
+                    or other.definitions[param].value,
+                    "default": getattr(self.parameters.definitions.get(param), "default", None)
+                    or other.definitions[param].default,
+                    "distinct_by_branch": getattr(
+                        self.parameters.definitions.get(param), "distinct_by_branch", None
+                    )
+                    or other.definitions[param].distinct_by_branch,
+                }
+                for param in other.definitions
+            }
+        )
+
 
 @attr.s(auto_attribs=True)
 class OutcomeSpec:
@@ -818,7 +904,7 @@ class OutcomeSpec:
     metrics: Dict[str, MetricDefinition] = attr.Factory(dict)
     default_metrics: Optional[List[MetricReference]] = attr.ib(None)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
-    parameters: Optional[Dict[Any, Any]] = attr.ib(dict())
+    parameters: ParameterSpec = attr.Factory(ParameterSpec)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "OutcomeSpec":
@@ -835,7 +921,8 @@ class OutcomeSpec:
         params["default_metrics"] = [
             _converter.structure(m, MetricReference) for m in d.get("default_metrics", [])
         ]
-        params["parameters"] = d.get("parameters", dict())
+
+        params["parameters"] = ParameterSpec.from_dict(d.get("parameters", dict()))
 
         # check that default metrics are actually defined in outcome
         for default_metric in params["default_metrics"]:

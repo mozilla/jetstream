@@ -840,12 +840,35 @@ class TestOutcomes:
     def test_resolving_outcomes(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
-            [parameters]
-            [parameters.pokemon]
-            value = "test"
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
 
-            # [parameters.level]
-            # value = "test"  # default defined in outcome param settings is '9001'
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[6])
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
+
+    def test_resolving_parameters(self, experiments, fake_outcome_resolver):
+        config_str = dedent(
+            """
+            [parameters.id]
+            value = "1234"
 
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
@@ -868,16 +891,89 @@ class TestOutcomes:
         cfg = spec.resolve(experiments[6])
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
-        assert "pokemon" in spec.parameters
-        assert spec.parameters["pokemon"]["value"] == "test"
+        assert "id" in spec.parameters.definitions
+        assert spec.parameters.definitions["id"].default == "default_value"
+        assert spec.parameters.definitions["id"].value == "1234"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
-        assert "pokemons" in weekly_metrics
 
         assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "test AND 9001"
-        )  # 'test' overwritten value and '9001' coming from outcome's default
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = 1234)"
+        )
+
+    def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[6])
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+
+        assert "id" in spec.parameters.definitions
+        assert not spec.parameters.definitions["id"].value
+        assert spec.parameters.definitions["id"].default == "default_value"
+
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
+
+        assert (
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = default_value)"
+        )
+
+    def test_resolving_parameters_distinct_by_branch(self, experiments, fake_outcome_resolver):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[6])
+        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
+
+        assert "id" in spec.parameters.definitions
+        assert not spec.parameters.definitions["id"].value
+        assert spec.parameters.definitions["id"].default == "default_value"
+
+        assert "view_about_logins" in weekly_metrics
+        assert "my_cool_metric" in weekly_metrics
+
+        assert (
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = default_value)"
+        )
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))

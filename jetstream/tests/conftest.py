@@ -263,26 +263,21 @@ def fake_outcome_resolver(monkeypatch):
 
     parameterised_config = dedent(
         """
-        friendly_name = "Outcomes with params"
-        description = "Outcomes containing param values"
+        friendly_name = "Outcome with parameter same across all branches"
+        description = "Outcome that has a parameter that is the same across all branches"
+        default_metrics = ["sample_id_count"]
 
-        [parameters.pokemon]
-        friendly_name = "pokemon specie"
-        description = "Name of a Pokemon specie"
-        default = "Pikka"
-
-        [parameters.level]
-        friendly_name = "Pokemon level"
-        description = "Pokemon level"
-        default = "9001"
-
-        [metrics.pokemons]
+        [metrics.sample_id_count]
         data_source = "main"
-        select_expression = "{{ parameters.pokemon }} AND {{ parameters.level }}"
-        friendly_name = "Meals eaten"
-        description = "Number of consumed meals"
+        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
-        [metrics.pokemons.statistics.bootstrap_mean]
+        [metrics.sample_id_count.statistics.bootstrap_mean]
+
+        [parameters.id]
+        friendly_name = "Some random ID"
+        description = "A random ID used to count samples"
+        default = "default_value"
+        distinct_by_branch = false
         """
     )
 
