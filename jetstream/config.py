@@ -443,7 +443,6 @@ class MetricDefinition:
         self,
         spec: "AnalysisSpec",
         experiment: ExperimentConfiguration,
-        # parameters: ParameterSpec = attr.Factory(ParameterSpec)
     ) -> List[Summary]:
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
@@ -815,7 +814,6 @@ class AnalysisSpec:
             raise Exception("Can't resolve an AnalysisSpec twice")
         self._resolved = True
 
-        # should experimenter.outcomes be passed into parameters merge?
         outcomes_resolver = outcomes.OutcomesResolver.with_external_configs(external_configs)
 
         for slug in experimenter.outcomes:
