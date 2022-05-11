@@ -499,7 +499,7 @@ class MetricDefinition:
 
             stats_params = copy.deepcopy(params)
             pre_treatments = []
-            for pt in stats_params.pop("pre_treatments", []):
+            for pt in stats_params.pop("pre_treatments", []):  # type: ignore
                 if isinstance(pt, str):
                     ref = PreTreatmentReference(pt, {})
                 else:
