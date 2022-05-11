@@ -467,14 +467,14 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            params = {
+            select_expr_params = {
                 param: spec.parameters.definitions[param].value
                 or spec.parameters.definitions[param].default
                 for param in spec.parameters.definitions
             }
 
             select_expression = _metrics_environment.from_string(self.select_expression).render(
-                parameters=params
+                parameters=select_expr_params
             )
 
             metric = Metric(
@@ -499,7 +499,7 @@ class MetricDefinition:
 
             stats_params = copy.deepcopy(params)
             pre_treatments = []
-            for pt in stats_params.pop("pre_treatments", []):  # type: ignore
+            for pt in stats_params.pop("pre_treatments", []):
                 if isinstance(pt, str):
                     ref = PreTreatmentReference(pt, {})
                 else:
