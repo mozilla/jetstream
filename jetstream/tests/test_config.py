@@ -899,7 +899,8 @@ class TestOutcomes:
         assert "my_cool_metric" in weekly_metrics
 
         assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "COUNTIF(sample_id = 1234)"
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = 1234)"
         )
 
     def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
@@ -927,14 +928,15 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].value == None
+        assert not spec.parameters.definitions["id"].value
         assert spec.parameters.definitions["id"].default == "default_value"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "COUNTIF(sample_id = default_value)"
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = default_value)"
         )
 
     def test_resolving_parameters_distinct_by_branch(self, experiments, fake_outcome_resolver):
@@ -962,14 +964,15 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].value == None
+        assert not spec.parameters.definitions["id"].value
         assert spec.parameters.definitions["id"].default == "default_value"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == "COUNTIF(sample_id = default_value)"
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = default_value)"
         )
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):

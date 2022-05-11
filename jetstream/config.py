@@ -23,7 +23,17 @@ import datetime as dt
 from inspect import isabstract
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import attr
 import cattr
@@ -124,7 +134,9 @@ class ParameterDefinition:
         return cls(**definition)
 
 
-_converter.register_structure_hook(ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj))
+_converter.register_structure_hook(
+    ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj)
+)
 
 
 @attr.s(auto_attribs=True)
@@ -134,9 +146,6 @@ class ParameterSpec:
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterSpec":
         params: Dict[str, Any] = {"definitions": dict()}
-
-        if not d:
-            return cls(definitions=dict())
 
         params["definitions"] = {
             k: _converter.structure(
@@ -155,9 +164,7 @@ _converter.register_structure_hook(ParameterSpec, lambda obj, _type: ParameterSp
 class MetricReference:
     name: str
 
-    def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration"
-    ) -> List[Summary]:
+    def resolve(self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration") -> List[Summary]:
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experiment)
         if hasattr(experiment.platform.metrics_module, self.name):
@@ -461,11 +468,14 @@ class MetricDefinition:
             )
         else:
             params = {
-                param: spec.parameters.definitions[param].value or spec.parameters.definitions[param].default
+                param: spec.parameters.definitions[param].value
+                or spec.parameters.definitions[param].default
                 for param in spec.parameters.definitions
             }
 
-            select_expression = _metrics_environment.from_string(self.select_expression).render(parameters=params)
+            select_expression = _metrics_environment.from_string(self.select_expression).render(
+                parameters=params
+            )
 
             metric = Metric(
                 name=self.name,
@@ -860,16 +870,29 @@ class AnalysisSpec:
         other contains outcome defined
         """
 
-        self.parameters = ParameterSpec.from_dict({
-            param: {
-                "friendly_name": getattr(self.parameters.definitions.get(param), "friendly_name", None) or other.definitions[param].friendly_name,
-                "description": getattr(self.parameters.definitions.get(param), "description", None) or other.definitions[param].description,
-                "value": getattr(self.parameters.definitions.get(param), "value", None) or other.definitions[param].value,
-                "default": getattr(self.parameters.definitions.get(param), "default", None) or other.definitions[param].default,
-                "distinct_by_branch": getattr(self.parameters.definitions.get(param), "distinct_by_branch", None) or other.definitions[param].distinct_by_branch,
+        self.parameters = ParameterSpec.from_dict(
+            {
+                param: {
+                    "friendly_name": getattr(
+                        self.parameters.definitions.get(param), "friendly_name", None
+                    )
+                    or other.definitions[param].friendly_name,
+                    "description": getattr(
+                        self.parameters.definitions.get(param), "description", None
+                    )
+                    or other.definitions[param].description,
+                    "value": getattr(self.parameters.definitions.get(param), "value", None)
+                    or other.definitions[param].value,
+                    "default": getattr(self.parameters.definitions.get(param), "default", None)
+                    or other.definitions[param].default,
+                    "distinct_by_branch": getattr(
+                        self.parameters.definitions.get(param), "distinct_by_branch", None
+                    )
+                    or other.definitions[param].distinct_by_branch,
+                }
+                for param in other.definitions
             }
-            for param in other.definitions
-         })
+        )
 
 
 @attr.s(auto_attribs=True)
