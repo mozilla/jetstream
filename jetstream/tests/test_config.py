@@ -942,6 +942,14 @@ class TestOutcomes:
     def test_resolving_parameters_distinct_by_branch(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
+            [[parameters.id]]
+            value = "1234"
+            branch_name = "my_branch_1"
+
+            [[parameters.id]]
+            value = "567"
+            branch_name = "my_branch_2"
+
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
             daily = ["my_cool_metric"]
@@ -960,19 +968,24 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[6])
+        cfg = spec.resolve(experiments[7])
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert not spec.parameters.definitions["id"].value
-        assert spec.parameters.definitions["id"].default == "default_value"
+        assert isinstance(spec.parameters.definitions["id"], list)
+
+        assert [config.value for config in spec.parameters.definitions["id"]] == ["1234", "567"]
+
+        assert spec.parameters.definitions["id"][0].default == "default_value"
+        assert spec.parameters.definitions["id"][0].branch_name == "my_branch_1"
+        assert spec.parameters.definitions["id"][1].branch_name == "my_branch_2"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert (
             cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = default_value)"
+            == "COUNTIF(sample_id = COUNTIF(sample_id = 1234 AND e.branch_name = 'my_branch_1') OR COUNTIF(sample_id = 567 AND e.branch_name = 'my_branch_2'))"
         )
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
