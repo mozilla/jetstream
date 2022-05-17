@@ -19,6 +19,7 @@ which produce concrete mozanalysis classes when resolved.
 """
 
 import copy
+from collections import defaultdict
 import datetime as dt
 from inspect import isabstract
 from pathlib import Path
@@ -125,7 +126,6 @@ class ParameterDefinition:
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
         """
         Converts a dictionary object into a ParameterDefinition structured object.
-        # TODO: add a unit test?
         """
 
         definition = {
@@ -149,7 +149,6 @@ class ParameterDefinition:
         missing branch_name value and fail hence why not using attr.validator
         """
 
-        # TODO: Add unit tests?
         if self.distinct_by_branch and not self.branch_name:
             error_msg = (
                 f"Parameter {self.name} configured "
@@ -187,16 +186,12 @@ class ParameterSpec:
         into a ParameterSpec Object that contains a ParameterDefinition
         for each parameter.
 
-        # TODO: add a unit test?
         """
 
-        params: Dict[str, Any] = {"definitions": dict()}
+        params: Dict[str, Any] = {"definitions": defaultdict()}
 
         for param_name, param_config in d.items():
             if isinstance(param_config, list):
-                if param_name not in params["definitions"]:
-                    params["definitions"][param_name] = list()
-
                 params["definitions"][param_name] = [
                     _converter.structure(
                         {"name": param_name, **dict((kk.lower(), vv) for kk, vv in _param.items())},
@@ -506,36 +501,29 @@ class MetricDefinition:
     analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = None
 
     @staticmethod
-    def generate_param_select_value(
-        param_name: str,
-        param_config: Union[ParameterDefinition, List[ParameterDefinition]],
-        select_expr_template: Union[str, jinja2.nodes.Template],
-    ) -> Optional[str]:
+    def generate_select_expression(param_definitions: ParameterDefinition, select_expr_template: Union[str, jinja2.nodes.Template]) -> str:
         """
-        Takes in param configuration and converts it to a string which should be passed
-        into select statement in place of the param
-        # TODO: unit test?
+        Takes in param configuration and converts it to a select statement string
         """
 
-        if isinstance(param_config, ParameterDefinition) and not param_config.distinct_by_branch:
-            return f"{param_config.value or param_config.default}"
+        if "parameters" not in select_expr_template:
+            return _metrics_environment.from_string(select_expr_template).render()
 
-        elif isinstance(param_config, list) and param_config[0].distinct_by_branch:
-            return " OR ".join(
-                [
-                    _metrics_environment.from_string(select_expr_template).render(
-                        parameters={
-                            param_name: (
-                                f"{item.value or item.default} "
-                                f"AND e.branch_name = '{item.branch_name}'"
-                            )
-                        }
-                    )
-                    for item in param_config
-                ]
-            )
+        select_expr = ""
 
-        return None
+        for _param_name, _param_definition in param_definitions.items():
+            if isinstance(_param_definition, ParameterDefinition) and not _param_definition.distinct_by_branch:
+                select_expr = _metrics_environment.from_string(select_expr_template).render({"parameters": {_param_name: f"{_param_definition.value or _param_definition.default}"}})
+
+            elif isinstance(_param_definition, list) and _param_definition[0].distinct_by_branch:
+                params_value_with_branch = [f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'" for item in _param_definition]
+
+                select_expr = " OR ".join([
+                    _metrics_environment.from_string(select_expr_template).render(parameters={_param_name: entry})
+                    for entry in params_value_with_branch
+                ])
+
+        return select_expr
 
     def resolve(
         self,
@@ -558,19 +546,8 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            select_expr_params = dict()
-
-            for param_name, param_config in spec.parameters.definitions.items():
-                select_expr_params.update(
-                    {
-                        param_name: self.generate_param_select_value(
-                            param_name, param_config, select_expr_template=self.select_expression
-                        )
-                    }
-                )
-
-            select_expression = _metrics_environment.from_string(self.select_expression).render(
-                parameters=select_expr_params
+            select_expression = self.generate_select_expression(
+                spec.parameters.definitions, select_expr_template=self.select_expression
             )
 
             metric = Metric(
