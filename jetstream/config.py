@@ -512,8 +512,9 @@ class MetricDefinition:
         select_expr_template: Union[str, jinja2.nodes.Template],
     ) -> Optional[str]:
         """
-        # TODO: comment
-        # unit test?
+        Takes in param configuration and converts it to a string which should be passed
+        into select statement in place of the param
+        # TODO: unit test?
         """
 
         if isinstance(param_config, ParameterDefinition) and not param_config.distinct_by_branch:
