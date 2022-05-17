@@ -340,7 +340,9 @@ def fake_outcome_resolver(monkeypatch):
             )
             data["parameterized_distinct_by_branch"] = external_config.ExternalOutcome(
                 slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(parameterized_distinct_by_branch_config)),
+                spec=config.OutcomeSpec.from_dict(
+                    toml.loads(parameterized_distinct_by_branch_config)
+                ),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )
