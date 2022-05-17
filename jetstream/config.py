@@ -46,7 +46,7 @@ import pytz
 import toml
 from jinja2 import StrictUndefined
 
-from jetstream.errors import NoStartDateException, InvalidConfigurationException
+from jetstream.errors import InvalidConfigurationException, NoStartDateException
 from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
 from jetstream.metric import Metric
 from jetstream.platform import Platform, _generate_platform_config
@@ -135,7 +135,7 @@ class ParameterDefinition:
             "value": d.get("value"),
             "distinct_by_branch": d.get("distinct_by_branch"),
             "default": d.get("default"),
-            "branch_name": d.get("branch_name")
+            "branch_name": d.get("branch_name"),
         }
 
         return cls(**definition)
@@ -151,11 +151,17 @@ class ParameterDefinition:
 
         # TODO: Add unit tests?
         if self.distinct_by_branch and not self.branch_name:
-            error_msg = f"Parameter {self.name} configured to be distinct by branch, but no branch_name provided"
+            error_msg = (
+                f"Parameter {self.name} configured "
+                "to be distinct by branch, but no branch_name provided"
+            )
             raise InvalidConfigurationException(error_msg)
 
         if not self.distinct_by_branch and self.branch_name:
-            error_msg = f"Parameter {self.name} configured to not be distinct by branch, but branch_name provided"
+            error_msg = (
+                f"Parameter {self.name} configured "
+                "to not be distinct by branch, but branch_name provided"
+            )
             raise InvalidConfigurationException(error_msg)
 
         return self
@@ -192,12 +198,20 @@ class ParameterSpec:
                     params["definitions"][param_name] = list()
 
                 params["definitions"][param_name] = [
-                    _converter.structure({"name": param_name, **dict((kk.lower(), vv) for kk, vv in _param.items())}, ParameterDefinition) for _param in param_config
+                    _converter.structure(
+                        {"name": param_name, **dict((kk.lower(), vv) for kk, vv in _param.items())},
+                        ParameterDefinition,
+                    )
+                    for _param in param_config
                 ]
             elif isinstance(param_config, dict):
                 params["definitions"][param_name] = _converter.structure(
-                        {"name": param_name, **dict((kk.lower(), vv) for kk, vv in param_config.items())}
-                        , ParameterDefinition)
+                    {
+                        "name": param_name,
+                        **dict((kk.lower(), vv) for kk, vv in param_config.items()),
+                    },
+                    ParameterDefinition,
+                )
 
         return cls(**params)
 
@@ -491,6 +505,37 @@ class MetricDefinition:
     bigger_is_better: bool = True
     analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = None
 
+    @staticmethod
+    def generate_param_select_value(
+        param_name: str,
+        param_config: Union[ParameterDefinition, List[ParameterDefinition]],
+        select_expr_template: Union[str, jinja2.nodes.Template],
+    ) -> Optional[str]:
+        """
+        # TODO: comment
+        # unit test?
+        """
+
+        if isinstance(param_config, ParameterDefinition) and not param_config.distinct_by_branch:
+            return f"{param_config.value or param_config.default}"
+
+        elif isinstance(param_config, list) and param_config[0].distinct_by_branch:
+            return " OR ".join(
+                [
+                    _metrics_environment.from_string(select_expr_template).render(
+                        parameters={
+                            param_name: (
+                                f"{item.value or item.default} "
+                                f"AND e.branch_name = '{item.branch_name}'"
+                            )
+                        }
+                    )
+                    for item in param_config
+                ]
+            )
+
+        return None
+
     def resolve(
         self,
         spec: "AnalysisSpec",
@@ -515,22 +560,13 @@ class MetricDefinition:
             select_expr_params = dict()
 
             for param_name, param_config in spec.parameters.definitions.items():
-                # distinct_by_branch = True
-                if isinstance(param_config, list) and param_config[0].distinct_by_branch:
-                    select_value = " OR ".join([
-                        _metrics_environment.from_string(self.select_expression).render(
-                            parameters={
-                                param_name: f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'"
-                            }
+                select_expr_params.update(
+                    {
+                        param_name: self.generate_param_select_value(
+                            param_name, param_config, select_expr_template=self.select_expression
                         )
-                        for item in param_config
-                    ])
-
-                # distinct_by_branch = False
-                elif isinstance(param_config, ParameterDefinition) and not param_config.distinct_by_branch:
-                    select_value = param_config.value or param_config.default
-
-                select_expr_params.update({param_name: select_value})
+                    }
+                )
 
             select_expression = _metrics_environment.from_string(self.select_expression).render(
                 parameters=select_expr_params
@@ -605,7 +641,6 @@ class MetricsSpec:
             if not isinstance(v, list):
                 raise ValueError(f"metrics.{k} should be a list of metrics")
             params[k] = [MetricReference(m) for m in v]
-
 
         params["definitions"] = {
             k: _converter.structure(
@@ -924,7 +959,9 @@ class AnalysisSpec:
         self.data_sources.merge(other.data_sources)
 
     @staticmethod
-    def _merge_param(param_1: "ParameterDefinition", param_2: "ParameterDefinition") -> "ParameterDefinition":
+    def _merge_param(
+        param_1: "ParameterDefinition", param_2: "ParameterDefinition"
+    ) -> "ParameterDefinition":
         """
         Takes in two ParameterDefinitions and merges them together into
         a single ParameterDefinition.
@@ -932,16 +969,19 @@ class AnalysisSpec:
         param_2 is used for setting default values if missing in param_1
         """
 
-
-        return ParameterDefinition.from_dict({
+        return ParameterDefinition.from_dict(
+            {
                 "name": getattr(param_1, "name", None) or getattr(param_2, "name"),
-                "friendly_name": getattr(param_1, "friendly_name", None) or getattr(param_2, "friendly_name"),
+                "friendly_name": getattr(param_1, "friendly_name", None)
+                or getattr(param_2, "friendly_name"),
                 "description": getattr(param_1, "description", None) or param_2.description,
                 "value": getattr(param_1, "value", None) or param_2.value,
                 "default": getattr(param_1, "default", None) or param_2.default,
-                "distinct_by_branch": getattr(param_1, "distinct_by_branch", None) or param_2.distinct_by_branch,
+                "distinct_by_branch": getattr(param_1, "distinct_by_branch", None)
+                or param_2.distinct_by_branch,
                 "branch_name": getattr(param_1, "branch_name", None),
-        }).validate()
+            }
+        ).validate()
 
     def merge_parameters(self, other: "ParameterSpec") -> None:
         """
@@ -952,13 +992,20 @@ class AnalysisSpec:
         """
 
         for param in other.definitions:
-            external_config_param_settings = self.parameters.definitions.get(param, ParameterDefinition(name=param))
+            external_config_param_settings = self.parameters.definitions.get(
+                param, ParameterDefinition(name=param)
+            )
             outcome_param_settings = other.definitions[param]
 
             if isinstance(external_config_param_settings, list):
-                self.parameters.definitions[param] = [AnalysisSpec._merge_param(param_definition, outcome_param_settings) for param_definition in external_config_param_settings]
+                self.parameters.definitions[param] = [
+                    AnalysisSpec._merge_param(param_definition, outcome_param_settings)
+                    for param_definition in external_config_param_settings
+                ]
             elif isinstance(external_config_param_settings, ParameterDefinition):
-                self.parameters.definitions[param] = AnalysisSpec._merge_param(external_config_param_settings, outcome_param_settings)
+                self.parameters.definitions[param] = AnalysisSpec._merge_param(
+                    external_config_param_settings, outcome_param_settings
+                )
 
 
 @attr.s(auto_attribs=True)

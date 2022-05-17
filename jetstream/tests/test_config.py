@@ -984,12 +984,17 @@ class TestOutcomes:
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = COUNTIF(sample_id = 1234 AND e.branch_name = 'my_branch_1') OR COUNTIF(sample_id = 567 AND e.branch_name = 'my_branch_2'))"
+        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
+            "COUNTIF(sample_id = "
+            "COUNTIF(sample_id = 1234 "
+            "AND e.branch_name = 'my_branch_1') "
+            "OR COUNTIF(sample_id = 567 "
+            "AND e.branch_name = 'my_branch_2'))"
         )
 
-    def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(self, experiments, fake_outcome_resolver):
+    def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(
+        self, experiments, fake_outcome_resolver
+    ):
         """
         If distinct_by_branch is set to `true`
         `branch_name` value should be specified
@@ -1028,7 +1033,9 @@ class TestOutcomes:
         with pytest.raises(InvalidConfigurationException):
             spec.resolve(experiments[7])
 
-    def test_resolving_parameters_distinct_by_branch_false_branch_name_specified_raises(self, experiments, fake_outcome_resolver):
+    def test_resolving_parameters_distinct_by_branch_false_branch_name_specified_raises(
+        self, experiments, fake_outcome_resolver
+    ):
         """
         If distinct_by_branch is set to `false`
         `branch_name` value should not be specified
@@ -1065,7 +1072,6 @@ class TestOutcomes:
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
         with pytest.raises(InvalidConfigurationException):
             spec.resolve(experiments[6])
-
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
