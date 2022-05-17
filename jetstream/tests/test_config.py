@@ -11,7 +11,14 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import AnalysisWindow, Platform, _generate_platform_config, ParameterDefinition, ParameterSpec, MetricDefinition
+from jetstream.config import (
+    AnalysisWindow,
+    MetricDefinition,
+    ParameterDefinition,
+    ParameterSpec,
+    Platform,
+    _generate_platform_config,
+)
 from jetstream.errors import InvalidConfigurationException
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
@@ -985,9 +992,9 @@ class TestOutcomes:
         assert "my_cool_metric" in weekly_metrics
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-            "COUNTIF(sample_id = 1234 "\
-            "AND e.branch_name = 'my_branch_1') "\
-            "OR COUNTIF(sample_id = 567 "\
+            "COUNTIF(sample_id = 1234 "
+            "AND e.branch_name = 'my_branch_1') "
+            "OR COUNTIF(sample_id = 567 "
             "AND e.branch_name = 'my_branch_2')"
         )
 
@@ -1093,6 +1100,7 @@ class TestOutcomes:
         with pytest.raises(ValueError):
             spec.resolve(experiment)
 
+
 class TestParameterDefinition:
     """
     Class for testing functionality related to ParameterDefinition
@@ -1103,12 +1111,12 @@ class TestParameterDefinition:
         assert ParameterDefinition(name="test") == actual
 
         assert actual.name == "test"
-        assert actual.friendly_name == None
-        assert actual.description == None
-        assert actual.value == None
-        assert actual.distinct_by_branch == False
-        assert actual.default == None
-        assert actual.branch_name == None
+        assert not actual.friendly_name
+        assert not actual.description
+        assert not actual.value
+        assert not actual.distinct_by_branch
+        assert not actual.default
+        assert not actual.branch_name
 
     def test_from_dict_all_values_set(self):
         expected = ParameterDefinition(
@@ -1196,22 +1204,64 @@ class TestParameterSpec:
 
 
 class TestMetricDefinition:
-
     @pytest.mark.parametrize(
-        'input,expected',
+        "input,expected",
         (
-            ([{"param": ParameterDefinition(name="param", value="1")}, "param = {{ parameters.param }}"], "param = 1"),
-            ([{"param": ParameterDefinition(name="param", value="1")}, "{{ parameters.param }}"], "1"),
+            (
+                [
+                    {"param": ParameterDefinition(name="param", value="1")},
+                    "param = {{ parameters.param }}",
+                ],
+                "param = 1",
+            ),
+            (
+                [{"param": ParameterDefinition(name="param", value="1")}, "{{ parameters.param }}"],
+                "1",
+            ),
             ([{"param": None}, "{{ parameters.param }}"], ""),
             ([dict(), ""], ""),
             ([{"param": ParameterDefinition(name="param", value="1")}, ""], ""),
-            ([{"param": [
-                ParameterDefinition(name="param", distinct_by_branch=True, value="value_1", branch_name="my_branch_1"),
-            ],}, "value = {{ parameters.param }}"], "value = value_1 AND e.branch_name = 'my_branch_1'"),
-            ([{"param": [
-                ParameterDefinition(name="param", distinct_by_branch=True, value="value_1", branch_name="my_branch_1"),
-                ParameterDefinition(name="param", distinct_by_branch=True, value="value_2", branch_name="my_branch_2"),
-            ],}, "value = {{ parameters.param }}"], "value = value_1 AND e.branch_name = 'my_branch_1' OR value = value_2 AND e.branch_name = 'my_branch_2'"),
+            (
+                [
+                    {
+                        "param": [
+                            ParameterDefinition(
+                                name="param",
+                                distinct_by_branch=True,
+                                value="value_1",
+                                branch_name="my_branch_1",
+                            ),
+                        ],
+                    },
+                    "value = {{ parameters.param }}",
+                ],
+                "value = value_1 AND e.branch_name = 'my_branch_1'",
+            ),
+            (
+                [
+                    {
+                        "param": [
+                            ParameterDefinition(
+                                name="param",
+                                distinct_by_branch=True,
+                                value="value_1",
+                                branch_name="my_branch_1",
+                            ),
+                            ParameterDefinition(
+                                name="param",
+                                distinct_by_branch=True,
+                                value="value_2",
+                                branch_name="my_branch_2",
+                            ),
+                        ],
+                    },
+                    "value = {{ parameters.param }}",
+                ],
+                (
+                    "value = value_1 AND e.branch_name = 'my_branch_1' "
+                    "OR value = value_2 AND e.branch_name = 'my_branch_2'"
+                ),
+            ),
         ),
     )
     def test_generate_select_expression(self, input, expected):

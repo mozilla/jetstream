@@ -19,8 +19,8 @@ which produce concrete mozanalysis classes when resolved.
 """
 
 import copy
-from collections import defaultdict
 import datetime as dt
+from collections import defaultdict
 from inspect import isabstract
 from pathlib import Path
 from types import ModuleType
@@ -501,27 +501,46 @@ class MetricDefinition:
     analysis_bases: Optional[List[mozanalysis.experiment.AnalysisBasis]] = None
 
     @staticmethod
-    def generate_select_expression(param_definitions: ParameterDefinition, select_expr_template: Union[str, jinja2.nodes.Template]) -> str:
+    def generate_select_expression(
+        param_definitions: Dict[str, ParameterDefinition],
+        select_expr_template: Union[str, jinja2.nodes.Template],
+    ) -> str:
         """
         Takes in param configuration and converts it to a select statement string
         """
 
-        if "parameters" not in select_expr_template:
+        if "parameters" not in str(select_expr_template):
             return _metrics_environment.from_string(select_expr_template).render()
 
         select_expr = ""
 
         for _param_name, _param_definition in param_definitions.items():
-            if isinstance(_param_definition, ParameterDefinition) and not _param_definition.distinct_by_branch:
-                select_expr = _metrics_environment.from_string(select_expr_template).render({"parameters": {_param_name: f"{_param_definition.value or _param_definition.default}"}})
+            if (
+                isinstance(_param_definition, ParameterDefinition)
+                and not _param_definition.distinct_by_branch
+            ):
+                select_expr = _metrics_environment.from_string(select_expr_template).render(
+                    {
+                        "parameters": {
+                            _param_name: f"{_param_definition.value or _param_definition.default}"
+                        }
+                    }
+                )
 
             elif isinstance(_param_definition, list) and _param_definition[0].distinct_by_branch:
-                params_value_with_branch = [f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'" for item in _param_definition]
+                params_value_with_branch = [
+                    f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'"
+                    for item in _param_definition
+                ]
 
-                select_expr = " OR ".join([
-                    _metrics_environment.from_string(select_expr_template).render(parameters={_param_name: entry})
-                    for entry in params_value_with_branch
-                ])
+                select_expr = " OR ".join(
+                    [
+                        _metrics_environment.from_string(select_expr_template).render(
+                            parameters={_param_name: entry}
+                        )
+                        for entry in params_value_with_branch
+                    ]
+                )
 
         return select_expr
 
