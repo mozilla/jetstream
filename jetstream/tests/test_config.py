@@ -11,7 +11,7 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import AnalysisWindow, Platform, _generate_platform_config
+from jetstream.config import AnalysisWindow, Platform, _generate_platform_config, ParameterDefinition, ParameterSpec, MetricDefinition
 from jetstream.errors import InvalidConfigurationException
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
@@ -985,11 +985,10 @@ class TestOutcomes:
         assert "my_cool_metric" in weekly_metrics
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-            "COUNTIF(sample_id = "
-            "COUNTIF(sample_id = 1234 "
-            "AND e.branch_name = 'my_branch_1') "
-            "OR COUNTIF(sample_id = 567 "
-            "AND e.branch_name = 'my_branch_2'))"
+            "COUNTIF(sample_id = 1234 "\
+            "AND e.branch_name = 'my_branch_1') "\
+            "OR COUNTIF(sample_id = 567 "\
+            "AND e.branch_name = 'my_branch_2')"
         )
 
     def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(
@@ -1093,6 +1092,138 @@ class TestOutcomes:
 
         with pytest.raises(ValueError):
             spec.resolve(experiment)
+
+class TestParameterDefinition:
+    """
+    Class for testing functionality related to ParameterDefinition
+    """
+
+    def test_from_dict(self):
+        actual = ParameterDefinition(**{"name": "test"})
+        assert ParameterDefinition(name="test") == actual
+
+        assert actual.name == "test"
+        assert actual.friendly_name == None
+        assert actual.description == None
+        assert actual.value == None
+        assert actual.distinct_by_branch == False
+        assert actual.default == None
+        assert actual.branch_name == None
+
+    def test_from_dict_all_values_set(self):
+        expected = ParameterDefinition(
+            name="test",
+            friendly_name="Test Definition",
+            description="Used for testing",
+            value="123",
+            distinct_by_branch=True,
+            default="default",
+            branch_name="my_branch",
+        )
+
+        test_dict = {
+            "name": "test",
+            "friendly_name": "Test Definition",
+            "description": "Used for testing",
+            "value": "123",
+            "distinct_by_branch": True,
+            "default": "default",
+            "branch_name": "my_branch",
+        }
+
+        assert expected == ParameterDefinition(**test_dict)
+
+    def test_validate(self):
+        param_definition = ParameterDefinition(name="test")
+
+        param_definition.distinct_by_branch = False
+        param_definition.branch_name = None
+        assert param_definition == param_definition.validate()
+
+        param_definition.distinct_by_branch = True
+        param_definition.branch_name = "branch_1"
+        assert param_definition == param_definition.validate()
+
+    def test_validate_raises(self):
+        for _test in [
+            ParameterDefinition(
+                name="test",
+                friendly_name="Test Definition",
+                description="Used for testing",
+                value="123",
+                distinct_by_branch=True,
+                default="default",
+                branch_name=None,
+            ),
+            ParameterDefinition(
+                name="test",
+                distinct_by_branch=False,
+                branch_name="branch_1",
+            ),
+        ]:
+            with pytest.raises(InvalidConfigurationException):
+                _test.validate()
+
+
+class TestParameterSpec:
+    """
+    Class for testing functionality related to ParameterSpec
+    """
+
+    def test_from_dict_list(self):
+        test_spec = {
+            "param_1": [
+                {"name": "test"},
+                {"name": "test_2"},
+            ],
+        }
+
+        actual = ParameterSpec.from_dict(test_spec)
+        assert type(actual) == ParameterSpec
+
+        assert type(actual.definitions["param_1"]) == list
+        assert len(actual.definitions["param_1"]) == 2
+        assert type(actual.definitions["param_1"][0]) == ParameterDefinition
+
+    def test_from_dict_dict(self):
+        test_spec = {
+            "param_1": {"name": "test"},
+        }
+
+        actual = ParameterSpec.from_dict(test_spec)
+        assert type(actual) == ParameterSpec
+        assert type(actual.definitions["param_1"]) == ParameterDefinition
+
+
+class TestMetricDefinition:
+
+    @pytest.mark.parametrize(
+        'input,expected',
+        (
+            ([{"param": ParameterDefinition(name="param", value="1")}, "param = {{ parameters.param }}"], "param = 1"),
+            ([{"param": ParameterDefinition(name="param", value="1")}, "{{ parameters.param }}"], "1"),
+            ([{"param": None}, "{{ parameters.param }}"], ""),
+            ([dict(), ""], ""),
+            ([{"param": ParameterDefinition(name="param", value="1")}, ""], ""),
+            ([{"param": [
+                ParameterDefinition(name="param", distinct_by_branch=True, value="value_1", branch_name="my_branch_1"),
+            ],}, "value = {{ parameters.param }}"], "value = value_1 AND e.branch_name = 'my_branch_1'"),
+            ([{"param": [
+                ParameterDefinition(name="param", distinct_by_branch=True, value="value_1", branch_name="my_branch_1"),
+                ParameterDefinition(name="param", distinct_by_branch=True, value="value_2", branch_name="my_branch_2"),
+            ],}, "value = {{ parameters.param }}"], "value = value_1 AND e.branch_name = 'my_branch_1' OR value = value_2 AND e.branch_name = 'my_branch_2'"),
+        ),
+    )
+    def test_generate_select_expression(self, input, expected):
+        """
+        In case ParameterDefinition object is passed we just return the value,
+        if List[ParameterDefinition] is given then we need to generate the whole select statement
+        """
+
+        param_definition, select_template = input
+
+        actual = MetricDefinition.generate_select_expression(param_definition, select_template)
+        assert expected == actual
 
 
 class TestGeneratePlatformConfig:
