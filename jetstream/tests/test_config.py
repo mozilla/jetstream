@@ -526,6 +526,148 @@ class TestAnalysisSpec:
         with pytest.raises(Exception):
             config.AnalysisSpec.from_dict(toml.loads(config_str))
 
+    def test_merge_parameters_ParameterDefinition(self):
+        config_str = dedent(
+            """
+            description = "Clients have clicked on ad"
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        default_param_spec = ParameterSpec.from_dict(
+            {
+                "param": {
+                    "default": "default",
+                    "friendly_name": "friendly",
+                    "value": "1",
+                    "description": "description",
+                    "distinct_by_branch": False,
+                }
+            }
+        )
+
+        assert "param" not in spec.parameters.definitions
+
+        spec.merge_parameters(default_param_spec)
+
+        assert "param" in spec.parameters.definitions
+        assert spec.parameters.definitions["param"].name == "param"
+        assert spec.parameters.definitions["param"].default == "default"
+        assert spec.parameters.definitions["param"].friendly_name == "friendly"
+        assert spec.parameters.definitions["param"].value == "1"
+        assert spec.parameters.definitions["param"].description == "description"
+        assert not spec.parameters.definitions["param"].distinct_by_branch
+
+    def test_merge_parameters_ParameterDefinition_list(self):
+        config_str = dedent(
+            """
+            description = "Clients have clicked on ad"
+
+            [[parameters.param]]
+            default = "default_overwrite"
+            friendly_name = "friendly_overwrite"
+            value = "1"
+            description = "description_overwrite"
+            distinct_by_branch = true
+            branch_name = "branch_1"
+
+            [[parameters.param]]
+            value = "2"
+            distinct_by_branch = true
+            branch_name = "branch_2"
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+
+        default_param_spec = ParameterSpec.from_dict(
+            {
+                "param": {
+                    "default": "default",
+                    "description": "default_description",
+                    "distinct_by_branch": False,
+                    "friendly_name": "default_friendly",
+                }
+            }
+        )
+
+        spec.merge_parameters(default_param_spec)
+
+        assert "param" in spec.parameters.definitions
+        assert len(spec.parameters.definitions["param"]) == 2
+
+        assert spec.parameters.definitions["param"][0].name == "param"
+        assert spec.parameters.definitions["param"][0].default == "default_overwrite"
+        assert spec.parameters.definitions["param"][0].friendly_name == "friendly_overwrite"
+        assert spec.parameters.definitions["param"][0].value == "1"
+        assert spec.parameters.definitions["param"][0].description == "description_overwrite"
+        assert spec.parameters.definitions["param"][0].branch_name == "branch_1"
+        assert spec.parameters.definitions["param"][0].distinct_by_branch
+
+        assert spec.parameters.definitions["param"][1].name == "param"
+        assert spec.parameters.definitions["param"][1].default == "default"
+        assert spec.parameters.definitions["param"][1].friendly_name == "default_friendly"
+        assert spec.parameters.definitions["param"][1].value == "2"
+        assert spec.parameters.definitions["param"][1].description == "default_description"
+        assert spec.parameters.definitions["param"][1].branch_name == "branch_2"
+        assert spec.parameters.definitions["param"][1].distinct_by_branch
+
+    @pytest.mark.parametrize(
+        "input,expected",
+        (
+            (
+                [
+                    ParameterDefinition(name="test"),
+                    ParameterDefinition(name="test"),
+                ],
+                ParameterDefinition(name="test"),
+            ),
+            (
+                [
+                    ParameterDefinition(name="test", default=None, value="2"),
+                    ParameterDefinition(name="test", default="10"),
+                ],
+                ParameterDefinition(name="test", value="2", default="10"),
+            ),
+            (
+                [
+                    ParameterDefinition(name="test", default=None, value="2"),
+                    ParameterDefinition(name="test", default="10", friendly_name="friendly"),
+                ],
+                ParameterDefinition(name="test", friendly_name="friendly", value="2", default="10"),
+            ),
+        ),
+    )
+    def test__merge_param(self, input, expected):
+        param_definition_1, param_definition_2 = input
+
+        assert expected == config.AnalysisSpec._merge_param(param_definition_1, param_definition_2)
+
+    @pytest.mark.parametrize(
+        "input",
+        (
+            (
+                [
+                    ParameterDefinition(name="test", default=None, value="2", branch_name="branch"),
+                    ParameterDefinition(name="test"),
+                ]
+            ),
+            (
+                [
+                    ParameterDefinition(
+                        name="test", default=None, value="2", distinct_by_branch=True
+                    ),
+                    ParameterDefinition(name="test"),
+                ]
+            ),
+        ),
+    )
+    def test__merge_param_raises(self, input):
+        param_definition_1, param_definition_2 = input
+
+        with pytest.raises(InvalidConfigurationException):
+            config.AnalysisSpec._merge_param(param_definition_1, param_definition_2)
+
 
 class TestExperimentSpec:
     def test_null_query(self, experiments):
