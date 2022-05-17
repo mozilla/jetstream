@@ -12,6 +12,7 @@ from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
 from jetstream.config import AnalysisWindow, Platform, _generate_platform_config
+from jetstream.errors import InvalidConfigurationException
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
 from jetstream.platform import PlatformConfigurationException
@@ -1024,7 +1025,7 @@ class TestOutcomes:
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
 
-        with pytest.raises(Exception):  # TODO: update the exception
+        with pytest.raises(InvalidConfigurationException):
             spec.resolve(experiments[7])
 
     def test_resolving_parameters_distinct_by_branch_false_branch_name_specified_raises(self, experiments, fake_outcome_resolver):
@@ -1062,7 +1063,7 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        with pytest.raises(Exception):  # TODO: update the exception
+        with pytest.raises(InvalidConfigurationException):
             spec.resolve(experiments[6])
 
 

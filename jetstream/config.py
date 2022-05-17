@@ -46,7 +46,7 @@ import pytz
 import toml
 from jinja2 import StrictUndefined
 
-from jetstream.errors import NoStartDateException
+from jetstream.errors import NoStartDateException, InvalidConfigurationException
 from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
 from jetstream.metric import Metric
 from jetstream.platform import Platform, _generate_platform_config
@@ -141,14 +141,22 @@ class ParameterDefinition:
         return cls(**definition)
 
     def validate(self) -> "ParameterDefinition":
-        # TODO: update this method with comment and more specific exceptions
-        # and explain why this validate instead of attr validator
-        # Add unit tests?
+        """
+        Validates that branch related configuration is correct.
+
+        It should not run on every instance of ParameterDefinition object
+        being created as Outcome created one would fail since it would be
+        missing branch_name value and fail hence why not using attr.validator
+        """
+
+        # TODO: Add unit tests?
         if self.distinct_by_branch and not self.branch_name:
-            raise Exception(self)
+            error_msg = f"Parameter {self.name} configured to be distinct by branch, but no branch_name provided"
+            raise InvalidConfigurationException(error_msg)
 
         if not self.distinct_by_branch and self.branch_name:
-            raise Exception(self)
+            error_msg = f"Parameter {self.name} configured to not be distinct by branch, but branch_name provided"
+            raise InvalidConfigurationException(error_msg)
 
         return self
 
@@ -504,31 +512,25 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
-            # TODO: clean up this logic
-            select_expr_params = None
+            select_expr_params = dict()
 
-            for param in spec.parameters.definitions:
-                _param = spec.parameters.definitions[param]
+            for param_name, param_config in spec.parameters.definitions.items():
+                # distinct_by_branch = True
+                if isinstance(param_config, list) and param_config[0].distinct_by_branch:
+                    select_value = " OR ".join([
+                        _metrics_environment.from_string(self.select_expression).render(
+                            parameters={
+                                param_name: f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'"
+                            }
+                        )
+                        for item in param_config
+                    ])
 
-                if isinstance(_param, list):
-                    if "parameters" in self.select_expression:
-                        _select_expr = " OR ".join([
-                                _metrics_environment.from_string(self.select_expression).render(
-                                    parameters={
-                                        param: f"{param_by_branch.value or param_by_branch.default} AND e.branch_name = '{param_by_branch.branch_name}'"
-                                    }
-                                )
-                                for param_by_branch in _param
-                            ])
+                # distinct_by_branch = False
+                elif isinstance(param_config, ParameterDefinition) and not param_config.distinct_by_branch:
+                    select_value = param_config.value or param_config.default
 
-                        select_expr_params = {
-                            param: _select_expr
-                        }
-
-                elif isinstance(_param, ParameterDefinition):
-                    select_expr_params = {
-                        param: _param.value or _param.default
-                    }
+                select_expr_params.update({param_name: select_value})
 
             select_expression = _metrics_environment.from_string(self.select_expression).render(
                 parameters=select_expr_params
