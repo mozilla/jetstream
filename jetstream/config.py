@@ -123,6 +123,11 @@ class ParameterDefinition:
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
+        """
+        Converts a dictionary object into a ParameterDefinition structured object.
+        # TODO: add a unit test?
+        """
+
         definition = {
             "name": d["name"],
             "friendly_name": d.get("friendly_name"),
@@ -135,6 +140,18 @@ class ParameterDefinition:
 
         return cls(**definition)
 
+    def validate(self) -> "ParameterDefinition":
+        # TODO: update this method with comment and more specific exceptions
+        # and explain why this validate instead of attr validator
+        # Add unit tests?
+        if self.distinct_by_branch and not self.branch_name:
+            raise Exception(self)
+
+        if not self.distinct_by_branch and self.branch_name:
+            raise Exception(self)
+
+        return self
+
 
 _converter.register_structure_hook(
     ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj)
@@ -143,10 +160,22 @@ _converter.register_structure_hook(
 
 @attr.s(auto_attribs=True)
 class ParameterSpec:
+    """
+    Object for holding definitions of all parameters.
+    """
+
     definitions: Dict[str, ParameterDefinition] = attr.Factory(dict)
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterSpec":
+        """
+        Converts a dictionary object containing parameter configuration
+        into a ParameterSpec Object that contains a ParameterDefinition
+        for each parameter.
+
+        # TODO: add a unit test?
+        """
+
         params: Dict[str, Any] = {"definitions": dict()}
 
         for param_name, param_config in d.items():
@@ -154,16 +183,13 @@ class ParameterSpec:
                 if param_name not in params["definitions"]:
                     params["definitions"][param_name] = list()
 
-                params["definitions"][param_name] = [  # TODO: bug here?
+                params["definitions"][param_name] = [
                     _converter.structure({"name": param_name, **dict((kk.lower(), vv) for kk, vv in _param.items())}, ParameterDefinition) for _param in param_config
                 ]
             elif isinstance(param_config, dict):
-                params["definitions"] = {
-                    k: _converter.structure(
-                        {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, ParameterDefinition
-                    )
-                    for k, v in d.items()
-                }
+                params["definitions"][param_name] = _converter.structure(
+                        {"name": param_name, **dict((kk.lower(), vv) for kk, vv in param_config.items())}
+                        , ParameterDefinition)
 
         return cls(**params)
 
@@ -478,7 +504,9 @@ class MetricDefinition:
                 or [mozanalysis.experiment.AnalysisBasis.ENROLLMENTS],
             )
         else:
+            # TODO: clean up this logic
             select_expr_params = None
+
             for param in spec.parameters.definitions:
                 _param = spec.parameters.definitions[param]
 
@@ -895,6 +923,14 @@ class AnalysisSpec:
 
     @staticmethod
     def _merge_param(param_1: "ParameterDefinition", param_2: "ParameterDefinition") -> "ParameterDefinition":
+        """
+        Takes in two ParameterDefinitions and merges them together into
+        a single ParameterDefinition.
+
+        param_2 is used for setting default values if missing in param_1
+        """
+
+
         return ParameterDefinition.from_dict({
                 "name": getattr(param_1, "name", None) or getattr(param_2, "name"),
                 "friendly_name": getattr(param_1, "friendly_name", None) or getattr(param_2, "friendly_name"),
@@ -902,14 +938,15 @@ class AnalysisSpec:
                 "value": getattr(param_1, "value", None) or param_2.value,
                 "default": getattr(param_1, "default", None) or param_2.default,
                 "distinct_by_branch": getattr(param_1, "distinct_by_branch", None) or param_2.distinct_by_branch,
-                "branch_name": getattr(param_1, "branch_name", None),  # TODO: should we check here to make sure a value is passed in case distinct_by_branch is true?
-        })
+                "branch_name": getattr(param_1, "branch_name", None),
+        }).validate()
 
     def merge_parameters(self, other: "ParameterSpec") -> None:
         """
-        Merges Outcome parameters into external config parameters.
-        self.parameters contains custom config defined parameters
-        other contains outcome defined
+        Merges Outcome parameters with external config parameters.
+
+        'self.parameters' -> contains custom config defined parameters
+        'other' -> contains outcome defined
         """
 
         for param in other.definitions:

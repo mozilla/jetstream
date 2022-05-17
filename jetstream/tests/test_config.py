@@ -988,6 +988,84 @@ class TestOutcomes:
             == "COUNTIF(sample_id = COUNTIF(sample_id = 1234 AND e.branch_name = 'my_branch_1') OR COUNTIF(sample_id = 567 AND e.branch_name = 'my_branch_2'))"
         )
 
+    def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(self, experiments, fake_outcome_resolver):
+        """
+        If distinct_by_branch is set to `true`
+        `branch_name` value should be specified
+        otherwise we raise an exception
+        """
+
+        config_str = dedent(
+            """
+            # distinct_by_branch True inherited from Outcome
+            [[parameters.id]]
+            value = "1234"
+
+            [[parameters.id]]
+            value = "567"
+            branch_name = "my_branch_2"
+
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+
+        with pytest.raises(Exception):  # TODO: update the exception
+            spec.resolve(experiments[7])
+
+    def test_resolving_parameters_distinct_by_branch_false_branch_name_specified_raises(self, experiments, fake_outcome_resolver):
+        """
+        If distinct_by_branch is set to `false`
+        `branch_name` value should not be specified
+        otherwise we raise an exception
+        """
+
+        config_str = dedent(
+            """
+            # distinct_by_branch false inherited from Outcome
+            [[parameters.id]]
+            value = "1234"
+
+            [[parameters.id]]
+            value = "567"
+            branch_name = "my_branch_2"
+
+            [metrics]
+            weekly = ["view_about_logins", "my_cool_metric"]
+            daily = ["my_cool_metric"]
+
+            [metrics.my_cool_metric]
+            data_source = "main"
+            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+            friendly_name = "Cool metric"
+            description = "Cool cool cool 😎"
+            bigger_is_better = false
+
+            [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+            [metrics.view_about_logins.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
+        with pytest.raises(Exception):  # TODO: update the exception
+            spec.resolve(experiments[6])
+
+
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
         experiment = Experiment(
