@@ -127,21 +127,6 @@ def experiments():
             app_name="firefox_desktop",
             app_id="firefox-desktop",
         ),
-        Experiment(
-            experimenter_slug="test_slug",
-            type="pref",
-            status="Live",
-            start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
-            end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
-            proposed_enrollment=7,
-            branches=[],
-            normandy_slug="normandy-test-slug",
-            reference_branch=None,
-            is_high_population=True,
-            outcomes=["parameterized_distinct_by_branch"],
-            app_name="firefox_desktop",
-            app_id="firefox-desktop",
-        ),
     ]
 
 
@@ -291,28 +276,8 @@ def fake_outcome_resolver(monkeypatch):
         [parameters.id]
         friendly_name = "Some random ID"
         description = "A random ID used to count samples"
-        default = "default_value"
+        default = "700"
         distinct_by_branch = false
-        """
-    )
-
-    parameterized_distinct_by_branch_config = dedent(
-        """
-        friendly_name = "Outcome with parameter same across all branches"
-        description = "Outcome that has a parameter that is the same across all branches"
-        default_metrics = ["sample_id_count"]
-
-        [metrics.sample_id_count]
-        data_source = "main"
-        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
-
-        [metrics.sample_id_count.statistics.bootstrap_mean]
-
-        [parameters.id]
-        friendly_name = "Some random ID"
-        description = "A random ID used to count samples"
-        default = "default_value"
-        distinct_by_branch = true
         """
     )
 
@@ -335,14 +300,6 @@ def fake_outcome_resolver(monkeypatch):
             data["parameterized"] = external_config.ExternalOutcome(
                 slug="parameterized",
                 spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config)),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            data["parameterized_distinct_by_branch"] = external_config.ExternalOutcome(
-                slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(
-                    toml.loads(parameterized_distinct_by_branch_config)
-                ),
                 platform="firefox_desktop",
                 commit_hash="000000",
             )

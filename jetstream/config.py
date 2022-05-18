@@ -117,10 +117,9 @@ class ParameterDefinition:
     name: str  # implicit in configuration
     friendly_name: Optional[str] = None
     description: Optional[str] = None
-    value: Optional[str] = None
+    value: Optional[Union[str, Dict[str, str]]] = None
     distinct_by_branch: Optional[bool] = False
     default: Optional[Union[str, Dict[str, Any]]] = None
-    branch_name: Optional[str] = None
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
@@ -128,38 +127,31 @@ class ParameterDefinition:
         Converts a dictionary object into a ParameterDefinition structured object.
         """
 
-        definition = {
-            "name": d["name"],
-            "friendly_name": d.get("friendly_name"),
-            "description": d.get("description"),
-            "value": d.get("value"),
-            "distinct_by_branch": d.get("distinct_by_branch"),
-            "default": d.get("default"),
-            "branch_name": d.get("branch_name"),
-        }
-
-        return cls(**definition)
+        return cls(**d)
 
     def validate(self) -> "ParameterDefinition":
         """
         Validates that branch related configuration is correct.
 
-        It should not run on every instance of ParameterDefinition object
-        being created as Outcome created one would fail since it would be
-        missing branch_name value and fail hence why not using attr.validator
+        It should not run on every instance of ParameterDefinition object.
+        Outcome parameters containing defaults would not always adhere to
+        the rules defined here.
         """
 
-        if self.distinct_by_branch and not self.branch_name:
+        if self.distinct_by_branch and not isinstance(self.value, dict):
             error_msg = (
                 f"Parameter {self.name} configured "
-                "to be distinct by branch, but no branch_name provided"
+                "to be distinct by branch, a mapping expected in the following format: "
+                'value = {"branch_1": "1"}'
             )
             raise InvalidConfigurationException(error_msg)
 
-        if not self.distinct_by_branch and self.branch_name:
+        elif not self.distinct_by_branch and not isinstance(self.value, str):
             error_msg = (
                 f"Parameter {self.name} configured "
-                "to not be distinct by branch, but branch_name provided"
+                "to not be distinct by branch, but wrong value type provided. "
+                "Expected format: "
+                f'value = "param_value", instead provided: {self.value}'
             )
             raise InvalidConfigurationException(error_msg)
 
@@ -191,22 +183,10 @@ class ParameterSpec:
         params: Dict[str, Any] = {"definitions": defaultdict()}
 
         for param_name, param_config in d.items():
-            if isinstance(param_config, list):
-                params["definitions"][param_name] = [
-                    _converter.structure(
-                        {"name": param_name, **dict((kk.lower(), vv) for kk, vv in _param.items())},
-                        ParameterDefinition,
-                    )
-                    for _param in param_config
-                ]
-            elif isinstance(param_config, dict):
-                params["definitions"][param_name] = _converter.structure(
-                    {
-                        "name": param_name,
-                        **dict((kk.lower(), vv) for kk, vv in param_config.items()),
-                    },
-                    ParameterDefinition,
-                )
+            params["definitions"][param_name] = _converter.structure(
+                {"name": param_name, **dict((kk.lower(), vv) for kk, vv in param_config.items())},
+                ParameterDefinition,
+            )
 
         return cls(**params)
 
@@ -512,37 +492,24 @@ class MetricDefinition:
         if "parameters" not in str(select_expr_template):
             return _metrics_environment.from_string(select_expr_template).render()
 
-        select_expr = ""
-
-        for _param_name, _param_definition in param_definitions.items():
-            if (
-                isinstance(_param_definition, ParameterDefinition)
-                and not _param_definition.distinct_by_branch
-            ):
-                select_expr = _metrics_environment.from_string(select_expr_template).render(
-                    {
-                        "parameters": {
-                            _param_name: f"{_param_definition.value or _param_definition.default}"
-                        }
-                    }
-                )
-
-            elif isinstance(_param_definition, list) and _param_definition[0].distinct_by_branch:
-                params_value_with_branch = [
-                    f"{item.value or item.default} AND e.branch_name = '{item.branch_name}'"
-                    for item in _param_definition
-                ]
-
-                select_expr = " OR ".join(
+        for param_name, param_definition in param_definitions.items():
+            if param_definition.distinct_by_branch and isinstance(param_definition.value, dict):
+                return " OR ".join(
                     [
                         _metrics_environment.from_string(select_expr_template).render(
-                            parameters={_param_name: entry}
+                            parameters={
+                                param_name: f"{value or param_definition.default} "
+                                f"AND e.branch_name = '{branch}'"
+                            }
                         )
-                        for entry in params_value_with_branch
+                        for branch, value in param_definition.value.items()
                     ]
                 )
 
-        return select_expr
+            return _metrics_environment.from_string(select_expr_template).render(
+                parameters={param_name: f"{param_definition.value or param_definition.default}"}
+            )
+        return _metrics_environment.from_string(select_expr_template).render()
 
     def resolve(
         self,
@@ -966,17 +933,23 @@ class AnalysisSpec:
         param_2 is used for setting default values if missing in param_1
         """
 
+        value = getattr(param_1, "value", None)
+        default_value = param_1.default or param_2.default
+
         return ParameterDefinition.from_dict(
             {
                 "name": getattr(param_1, "name", None) or getattr(param_2, "name"),
                 "friendly_name": getattr(param_1, "friendly_name", None)
                 or getattr(param_2, "friendly_name"),
                 "description": getattr(param_1, "description", None) or param_2.description,
-                "value": getattr(param_1, "value", None) or param_2.value,
-                "default": getattr(param_1, "default", None) or param_2.default,
+                "value": {
+                    branch: branch_value or default_value for branch, branch_value in value.items()
+                }
+                if isinstance(value, dict)
+                else value or default_value,
+                "default": getattr(param_1, "default", None) or default_value,
                 "distinct_by_branch": getattr(param_1, "distinct_by_branch", None)
                 or param_2.distinct_by_branch,
-                "branch_name": getattr(param_1, "branch_name", None),
             }
         ).validate()
 
@@ -992,17 +965,10 @@ class AnalysisSpec:
             external_config_param_settings = self.parameters.definitions.get(
                 param, ParameterDefinition(name=param)
             )
-            outcome_param_settings = other.definitions[param]
 
-            if isinstance(external_config_param_settings, list):
-                self.parameters.definitions[param] = [
-                    AnalysisSpec._merge_param(param_definition, outcome_param_settings)
-                    for param_definition in external_config_param_settings
-                ]
-            elif isinstance(external_config_param_settings, ParameterDefinition):
-                self.parameters.definitions[param] = AnalysisSpec._merge_param(
-                    external_config_param_settings, outcome_param_settings
-                )
+            self.parameters.definitions[param] = AnalysisSpec._merge_param(
+                external_config_param_settings, other.definitions[param]
+            )
 
 
 @attr.s(auto_attribs=True)
