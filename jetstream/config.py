@@ -492,24 +492,27 @@ class MetricDefinition:
         if "parameters" not in str(select_expr_template):
             return _metrics_environment.from_string(select_expr_template).render()
 
+        formatted_params: Dict[str, Any] = defaultdict()
+
         for param_name, param_definition in param_definitions.items():
             if param_definition.distinct_by_branch and isinstance(param_definition.value, dict):
-                return " OR ".join(
-                    [
-                        _metrics_environment.from_string(select_expr_template).render(
-                            parameters={
-                                param_name: f"{value or param_definition.default} "
-                                f"AND e.branch_name = '{branch}'"
-                            }
+                formatted_params.update(
+                    {
+                        param_name: "CASE e.branch "
+                        + " ".join(
+                            [
+                                f'WHEN "{branch}" THEN "{value}"'
+                                for branch, value in param_definition.value.items()
+                            ]
                         )
-                        for branch, value in param_definition.value.items()
-                    ]
+                    }
                 )
+            else:
+                formatted_params.update({param_name: param_definition.value})
 
-            return _metrics_environment.from_string(select_expr_template).render(
-                parameters={param_name: f"{param_definition.value or param_definition.default}"}
-            )
-        return _metrics_environment.from_string(select_expr_template).render()
+        return _metrics_environment.from_string(select_expr_template).render(
+            parameters=formatted_params
+        )
 
     def resolve(
         self,
