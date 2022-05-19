@@ -11,15 +11,7 @@ import toml
 from mozanalysis.experiment import AnalysisBasis
 
 from jetstream import AnalysisPeriod, config
-from jetstream.config import (
-    AnalysisWindow,
-    MetricDefinition,
-    ParameterDefinition,
-    ParameterSpec,
-    Platform,
-    _generate_platform_config,
-)
-from jetstream.errors import InvalidConfigurationException
+from jetstream.config import AnalysisWindow, Platform, _generate_platform_config
 from jetstream.experimenter import Experiment
 from jetstream.exposure_signal import ExposureSignal
 from jetstream.platform import PlatformConfigurationException
@@ -526,108 +518,6 @@ class TestAnalysisSpec:
         with pytest.raises(Exception):
             config.AnalysisSpec.from_dict(toml.loads(config_str))
 
-    def test_merge_parameters(self):
-        config_str = dedent(
-            """
-            description = "Clients have clicked on ad"
-            """
-        )
-
-        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        default_outcome_param_spec = ParameterSpec.from_dict(
-            {
-                "param": {
-                    "default": "default_overwrite",
-                    "friendly_name": "friendly_overwrite",
-                    "description": "description_overwrite",
-                    "distinct_by_branch": False,
-                }
-            }
-        )
-
-        assert "param" not in spec.parameters.definitions
-
-        spec.merge_parameters(default_outcome_param_spec)
-
-        assert "param" in spec.parameters.definitions
-        assert spec.parameters.definitions["param"].name == "param"
-        assert spec.parameters.definitions["param"].default == "default_overwrite"
-        assert spec.parameters.definitions["param"].friendly_name == "friendly_overwrite"
-        assert spec.parameters.definitions["param"].value == "default_overwrite"
-        assert spec.parameters.definitions["param"].description == "description_overwrite"
-        assert not spec.parameters.definitions["param"].distinct_by_branch
-
-    @pytest.mark.parametrize(
-        "input,expected",
-        (
-            (
-                [
-                    ParameterDefinition(name="test", value="1"),
-                    ParameterDefinition(name="test"),
-                ],
-                ParameterDefinition(name="test", value="1"),
-            ),
-            (
-                [
-                    ParameterDefinition(name="test"),
-                    ParameterDefinition(name="test", default="1"),
-                ],
-                ParameterDefinition(name="test", value="1", default="1"),
-            ),
-            (
-                [
-                    ParameterDefinition(name="test", default=None, value="2"),
-                    ParameterDefinition(name="test", default="10"),
-                ],
-                ParameterDefinition(name="test", value="2", default="10"),
-            ),
-            (
-                [
-                    ParameterDefinition(name="test", default=None, value="2"),
-                    ParameterDefinition(name="test", default="10", friendly_name="friendly"),
-                ],
-                ParameterDefinition(name="test", friendly_name="friendly", value="2", default="10"),
-            ),
-        ),
-    )
-    def test__merge_param(self, input, expected):
-        param_definition_1, param_definition_2 = input
-
-        assert expected == config.AnalysisSpec._merge_param(param_definition_1, param_definition_2)
-
-    @pytest.mark.parametrize(
-        "input",
-        (
-            (
-                [
-                    ParameterDefinition(name="test"),
-                    ParameterDefinition(name="test"),
-                ]
-            ),
-            (
-                [
-                    ParameterDefinition(
-                        name="test", default=None, value="2", distinct_by_branch=True
-                    ),
-                    ParameterDefinition(name="test"),
-                ]
-            ),
-            (
-                [
-                    ParameterDefinition(
-                        name="test", default=None, value={"branch_1": "1"}, distinct_by_branch=False
-                    ),
-                    ParameterDefinition(name="test"),
-                ]
-            ),
-        ),
-    )
-    def test__merge_param_raises(self, input):
-        param_definition_1, param_definition_2 = input
-
-        with pytest.raises(InvalidConfigurationException):
-            config.AnalysisSpec._merge_param(param_definition_1, param_definition_2)
-
 
 class TestExperimentSpec:
     def test_null_query(self, experiments):
@@ -968,7 +858,7 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[5])
+        cfg = spec.resolve(experiments[6])
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "view_about_logins" in weekly_metrics
@@ -978,7 +868,7 @@ class TestOutcomes:
         config_str = dedent(
             """
             [parameters.id]
-            value = "123"
+            value = "1234"
 
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
@@ -1002,57 +892,15 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].default == "700"
-        assert spec.parameters.definitions["id"].value == "123"
+        assert spec.parameters.definitions["id"].default == "default_value"
+        assert spec.parameters.definitions["id"].value == "1234"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert (
             cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = 123)"
-        )
-
-    def test_resolving_parameters_distinct_by_branch(self, experiments, fake_outcome_resolver):
-        config_str = dedent(
-            """
-            [parameters.id]
-            value.branch_1 = "123"
-            value.branch_2 = "456"
-            distinct_by_branch = true
-
-            [metrics]
-            weekly = ["view_about_logins", "my_cool_metric"]
-            daily = ["my_cool_metric"]
-
-            [metrics.my_cool_metric]
-            data_source = "main"
-            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
-            friendly_name = "Cool metric"
-            description = "Cool cool cool 😎"
-            bigger_is_better = false
-
-            [metrics.my_cool_metric.statistics.bootstrap_mean]
-
-            [metrics.view_about_logins.statistics.bootstrap_mean]
-            """
-        )
-
-        spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[6])
-        weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
-
-        assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].default == "700"
-        assert spec.parameters.definitions["id"].value["branch_1"] == "123"
-        assert spec.parameters.definitions["id"].value["branch_2"] == "456"
-
-        assert "view_about_logins" in weekly_metrics
-        assert "my_cool_metric" in weekly_metrics
-
-        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-            """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456" END)"""
+            == "COUNTIF(sample_id = 1234)"
         )
 
     def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
@@ -1080,28 +928,20 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].value == "700"
-        assert spec.parameters.definitions["id"].default == "700"
+        assert not spec.parameters.definitions["id"].value
+        assert spec.parameters.definitions["id"].default == "default_value"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert (
             cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = 700)"
+            == "COUNTIF(sample_id = default_value)"
         )
 
-    def test_resolving_parameters_default_value_distinct_by_branch(
-        self, experiments, fake_outcome_resolver
-    ):
+    def test_resolving_parameters_distinct_by_branch(self, experiments, fake_outcome_resolver):
         config_str = dedent(
             """
-
-            [parameters.id]
-            value.branch_1 = ""  # this will use default value from outcome
-            value.branch_2 = ""  # this will use default value from outcome
-            distinct_by_branch = true
-
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
             daily = ["my_cool_metric"]
@@ -1124,52 +964,16 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].value["branch_1"] == "700"
-        assert spec.parameters.definitions["id"].default == "700"
+        assert not spec.parameters.definitions["id"].value
+        assert spec.parameters.definitions["id"].default == "default_value"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
-            """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "700" WHEN "branch_2" THEN "700" END)"""
+        assert (
+            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
+            == "COUNTIF(sample_id = default_value)"
         )
-
-    def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(
-        self, experiments, fake_outcome_resolver
-    ):
-        """
-        If distinct_by_branch is set to `true`
-        `id.branch_name` value should be specified
-        otherwise we raise an exception
-        """
-
-        config_str = dedent(
-            """
-            [parameters.id]
-            id.value = "1234"
-            value = "567"
-            distinct_by_branch = true
-
-            [metrics]
-            weekly = ["view_about_logins", "my_cool_metric"]
-            daily = ["my_cool_metric"]
-
-            [metrics.my_cool_metric]
-            data_source = "main"
-            select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
-            friendly_name = "Cool metric"
-            description = "Cool cool cool 😎"
-            bigger_is_better = false
-
-            [metrics.my_cool_metric.statistics.bootstrap_mean]
-
-            [metrics.view_about_logins.statistics.bootstrap_mean]
-            """
-        )
-
-        with pytest.raises(TypeError):
-            config.AnalysisSpec.from_dict(toml.loads(config_str))
 
     def test_unsupported_platform_outcomes(self, experiments, fake_outcome_resolver):
         spec = config.AnalysisSpec.from_dict(toml.loads(""))
@@ -1191,135 +995,6 @@ class TestOutcomes:
 
         with pytest.raises(ValueError):
             spec.resolve(experiment)
-
-
-class TestParameterDefinition:
-    """
-    Class for testing functionality related to ParameterDefinition
-    """
-
-    @pytest.mark.parametrize(
-        "input",
-        (
-            (ParameterDefinition(name="test", value="1", distinct_by_branch=False)),
-            (ParameterDefinition(name="test", value={"branch_1": "1"}, distinct_by_branch=True)),
-        ),
-    )
-    def test_validate(self, input):
-        assert input == input.validate()
-
-    @pytest.mark.parametrize(
-        "input,expected",
-        (
-            (
-                ParameterDefinition(
-                    name="test",
-                    friendly_name="Test Definition",
-                    description="Used for testing",
-                    value="123",
-                    distinct_by_branch=True,
-                    default="default",
-                ),
-                InvalidConfigurationException,
-            ),
-            (
-                ParameterDefinition(
-                    name="test",
-                    distinct_by_branch=False,
-                ),
-                InvalidConfigurationException,
-            ),
-        ),
-    )
-    def test_validate_raises(self, input, expected):
-        with pytest.raises(expected):
-            input.validate()
-
-
-class TestParameterSpec:
-    """
-    Class for testing functionality related to ParameterSpec
-    """
-
-    def test_from_dict(self):
-        test_spec = {
-            "param_1": {"name": "test"},
-        }
-
-        actual = ParameterSpec.from_dict(test_spec)
-        assert type(actual) == ParameterSpec
-        assert type(actual.definitions["param_1"]) == ParameterDefinition
-
-
-class TestMetricDefinition:
-    @pytest.mark.parametrize(
-        "input,expected",
-        (
-            (
-                [
-                    {"param": ParameterDefinition(name="param", value="1")},
-                    "param = {{ parameters.param }}",
-                ],
-                "param = 1",
-            ),
-            (
-                [{"param": ParameterDefinition(name="param", value="1")}, "{{ parameters.param }}"],
-                "1",
-            ),
-            ([{"param": ParameterDefinition(name="param", value="1")}, ""], ""),
-            (
-                [
-                    {
-                        "param": ParameterDefinition(
-                            name="param", distinct_by_branch=True, value={"branch_1": "1"}
-                        )
-                    },
-                    "",
-                ],
-                "",
-            ),
-            (
-                [
-                    {
-                        "param": ParameterDefinition(
-                            name="param", distinct_by_branch=True, value={"branch_1": "1"}
-                        )
-                    },
-                    "{{parameters.param}}",
-                ],
-                'CASE e.branch WHEN "branch_1" THEN "1" END',
-            ),
-            (
-                [
-                    {
-                        "param": ParameterDefinition(
-                            name="param",
-                            distinct_by_branch=True,
-                            value={
-                                "branch_1": "1",
-                                "branch_2": "2",
-                            },
-                        )
-                    },
-                    "COUNTIF(id = {{parameters.param}})",
-                ],
-                (
-                    """COUNTIF(id = CASE e.branch """
-                    """WHEN "branch_1" THEN "1" WHEN "branch_2" THEN "2" END)"""
-                ),
-            ),
-        ),
-    )
-    def test_generate_select_expression(self, input, expected):
-        """
-        In case ParameterDefinition object is passed we just return the value,
-        if List[ParameterDefinition] is given then we need to generate the whole select statement
-        """
-
-        param_definition, select_template = input
-
-        actual = MetricDefinition.generate_select_expression(param_definition, select_template)
-        assert expected == actual
 
 
 class TestGeneratePlatformConfig:
