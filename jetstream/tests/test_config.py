@@ -1198,38 +1198,6 @@ class TestParameterDefinition:
     Class for testing functionality related to ParameterDefinition
     """
 
-    def test_from_dict(self):
-        actual = ParameterDefinition(**{"name": "test"})
-        assert ParameterDefinition(name="test") == actual
-
-        assert actual.name == "test"
-        assert not actual.friendly_name
-        assert not actual.description
-        assert not actual.value
-        assert not actual.distinct_by_branch
-        assert not actual.default
-
-    def test_from_dict_all_values_set(self):
-        expected = ParameterDefinition(
-            name="test",
-            friendly_name="Test Definition",
-            description="Used for testing",
-            value="123",
-            distinct_by_branch=True,
-            default="default",
-        )
-
-        test_dict = {
-            "name": "test",
-            "friendly_name": "Test Definition",
-            "description": "Used for testing",
-            "value": "123",
-            "distinct_by_branch": True,
-            "default": "default",
-        }
-
-        assert expected == ParameterDefinition(**test_dict)
-
     @pytest.mark.parametrize(
         "input",
         (
