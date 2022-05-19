@@ -276,7 +276,7 @@ def fake_outcome_resolver(monkeypatch):
         [parameters.id]
         friendly_name = "Some random ID"
         description = "A random ID used to count samples"
-        default = "default_value"
+        default = "700"
         distinct_by_branch = false
         """
     )
