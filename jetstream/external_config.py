@@ -310,6 +310,7 @@ class ExternalConfigCollection:
                 WHERE status = 'Live'
                 AND start_date IS NOT NULL
                 AND (end_date IS NULL OR end_date >= DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+                AND start_date > DATE('2022-05-18')
             )
             SELECT
                 table_name,
