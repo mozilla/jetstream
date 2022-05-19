@@ -505,6 +505,7 @@ class MetricDefinition:
                                 for branch, value in param_definition.value.items()
                             ]
                         )
+                        + " END"
                     }
                 )
             else:

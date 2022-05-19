@@ -1052,7 +1052,7 @@ class TestOutcomes:
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456")"""
+            """WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456" END)"""
         )
 
     def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
@@ -1132,7 +1132,7 @@ class TestOutcomes:
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "700" WHEN "branch_2" THEN "700")"""
+            """WHEN "branch_1" THEN "700" WHEN "branch_2" THEN "700" END)"""
         )
 
     def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(
@@ -1319,7 +1319,7 @@ class TestMetricDefinition:
                     },
                     "{{parameters.param}}",
                 ],
-                'CASE e.branch WHEN "branch_1" THEN "1"',
+                'CASE e.branch WHEN "branch_1" THEN "1" END',
             ),
             (
                 [
@@ -1337,7 +1337,7 @@ class TestMetricDefinition:
                 ],
                 (
                     """COUNTIF(id = CASE e.branch """
-                    """WHEN "branch_1" THEN "1" WHEN "branch_2" THEN "2")"""
+                    """WHEN "branch_1" THEN "1" WHEN "branch_2" THEN "2" END)"""
                 ),
             ),
         ),
