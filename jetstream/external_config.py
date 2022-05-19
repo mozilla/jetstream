@@ -65,7 +65,6 @@ def validate_config_settings(config_file: Path) -> None:
         "data_sources",
         "friendly_name",
         "description",
-        "parameters",
     )
 
     core_config_keys_specified = config.keys()
