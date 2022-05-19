@@ -121,14 +121,6 @@ class ParameterDefinition:
     distinct_by_branch: Optional[bool] = False
     default: Optional[Union[str, Dict[str, Any]]] = None
 
-    @classmethod
-    def from_dict(cls, d: Mapping[str, Any]) -> "ParameterDefinition":
-        """
-        Converts a dictionary object into a ParameterDefinition structured object.
-        """
-
-        return cls(**d)
-
     def validate(self) -> "ParameterDefinition":
         """
         Validates that branch related configuration is correct.
@@ -159,7 +151,7 @@ class ParameterDefinition:
 
 
 _converter.register_structure_hook(
-    ParameterDefinition, lambda obj, _type: ParameterDefinition.from_dict(obj)
+    ParameterDefinition, lambda obj, _type: ParameterDefinition(**obj)
 )
 
 
@@ -937,11 +929,11 @@ class AnalysisSpec:
         param_2 is used for setting default values if missing in param_1
         """
 
-        value = getattr(param_1, "value", None)
+        value = param_1.value or param_2.value
         default_value = param_1.default or param_2.default
 
-        return ParameterDefinition.from_dict(
-            {
+        return ParameterDefinition(
+            **{
                 "name": getattr(param_1, "name", None) or getattr(param_2, "name"),
                 "friendly_name": getattr(param_1, "friendly_name", None)
                 or getattr(param_2, "friendly_name"),
