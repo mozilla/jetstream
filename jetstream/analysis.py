@@ -305,7 +305,7 @@ class Analysis:
         if segment != "all":
             if segment not in metrics_data.columns:
                 raise ValueError(f"Segment {segment} not in metrics table")
-            segment_data = metrics_data[metrics_data[segment]]
+            segment_data = metrics_data[metrics_data[segment].fillna(False)]
         else:
             segment_data = metrics_data
 
