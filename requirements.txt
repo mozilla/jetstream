@@ -255,9 +255,9 @@ google-crc32c==1.3.0 \
     # via
     #   -r requirements.in
     #   google-resumable-media
-google-resumable-media==2.3.2 \
-    --hash=sha256:06924e8b1e79f158f0202e7dd151ad75b0ea9d59b997c850f56bdd4a5a361513 \
-    --hash=sha256:3c13f84813861ac8f5b6371254bdd437076bf1f3bac527a9f3fd123a70166f52
+google-resumable-media==2.3.3 \
+    --hash=sha256:27c52620bd364d1c8116eaac4ea2afcbfb81ae9139fb3199652fcac1724bfb6c \
+    --hash=sha256:5b52774ea7a829a8cdaa8bd2d4c3d4bc660c91b30857ab2668d0eb830f4ea8c5
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
@@ -359,9 +359,7 @@ idna==3.3 \
 importlib-resources==5.7.1 \
     --hash=sha256:b6062987dfc51f0fcb809187cffbd60f35df7acb4589091f154214af6d0d49d3 \
     --hash=sha256:e447dc01619b1e951286f3929be820029d48c75eb25d265c28b92a16548212b8
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1060,7 +1058,6 @@ typing-extensions==4.2.0 \
     --hash=sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.9 \
     --hash=sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14 \
@@ -1078,6 +1075,4 @@ zict==2.2.0 \
 zipp==3.8.0 \
     --hash=sha256:56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad \
     --hash=sha256:c4f6e5bbf48e74f7a38e7cc5b0480ff42b0ae5178957d564d18932525d5cf099
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
