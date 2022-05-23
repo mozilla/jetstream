@@ -145,8 +145,11 @@ class ExternalOutcome:
             app_id=app_id,
             app_name=self.platform,
         )
+
         spec = AnalysisSpec.default_for_experiment(dummy_experiment)
         spec.merge_outcome(self.spec)
+        spec.merge_parameters(self.spec.parameters)
+
         conf = spec.resolve(dummy_experiment)
         Analysis("no project", "no dataset", conf).validate()
 
