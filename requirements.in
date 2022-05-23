@@ -40,7 +40,7 @@ dask[distributed]==2022.05.0
     #   mozilla-jetstream
 distributed==2022.05.0
     # via dask
-exceptiongroup==1.0.0rc5
+exceptiongroup==1.0.0rc7
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
