@@ -30,7 +30,7 @@ cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.3.3
+coverage[toml]==6.4
     # via
     #   mozilla-jetstream
     #   pytest-cov
