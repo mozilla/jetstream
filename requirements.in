@@ -13,7 +13,7 @@ attrs==21.4.0
     #   pytest
 black==22.3.0
     # via pytest-black
-cachetools==5.1.0
+cachetools==5.2.0
     # via google-auth
 cattrs==22.1.0
     # via mozilla-jetstream
