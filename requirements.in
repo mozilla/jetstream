@@ -17,7 +17,7 @@ cachetools==5.1.0
     # via google-auth
 cattrs==22.1.0
     # via mozilla-jetstream
-certifi==2021.10.8
+certifi==2022.5.18.1
     # via requests
 charset-normalizer==2.0.12
     # via requests
