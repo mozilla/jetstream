@@ -127,6 +127,10 @@ dask[distributed]==2022.05.2 \
     # via
     #   -r requirements.in
     #   distributed
+db-dtypes==1.0.1 \
+    --hash=sha256:3eb5931c9f8c314a1a4aeb698a7eb1d713cddaed4a7a13f0408a8785c4a72330 \
+    --hash=sha256:b26b295773d2a4b445f6a7f297ec04dd9eb5d3fb26622032550da013486ba7b7
+    # via -r requirements.in
 distributed==2022.05.2 \
     --hash=sha256:044aac51fa64fd9e16b1a2c4315220d281f0e5cc1b05f4d3d37852426f1e7cb6 \
     --hash=sha256:090859f846197e8d5720cf3087e33a32c02a30b682aa2b7deca10d3f9ba10db8
@@ -539,6 +543,7 @@ numpy==1.22.4 \
     --hash=sha256:fb7a980c81dd932381f8228a426df8aeb70d59bbcda2af075b627bbc50207cba
     # via
     #   -r requirements.in
+    #   db-dtypes
     #   mozanalysis
     #   pandas
     #   patsy
@@ -551,6 +556,7 @@ packaging==21.3 \
     # via
     #   -r requirements.in
     #   dask
+    #   db-dtypes
     #   distributed
     #   google-cloud-bigquery
     #   pytest
@@ -579,6 +585,7 @@ pandas==1.4.2 \
     --hash=sha256:ff08a14ef21d94cdf18eef7c569d66f2e24e0bc89350bcd7d243dd804e3b5eb2
     # via
     #   -r requirements.in
+    #   db-dtypes
     #   mozanalysis
     #   statsmodels
 partd==1.2.0 \
@@ -727,6 +734,7 @@ pyarrow==8.0.0 \
     --hash=sha256:edad25522ad509e534400d6ab98cf1872d30c31bc5e947712bfd57def7af15bb
     # via
     #   -r requirements.in
+    #   db-dtypes
     #   google-cloud-bigquery
     #   mozanalysis
 pyasn1==0.4.8 \

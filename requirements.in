@@ -38,6 +38,8 @@ dask[distributed]==2022.05.2
     # via
     #   distributed
     #   mozilla-jetstream
+db-dtypes==1.0.1
+    # via mozilla-jetstream
 distributed==2022.05.2
     # via dask
 exceptiongroup==1.0.0rc7
@@ -141,6 +143,7 @@ mypy-extensions==0.4.3
     #   mypy
 numpy==1.22.4
     # via
+    #   db-dtypes
     #   mozanalysis
     #   pandas
     #   patsy
@@ -150,12 +153,14 @@ numpy==1.22.4
 packaging==21.3
     # via
     #   dask
+    #   db-dtypes
     #   distributed
     #   google-cloud-bigquery
     #   pytest
     #   statsmodels
 pandas==1.4.2
     # via
+    #   db-dtypes
     #   mozanalysis
     #   statsmodels
 partd==1.2.0
@@ -187,6 +192,7 @@ py==1.11.0
     # via pytest
 pyarrow==8.0.0
     # via
+    #   db-dtypes
     #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
