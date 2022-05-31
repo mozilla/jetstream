@@ -53,6 +53,7 @@ setup(
         "cattrs",
         "Click",
         "dask[distributed]",
+        "db-dtypes",
         "GitPython",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
