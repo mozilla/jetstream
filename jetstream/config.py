@@ -134,7 +134,7 @@ class ParameterDefinition:
             error_msg = (
                 f"Parameter {self.name} configured "
                 "to be distinct by branch, a mapping expected in the following format: "
-                'value = {"branch_1": "1"}'
+                'value.branch_1 = "1"'
             )
             raise InvalidConfigurationException(error_msg)
 
