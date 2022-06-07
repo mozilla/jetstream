@@ -5,7 +5,7 @@ import re
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import attr
 import google.auth
@@ -186,7 +186,7 @@ class ArgoApi:
         so it shouldn't be reused for any other services."""
         session = requests.Session()
         session.verify = config.ssl_ca_cert
-        headers: CaseInsensitiveDict[str] = CaseInsensitiveDict()
+        headers: CaseInsensitiveDict[Union[str, bytes]] = CaseInsensitiveDict()
         headers["Authorization"] = f"{config.authorization_key_prefix} {config.authorization_key}"
         session.headers = headers
         return session
