@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 
 import jsonschema
+import numpy as np
 import pandas as pd
 import pytest
+from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 
 from jetstream.statistics import (
     Binomial,
@@ -174,6 +176,20 @@ class TestStatistics:
         StatisticResult(**args)
         with pytest.raises(ValueError):
             StatisticResult(point=[3], **args)
+
+    def test_type_conversions(self):
+        df = pd.array([1, 2, np.nan], dtype="Int64")
+        with pytest.raises(TypeError):
+            np.isnan(np.array(df)).any()
+
+        d = np.array(df.to_numpy(dtype="float", na_value=np.nan))
+        assert np.isnan(d).any()
+
+    def test_mozanalysis_nan(self):
+        df = pd.array([1, 2, np.nan], dtype="Int64")
+
+        with pytest.raises(ValueError):
+            get_bootstrap_samples(df)
 
 
 class TestStatisticExport:
