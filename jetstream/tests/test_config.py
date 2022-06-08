@@ -1017,9 +1017,13 @@ class TestOutcomes:
         config_str = dedent(
             """
             [parameters.id]
+            distinct_by_branch = true
+
             value.branch_1 = "123"
             value.branch_2 = "456"
-            distinct_by_branch = true
+
+            default.branch_3 = "444"
+            default.branch_1 = "444"
 
             [metrics]
             weekly = ["view_about_logins", "my_cool_metric"]
@@ -1043,16 +1047,16 @@ class TestOutcomes:
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].default == "700"
         assert spec.parameters.definitions["id"].value["branch_1"] == "123"
         assert spec.parameters.definitions["id"].value["branch_2"] == "456"
+        assert spec.parameters.definitions["id"].value["branch_3"] == "444"
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456" END)"""
+            """WHEN "branch_3" THEN "444" WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456" END)"""
         )
 
     def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
@@ -1098,8 +1102,8 @@ class TestOutcomes:
             """
 
             [parameters.id]
-            value.branch_1 = ""  # this will use default value from outcome
-            value.branch_2 = ""  # this will use default value from outcome
+            # value.branch_1 = ""  # this will use default value from outcome
+            value.branch_2 = 2  # this will use default value from outcome
             distinct_by_branch = true
 
             [metrics]
@@ -1120,19 +1124,25 @@ class TestOutcomes:
         )
 
         spec = config.AnalysisSpec.from_dict(toml.loads(config_str))
-        cfg = spec.resolve(experiments[6])
+        cfg = spec.resolve(experiments[7])
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
         assert "id" in spec.parameters.definitions
-        assert spec.parameters.definitions["id"].value["branch_1"] == "700"
-        assert spec.parameters.definitions["id"].default == "700"
+        assert isinstance(spec.parameters.definitions["id"].default, dict)
+
+        assert len(spec.parameters.definitions["id"].default) == 1
+        assert "branch_2" not in spec.parameters.definitions["id"].default
+        assert spec.parameters.definitions["id"].default["branch_1"] == 1
+
+        assert spec.parameters.definitions["id"].value["branch_1"] == 1
+        assert spec.parameters.definitions["id"].value["branch_2"] == 2
 
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_1" THEN "700" WHEN "branch_2" THEN "700" END)"""
+            """WHEN "branch_1" THEN "1" WHEN "branch_2" THEN "2" END)"""
         )
 
     def test_resolving_parameters_distinct_by_branch_missing_branch_name_raises(

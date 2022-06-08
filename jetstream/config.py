@@ -130,20 +130,22 @@ class ParameterDefinition:
         the rules defined here.
         """
 
-        if self.distinct_by_branch and not isinstance(self.value, dict):
+        if self.distinct_by_branch and not isinstance(self.value, dict) and not isinstance(self.default, dict):
             error_msg = (
                 f"Parameter {self.name} configured "
                 "to be distinct by branch, a mapping expected in the following format: "
-                'value.branch_1 = "1"'
+                'for values: value.branch_1 = "1"'
+                'and defaults: default.branch_1 = "1"'
             )
             raise InvalidConfigurationException(error_msg)
 
-        elif not self.distinct_by_branch and not isinstance(self.value, str):
+        elif not self.distinct_by_branch and not isinstance(self.value, str) and not isinstance(self.default, str):
             error_msg = (
                 f"Parameter {self.name} configured "
                 "to not be distinct by branch, but wrong value type provided. "
                 "Expected format: "
-                f'value = "param_value", instead provided: {self.value}'
+                f'value = "param_value", provided: {self.value}'
+                f'default = "", provided: {self.default}'
             )
             raise InvalidConfigurationException(error_msg)
 
@@ -929,8 +931,10 @@ class AnalysisSpec:
         param_2 is used for setting default values if missing in param_1
         """
 
-        value = param_1.value or param_2.value
         default_value = param_1.default or param_2.default
+        value = param_1.value or param_2.value or default_value
+
+        final_value = {**(default_value or dict()), **value} if isinstance(value, dict) and isinstance(default_value, dict) else value
 
         return ParameterDefinition(
             **{
@@ -939,10 +943,8 @@ class AnalysisSpec:
                 or getattr(param_2, "friendly_name"),
                 "description": getattr(param_1, "description", None) or param_2.description,
                 "value": {
-                    branch: branch_value or default_value for branch, branch_value in value.items()
-                }
-                if isinstance(value, dict)
-                else value or default_value,
+                    branch: branch_value for branch, branch_value in final_value.items()
+                } if isinstance(final_value, dict) else final_value,
                 "default": getattr(param_1, "default", None) or default_value,
                 "distinct_by_branch": getattr(param_1, "distinct_by_branch", None)
                 or param_2.distinct_by_branch,
