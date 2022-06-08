@@ -19,6 +19,7 @@ from mozanalysis.experiment import AnalysisBasis
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
+from .errors import StatisticComputationException
 from .metric import Metric
 from .pre_treatment import PreTreatment
 
@@ -183,9 +184,13 @@ class Statistic(ABC):
                             df, metric, ref_branch, experiment
                         ).data
                     except Exception as e:
-                        logger.error(
+                        logger.exception(
                             f"Error while computing statistic {self.name()} "
                             + f"for metric {metric}: {e}",
+                            exc_info=StatisticComputationException(
+                                f"Error while computing statistic {self.name()} "
+                                + f"for metric {metric}: {e}"
+                            ),
                             extra={"experiment": experiment.normandy_slug},
                         )
 
