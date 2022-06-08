@@ -1056,7 +1056,8 @@ class TestOutcomes:
 
         assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
-            """WHEN "branch_3" THEN "444" WHEN "branch_1" THEN "123" WHEN "branch_2" THEN "456" END)"""
+            """WHEN "branch_3" THEN "444" WHEN "branch_1" """
+            """THEN "123" WHEN "branch_2" THEN "456" END)"""
         )
 
     def test_resolving_parameters_default_value(self, experiments, fake_outcome_resolver):
@@ -1213,6 +1214,7 @@ class TestParameterDefinition:
         (
             (ParameterDefinition(name="test", value="1", distinct_by_branch=False)),
             (ParameterDefinition(name="test", value={"branch_1": "1"}, distinct_by_branch=True)),
+            (ParameterDefinition(name="test", default={"branch_1": "1"}, distinct_by_branch=True)),
         ),
     )
     def test_validate(self, input):
