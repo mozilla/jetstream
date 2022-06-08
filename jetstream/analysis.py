@@ -412,7 +412,6 @@ class Analysis:
             """WITH enrollments_table AS (
                 SELECT '00000' AS client_id,
                     'test' AS branch,
-                    '1' AS message_id,
                     DATE('2020-01-01') AS enrollment_date,
                     DATE('2020-01-01') AS exposure_date,
                     1 AS num_enrollment_events,
