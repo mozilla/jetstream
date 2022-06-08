@@ -47,6 +47,13 @@ class InvalidConfigurationException(Exception):
         super().__init__(message)
 
 
+class StatisticComputationException(Exception):
+    """Exception thrown when statistic of a metric could not get computed."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class UnexpectedKeyConfigurationException(InvalidConfigurationException):
     pass
 
