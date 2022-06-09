@@ -65,6 +65,7 @@ def validate_config_settings(config_file: Path) -> None:
         "data_sources",
         "friendly_name",
         "description",
+        "parameters",
     )
 
     core_config_keys_specified = config.keys()
@@ -144,8 +145,11 @@ class ExternalOutcome:
             app_id=app_id,
             app_name=self.platform,
         )
+
         spec = AnalysisSpec.default_for_experiment(dummy_experiment)
         spec.merge_outcome(self.spec)
+        spec.merge_parameters(self.spec.parameters)
+
         conf = spec.resolve(dummy_experiment)
         Analysis("no project", "no dataset", conf).validate()
 
