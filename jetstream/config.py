@@ -138,6 +138,7 @@ class ParameterDefinition:
                 "to be distinct by branch, a mapping expected in the following format: "
                 'for values: value.branch_1 = "1"'
                 'and defaults: default.branch_1 = "1"'
+                "See https://experimenter.info/jetstream/outcomes#parameterizing-outcomes for more information"  # noqa: E501
             )
             raise InvalidConfigurationException(error_msg)
 
@@ -150,6 +151,7 @@ class ParameterDefinition:
                 "Expected format: "
                 f'value = "param_value", provided: {self.value}'
                 f'default = "", provided: {self.default}'
+                "See https://experimenter.info/jetstream/outcomes#parameterizing-outcomes for more information"  # noqa: E501
             )
             raise InvalidConfigurationException(error_msg)
 
