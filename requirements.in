@@ -34,16 +34,16 @@ coverage[toml]==6.4.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.05.2
+dask[distributed]==2022.6.0
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.1
     # via
     #   mozilla-jetstream
-distributed==2022.05.2
+distributed==2022.6.0
     # via dask
-exceptiongroup==1.0.0rc7
+exceptiongroup==1.0.0rc8
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
@@ -60,12 +60,12 @@ google-api-core[grpc]==2.8.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.6.6
+google-auth==2.7.0
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.1.0
+google-cloud-bigquery==3.2.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -76,11 +76,11 @@ google-cloud-bigquery-storage==2.13.2
     #   mozilla-jetstream
 google-cloud-container==2.10.8
     # via mozilla-jetstream
-google-cloud-core==2.3.0
+google-cloud-core==2.3.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==2.3.0
+google-cloud-storage==2.4.0
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -182,7 +182,6 @@ protobuf==3.20.1
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-    #   google-cloud-storage
     #   googleapis-common-protos
     #   grpcio-status
     #   proto-plus
@@ -234,7 +233,7 @@ pyyaml==6.0
     #   dask
     #   distributed
     #   mozilla-jetstream
-requests==2.27.1
+requests==2.28.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -291,7 +290,7 @@ types-pyyaml==6.0.8
     # via mozilla-jetstream
 types-requests==2.27.30
     # via mozilla-jetstream
-types-six==1.16.15
+types-six==1.16.16
     # via mozilla-jetstream
 types-toml==0.10.7
     # via mozilla-jetstream
