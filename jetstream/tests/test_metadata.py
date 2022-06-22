@@ -145,7 +145,7 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
 
     assert "my_cool_metric" in metadata.metrics
     assert metadata.metrics["my_cool_metric"].bigger_is_better
-    assert metadata.metrics["my_cool_metric"].friendly_name == ""
+    assert metadata.metrics["my_cool_metric"].friendly_name == "My Cool Metric"
     assert metadata.metrics["my_cool_metric"].description == ""
     assert metadata.metrics["my_cool_metric"].analysis_bases == ["exposures"]
 
@@ -197,7 +197,7 @@ def test_export_metadata(mock_storage_client, experiments):
                     "analysis_bases": ["enrollments"]
                 },
                 "my_cool_metric": {
-                    "friendly_name": "",
+                    "friendly_name": "My Cool Metric",
                     "description": "",
                     "bigger_is_better": true,
                     "analysis_bases": ["enrollments"]
