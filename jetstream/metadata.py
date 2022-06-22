@@ -58,8 +58,7 @@ class ExperimentMetadata:
 
         metrics_metadata = {
             metric.name: MetricsMetadata(
-                friendly_name=metric.friendly_name
-                or metric.name.replace("_", " ").title()
+                friendly_name=metric.friendly_name or metric.name.replace("_", " ").title(),
                 description=metric.description or "",
                 bigger_is_better=metric.bigger_is_better,
                 analysis_bases=[a.value for a in metric.analysis_bases],
