@@ -34,13 +34,13 @@ coverage[toml]==6.4.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.6.0
+dask[distributed]==2022.6.1
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.2
     # via mozilla-jetstream
-distributed==2022.6.0
+distributed==2022.6.1
     # via dask
 exceptiongroup==1.0.0rc8
     # via cattrs
@@ -141,7 +141,7 @@ mypy-extensions==0.4.3
     # via
     #   black
     #   mypy
-numpy==1.22.4
+numpy==1.23.0
     # via
     #   db-dtypes
     #   mozanalysis
@@ -158,7 +158,7 @@ packaging==21.3
     #   google-cloud-bigquery
     #   pytest
     #   statsmodels
-pandas==1.4.2
+pandas==1.4.3
     # via
     #   db-dtypes
     #   mozanalysis
@@ -287,11 +287,11 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==3.19.22
     # via mozilla-jetstream
-types-pytz==2022.1.0
+types-pytz==2022.1.1
     # via mozilla-jetstream
-types-pyyaml==6.0.8
+types-pyyaml==6.0.9
     # via mozilla-jetstream
-types-requests==2.27.31
+types-requests==2.28.0
     # via mozilla-jetstream
 types-six==1.16.16
     # via mozilla-jetstream
