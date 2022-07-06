@@ -398,6 +398,8 @@ class Analysis:
         )
 
         dry_run_query(enrollments_sql)
+        print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
+        print(enrollments_sql)
 
         metrics_sql = exp.build_metrics_query(
             metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS
@@ -427,6 +429,8 @@ class Analysis:
         )
 
         dry_run_query(metrics_sql)
+        print(f"Dry running metrics query for {self.config.experiment.normandy_slug}:")
+        print(metrics_sql)
 
     @dask.delayed
     def save_statistics(
