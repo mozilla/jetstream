@@ -68,7 +68,7 @@ google-cloud-bigquery==3.2.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.13.2
+google-cloud-bigquery-storage==2.14.0
     # via
     #   google-cloud-bigquery
     #   mozanalysis
@@ -120,7 +120,7 @@ jinja2==3.1.2
     # via
     #   distributed
     #   mozilla-jetstream
-jsonschema==4.6.1
+jsonschema==4.6.2
     # via mozilla-jetstream
 locket==1.0.0
     # via
@@ -130,7 +130,7 @@ markupsafe==2.1.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
-mozanalysis==2022.6.1
+mozanalysis==2022.7.1
     # via mozilla-jetstream
     # via -r -
 msgpack==1.0.4
@@ -297,13 +297,13 @@ types-six==1.16.17
     # via mozilla-jetstream
 types-toml==0.10.7
     # via mozilla-jetstream
-types-urllib3==1.26.15
+types-urllib3==1.26.16
     # via types-requests
 typing-extensions==4.3.0
     # via
     #   black
     #   mypy
-urllib3==1.26.9
+urllib3==1.26.10
     # via
     #   distributed
     #   requests
