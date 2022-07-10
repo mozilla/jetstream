@@ -267,7 +267,7 @@ class ExternalConfigCollection:
                 ) AS last_updated
             FROM
             {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
-            WHERE option_name = 'labels'
+            WHERE option_name = 'labels' AND table_name LIKE "statistics_%"
             """
         )
 
@@ -279,7 +279,7 @@ class ExternalConfigCollection:
             seen = False
             table_prefix = bq_normalize_name(config.slug)
             for row in result:
-                if not row.table_name.startswith(table_prefix):
+                if not row.table_name.startswith(f"statistics_{table_prefix}"):
                     continue
                 seen = True
                 if not len(row.last_updated):

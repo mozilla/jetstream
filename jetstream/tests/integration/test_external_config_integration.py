@@ -39,9 +39,9 @@ class TestExternalConfigIntegration:
         )
 
         # table created after config loaded
-        client.client.create_table(f"{temporary_dataset}.new_table_day1")
+        client.client.create_table(f"{temporary_dataset}.statistics_new_table_day1")
         client.add_labels_to_table(
-            "new_table_day1",
+            "statistics_new_table_day1",
             {"last_updated": client._current_timestamp_label()},
         )
         config_collection = ExternalConfigCollection([config])
