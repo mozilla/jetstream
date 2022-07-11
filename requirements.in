@@ -141,7 +141,7 @@ mypy-extensions==0.4.3
     # via
     #   black
     #   mypy
-numpy==1.23.0
+numpy==1.23.1
     # via
     #   db-dtypes
     #   mozanalysis
