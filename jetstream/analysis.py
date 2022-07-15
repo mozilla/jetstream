@@ -9,6 +9,7 @@ import attr
 import dask
 import google
 import mozanalysis
+import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
@@ -49,6 +50,8 @@ class Analysis:
     dataset: str
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
+
+    start_time: datetime = datetime.now(tz=pytz.utc)
 
     @property
     def bigquery(self):

@@ -52,6 +52,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
     assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments"]
     assert metadata.external_config is None
+    assert metadata.analysis_start_time is None
 
 
 @patch.object(requests.Session, "get")
@@ -180,8 +181,9 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_blob = MagicMock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
+    mock_analysis_start = dt.datetime.now()
 
-    export_metadata(config, "test_bucket", "project")
+    export_metadata(config, "test_bucket", "project", mock_analysis_start)
 
     mock_client.get_bucket.assert_called_once()
     mock_bucket.blob.assert_called_once()
@@ -213,6 +215,9 @@ def test_export_metadata(mock_storage_client, experiments):
                 "url": """
         + '"https://github.com/mozilla/jetstream-config/blob/main/normandy-test-slug.toml"'
         + r"""},
+            "analysis_start_time": """
+        + f'"{str(mock_analysis_start)}"'
+        + """,
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """
@@ -245,6 +250,6 @@ def test_metadata_schema(experiments, fake_outcome_resolver):
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
     config = spec.resolve(experiments[5])
-    metadata = ExperimentMetadata.from_config(config)
+    metadata = ExperimentMetadata.from_config(config, dt.datetime.now())
 
     jsonschema.validate(converter.unstructure(metadata), schema)

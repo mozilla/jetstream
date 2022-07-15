@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
@@ -19,6 +20,8 @@ from jetstream.errors import (
     NoEnrollmentPeriodException,
 )
 from jetstream.experimenter import ExperimentV1
+
+logger = logging.getLogger("TEST_ANALYSIS")
 
 
 def test_get_timelimits_if_ready(experiments):

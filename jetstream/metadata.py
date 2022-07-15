@@ -48,10 +48,13 @@ class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
     outcomes: Dict[str, OutcomeMetadata]
     external_config: Optional[ExternalConfigMetadata]
+    analysis_start_time: Optional[dt.datetime]
     schema_version: int = StatisticResult.SCHEMA_VERSION
 
     @classmethod
-    def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":
+    def from_config(
+        cls, config: AnalysisConfiguration, analysis_start_time: dt.datetime = None
+    ) -> "ExperimentMetadata":
         all_metrics = [
             summary.metric for period, summaries in config.metrics.items() for summary in summaries
         ]
@@ -114,15 +117,21 @@ class ExperimentMetadata:
             metrics=metrics_metadata,
             outcomes=outcomes_metadata,
             external_config=external_config,
+            analysis_start_time=analysis_start_time,
         )
 
 
-def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
+def export_metadata(
+    config: AnalysisConfiguration,
+    bucket_name: str,
+    project_id: str,
+    analysis_start_time: dt.datetime = None,
+):
     """Export experiment metadata to GCS."""
     if config.experiment.normandy_slug is None:
         return
 
-    metadata = ExperimentMetadata.from_config(config)
+    metadata = ExperimentMetadata.from_config(config, analysis_start_time)
 
     storage_client = storage.Client(project_id)
     bucket = storage_client.get_bucket(bucket_name)
