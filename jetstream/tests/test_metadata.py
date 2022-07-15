@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import cattr
 import jsonschema
-import pytz
 import requests
 import toml
 
@@ -182,7 +181,7 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_blob = MagicMock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
-    mock_analysis_start = dt.datetime.now(tz=pytz.utc)
+    mock_analysis_start = dt.datetime.now()
 
     export_metadata(config, "test_bucket", "project", mock_analysis_start)
 
