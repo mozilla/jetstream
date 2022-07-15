@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import cattr
 import jsonschema
+import pytz
 import requests
 import toml
 
@@ -181,7 +182,7 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_blob = MagicMock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
-    mock_analysis_start = dt.datetime.now()
+    mock_analysis_start = dt.datetime.now(tz=pytz.utc)
 
     export_metadata(config, "test_bucket", "project", mock_analysis_start)
 
@@ -216,7 +217,7 @@ def test_export_metadata(mock_storage_client, experiments):
         + '"https://github.com/mozilla/jetstream-config/blob/main/normandy-test-slug.toml"'
         + r"""},
             "analysis_start_time": """
-        + f'"{str(mock_analysis_start)}"'
+        + f'"{mock_analysis_start}"'
         + """,
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)

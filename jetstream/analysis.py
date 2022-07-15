@@ -49,9 +49,8 @@ class Analysis:
     project: str
     dataset: str
     config: AnalysisConfiguration
+    start_time: datetime
     log_config: Optional[LogConfiguration] = None
-
-    start_time: datetime = datetime.now(tz=pytz.utc)
 
     @property
     def bigquery(self):
@@ -463,7 +462,12 @@ class Analysis:
         Run analysis using mozanalysis for a specific experiment.
         """
         global _dask_cluster
-        logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
+        self.start_time = datetime.now(tz=pytz.utc)
+        logger.info(
+            "Analysis.run invoked for experiment %s at %s",
+            self.config.experiment.normandy_slug,
+            self.start_time,
+        )
 
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy

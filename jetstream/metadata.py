@@ -36,8 +36,8 @@ class OutcomeMetadata:
 @attr.s(auto_attribs=True)
 class ExternalConfigMetadata:
     reference_branch: Optional[str]
-    end_date: Optional[dt.datetime]
-    start_date: Optional[dt.datetime]
+    end_date: Optional[dt.date]
+    start_date: Optional[dt.date]
     enrollment_period: Optional[int]
     skip: Optional[bool]
     url: str
@@ -95,10 +95,10 @@ class ExperimentMetadata:
                 if config.experiment.reference_branch
                 != config.experiment.experimenter_experiment.reference_branch
                 else None,
-                end_date=config.experiment.end_date
+                end_date=config.experiment.end_date.date()
                 if config.experiment.end_date != config.experiment.experimenter_experiment.end_date
                 else None,
-                start_date=config.experiment.start_date
+                start_date=config.experiment.start_date.date()
                 if config.experiment.start_date
                 != config.experiment.experimenter_experiment.start_date
                 else None,
@@ -142,7 +142,9 @@ def export_metadata(
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
     converter = cattr.Converter()
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.date, _date_to_json)
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
     converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
 
     blob.upload_from_string(
