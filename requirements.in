@@ -30,7 +30,7 @@ cloudpickle==2.1.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.4.1
+coverage[toml]==6.4.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
@@ -59,7 +59,7 @@ google-api-core[grpc]==2.8.2
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.9.0
+google-auth==2.9.1
     # via
     #   google-api-core
     #   google-cloud-core
@@ -68,14 +68,14 @@ google-cloud-bigquery==3.2.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.14.0
+google-cloud-bigquery-storage==2.14.1
     # via
     #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.10.8
+google-cloud-container==2.11.0
     # via mozilla-jetstream
-google-cloud-core==2.3.1
+google-cloud-core==2.3.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -89,7 +89,7 @@ google-resumable-media==2.3.3
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.56.3
+googleapis-common-protos[grpc]==1.56.4
     # via
     #   google-api-core
     #   grpc-google-iam-v1
@@ -120,7 +120,7 @@ jinja2==3.1.2
     # via
     #   distributed
     #   mozilla-jetstream
-jsonschema==4.7.1
+jsonschema==4.7.2
     # via mozilla-jetstream
 locket==1.0.0
     # via
@@ -289,13 +289,13 @@ types-protobuf==3.19.22
     # via mozilla-jetstream
 types-pytz==2022.1.1
     # via mozilla-jetstream
-types-pyyaml==6.0.9
+types-pyyaml==6.0.10
     # via mozilla-jetstream
-types-requests==2.28.0
+types-requests==2.28.1
     # via mozilla-jetstream
-types-six==1.16.17
+types-six==1.16.18
     # via mozilla-jetstream
-types-toml==0.10.7
+types-toml==0.10.8
     # via mozilla-jetstream
 types-urllib3==1.26.16
     # via types-requests
@@ -309,5 +309,5 @@ urllib3==1.26.10
     #   requests
 zict==2.2.0
     # via distributed
-zipp==3.8.0
+zipp==3.8.1
     # via importlib-resources
