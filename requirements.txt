@@ -189,9 +189,9 @@ google-cloud-bigquery==3.2.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.14.0 \
-    --hash=sha256:80589d3d90d98d0c80a99d33a3cbd46a93cf4e0b70dde3f614f52a0965b148c5 \
-    --hash=sha256:b9dccb9bf698c178dec8157bd09fcd8e385430b1c9ef05c7312f0e4a59ebad95
+google-cloud-bigquery-storage==2.14.1 \
+    --hash=sha256:3ada498d288582eb706f0d660734c197ead85798caec3bb4fc435505890dceac \
+    --hash=sha256:9cec07689c455448b4db789aa60e759664d757eb066af2a35d414e5e00cf6fb8
     # via
     #   -r requirements.in
     #   google-cloud-bigquery
@@ -356,9 +356,7 @@ idna==3.3 \
 importlib-resources==5.8.0 \
     --hash=sha256:568c9f16cb204f9decc8d6d24a572eeea27dacbb4cee9e6b03a8025736769751 \
     --hash=sha256:7952325ffd516c05a8ad0858c74dff2c3343f136fe66a6002b2623dd1d43f223
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -1083,7 +1081,6 @@ typing-extensions==4.3.0 \
     --hash=sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.10 \
     --hash=sha256:8298d6d56d39be0e3bc13c1c97d133f9b45d797169a0e11cdd0e0489d786f7ec \
@@ -1101,6 +1098,4 @@ zict==2.2.0 \
 zipp==3.8.0 \
     --hash=sha256:56bf8aadb83c24db6c4b577e13de374ccfb67da2078beba1d037c17980bf43ad \
     --hash=sha256:c4f6e5bbf48e74f7a38e7cc5b0480ff42b0ae5178957d564d18932525d5cf099
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
