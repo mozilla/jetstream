@@ -232,7 +232,9 @@ def test_export_metadata(mock_storage_client, experiments):
 def test_metadata_schema(experiments, fake_outcome_resolver):
     schema = json.loads((Path(__file__).parent / "data/Metadata_v1.0.json").read_text())
     converter = cattr.Converter()
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.date, _date_to_json)
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
     converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
 
     config_str = dedent(
