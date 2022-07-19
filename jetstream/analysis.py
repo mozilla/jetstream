@@ -49,8 +49,8 @@ class Analysis:
     project: str
     dataset: str
     config: AnalysisConfiguration
-    start_time: datetime
     log_config: Optional[LogConfiguration] = None
+    start_time: Optional[datetime] = None
 
     @property
     def bigquery(self):
