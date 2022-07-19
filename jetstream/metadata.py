@@ -96,10 +96,12 @@ class ExperimentMetadata:
                 != config.experiment.experimenter_experiment.reference_branch
                 else None,
                 end_date=config.experiment.end_date.date()
-                if config.experiment.end_date != config.experiment.experimenter_experiment.end_date
+                if config.experiment.end_date is not None
+                and config.experiment.end_date != config.experiment.experimenter_experiment.end_date
                 else None,
                 start_date=config.experiment.start_date.date()
-                if config.experiment.start_date
+                if config.experiment.start_date is not None
+                and config.experiment.start_date
                 != config.experiment.experimenter_experiment.start_date
                 else None,
                 enrollment_period=config.experiment.proposed_enrollment
