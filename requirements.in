@@ -34,13 +34,13 @@ coverage[toml]==6.4.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.7.0
+dask[distributed]==2022.7.1
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.2
     # via mozilla-jetstream
-distributed==2022.7.0
+distributed==2022.7.1
     # via dask
 exceptiongroup==1.0.0rc8
     # via cattrs
@@ -110,7 +110,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-importlib-resources==5.8.0
+importlib-resources==5.9.0
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
@@ -135,7 +135,7 @@ mozanalysis==2022.7.1
     # via -r -
 msgpack==1.0.4
     # via distributed
-mypy==0.961
+mypy==0.971
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
@@ -242,7 +242,7 @@ requests==2.28.1
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   mozilla-jetstream
-rsa==4.8
+rsa==4.9
     # via google-auth
 scipy==1.8.1
     # via
@@ -287,11 +287,11 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==3.19.22
     # via mozilla-jetstream
-types-pytz==2022.1.1
+types-pytz==2022.1.2
     # via mozilla-jetstream
-types-pyyaml==6.0.10
+types-pyyaml==6.0.11
     # via mozilla-jetstream
-types-requests==2.28.1
+types-requests==2.28.3
     # via mozilla-jetstream
 types-six==1.16.18
     # via mozilla-jetstream
@@ -303,7 +303,7 @@ typing-extensions==4.3.0
     # via
     #   black
     #   mypy
-urllib3==1.26.10
+urllib3==1.26.11
     # via
     #   distributed
     #   requests
