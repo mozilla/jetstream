@@ -19,5 +19,4 @@ docker run -it \
     --experiment-slug='firefox-android-sponsored-shortcuts-experiment' \
     --i-solemnly-swear-i-am-up-to-no-good /configs/example_config.toml \
     --date="2022-06-22" \
-    --bucket="dberry_testing" \
-    --recreate_enrollments
+    --bucket="dberry_testing"
