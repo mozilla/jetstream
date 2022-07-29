@@ -9,6 +9,7 @@ import attr
 import dask
 import google
 import mozanalysis
+import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
@@ -49,6 +50,7 @@ class Analysis:
     dataset: str
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
+    start_time: Optional[datetime] = None
 
     @property
     def bigquery(self):
@@ -460,7 +462,12 @@ class Analysis:
         Run analysis using mozanalysis for a specific experiment.
         """
         global _dask_cluster
-        logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
+        self.start_time = datetime.now(tz=pytz.utc)
+        logger.info(
+            "Analysis.run invoked for experiment %s at %s",
+            self.config.experiment.normandy_slug,
+            self.start_time,
+        )
 
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy

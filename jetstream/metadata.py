@@ -36,8 +36,8 @@ class OutcomeMetadata:
 @attr.s(auto_attribs=True)
 class ExternalConfigMetadata:
     reference_branch: Optional[str]
-    end_date: Optional[dt.datetime]
-    start_date: Optional[dt.datetime]
+    end_date: Optional[dt.date]
+    start_date: Optional[dt.date]
     enrollment_period: Optional[int]
     skip: Optional[bool]
     url: str
@@ -48,10 +48,13 @@ class ExperimentMetadata:
     metrics: Dict[str, MetricsMetadata]
     outcomes: Dict[str, OutcomeMetadata]
     external_config: Optional[ExternalConfigMetadata]
+    analysis_start_time: Optional[dt.datetime]
     schema_version: int = StatisticResult.SCHEMA_VERSION
 
     @classmethod
-    def from_config(cls, config: AnalysisConfiguration) -> "ExperimentMetadata":
+    def from_config(
+        cls, config: AnalysisConfiguration, analysis_start_time: dt.datetime = None
+    ) -> "ExperimentMetadata":
         all_metrics = [
             summary.metric for period, summaries in config.metrics.items() for summary in summaries
         ]
@@ -92,11 +95,13 @@ class ExperimentMetadata:
                 if config.experiment.reference_branch
                 != config.experiment.experimenter_experiment.reference_branch
                 else None,
-                end_date=config.experiment.end_date
-                if config.experiment.end_date != config.experiment.experimenter_experiment.end_date
+                end_date=config.experiment.end_date.date()
+                if config.experiment.end_date is not None
+                and config.experiment.end_date != config.experiment.experimenter_experiment.end_date
                 else None,
-                start_date=config.experiment.start_date
-                if config.experiment.start_date
+                start_date=config.experiment.start_date.date()
+                if config.experiment.start_date is not None
+                and config.experiment.start_date
                 != config.experiment.experimenter_experiment.start_date
                 else None,
                 enrollment_period=config.experiment.proposed_enrollment
@@ -114,15 +119,21 @@ class ExperimentMetadata:
             metrics=metrics_metadata,
             outcomes=outcomes_metadata,
             external_config=external_config,
+            analysis_start_time=analysis_start_time,
         )
 
 
-def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id: str):
+def export_metadata(
+    config: AnalysisConfiguration,
+    bucket_name: str,
+    project_id: str,
+    analysis_start_time: dt.datetime = None,
+):
     """Export experiment metadata to GCS."""
     if config.experiment.normandy_slug is None:
         return
 
-    metadata = ExperimentMetadata.from_config(config)
+    metadata = ExperimentMetadata.from_config(config, analysis_start_time)
 
     storage_client = storage.Client(project_id)
     bucket = storage_client.get_bucket(bucket_name)
@@ -133,7 +144,9 @@ def export_metadata(config: AnalysisConfiguration, bucket_name: str, project_id:
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
     converter = cattr.Converter()
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.date, _date_to_json)
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
     converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
 
     blob.upload_from_string(

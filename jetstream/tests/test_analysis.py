@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
@@ -19,6 +20,8 @@ from jetstream.errors import (
     NoEnrollmentPeriodException,
 )
 from jetstream.experimenter import ExperimentV1
+
+logger = logging.getLogger("TEST_ANALYSIS")
 
 
 def test_get_timelimits_if_ready(experiments):
@@ -151,8 +154,11 @@ def test_regression_20200316(monkeypatch):
     config = AnalysisSpec().resolve(experiment)
 
     monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    pre_start_time = dt.datetime.now(tz=pytz.utc)
     analysis = Analysis("test", "test", config)
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
+    assert analysis.start_time is not None
+    assert analysis.start_time >= pre_start_time
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
