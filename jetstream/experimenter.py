@@ -247,6 +247,13 @@ class ExperimentCollection:
         )
 
     def with_slug(self, slug: str) -> "ExperimentCollection":
+        print(slug)
+        matches = [
+            ex
+            for ex in self.experiments
+            if ex.experimenter_slug == slug or ex.normandy_slug == slug
+        ] 
+        print(matches)
         cls = type(self)
         return cls(
             [

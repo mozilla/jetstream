@@ -274,9 +274,13 @@ class AnalysisExecutor:
                         run_configs.append(config)
         else:
             existing_experiments = []
-
+            print("EXPERIMENTER SLUGS:")
+            print(*sorted([ex.experimenter_slug for ex in experiments.experiments if ex.experimenter_slug is not None]), sep='\n')
+            print("NORMANDY SLUGS:")
+            print(*sorted([ex.normandy_slug for ex in experiments.experiments if ex.normandy_slug is not None]), sep='\n')            
             for slug in self.experiment_slugs:
                 if e := experiments.with_slug(slug).experiments:
+                    print('FOUND EXPERIMENT')
                     existing_experiments.append(e[0])
                 else:
                     logger.warning(
