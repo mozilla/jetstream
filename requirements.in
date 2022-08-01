@@ -120,7 +120,7 @@ jinja2==3.1.2
     # via
     #   distributed
     #   mozilla-jetstream
-jsonschema==4.7.2
+jsonschema==4.9.0
     # via mozilla-jetstream
 locket==1.0.0
     # via
