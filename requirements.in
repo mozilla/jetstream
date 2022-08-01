@@ -46,7 +46,7 @@ exceptiongroup==1.0.0rc8
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
-fsspec==2022.5.0
+fsspec==2022.7.1
     # via dask
 gitdb==4.0.9
     # via gitpython
