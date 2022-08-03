@@ -455,7 +455,7 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
-    def run(self, current_date: datetime, dry_run: bool = True) -> None:
+    def run(self, current_date: datetime, dry_run: bool = False) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
