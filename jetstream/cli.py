@@ -141,6 +141,7 @@ class SerialExecutorStrategy:
                 )
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id, analysis.start_time)
+                analysis.export_errors(self.bucket)
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
                 # this prevents Argo from retrying the analysis unnecessarily

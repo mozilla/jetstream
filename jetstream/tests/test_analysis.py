@@ -4,9 +4,11 @@ import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
-from unittest.mock import Mock
+from unittest import mock
+from unittest.mock import MagicMock, Mock
 
 import mozanalysis.segments
+import pandas as pd
 import pytest
 import pytz
 import toml
@@ -20,6 +22,7 @@ from jetstream.errors import (
     NoEnrollmentPeriodException,
 )
 from jetstream.experimenter import ExperimentV1
+from jetstream.logging import LogConfiguration
 
 logger = logging.getLogger("TEST_ANALYSIS")
 
@@ -159,6 +162,132 @@ def test_regression_20200316(monkeypatch):
     analysis.run(current_date=dt.datetime(2020, 3, 16, tzinfo=pytz.utc), dry_run=True)
     assert analysis.start_time is not None
     assert analysis.start_time >= pre_start_time
+
+
+@mock.patch("jetstream.analysis.BigQueryClient")
+@mock.patch("google.cloud.storage.Client")
+def test_export_errors(mock_storage_client, mock_bq_client):
+    experiment_json = r"""
+    {
+      "experiment_url": "https://blah/experiments/search-tips-aka-nudges/",
+      "type": "addon",
+      "name": "Search Tips aka Nudges",
+      "slug": "search-tips-aka-nudges",
+      "public_name": "Search Tips",
+      "public_description": "Search Tips are designed to increase engagement with the QuantumBar.",
+      "status": "Live",
+      "countries": [],
+      "platform": "All Platforms",
+      "start_date": 1578960000000,
+      "end_date": 1584921600000,
+      "population": "2% of Release Firefox 72.0 to 74.0",
+      "population_percent": "2.0000",
+      "firefox_channel": "Release",
+      "firefox_min_version": "72.0",
+      "firefox_max_version": "74.0",
+      "addon_experiment_id": null,
+      "addon_release_url": "https://bugzilla.mozilla.org/attachment.cgi?id=9120542",
+      "pref_branch": null,
+      "pref_name": null,
+      "pref_type": null,
+      "proposed_start_date": 1578960000000,
+      "proposed_enrollment": 21,
+      "proposed_duration": 69,
+      "normandy_slug": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+      "normandy_id": 902,
+      "other_normandy_ids": [],
+      "variants": [
+        {
+          "description": "Standard address bar experience",
+          "is_control": false,
+          "name": "control",
+          "ratio": 50,
+          "slug": "control",
+          "value": null,
+          "addon_release_url": null,
+          "preferences": []
+        },
+        {
+          "description": "",
+          "is_control": true,
+          "name": "treatment",
+          "ratio": 50,
+          "slug": "treatment",
+          "value": null,
+          "addon_release_url": null,
+          "preferences": []
+        }
+      ]
+    }
+    """
+    experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
+    config = AnalysisSpec().resolve(experiment)
+
+    mock_client = MagicMock()
+    mock_storage_client.return_value = mock_client
+    mock_bucket = MagicMock()
+    mock_client.get_bucket.return_value = mock_bucket
+    mock_blob = MagicMock()
+    mock_bucket.blob.return_value = mock_blob
+    mock_blob.upload_from_string.return_value = ""
+
+    test_errors = json.loads(
+        """
+        [
+            {
+                "Timestamp Time": "2022-07-26 05:37:27",
+                "Experiment": "test-default-as-first-screen-100-roll-out",
+                "Metric": null,
+                "Statistic": null,
+                "Log Level": "WARNING",
+                "Exception Type": null,
+                "Message": "Skipping test-default-as-first-screen-100-roll-out; skip=true in config"
+            },
+            {
+                "Timestamp Time": "2022-07-26 05:03:24",
+                "Experiment": "test-pref-search-experiment",
+                "Metric": null,
+                "Statistic": null,
+                "Log Level": "ERROR",
+                "Exception Type": "NoEnrollmentPeriodException",
+                "Message": "test-pref-search-experiment -> Experiment has no enrollment period"
+            },
+            {
+                "Timestamp Time": "2022-07-26 04:39:49",
+                "Experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "Metric": "merino_latency",
+                "Statistic": "bootstrap_mean",
+                "Log Level": "ERROR",
+                "Exception Type": "StatisticComputationException",
+                "Message": "Error statistic bootstrap_mean metric merino_latency: null values"
+            },
+            {
+                "Timestamp Time": "2022-07-26 04:39:49",
+                "Experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "Metric": "remote_settings_latency",
+                "Statistic": "bootstrap_mean",
+                "Log Level": "ERROR",
+                "Exception Type": "StatisticComputationException",
+                "Message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
+            }
+        ]
+        """
+    )
+    mock_bqc = MagicMock()
+    mock_bq_client.return_value = mock_bqc
+    mock_bqc.table_to_dataframe.return_value = pd.DataFrame.from_dict(test_errors)
+
+    log_config = LogConfiguration(
+        log_project_id="test_logs_project",
+        log_dataset_id="test_logs_dataset",
+        log_table_id="test_logs_table",
+        task_profiling_log_table_id="task_profiling_log_table_id",
+        task_monitoring_log_table_id="task_monitoring_log_table_id",
+        log_to_bigquery=True,
+    )
+    analysis = Analysis("test_project", "test_dataset", config, log_config=log_config)
+    num_errors = analysis.export_errors("test_errors")
+    assert num_errors == 2
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):

@@ -11,7 +11,7 @@ import google
 import mozanalysis
 import pytz
 from dask.distributed import Client, LocalCluster
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 from google.cloud.exceptions import Conflict
 from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
@@ -629,3 +629,41 @@ class Analysis:
             )
         except Conflict:
             pass
+
+    def export_errors(self, bucket_name: str):
+        """Export experiment errors to GCS."""
+        if self.config.experiment.normandy_slug is None:
+            return
+
+        if self.log_config is None:
+            log_project = self.project
+            log_dataset = self.dataset
+            log_table = "logs"
+        else:
+            log_project = self.log_config.log_project_id or self.project
+            log_dataset = self.log_config.log_dataset_id or self.dataset
+            log_table = self.log_config.log_table_id or "logs"
+
+        bq_log_client = BigQueryClient(log_project, log_dataset)
+        logs_df = bq_log_client.table_to_dataframe(log_table)
+
+        exp_logs = logs_df[logs_df["Experiment"] == self.config.experiment.normandy_slug]
+        # and logs_df["Exception Type"] is not None
+
+        logger.info(exp_logs)
+
+        storage_client = storage.Client(self.project)
+        bucket = storage_client.get_bucket(bucket_name)
+        target_file = f"errors_{bq_normalize_name(self.config.experiment.normandy_slug)}"
+        target_path = "errors"
+        blob = bucket.blob(f"{target_path}/{target_file}.json")
+
+        logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
+
+        blob.upload_from_string(
+            # data=json.dumps(exp_logs, sort_keys=True, indent=4),
+            data=exp_logs.to_json(indent=4),
+            content_type="application/json",
+        )
+
+        return len(exp_logs)
