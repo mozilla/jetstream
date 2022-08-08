@@ -133,6 +133,8 @@ mccabe==0.6.1
 mozanalysis==2022.7.1
     # via mozilla-jetstream
     # via -r -
+mozilla-jetstream-config-parser==2022.8.8
+    # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed
 mypy==0.971
