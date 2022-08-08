@@ -712,6 +712,9 @@ def validate_config(path: Iterable[os.PathLike]):
         if "functions.toml" == config_file.name:
             print(f"Skipping function config {config_file}")
             continue
+        if config_file.parent.name == "definitions":
+            print(f"Skipping definition configs {config_file}")
+            continue
         print(f"Evaluating {config_file}...")
         entity = external_config.entity_from_path(config_file)
         call = partial(entity.validate)
