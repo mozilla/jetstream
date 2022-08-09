@@ -5,6 +5,7 @@ from typing import Union
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
+from jetstream_config_parser import exposure_signal
 
 
 class AnalysisWindow(enum.Enum):
@@ -23,27 +24,13 @@ WindowLimit = Union[int, AnalysisWindow, None]
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
-class ExposureSignal:
+class ExposureSignal(exposure_signal.ExposureSignal):
     """
     Jetstream exposure signal representation.
 
     Jetstream exposure signals are supersets of mozanalysis exposure signals
     with some additional metdata required for analysis.
     """
-
-    name: str
-    data_source: mozanalysis.metrics.DataSource
-    select_expression: str
-    friendly_name: str
-    description: str
-    window_start: WindowLimit = attr.ib(None)
-    window_end: WindowLimit = attr.ib(None)
-
-    @window_end.validator
-    @window_start.validator
-    def validate_window(self, _attribute, value):
-        if value is not None and not isinstance(value, int):
-            AnalysisWindow(value)
 
     def to_mozanalysis_exposure_signal(
         self, time_limits: mozanalysis.experiment.TimeLimits
@@ -54,7 +41,14 @@ class ExposureSignal:
 
         return mozanalysis.exposure.ExposureSignal(
             name=self.name,
-            data_source=self.data_source,
+            data_source=mozanalysis.metrics.DataSource(
+                name=self.data_source.name,
+                from_expr=self.data_source.from_expression,
+                experiments_column_type=self.data_source.experiments_column_type,
+                client_id_column=self.data_source.client_id_column,
+                submission_date_column=self.data_source.submission_date_column,
+                default_dataset=self.data_source.default_dataset,
+            ),
             select_expr=self.select_expression,
             friendly_name=self.friendly_name,
             description=self.description,

@@ -18,55 +18,15 @@ Definition and Reference classes are also direct representations of the configur
 which produce concrete mozanalysis classes when resolved.
 """
 
-import copy
 import datetime as dt
-from collections import defaultdict
-from inspect import isabstract
-from pathlib import Path
-from types import ModuleType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import List, Optional
 
-import attr
-import cattr
-import jinja2
-import mozanalysis
-import mozanalysis.experiment
-import mozanalysis.exposure
-import mozanalysis.segments
-import pytz
-import toml
-from jinja2 import StrictUndefined
+from google.cloud import bigquery
+from jetstream_config_parser.analysis import AnalysisSpec
+from jetstream_config_parser.config import Config, ConfigCollection, Outcome
+from pytz import UTC
 
-from jetstream.errors import InvalidConfigurationException, NoStartDateException
-from jetstream.exposure_signal import AnalysisWindow, ExposureSignal, WindowLimit
-from jetstream.metric import Metric
-from jetstream.platform import Platform, _generate_platform_config
-from jetstream.pre_treatment import PreTreatment
-from jetstream.statistics import Statistic, Summary
-
-from jetstream_config_parser.config import ConfigCollection
-
-from . import AnalysisPeriod
-
-if TYPE_CHECKING:
-    import jetstream.experimenter
-
-    from .external_config import ExternalConfigCollection
-
-platform_config = toml.load(Path(__file__).parent.parent / "platform_config.toml")
-PLATFORM_CONFIGS = _generate_platform_config(platform_config)
-
-_converter = cattr.Converter()
+from . import bq_normalize_name
 
 
 class _ConfigLoader:
@@ -89,85 +49,121 @@ class _ConfigLoader:
         self._configs = self.config_collection
         return self._configs
 
-    def get_metric(self, metric_slug: str, app_name: str):
-        from mozanalysis.metrics import Metric
-
-        metric_definition = self.configs.get_metric_definition(metric_slug, app_name)
-        if metric_definition is None:
-            raise Exception(f"Could not find definition for metric {metric_slug}")
-
-        return Metric(
-            name=metric_definition.name,
-            select_expr=self.configs.get_env()
-            .from_string(metric_definition.select_expression)
-            .render(),
-            friendly_name=metric_definition.friendly_name,
-            description=metric_definition.friendly_name,
-            data_source=self.get_data_source(
-                metric_definition.data_source.name, app_name
-            ),
-            bigger_is_better=metric_definition.bigger_is_better,
+    def updated_configs(self, bq_project: str, bq_dataset: str) -> List[Config]:
+        """
+        Return external configs that have been updated/added and
+        with associated BigQuery tables being out of date.
+        """
+        client = bigquery.Client(bq_project)
+        job = client.query(
+            rf"""
+            SELECT
+                table_name,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE option_name = 'labels' AND table_name LIKE "statistics_%"
+            """
         )
 
-    def get_data_source(self, data_source_slug: str, app_name: str):
-        from mozanalysis.metrics import DataSource
+        result = list(job.result())
 
-        data_source_definition = self.configs.get_data_source_definition(
-            data_source_slug, app_name
-        )
-        if data_source_definition is None:
-            raise Exception(
-                f"Could not find definition for data source {data_source_slug}"
+        updated_configs = []
+
+        for config in self.configs.configs:
+            seen = False
+            table_prefix = bq_normalize_name(config.slug)
+            for row in result:
+                if not row.table_name.startswith(f"statistics_{table_prefix}"):
+                    continue
+                seen = True
+                if not len(row.last_updated):
+                    continue
+                table_last_updated = UTC.localize(
+                    dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
+                )
+                if table_last_updated < config.last_modified:
+                    updated_configs.append(config)
+                    break
+            if not seen:
+                updated_configs.append(config)
+
+        return updated_configs
+
+    def updated_defaults(self, bq_project: str, bq_dataset: str) -> List[str]:
+        """
+        Return experiment slugs that are linked to default configs that have
+        been updated/added or updated.
+
+        Only return configs for experiments that are currently live.
+        """
+        client = bigquery.Client(bq_project)
+        job = client.query(
+            rf"""
+            WITH live_experiments AS (
+                SELECT
+                    normandy_slug,
+                    app_name
+                FROM
+                `{bq_project}.monitoring.experimenter_experiments_v1`
+                WHERE status = 'Live'
+                AND start_date IS NOT NULL
+                AND (end_date IS NULL OR end_date >= DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+                AND start_date > DATE('2022-05-18')
             )
-
-        return DataSource(
-            name=data_source_definition.name,
-            from_expr=data_source_definition.from_expression,
-            client_id_column=data_source_definition.client_id_column,
-            submission_date_column=data_source_definition.submission_date_column,
-            experiments_column_type=None
-            if data_source_definition.experiments_column_type == "none"
-            else data_source_definition.experiments_column_type,
-            default_dataset=data_source_definition.default_dataset,
+            SELECT
+                table_name,
+                app_name,
+                normandy_slug,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {bq_dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            JOIN live_experiments
+            ON table_name LIKE CONCAT("%statistics_", REPLACE(normandy_slug, "-", "_"), "%")
+            WHERE option_name = 'labels'
+            """
         )
 
-    def get_segment(self, segment_slug: str, app_name: str):
-        from mozanalysis.segments import Segment
+        result = list(job.result())
 
-        segment_definition = self.configs.get_segment_definition(segment_slug, app_name)
-        if segment_definition is None:
-            raise Exception(f"Could not find definition for segment {segment_slug}")
+        updated_experiments = []
 
-        return Segment(
-            name=segment_definition.name,
-            data_source=self.get_segment_data_source(
-                segment_definition.data_source.name, app_name
-            ),
-            select_expr=segment_definition.select_expression,
-            friendly_name=segment_definition.friendly_name,
-            description=segment_definition.description,
-        )
+        for default_config in self.configs.defaults:
+            app_name = default_config.slug
+            for row in result:
+                if row.app_name != app_name:
+                    continue
+                if not len(row.last_updated):
+                    continue
+                table_last_updated = UTC.localize(
+                    dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
+                )
+                if table_last_updated < default_config.last_modified:
+                    updated_experiments.append(row.normandy_slug)
 
-    def get_segment_data_source(self, data_source_slug: str, app_name: str):
-        from mozanalysis.segments import SegmentDataSource
+        return list(set(updated_experiments))
 
-        data_source_definition = self.configs.get_segment_data_source_definition(
-            data_source_slug, app_name
-        )
-        if data_source_definition is None:
-            raise Exception(
-                f"Could not find definition for segment data source {data_source_slug}"
-            )
+    def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
+        """Return the spec for a specific experiment."""
+        for config in self.configs.configs:
+            if config.slug == slug:
+                return config.spec
 
-        return SegmentDataSource(
-            name=data_source_definition.name,
-            from_expr=data_source_definition.from_expression,
-            window_start=data_source_definition.window_start,
-            window_end=data_source_definition.window_end,
-            client_id_column=data_source_definition.client_id_column,
-            submission_date_column=data_source_definition.submission_date_column,
-            default_dataset=data_source_definition.default_dataset,
-        )
+        return None
+
+    def get_outcome(self, outcome_slug: str, app_name: str) -> Optional[Outcome]:
+        """Return the outcome matching the specified slug."""
+        for outcome in self.configs.outcomes:
+            if outcome.slug == outcome_slug and app_name == outcome.platform:
+                return outcome
+
+        return None
 
 
 ConfigLoader = _ConfigLoader()

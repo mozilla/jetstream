@@ -1,13 +1,9 @@
 import datetime as dt
-from textwrap import dedent
-from typing import Dict, Optional
 from unittest.mock import Mock
 
 import pytest
 import pytz
-import toml
 
-from jetstream import config, external_config
 from jetstream.experimenter import Branch, Experiment
 
 
@@ -239,122 +235,80 @@ def focus_android_experiments():
     ]
 
 
-@pytest.fixture
-def fake_outcome_resolver(monkeypatch):
-    performance_config = dedent(
-        """
-        friendly_name = "Performance outcomes"
-        description = "Outcomes related to performance"
-        default_metrics = ["speed"]
+# @pytest.fixture
+# def fake_outcome_resolver(monkeypatch):
+#     performance_config = dedent(
+#         """
+#         friendly_name = "Performance outcomes"
+#         description = "Outcomes related to performance"
+#         default_metrics = ["speed"]
 
-        [metrics.speed]
-        data_source = "main"
-        select_expression = "1"
+#         [metrics.speed]
+#         data_source = "main"
+#         select_expression = "1"
 
-        [metrics.speed.statistics.bootstrap_mean]
-        """
-    )
+#         [metrics.speed.statistics.bootstrap_mean]
+#         """
+#     )
 
-    tastiness_config = dedent(
-        """
-        friendly_name = "Tastiness outcomes"
-        description = "Outcomes related to tastiness 😋"
+#     tastiness_config = dedent(
+#         """
+#         friendly_name = "Tastiness outcomes"
+#         description = "Outcomes related to tastiness 😋"
 
-        [metrics.meals_eaten]
-        data_source = "meals"
-        select_expression = "1"
-        friendly_name = "Meals eaten"
-        description = "Number of consumed meals"
+#         [metrics.meals_eaten]
+#         data_source = "meals"
+#         select_expression = "1"
+#         friendly_name = "Meals eaten"
+#         description = "Number of consumed meals"
 
-        [metrics.meals_eaten.statistics.bootstrap_mean]
-        num_samples = 10
-        pre_treatments = ["remove_nulls"]
+#         [metrics.meals_eaten.statistics.bootstrap_mean]
+#         num_samples = 10
+#         pre_treatments = ["remove_nulls"]
 
-        [data_sources.meals]
-        from_expression = "meals"
-        client_id_column = "client_info.client_id"
-        """
-    )
+#         [data_sources.meals]
+#         from_expression = "meals"
+#         client_id_column = "client_info.client_id"
+#         """
+#     )
 
-    parameterised_config = dedent(
-        """
-        friendly_name = "Outcome with parameter same across all branches"
-        description = "Outcome that has a parameter that is the same across all branches"
-        default_metrics = ["sample_id_count"]
+#     parameterised_config = dedent(
+#         """
+#         friendly_name = "Outcome with parameter same across all branches"
+#         description = "Outcome that has a parameter that is the same across all branches"
+#         default_metrics = ["sample_id_count"]
 
-        [metrics.sample_id_count]
-        data_source = "main"
-        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
+#         [metrics.sample_id_count]
+#         data_source = "main"
+#         select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
-        [metrics.sample_id_count.statistics.bootstrap_mean]
+#         [metrics.sample_id_count.statistics.bootstrap_mean]
 
-        [parameters.id]
-        friendly_name = "Some random ID"
-        description = "A random ID used to count samples"
-        default = "700"
-        distinct_by_branch = false
-        """
-    )
+#         [parameters.id]
+#         friendly_name = "Some random ID"
+#         description = "A random ID used to count samples"
+#         default = "700"
+#         distinct_by_branch = false
+#         """
+#     )
 
-    parameterised_distinct_by_branch_config = dedent(
-        """
-        friendly_name = "Outcome with parameter same across all branches"
-        description = "Outcome that has a parameter that is the same across all branches"
-        default_metrics = ["sample_id_count"]
+#     parameterised_distinct_by_branch_config = dedent(
+#         """
+#         friendly_name = "Outcome with parameter same across all branches"
+#         description = "Outcome that has a parameter that is the same across all branches"
+#         default_metrics = ["sample_id_count"]
 
-        [metrics.sample_id_count]
-        data_source = "main"
-        select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
+#         [metrics.sample_id_count]
+#         data_source = "main"
+#         select_expression = "COUNTIF(sample_id = {{ parameters.id }})"
 
-        [metrics.sample_id_count.statistics.bootstrap_mean]
+#         [metrics.sample_id_count.statistics.bootstrap_mean]
 
-        [parameters.id]
-        friendly_name = "Some random ID"
-        description = "A random ID used to count samples"
-        distinct_by_branch = true
+#         [parameters.id]
+#         friendly_name = "Some random ID"
+#         description = "A random ID used to count samples"
+#         distinct_by_branch = true
 
-        default.branch_1 = 1
-        """
-    )
-
-    class FakeOutcomeResolver:
-        @property
-        def data(self) -> Dict[str, external_config.ExternalOutcome]:
-            data = {}
-            data["performance"] = external_config.ExternalOutcome(
-                slug="performance",
-                spec=config.OutcomeSpec.from_dict(toml.loads(performance_config)),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            data["tastiness"] = external_config.ExternalOutcome(
-                slug="tastiness",
-                spec=config.OutcomeSpec.from_dict(toml.loads(tastiness_config)),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            data["parameterized"] = external_config.ExternalOutcome(
-                slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(toml.loads(parameterised_config)),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            data["parameterised_distinct_by_branch_config"] = external_config.ExternalOutcome(
-                slug="parameterized",
-                spec=config.OutcomeSpec.from_dict(
-                    toml.loads(parameterised_distinct_by_branch_config)
-                ),
-                platform="firefox_desktop",
-                commit_hash="000000",
-            )
-            return data
-
-        def with_external_configs(
-            self, external_configs: Optional[external_config.ExternalConfigCollection]
-        ) -> "FakeOutcomeResolver":
-            return self
-
-        def resolve(self, slug: str) -> external_config.ExternalOutcome:
-            return self.data[slug]
-
-    monkeypatch.setattr("jetstream.outcomes.OutcomesResolver", FakeOutcomeResolver())
+#         default.branch_1 = 1
+#         """
+#     )

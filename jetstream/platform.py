@@ -1,15 +1,11 @@
-import importlib
-from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, MutableMapping, Optional
+from pathlib import Path
+from typing import Any, Dict, MutableMapping
 
 import attr
-import mozanalysis
-import mozanalysis.experiment
-import mozanalysis.exposure
-import mozanalysis.segments
+import toml
+from jetstream_config_parser.analysis import AnalysisSpec
 
-if TYPE_CHECKING:
-    from jetstream.config import AnalysisSpec
+platform_config = toml.load(Path(__file__).parent.parent / "platform_config.toml")
 
 
 class PlatformConfigurationException(Exception):
@@ -34,7 +30,6 @@ class Platform:
     :returns: returns an instance of the object with all configuration settings as attributes
     :rtype: Platform
     """
-
 
     def _check_value_not_null(self, attribute, value):
         if not value and str(value).lower() == "none":
@@ -64,13 +59,11 @@ class Platform:
 
         return value
 
-
     enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
     app_id: str = attr.ib(validator=_check_value_not_null)
     app_name: str = attr.ib(validator=_check_value_not_null)
 
-
-    def resolve_config(self) -> "AnalysisSpec":
+    def resolve_config(self) -> AnalysisSpec:
         from . import default_config
 
         config = default_config.DefaultConfigsResolver.resolve(self.app_name)
@@ -92,9 +85,7 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
 
     for platform, platform_config in config["platform"].items():
         processed_config[platform] = {
-            "enrollments_query_type": platform_config.get(
-                "enrollments_query_type", "glean-event"
-            ),
+            "enrollments_query_type": platform_config.get("enrollments_query_type", "glean-event"),
             "app_id": platform_config.get("app_id"),
             "app_name": platform,
         }
@@ -103,3 +94,6 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
         platform: Platform(**platform_config)
         for platform, platform_config in processed_config.items()
     }
+
+
+PLATFORM_CONFIGS = _generate_platform_config(platform_config)

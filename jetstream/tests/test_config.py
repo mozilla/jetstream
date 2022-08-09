@@ -8,9 +8,10 @@ import mozanalysis.segments
 import pytest
 import pytz
 import toml
+from jetstream_config_parser.metric import AnalysisPeriod
 from mozanalysis.experiment import AnalysisBasis
 
-from jetstream import AnalysisPeriod, config
+from jetstream import config
 from jetstream.config import (
     AnalysisWindow,
     MetricDefinition,
