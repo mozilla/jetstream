@@ -20,15 +20,17 @@ from typing import (
 
 import attr
 import click
-import mozanalysis
 import pytz
 import toml
+from jetstream_config_parser.config import Config, DefaultConfig, entity_from_path
+from jetstream_config_parser.experiment import Experiment
+from jetstream_conifg_parser.analysis import AnalysisConfiguration, AnalysisSpec
 
-from . import bq_normalize_name, external_config
+from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
-from .config import AnalysisConfiguration, AnalysisSpec
+from .config import ConfigLoader, _ConfigLoader
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
@@ -124,9 +126,7 @@ class SerialExecutorStrategy:
     log_config: Optional[LogConfiguration] = None
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
-    config_getter: Callable[
-        [], ExternalConfigCollection
-    ] = ExternalConfigCollection.from_github_repo
+    config_getter: _ConfigLoader = ConfigLoader
 
     def execute(
         self,
@@ -200,9 +200,7 @@ class AnalysisExecutor:
         experiment_getter: Callable[
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
-        config_getter: Callable[
-            [], ExternalConfigCollection
-        ] = ExternalConfigCollection.from_github_repo,
+        config_getter: _ConfigLoader = ConfigLoader,
         today: Optional[datetime] = None,
     ) -> bool:
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
@@ -229,7 +227,7 @@ class AnalysisExecutor:
 
         return strategy.execute(worklist, self.configuration_map)
 
-    def _delete_enrollment_table(self, experiment: mozanalysis.experiment.Experiment) -> None:
+    def _delete_enrollment_table(self, experiment: Experiment) -> None:
         """Deletes all enrollment table associated with the experiment."""
         print(f"Delete enrollment table for {experiment.normandy_slug}")
         client = BigQueryClient(project=self.project_id, dataset=self.dataset_id)
@@ -239,25 +237,23 @@ class AnalysisExecutor:
 
     def _experiments_to_configs(
         self,
-        experiments: List[mozanalysis.experiment.Experiment],
-        config_getter: Callable[
-            [], ExternalConfigCollection
-        ] = ExternalConfigCollection.from_github_repo,
+        experiments: List[Experiment],
+        config_getter: _ConfigLoader = ConfigLoader,
     ) -> List[AnalysisConfiguration]:
         """Convert mozanalysis experiments to analysis configs."""
         configs = []
 
         for experiment in experiments:
-            spec = AnalysisSpec.default_for_experiment(experiment)
+            experiment_config = experiment.to_config()
+            spec = AnalysisSpec.default_for_experiment(experiment_config)
             if self.configuration_map and experiment.normandy_slug in self.configuration_map:
                 config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
                 spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
-                external_configs = config_getter()
-                if external_spec := external_configs.spec_for_experiment(experiment.normandy_slug):
+                if external_spec := config_getter.spec_for_experiment(experiment.normandy_slug):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment))
+            configs.append(spec.resolve(experiment_config))
 
         return configs
 
@@ -266,9 +262,7 @@ class AnalysisExecutor:
         experiment_getter: Callable[
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
-        config_getter: Callable[
-            [], ExternalConfigCollection
-        ] = ExternalConfigCollection.from_github_repo,
+        config_getter: _ConfigLoader = ConfigLoader,
     ) -> List[AnalysisConfiguration]:
         """Fetch configs of experiments that are to be analysed."""
         experiments = experiment_getter()
@@ -320,9 +314,7 @@ class AnalysisExecutor:
 
     def ensure_enrollments(
         self,
-        config_getter: Callable[
-            [], ExternalConfigCollection
-        ] = ExternalConfigCollection.from_github_repo,
+        config_getter: _ConfigLoader = ConfigLoader,
         experiment_getter: Callable[
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
@@ -704,11 +696,10 @@ def rerun_config_changed(
     strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     # get experiment-specific external configs
-    external_configs = ExternalConfigCollection.from_github_repo()
-    updated_external_configs = external_configs.updated_configs(project_id, dataset_id)
-    experiments_with_updated_defaults = external_configs.updated_defaults(project_id, dataset_id)
+    updated_configs = ConfigLoader.updated_configs(project_id, dataset_id)
+    experiments_with_updated_defaults = ConfigLoader.updated_defaults(project_id, dataset_id)
     experiment_slugs = set(
-        experiments_with_updated_defaults + [conf.slug for conf in updated_external_configs]
+        experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
     )
 
     if argo:
@@ -761,16 +752,16 @@ def validate_config(path: Iterable[os.PathLike]):
             print(f"Skipping definition configs {config_file}")
             continue
         print(f"Evaluating {config_file}...")
-        entity = external_config.entity_from_path(config_file)
+        entity = entity_from_path(config_file)
         call = partial(entity.validate)
-        if isinstance(entity, external_config.ExternalConfig) and not isinstance(
-            entity, external_config.ExternalDefaultConfig
-        ):
+        if isinstance(entity, Config) and not isinstance(entity, DefaultConfig):
             if (experiments := collection.with_slug(entity.slug).experiments) == []:
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
                 continue
             call = partial(entity.validate, experiment=experiments[0])
+
+            # todo: Analysis validate()
         try:
             call()
         except DryRunFailedError as e:

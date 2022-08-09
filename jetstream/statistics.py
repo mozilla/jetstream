@@ -1,9 +1,11 @@
+import copy
 import logging
 import math
 import numbers
 import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
+from inspect import isabstract
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import attr
@@ -15,7 +17,7 @@ import mozanalysis.metrics
 import numpy as np
 import statsmodels.api as sm
 from google.cloud import bigquery
-from mozanalysis.experiment import AnalysisBasis
+from jetstream_config_parser import metric
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
@@ -42,6 +44,39 @@ class Summary:
     metric: Metric
     statistic: "Statistic"
     pre_treatments: List[PreTreatment] = attr.Factory(list)
+
+    @classmethod
+    def from_config(cls, summary_config: metric.Summary) -> "Summary":
+        """Create a Jetstream-native Summary representation."""
+        metric = copy.deepcopy(summary_config.metric)
+        metric.__class__ = Metric
+
+        for statistic in Statistic.__subclasses__():
+            if statistic.name() == summary_config.statistic.name:
+                break
+            else:
+                raise ValueError(f"Statistic {summary_config.statistic.name} does not exist.")
+
+        stats_params = copy.deepcopy(summary_config.statistic.params)
+
+        pre_treatments = []
+        for pre_treatment_conf in summary_config.pre_treatments:
+            found = False
+            for pre_treatment in PreTreatment.__subclasses__():
+                if isabstract(pre_treatment):
+                    continue
+                if pre_treatment.name() == pre_treatment_conf.name:
+                    found = True
+                    pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
+
+            if not found:
+                raise ValueError(f"Could not find pre-treatment {pre_treatment_conf.name}.")
+
+        return cls(
+            metric=metric,
+            statistic=statistic.from_dict(stats_params),
+            pre_treatments=pre_treatments,
+        )
 
     def run(
         self,
@@ -127,7 +162,9 @@ class StatisticResultCollection:
             result.segment = segment
         return self
 
-    def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
+    def set_analysis_basis(
+        self, analysis_basis: metric.AnalysisBasis
+    ) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
         for result in self.data:
             result.analysis_basis = analysis_basis.value

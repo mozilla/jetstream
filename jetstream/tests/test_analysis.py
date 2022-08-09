@@ -9,9 +9,10 @@ import mozanalysis.segments
 import pytest
 import pytz
 import toml
+from jetstream_config_parser.metric import AnalysisPeriod
 
 import jetstream.analysis
-from jetstream.analysis import Analysis, AnalysisPeriod
+from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec
 from jetstream.errors import (
     ExplicitSkipException,

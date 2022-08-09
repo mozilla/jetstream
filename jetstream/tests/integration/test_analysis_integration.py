@@ -7,10 +7,10 @@ import dask
 import jsonschema
 import mozanalysis
 import pytz
+from jetstream_config_parser.metric import AnalysisPeriod
 from mozanalysis.metrics import AnalysisBasis, DataSource, agg_sum
 from mozanalysis.segments import Segment, SegmentDataSource
 
-from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
 from jetstream.config import AnalysisSpec, Summary
 from jetstream.experimenter import Branch, Experiment

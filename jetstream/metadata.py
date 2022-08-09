@@ -6,10 +6,10 @@ from typing import Callable, Dict, List, Optional
 import attr
 import cattr
 import google.cloud.storage as storage
+from jetstream_config_parser.analysis import AnalysisConfiguration
 
-from jetstream import bq_normalize_name, outcomes
-from jetstream.config import AnalysisConfiguration
-from jetstream.external_config import ExternalConfigCollection
+from jetstream import bq_normalize_name
+from jetstream.config import ConfigLoader
 from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,10 @@ class ExperimentMetadata:
             for metric in all_metrics
         }
 
-        all_outcomes = outcomes.OutcomesResolver.data
+        outcomes = [
+            ConfigLoader.get_outcome(experiment_outcome)
+            for experiment_outcome in config.experiment.outcomes
+        ]
 
         outcomes_metadata = {
             external_outcome.slug: OutcomeMetadata(
@@ -82,9 +85,7 @@ class ExperimentMetadata:
                 else [],
                 commit_hash=external_outcome.commit_hash,
             )
-            for experiment_outcome in config.experiment.outcomes
-            for _, external_outcome in all_outcomes.items()
-            if external_outcome.slug == experiment_outcome
+            for external_outcome in outcomes
         }
 
         # determine parameters that have been overridden by external config in jetstream-config
@@ -109,7 +110,7 @@ class ExperimentMetadata:
                 != config.experiment.experimenter_experiment.proposed_enrollment
                 else None,
                 skip=config.experiment.skip,
-                url=ExternalConfigCollection.JETSTREAM_CONFIG_URL
+                url=ConfigLoader.repo_url
                 + "/blob/main/"
                 + config.experiment.normandy_slug
                 + ".toml",
