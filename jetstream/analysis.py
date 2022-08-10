@@ -9,6 +9,7 @@ import attr
 import dask
 import google
 import mozanalysis
+import pandas as pd
 import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery, storage
@@ -516,9 +517,12 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready",
+                    "Skipping %s (%s); not ready [START: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
+                    self.config.experiment.start_date.strftime("%Y-%m-%d")
+                    if self.config.experiment.start_date is not None
+                    else "",
                 )
                 continue
 
@@ -644,13 +648,17 @@ class Analysis:
             log_dataset = self.log_config.log_dataset_id or self.dataset
             log_table = self.log_config.log_table_id or "logs"
 
+        logger.info(f"Retrieving logs from BigQuery: {log_project}.{log_dataset}.{log_table}")
+
         bq_log_client = BigQueryClient(log_project, log_dataset)
         logs_df = bq_log_client.table_to_dataframe(log_table)
 
-        exp_logs = logs_df[logs_df["Experiment"] == self.config.experiment.normandy_slug]
-        # and logs_df["Exception Type"] is not None
+        exp_logs = logs_df[logs_df["experiment"] == self.config.experiment.normandy_slug]
+        error_logs = exp_logs[exp_logs["log_level"] == "ERROR"]
+        crit_logs = exp_logs[exp_logs["log_level"] == "CRITICAL"]
 
-        logger.info(exp_logs)
+        error_logs = pd.concat([error_logs, crit_logs], axis=0, ignore_index=True)
+        # and logs_df["exception_type"] is not None
 
         storage_client = storage.Client(self.project)
         bucket = storage_client.get_bucket(bucket_name)
@@ -660,10 +668,12 @@ class Analysis:
 
         logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
-        blob.upload_from_string(
-            # data=json.dumps(exp_logs, sort_keys=True, indent=4),
-            data=exp_logs.to_json(indent=4),
-            content_type="application/json",
+        upload_json = error_logs.set_index("experiment").to_json(
+            orient="records", date_format="iso", indent=4
         )
 
-        return len(exp_logs)
+        blob.upload_from_string(
+            # data=json.dumps(error_logs, sort_keys=True, indent=4),
+            data=upload_json,
+            content_type="application/json",
+        )

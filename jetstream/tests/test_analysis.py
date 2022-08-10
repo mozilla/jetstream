@@ -235,40 +235,49 @@ def test_export_errors(mock_storage_client, mock_bq_client):
         """
         [
             {
-                "Timestamp Time": "2022-07-26 05:37:27",
-                "Experiment": "test-default-as-first-screen-100-roll-out",
-                "Metric": null,
-                "Statistic": null,
-                "Log Level": "WARNING",
-                "Exception Type": null,
-                "Message": "Skipping test-default-as-first-screen-100-roll-out; skip=true in config"
+                "timestamp": "2022-07-26 05:37:27",
+                "experiment": "test-default-as-first-screen-100-roll-out",
+                "metric": null,
+                "statistic": null,
+                "log_level": "WARNING",
+                "exception_type": null,
+                "message": "Skipping test-default-as-first-screen-100-roll-out; skip=true in config"
             },
             {
-                "Timestamp Time": "2022-07-26 05:03:24",
-                "Experiment": "test-pref-search-experiment",
-                "Metric": null,
-                "Statistic": null,
-                "Log Level": "ERROR",
-                "Exception Type": "NoEnrollmentPeriodException",
-                "Message": "test-pref-search-experiment -> Experiment has no enrollment period"
+                "timestamp": "2022-07-26 05:03:24",
+                "experiment": "test-pref-search-experiment",
+                "metric": null,
+                "statistic": null,
+                "log_level": "ERROR",
+                "exception_type": "NoEnrollmentPeriodException",
+                "message": "test-pref-search-experiment -> Experiment has no enrollment period"
             },
             {
-                "Timestamp Time": "2022-07-26 04:39:49",
-                "Experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
-                "Metric": "merino_latency",
-                "Statistic": "bootstrap_mean",
-                "Log Level": "ERROR",
-                "Exception Type": "StatisticComputationException",
-                "Message": "Error statistic bootstrap_mean metric merino_latency: null values"
+                "timestamp": "2022-07-26 04:39:49",
+                "experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "metric": "merino_latency",
+                "statistic": "bootstrap_mean",
+                "log_level": "WARNING",
+                "exception_type": "StatisticComputationException",
+                "message": "Error statistic bootstrap_mean metric merino_latency: null values"
             },
             {
-                "Timestamp Time": "2022-07-26 04:39:49",
-                "Experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
-                "Metric": "remote_settings_latency",
-                "Statistic": "bootstrap_mean",
-                "Log Level": "ERROR",
-                "Exception Type": "StatisticComputationException",
-                "Message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
+                "timestamp": "2022-07-26 04:41:49",
+                "experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "metric": "remote_settings_latency",
+                "statistic": "bootstrap_mean",
+                "log_level": "ERROR",
+                "exception_type": "StatisticComputationException",
+                "message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
+            },
+            {
+                "timestamp": "2022-07-26 04:42:49",
+                "experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "metric": "remote_settings_latency",
+                "statistic": "bootstrap_mean",
+                "log_level": "CRITICAL",
+                "exception_type": "CriticalStatisticComputationException",
+                "message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
             }
         ]
         """
@@ -286,8 +295,40 @@ def test_export_errors(mock_storage_client, mock_bq_client):
         log_to_bigquery=True,
     )
     analysis = Analysis("test_project", "test_dataset", config, log_config=log_config)
-    num_errors = analysis.export_errors("test_errors")
-    assert num_errors == 2
+    analysis.export_errors("test_errors")
+
+    mock_client.get_bucket.assert_called_once()
+    mock_bucket.blob.assert_called_once()
+
+    expected = json.loads(
+        """
+            [{
+                "timestamp": "2022-07-26 04:41:49",
+                "experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "metric": "remote_settings_latency",
+                "statistic": "bootstrap_mean",
+                "log_level": "ERROR",
+                "exception_type": "StatisticComputationException",
+                "message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
+            },
+            {
+                "timestamp": "2022-07-26 04:42:49",
+                "experiment": "addon-search-tips-aka-nudges-release-72-74-bug-1603564",
+                "metric": "remote_settings_latency",
+                "statistic": "bootstrap_mean",
+                "log_level": "CRITICAL",
+                "exception_type": "CriticalStatisticComputationException",
+                "message": "Error statistic bootstrap_mean metric remote_settings_latency: null"
+            }]
+        """
+    )
+
+    mock_blob.upload_from_string.assert_called_once_with(
+        data=pd.DataFrame.from_dict(expected)
+        .set_index("experiment")
+        .to_json(orient="records", date_format="iso", indent=4),
+        content_type="application/json",
+    )
 
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
