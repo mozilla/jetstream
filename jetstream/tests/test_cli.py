@@ -8,10 +8,13 @@ import attr
 import pytest
 import toml
 from click.testing import CliRunner
+from jetstream_config_parser.analysis import AnalysisSpec
+from jetstream_config_parser.config import Config, ConfigCollection
+from jetstream_config_parser.experiment import Branch, Experiment
 from pytz import UTC
 
-from jetstream import cli, experimenter, external_config
-from jetstream.config import AnalysisSpec
+from jetstream import cli, experimenter
+from jetstream.config import ConfigLoader, _ConfigLoader
 
 
 @pytest.fixture(name="cli_experiments")
@@ -22,14 +25,14 @@ def cli_experiment_fixture():
 def cli_experiments():
     return experimenter.ExperimentCollection(
         [
-            experimenter.Experiment(
+            Experiment(
                 experimenter_slug=None,
                 normandy_slug="my_cool_experiment",
                 type="v6",
                 status="Live",
                 branches=[
-                    experimenter.Branch(slug="treatment", ratio=1),
-                    experimenter.Branch(slug="control", ratio=1),
+                    Branch(slug="treatment", ratio=1),
+                    Branch(slug="control", ratio=1),
                 ],
                 start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
                 end_date=dt.datetime(2021, 2, 1, tzinfo=UTC),
@@ -39,14 +42,14 @@ def cli_experiments():
                 app_name="firefox_desktop",
                 app_id="firefox-desktop",
             ),
-            experimenter.Experiment(
+            Experiment(
                 experimenter_slug=None,
                 normandy_slug="distracting_experiment",
                 type="v6",
                 status="Live",
                 branches=[
-                    experimenter.Branch(slug="treatment", ratio=1),
-                    experimenter.Branch(slug="control", ratio=1),
+                    Branch(slug="treatment", ratio=1),
+                    Branch(slug="control", ratio=1),
                 ],
                 start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
                 end_date=dt.datetime(2020, 12, 31, tzinfo=UTC),
@@ -142,7 +145,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=experimenter.ExperimentCollection,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
         )
         assert success
@@ -163,7 +166,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
         )
         assert success
@@ -187,7 +190,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
         )
         assert success
@@ -209,7 +212,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=lambda: cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
         )
         assert success
@@ -229,7 +232,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
@@ -250,7 +253,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
             today=dt.datetime(2022, 12, 31, tzinfo=UTC),
         )
@@ -270,7 +273,7 @@ class TestAnalysisExecutor:
         with pytest.raises(ValueError):
             executor.execute(
                 experiment_getter=cli_experiments,
-                config_getter=external_config.ExternalConfigCollection,
+                config_getter=ConfigLoader,
                 strategy=strategy,
                 today=dt.datetime(2020, 12, 31, tzinfo=UTC),
             )
@@ -286,7 +289,7 @@ class TestAnalysisExecutor:
         strategy = DummyExecutorStrategy("project", "dataset")
         executor.execute(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
@@ -302,9 +305,7 @@ class TestAnalysisExecutor:
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
-        result = executor._experiment_configs_to_analyse(
-            cli_experiments, external_config.ExternalConfigCollection
-        )
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
         assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_end_date_override(self):
@@ -315,9 +316,7 @@ class TestAnalysisExecutor:
             date=dt.datetime(2021, 2, 15, tzinfo=UTC),
             experiment_slugs=cli.All,
         )
-        result = executor._experiment_configs_to_analyse(
-            cli_experiments, external_config.ExternalConfigCollection
-        )
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
         assert result == []
 
         conf = dedent(
@@ -327,9 +326,9 @@ class TestAnalysisExecutor:
             """
         )
 
-        external_configs = external_config.ExternalConfigCollection(
+        external_configs = ConfigCollection(
             [
-                external_config.ExternalConfig(
+                Config(
                     slug="my_cool_experiment",
                     spec=AnalysisSpec.from_dict(toml.loads(conf)),
                     last_modified=dt.datetime(2021, 2, 15, tzinfo=UTC),
@@ -337,10 +336,9 @@ class TestAnalysisExecutor:
             ]
         )
 
-        def config_getter():
-            return external_configs
-
-        result = executor._experiment_configs_to_analyse(cli_experiments, config_getter)
+        config_loader = _ConfigLoader()
+        config_loader.config_collection = external_configs
+        result = executor._experiment_configs_to_analyse(cli_experiments, config_loader)
         assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_all(self):
@@ -364,9 +362,7 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        result = executor._experiment_configs_to_analyse(
-            cli_experiments, external_config.ExternalConfigCollection
-        )
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
         assert len(result) == 2
 
     def test_ensure_enrollments(self, monkeypatch):
@@ -383,7 +379,7 @@ class TestAnalysisExecutor:
 
         executor.ensure_enrollments(
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
         )
 
         assert Analysis.ensure_enrollments.called_once()
@@ -399,7 +395,7 @@ class TestSerialExecutorStrategy:
             bucket="bucket",
             analysis_class=fake_analysis,
             experiment_getter=cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
         )
         strategy.execute([])
         fake_analysis().run.assert_not_called()
@@ -408,16 +404,16 @@ class TestSerialExecutorStrategy:
         monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         fake_analysis = Mock()
         experiment = cli_experiments.experiments[0]
-        spec = AnalysisSpec.default_for_experiment(experiment)
+        spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
         strategy = cli.SerialExecutorStrategy(
             project_id="spam",
             dataset_id="eggs",
             bucket="bucket",
             analysis_class=fake_analysis,
             experiment_getter=lambda: cli_experiments,
-            config_getter=external_config.ExternalConfigCollection,
+            config_getter=ConfigLoader,
         )
-        config = spec.resolve(experiment)
+        config = spec.resolve(experiment, ConfigLoader.configs)
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(config, run_date)])
         fake_analysis.assert_called_once_with("spam", "eggs", config, None)
@@ -427,8 +423,8 @@ class TestSerialExecutorStrategy:
 class TestArgoExecutorStrategy:
     def test_simple_workflow(self, cli_experiments):
         experiment = cli_experiments.experiments[0]
-        spec = AnalysisSpec.default_for_experiment(experiment)
-        config = spec.resolve(experiment)
+        spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
+        config = spec.resolve(experiment, ConfigLoader.configs)
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             strategy = cli.ArgoExecutorStrategy(

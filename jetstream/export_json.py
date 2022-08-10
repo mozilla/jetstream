@@ -9,8 +9,9 @@ import cattr
 import google.cloud.bigquery as bigquery
 import google.cloud.storage as storage
 import smart_open
+from jetstream_config_parser.metric import AnalysisPeriod
 
-from jetstream import AnalysisPeriod, bq_normalize_name
+from jetstream import bq_normalize_name
 
 logger = logging.getLogger(__name__)
 

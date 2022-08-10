@@ -5,7 +5,7 @@ Users should write something like:
     my_config = (
         config.AnalysisSpec
         .from_dict(toml.load(my_config_file))
-        .resolve(an_experimenter_object)
+        .resolve(an_experimenter_object, ConfigLoader.configs)
     )
 to obtain a concrete AnalysisConfiguration object.
 
@@ -18,12 +18,14 @@ Definition and Reference classes are also direct representations of the configur
 which produce concrete mozanalysis classes when resolved.
 """
 
+import copy
 import datetime as dt
 from typing import List, Optional
 
 from google.cloud import bigquery
 from jetstream_config_parser.analysis import AnalysisSpec
 from jetstream_config_parser.config import Config, ConfigCollection, Outcome
+from jetstream_config_parser.data_source import DataSource
 from pytz import UTC
 
 from . import bq_normalize_name
@@ -153,7 +155,7 @@ class _ConfigLoader:
         """Return the spec for a specific experiment."""
         for config in self.configs.configs:
             if config.slug == slug:
-                return config.spec
+                return copy.deepcopy(config.spec)
 
         return None
 
@@ -161,9 +163,26 @@ class _ConfigLoader:
         """Return the outcome matching the specified slug."""
         for outcome in self.configs.outcomes:
             if outcome.slug == outcome_slug and app_name == outcome.platform:
-                return outcome
+                return copy.deepcopy(outcome)
 
         return None
+
+    def get_data_source(self, data_source_slug: str, app_name: str) -> Optional[DataSource]:
+        """Return the data source matching the specified slug."""
+        data_source_definition = self.configs.get_data_source_definition(data_source_slug, app_name)
+        if data_source_definition is None:
+            raise Exception(f"Could not find definition for data source {data_source_slug}")
+
+        return DataSource(
+            name=data_source_definition.name,
+            from_expression=data_source_definition.from_expression,
+            client_id_column=data_source_definition.client_id_column,
+            submission_date_column=data_source_definition.submission_date_column,
+            experiments_column_type=None
+            if data_source_definition.experiments_column_type == "none"
+            else data_source_definition.experiments_column_type,
+            default_dataset=data_source_definition.default_dataset,
+        )
 
 
 ConfigLoader = _ConfigLoader()

@@ -22,9 +22,9 @@ import attr
 import click
 import pytz
 import toml
+from jetstream_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from jetstream_config_parser.config import Config, DefaultConfig, entity_from_path
 from jetstream_config_parser.experiment import Experiment
-from jetstream_conifg_parser.analysis import AnalysisConfiguration, AnalysisSpec
 
 from . import bq_normalize_name
 from .analysis import Analysis
@@ -243,17 +243,18 @@ class AnalysisExecutor:
         """Convert mozanalysis experiments to analysis configs."""
         configs = []
 
-        for experiment in experiments:
-            experiment_config = experiment.to_config()
-            spec = AnalysisSpec.default_for_experiment(experiment_config)
-            if self.configuration_map and experiment.normandy_slug in self.configuration_map:
-                config_dict = toml.load(self.configuration_map[experiment.normandy_slug])
+        for experiment_config in experiments:
+            spec = AnalysisSpec.default_for_experiment(experiment_config, ConfigLoader.configs)
+            if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
+                config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
                 spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
-                if external_spec := config_getter.spec_for_experiment(experiment.normandy_slug):
+                if external_spec := config_getter.spec_for_experiment(
+                    experiment_config.normandy_slug
+                ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config))
+            configs.append(spec.resolve(experiment_config, ConfigLoader.configs))
 
         return configs
 

@@ -7,10 +7,9 @@ from unittest.mock import MagicMock
 import jsonschema
 import pytest
 import pytz
+from jetstream_config_parser.experiment import Branch, Experiment
 
 from jetstream.experimenter import (
-    Branch,
-    Experiment,
     ExperimentCollection,
     ExperimentV1,
     ExperimentV6,

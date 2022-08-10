@@ -5,6 +5,8 @@ import attr
 import toml
 from jetstream_config_parser.analysis import AnalysisSpec
 
+from jetstream.config import ConfigLoader
+
 platform_config = toml.load(Path(__file__).parent.parent / "platform_config.toml")
 
 
@@ -64,16 +66,14 @@ class Platform:
     app_name: str = attr.ib(validator=_check_value_not_null)
 
     def resolve_config(self) -> AnalysisSpec:
-        from . import default_config
-
-        config = default_config.DefaultConfigsResolver.resolve(self.app_name)
+        config = ConfigLoader.configs.get_platform_defaults(self.app_name)
 
         if config is None:
             raise PlatformConfigurationException(
                 f"No default config for platform {self.app_name} in jetstream-config."
             )
 
-        return config.spec
+        return config
 
 
 def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:

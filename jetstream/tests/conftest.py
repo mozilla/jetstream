@@ -3,8 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 import pytz
-
-from jetstream.experimenter import Branch, Experiment
+from jetstream_config_parser.experiment import Branch, Experiment
 
 
 def pytest_addoption(parser):

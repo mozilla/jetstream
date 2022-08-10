@@ -242,16 +242,11 @@ class Analysis:
 
             # convert metric configurations to mozanalysis metrics
             metrics = {
-                m.metric
+                Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                 for m in self.config.metrics[period]
                 if m.metric.analysis_bases == analysis_basis
                 or analysis_basis in m.metric.analysis_bases
             }
-
-            for m in metrics:
-                m.__class__ = Metric
-
-            metrics = {m.to_mozanalysis_metric() for m in metrics}
 
             metrics_sql = exp.build_metrics_query(
                 metrics,
@@ -401,9 +396,7 @@ class Analysis:
         metrics = set()
         for v in self.config.metrics.values():
             for metric_config in v:
-                m = copy.deepcopy(metric_config)
-                m.__class__ = Metric
-                metrics.add(m.to_mozanalysis_metric90)
+                metrics.add(Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric())
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
