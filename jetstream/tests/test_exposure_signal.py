@@ -1,6 +1,7 @@
 import mozanalysis
 import pytest
 
+from jetstream.config import ConfigLoader
 from jetstream.exposure_signal import ExposureSignal
 
 
@@ -8,7 +9,7 @@ class TestExposureSignal:
     def test_create_exposure_signal(self):
         exposure_signal = ExposureSignal(
             name="ad_exposure",
-            data_source=mozanalysis.metrics.desktop.search_clients_daily,
+            data_source=ConfigLoader.get_data_source("search_clients_daily", "firefox_desktop"),
             select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
@@ -22,7 +23,7 @@ class TestExposureSignal:
         with pytest.raises(Exception):
             ExposureSignal(
                 name="ad_exposure",
-                data_source=mozanalysis.metrics.desktop.search_clients_daily,
+                data_source=ConfigLoader.get_data_source("search_clients_daily", "firefox_desktop"),
                 select_expression="ad_click > 0",
                 friendly_name="Ad exposure",
                 description="Clients have clicked on ad",
@@ -40,7 +41,7 @@ class TestExposureSignal:
 
         exposure_signal = ExposureSignal(
             name="ad_exposure",
-            data_source=mozanalysis.metrics.desktop.search_clients_daily,
+            data_source=ConfigLoader.get_data_source("search_clients_daily", "firefox_desktop"),
             select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
@@ -67,7 +68,7 @@ class TestExposureSignal:
 
         exposure_signal = ExposureSignal(
             name="ad_exposure",
-            data_source=mozanalysis.metrics.desktop.search_clients_daily,
+            data_source=ConfigLoader.get_data_source("search_clients_daily", "firefox_desktop"),
             select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",

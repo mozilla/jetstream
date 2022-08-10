@@ -48,8 +48,7 @@ class Summary:
     @classmethod
     def from_config(cls, summary_config: metric.Summary) -> "Summary":
         """Create a Jetstream-native Summary representation."""
-        metric = copy.deepcopy(summary_config.metric)
-        metric.__class__ = Metric
+        metric = Metric.from_metric_config(summary_config.metric)
 
         for statistic in Statistic.__subclasses__():
             if statistic.name() == summary_config.statistic.name:

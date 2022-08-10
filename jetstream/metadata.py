@@ -70,7 +70,7 @@ class ExperimentMetadata:
         }
 
         outcomes = [
-            ConfigLoader.get_outcome(experiment_outcome)
+            ConfigLoader.get_outcome(experiment_outcome, config.experiment.app_name)
             for experiment_outcome in config.experiment.outcomes
         ]
 
@@ -94,23 +94,22 @@ class ExperimentMetadata:
             external_config = ExternalConfigMetadata(
                 reference_branch=config.experiment.reference_branch
                 if config.experiment.reference_branch
-                != config.experiment.experimenter_experiment.reference_branch
+                != config.experiment.experiment.reference_branch
                 else None,
                 end_date=config.experiment.end_date.date()
                 if config.experiment.end_date is not None
-                and config.experiment.end_date != config.experiment.experimenter_experiment.end_date
+                and config.experiment.end_date != config.experiment.experiment.end_date
                 else None,
                 start_date=config.experiment.start_date.date()
                 if config.experiment.start_date is not None
-                and config.experiment.start_date
-                != config.experiment.experimenter_experiment.start_date
+                and config.experiment.start_date != config.experiment.experiment.start_date
                 else None,
                 enrollment_period=config.experiment.proposed_enrollment
                 if config.experiment.proposed_enrollment
-                != config.experiment.experimenter_experiment.proposed_enrollment
+                != config.experiment.experiment.proposed_enrollment
                 else None,
                 skip=config.experiment.skip,
-                url=ConfigLoader.repo_url
+                url=ConfigLoader.configs.repo_url
                 + "/blob/main/"
                 + config.experiment.normandy_slug
                 + ".toml",

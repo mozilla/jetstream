@@ -1,5 +1,5 @@
-from mozanalysis.experiment import AnalysisBasis
-from mozanalysis.metrics import DataSource
+from jetstream_config_parser.data_source import DataSource
+from jetstream_config_parser.metric import AnalysisBasis
 from mozanalysis.metrics.fenix import uri_count
 
 from jetstream.metric import Metric
@@ -9,7 +9,7 @@ class TestMetric:
     def test_to_mozanalysis_metric(self):
         metric = Metric(
             name="test",
-            data_source=DataSource(name="test_data_source", from_expr="test.test"),
+            data_source=DataSource(name="test_data_source", from_expression="test.test"),
             select_expression="test",
             analysis_bases=[AnalysisBasis.EXPOSURES],
         )

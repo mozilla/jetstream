@@ -48,7 +48,7 @@ class Metric(metric.Metric):
             name=mozanalysis_metric.name,
             data_source=data_source.DataSource(
                 name=mozanalysis_metric.data_source.name,
-                from_expr=mozanalysis_metric.data_source.from_expression,
+                from_expression=mozanalysis_metric.data_source._from_expr,
                 experiments_column_type=mozanalysis_metric.data_source.experiments_column_type,
                 client_id_column=mozanalysis_metric.data_source.client_id_column,
                 submission_date_column=mozanalysis_metric.data_source.submission_date_column,
@@ -60,3 +60,10 @@ class Metric(metric.Metric):
             bigger_is_better=mozanalysis_metric.bigger_is_better,
             analysis_bases=analysis_bases or [metric.AnalysisBasis.ENROLLMENTS],
         )
+
+    @classmethod
+    def from_metric_config(cls, metric_config: metric.Metric) -> "Metric":
+        """Create a metric class instance from a metric config."""
+        args = attr.asdict(metric_config)
+        args["data_source"] = data_source.DataSource(**attr.asdict(metric_config.data_source))
+        return cls(**args)

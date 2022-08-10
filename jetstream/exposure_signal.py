@@ -6,6 +6,7 @@ import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
 from jetstream_config_parser import exposure_signal
+from mozanalysis import exposure
 
 
 class AnalysisWindow(enum.Enum):
@@ -34,12 +35,12 @@ class ExposureSignal(exposure_signal.ExposureSignal):
 
     def to_mozanalysis_exposure_signal(
         self, time_limits: mozanalysis.experiment.TimeLimits
-    ) -> mozanalysis.exposure.ExposureSignal:
+    ) -> exposure.ExposureSignal:
         """Converts the Jetstream `ExposureSignal` to the corresponding mozanalysis instance."""
         window_start = self._window_limit_to_int(self.window_start, time_limits)
         window_end = self._window_limit_to_int(self.window_end, time_limits)
 
-        return mozanalysis.exposure.ExposureSignal(
+        return exposure.ExposureSignal(
             name=self.name,
             data_source=mozanalysis.metrics.DataSource(
                 name=self.data_source.name,

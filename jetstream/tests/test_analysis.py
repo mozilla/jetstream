@@ -5,15 +5,16 @@ from datetime import timedelta
 from textwrap import dedent
 from unittest.mock import Mock
 
-import mozanalysis.segments
 import pytest
 import pytz
 import toml
+from jetstream_config_parser import segment
+from jetstream_config_parser.analysis import AnalysisSpec
 from jetstream_config_parser.metric import AnalysisPeriod
 
 import jetstream.analysis
 from jetstream.analysis import Analysis
-from jetstream.config import AnalysisSpec
+from jetstream.config import ConfigLoader
 from jetstream.errors import (
     ExplicitSkipException,
     HighPopulationException,
@@ -23,8 +24,8 @@ from jetstream.experimenter import ExperimentV1
 
 
 def test_get_timelimits_if_ready(experiments):
-    config = AnalysisSpec().resolve(experiments[0])
-    config2 = AnalysisSpec().resolve(experiments[2])
+    config = AnalysisSpec().resolve(experiments[0], ConfigLoader.configs)
+    config2 = AnalysisSpec().resolve(experiments[2], ConfigLoader.configs)
 
     analysis = Analysis("test", "test", config)
     analysis2 = Analysis("test", "test", config2)
@@ -88,7 +89,7 @@ def test_regression_20200320():
         }
     """  # noqa
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
-    config = AnalysisSpec().resolve(experiment)
+    config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
     analysis = Analysis("test", "test", config)
     with pytest.raises(NoEnrollmentPeriodException):
         analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
@@ -149,7 +150,7 @@ def test_regression_20200316(monkeypatch):
     }
     """
     experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
-    config = AnalysisSpec().resolve(experiment)
+    config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
     monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
     pre_start_time = dt.datetime.now(tz=pytz.utc)
@@ -163,7 +164,9 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     m = Mock()
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
     x = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x).resolve(x)
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
     Analysis("spam", "eggs", config).validate()
     assert m.call_count == 2
 
@@ -176,8 +179,8 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
         """
     )
     spec = AnalysisSpec.from_dict(toml.loads(conf))
-    configured = spec.resolve(experiments[0])
-    assert isinstance(configured.experiment.segments[0], mozanalysis.segments.Segment)
+    configured = spec.resolve(experiments[0], ConfigLoader.configs)
+    assert isinstance(configured.experiment.segments[0], segment.Segment)
     monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
     Analysis("test", "test", configured).run(
         current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
@@ -186,7 +189,9 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
 
 def test_is_high_population_check(experiments):
     x = experiments[3]
-    config = AnalysisSpec.default_for_experiment(x).resolve(x)
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
 
     with pytest.raises(HighPopulationException):
         Analysis("spam", "eggs", config).check_runnable()
@@ -200,7 +205,7 @@ def test_skip_works(experiments):
         """
     )
     spec = AnalysisSpec.from_dict(toml.loads(conf))
-    configured = spec.resolve(experiments[0])
+    configured = spec.resolve(experiments[0], ConfigLoader.configs)
     with pytest.raises(ExplicitSkipException):
         Analysis("test", "test", configured).run(
             current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
@@ -219,7 +224,9 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
             assert query.count(dataset) == query.count("org_mozilla")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+            experiment, ConfigLoader.configs
+        )
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
@@ -236,7 +243,9 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
             assert query.count(dataset) == query.count("org_mozilla_ios")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+            experiment, ConfigLoader.configs
+        )
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
@@ -253,7 +262,9 @@ def test_focus_android_experiments_use_right_datasets(focus_android_experiments,
             assert query.count(dataset) == query.count("org_mozilla_focus")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+            experiment, ConfigLoader.configs
+        )
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
@@ -270,6 +281,8 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
             assert query.count(dataset) == query.count("org_mozilla_klar")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment).resolve(experiment)
+        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+            experiment, ConfigLoader.configs
+        )
         Analysis("spam", "eggs", config).validate()
         assert called == 2
