@@ -5,7 +5,7 @@ from typing import Union
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
-from jetstream_config_parser import exposure_signal
+from jetstream_config_parser import data_source, exposure_signal
 from mozanalysis import exposure
 
 
@@ -84,3 +84,14 @@ class ExposureSignal(exposure_signal.ExposureSignal):
             if not isinstance(window_limit, int) and window_limit is not None:
                 raise ValueError(f"Invalid window limit: {window_limit}")
             return window_limit
+
+    @classmethod
+    def from_exposure_signal_config(
+        cls, exposure_signal_config: exposure_signal.ExposureSignal
+    ) -> "ExposureSignal":
+        """Create an exposure signal class instance from an exposure signal config."""
+        args = attr.asdict(exposure_signal_config)
+        args["data_source"] = data_source.DataSource(
+            **attr.asdict(exposure_signal_config.data_source)
+        )
+        return cls(**args)

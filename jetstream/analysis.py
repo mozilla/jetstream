@@ -1,4 +1,3 @@
-import copy
 import logging
 import os
 import re
@@ -236,8 +235,9 @@ class Analysis:
             if self.config.experiment.exposure_signal:
                 # if a custom exposure signal has been defined in the config, we'll
                 # need to pass it into the metrics computation
-                exposure_signal = copy.deepcopy(self.config.experiment.exposure_signal)
-                exposure_signal.__class__ = ExposureSignal
+                exposure_signal = ExposureSignal.from_exposure_signal_config(
+                    self.config.experiment.exposure_signal
+                )
                 exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(last_window_limits)
 
             # convert metric configurations to mozanalysis metrics
@@ -400,15 +400,14 @@ class Analysis:
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
-            exposure_signal = copy.deepcopy(self.config.experiment.exposure_signal)
-            exposure_signal.__class__ = ExposureSignal
+            exposure_signal = ExposureSignal.from_exposure_signal_config(
+                self.config.experiment.exposure_signal
+            )
             exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(limits)
 
         segments = []
         for segment in self.config.experiment.segments:
-            s = copy.deepcopy(segment)
-            s.__class__ = Segment
-            segments.append(s.to_mozanalysis_segment())
+            segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
@@ -631,19 +630,18 @@ class Analysis:
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
-            exposure_signal = copy.deepcopy(self.config.experiment.exposure_signal)
-            exposure_signal.__class__ = ExposureSignal
+            exposure_signal = ExposureSignal.from_exposure_signal_config(
+                self.config.experiment.exposure_signal
+            )
             exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(time_limits)
 
         segments = []
         for segment in self.config.experiment.segments:
-            s = copy.deepcopy(segment)
-            s.__class__ = Segment
-            segments.append(s.to_mozanalysis_segment())
+            segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
         enrollments_sql = exp.build_enrollments_query(
             time_limits,
-            self.config.experiment.platform.enrollments_query_type,
+            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,
