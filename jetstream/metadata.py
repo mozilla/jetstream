@@ -86,6 +86,7 @@ class ExperimentMetadata:
                 commit_hash=external_outcome.commit_hash,
             )
             for external_outcome in outcomes
+            if external_outcome is not None
         }
 
         # determine parameters that have been overridden by external config in jetstream-config

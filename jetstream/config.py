@@ -20,12 +20,19 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from google.cloud import bigquery
 from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.config import Config, ConfigCollection, Outcome
+from jetstream_config_parser.config import (
+    Config,
+    ConfigCollection,
+    DefaultConfig,
+    DefinitionConfig,
+    Outcome,
+)
 from jetstream_config_parser.data_source import DataSource
+from jetstream_config_parser.experiment import Experiment
 from pytz import UTC
 
 from . import bq_normalize_name
@@ -186,3 +193,74 @@ class _ConfigLoader:
 
 
 ConfigLoader = _ConfigLoader()
+
+
+def validate(
+    config: Union[Outcome, Config, DefaultConfig, DefinitionConfig],
+    experiment: Optional[Experiment] = None,
+):
+    """Validate and dry run a config."""
+    from jetstream.analysis import Analysis
+    from jetstream.platform import PLATFORM_CONFIGS
+
+    if isinstance(config, Config) and not (
+        isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig)
+    ):
+        config.validate(ConfigLoader.configs, experiment)
+        resolved_config = config.spec.resolve(experiment, ConfigLoader.configs)
+    elif isinstance(config, Outcome):
+        config.validate(ConfigLoader.configs)
+        app_id = PLATFORM_CONFIGS[config.platform].app_id
+        dummy_experiment = Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=dt.datetime.now(UTC),
+            proposed_enrollment=14,
+            app_id=app_id,
+            app_name=config.platform,
+            outcomes=[],
+        )
+
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment, ConfigLoader.configs)
+        spec.merge_outcome(config.spec)
+        spec.merge_parameters(config.spec.parameters)
+        resolved_config = spec.resolve(dummy_experiment, ConfigLoader.configs)
+    elif isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig):
+        config.validate(ConfigLoader.configs)
+
+        if config.slug in PLATFORM_CONFIGS:
+            app_id = PLATFORM_CONFIGS[config.slug].app_id
+            app_name = config.slug
+        else:
+            app_name = "firefox_desktop"
+            app_id = "firefox-desktop"
+
+        dummy_experiment = Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=dt.datetime.now(UTC),
+            proposed_enrollment=14,
+            app_id=app_id,
+            app_name=app_name,
+            outcomes=[],
+        )
+
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment, ConfigLoader.configs)
+        spec.merge(config.spec)
+        resolved_config = spec.resolve(dummy_experiment, ConfigLoader.configs)
+    else:
+        raise Exception(f"Unable to validate config: {config}")
+
+    Analysis("no project", "no dataset", resolved_config).validate()

@@ -6,7 +6,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import attr
 import cattr
@@ -17,16 +17,14 @@ import mozanalysis.metrics
 import numpy as np
 import statsmodels.api as sm
 from google.cloud import bigquery
-from jetstream_config_parser import metric
+from jetstream_config_parser import metric as parser_metric
+from jetstream_config_parser.experiment import Experiment
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .errors import StatisticComputationException
 from .metric import Metric
 from .pre_treatment import PreTreatment
-
-if TYPE_CHECKING:
-    import jetstream.config as config
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +44,18 @@ class Summary:
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
     @classmethod
-    def from_config(cls, summary_config: metric.Summary) -> "Summary":
+    def from_config(cls, summary_config: parser_metric.Summary) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
 
+        found = False
         for statistic in Statistic.__subclasses__():
             if statistic.name() == summary_config.statistic.name:
+                found = True
                 break
-            else:
-                raise ValueError(f"Statistic {summary_config.statistic.name} does not exist.")
+
+        if not found:
+            raise ValueError(f"Statistic '{summary_config.statistic.name}' does not exist.")
 
         stats_params = copy.deepcopy(summary_config.statistic.params)
 
@@ -80,7 +81,7 @@ class Summary:
     def run(
         self,
         data: DataFrame,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
@@ -162,7 +163,7 @@ class StatisticResultCollection:
         return self
 
     def set_analysis_basis(
-        self, analysis_basis: metric.AnalysisBasis
+        self, analysis_basis: parser_metric.AnalysisBasis
     ) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
         for result in self.data:
@@ -191,7 +192,7 @@ class Statistic(ABC):
         self,
         df: DataFrame,
         metric: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
@@ -248,7 +249,7 @@ class Statistic(ABC):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         return NotImplemented
 
@@ -351,7 +352,7 @@ class BootstrapMean(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -383,7 +384,7 @@ class Binomial(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -425,7 +426,7 @@ class Deciles(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -503,7 +504,7 @@ class Count(Statistic):
         self,
         df: DataFrame,
         metric: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ):
         return self.transform(
             df, metric, experiment.reference_branch or "control", experiment.normandy_slug
@@ -514,7 +515,7 @@ class Count(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -576,7 +577,7 @@ class KernelDensityEstimate(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -636,7 +637,7 @@ class EmpiricalCDF(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):

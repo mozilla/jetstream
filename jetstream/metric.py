@@ -3,11 +3,11 @@ from typing import List, Optional
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
-from jetstream_config_parser import data_source, metric
+from jetstream_config_parser import data_source
+from jetstream_config_parser import metric as parser_metric
 
 
-@attr.s(auto_attribs=True, frozen=True, slots=True)
-class Metric(metric.Metric):
+class Metric(parser_metric.Metric):
     """
     Jetstream metric representation.
 
@@ -17,7 +17,7 @@ class Metric(metric.Metric):
 
     def __attrs_post_init__(self):
         # Print warning if exposures is used
-        if metric.AnalysisBasis.EXPOSURES in self.analysis_bases:
+        if parser_metric.AnalysisBasis.EXPOSURES in self.analysis_bases:
             print(f"Using exposures analysis basis for {self.name}. Not supported in Experimenter")
 
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
@@ -42,7 +42,9 @@ class Metric(metric.Metric):
     def from_mozanalysis_metric(
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
-        analysis_bases: Optional[List[metric.AnalysisBasis]] = [metric.AnalysisBasis.ENROLLMENTS],
+        analysis_bases: Optional[List[parser_metric.AnalysisBasis]] = [
+            parser_metric.AnalysisBasis.ENROLLMENTS
+        ],
     ) -> "Metric":
         return cls(
             name=mozanalysis_metric.name,
@@ -58,11 +60,11 @@ class Metric(metric.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_bases=analysis_bases or [metric.AnalysisBasis.ENROLLMENTS],
+            analysis_bases=analysis_bases or [parser_metric.AnalysisBasis.ENROLLMENTS],
         )
 
     @classmethod
-    def from_metric_config(cls, metric_config: metric.Metric) -> "Metric":
+    def from_metric_config(cls, metric_config: parser_metric.Metric) -> "Metric":
         """Create a metric class instance from a metric config."""
         args = attr.asdict(metric_config)
         args["data_source"] = data_source.DataSource(**attr.asdict(metric_config.data_source))

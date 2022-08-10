@@ -443,13 +443,13 @@ mccabe==0.6.1 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2022.7.1 \
-    --hash=sha256:418340200c7f9beed2cf6452792cc7e82002692371d5e232a3bc45eca149b296 \
-    --hash=sha256:9a5094e33f42c2d70f0ef13c8443846921b1f7a1efc5edbbe1d08facdeb4990a
+mozanalysis==2022.8.1 \
+    --hash=sha256:b6cf47cc309a275a9da3158791b871c747189faad6f19dfe49e2ec5bbc7b2770 \
+    --hash=sha256:c31a9c225352b976b37962417d08dcef1d73478a8ebc7950a2ec2d8991b9a5d7
     # via -r requirements.in
-mozilla-jetstream-config-parser==2022.8.8 \
-    --hash=sha256:b76ccb1d3b1aa6539a7aeabcb5ef6a94b99093363435b86a2602eb1ed30eefb6 \
-    --hash=sha256:d099ffdc4e88350d03df30b6fac491227d4496963d408df976e3525df806bcba
+mozilla-jetstream-config-parser==2022.8.9 \
+    --hash=sha256:322d905bf84e631220fca1b0bb5c914682d42feca87507236f40474c0b4c41d5 \
+    --hash=sha256:bb9a634ac7272a941e12cd8123b383e5d48cf4304b16ff8d0ed7c682cd9a2308
     # via -r requirements.in
 msgpack==1.0.4 \
     --hash=sha256:002b5c72b6cd9b4bafd790f364b8480e859b4712e91f43014fe01e4f957b8467 \

@@ -23,19 +23,24 @@ import click
 import pytz
 import toml
 from jetstream_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
-from jetstream_config_parser.config import Config, DefaultConfig, entity_from_path
+from jetstream_config_parser.config import (
+    Config,
+    DefaultConfig,
+    DefinitionConfig,
+    entity_from_path,
+)
 from jetstream_config_parser.experiment import Experiment
+from jetstream_config_parser.function import FunctionsSpec
 
 from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
-from .config import ConfigLoader, _ConfigLoader
+from .config import ConfigLoader, _ConfigLoader, validate
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
-from .external_config import ExternalConfigCollection
 from .logging import LogConfiguration
 from .metadata import export_metadata
 from .util import inclusive_date_range
@@ -746,23 +751,25 @@ def validate_config(path: Iterable[os.PathLike]):
         if ".example" in config_file.suffixes:
             print(f"Skipping example config {config_file}")
             continue
-        if "functions.toml" == config_file.name:
-            print(f"Skipping function config {config_file}")
-            continue
-        if config_file.parent.name == "definitions":
-            print(f"Skipping definition configs {config_file}")
-            continue
+
         print(f"Evaluating {config_file}...")
+
+        if "functions.toml" == config_file.name:
+            FunctionsSpec.from_dict(toml.load(config_file))
+            print(f"{config_file} OK")
+            continue
         entity = entity_from_path(config_file)
-        call = partial(entity.validate)
-        if isinstance(entity, Config) and not isinstance(entity, DefaultConfig):
+        call = partial(validate, config=entity)
+        if (
+            isinstance(entity, Config)
+            and not isinstance(entity, DefaultConfig)
+            and not isinstance(entity, DefinitionConfig)
+        ):
             if (experiments := collection.with_slug(entity.slug).experiments) == []:
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
                 continue
-            call = partial(entity.validate, experiment=experiments[0])
-
-            # todo: Analysis validate()
+            call = partial(validate, config=entity, experiment=experiments[0])
         try:
             call()
         except DryRunFailedError as e:
