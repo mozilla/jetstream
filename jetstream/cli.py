@@ -32,7 +32,7 @@ from .config import AnalysisConfiguration, AnalysisSpec
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
-from .export_json import export_statistics_tables, export_error_logs
+from .export_json import export_error_logs, export_statistics_tables
 from .external_config import ExternalConfigCollection
 from .logging import LogConfiguration
 from .metadata import export_metadata

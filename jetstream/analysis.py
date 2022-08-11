@@ -9,7 +9,6 @@ import attr
 import dask
 import google
 import mozanalysis
-import pandas as pd
 import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery

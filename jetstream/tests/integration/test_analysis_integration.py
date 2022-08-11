@@ -512,6 +512,9 @@ class TestAnalysisIntegration:
             in error_logs[0].get("message")
         )
         assert error_logs[0].get("log_level") == "ERROR"
+        assert error_logs[0].get("experiment") == "test-experiment"
+        assert error_logs[0].get("metric") == "active_hours"
+        assert error_logs[0].get("statistic") == "bootstrap_mean"
 
     # wait for profiling results to land in BigQuery
     # todo: improve this test as it might lead to flakiness
