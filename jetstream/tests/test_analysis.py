@@ -21,8 +21,6 @@ from jetstream.errors import (
 )
 from jetstream.experimenter import ExperimentV1
 
-logger = logging.getLogger("TEST_ANALYSIS")
-
 
 def test_get_timelimits_if_ready(experiments):
     config = AnalysisSpec().resolve(experiments[0])
