@@ -522,7 +522,7 @@ class Analysis:
                     period.value,
                     self.config.experiment.start_date.strftime("%Y-%m-%d")
                     if self.config.experiment.start_date is not None
-                    else "",
+                    else "None",
                 )
                 continue
 
