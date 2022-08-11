@@ -4,11 +4,9 @@ import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
-from unittest import mock
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import mozanalysis.segments
-import pandas as pd
 import pytest
 import pytz
 import toml
@@ -22,7 +20,6 @@ from jetstream.errors import (
     NoEnrollmentPeriodException,
 )
 from jetstream.experimenter import ExperimentV1
-from jetstream.logging import LogConfiguration
 
 logger = logging.getLogger("TEST_ANALYSIS")
 
