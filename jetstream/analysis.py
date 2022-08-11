@@ -12,7 +12,7 @@ import mozanalysis
 import pandas as pd
 import pytz
 from dask.distributed import Client, LocalCluster
-from google.cloud import bigquery, storage
+from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from mozanalysis.experiment import AnalysisBasis, TimeLimits
 from mozanalysis.utils import add_days
@@ -633,48 +633,3 @@ class Analysis:
             )
         except Conflict:
             pass
-
-    def export_errors(self, bucket_name: str):
-        """Export experiment errors to GCS."""
-        if self.config.experiment.normandy_slug is None:
-            return
-
-        if self.log_config is None:
-            log_project = self.project
-            log_dataset = self.dataset
-            log_table = "logs"
-        else:
-            log_project = self.log_config.log_project_id or self.project
-            log_dataset = self.log_config.log_dataset_id or self.dataset
-            log_table = self.log_config.log_table_id or "logs"
-
-        logger.info(f"Retrieving logs from BigQuery: {log_project}.{log_dataset}.{log_table}")
-
-        bq_log_client = BigQueryClient(log_project, log_dataset)
-        logs_df = bq_log_client.table_to_dataframe(log_table)
-
-        exp_logs = logs_df[logs_df["experiment"] == self.config.experiment.normandy_slug]
-        error_logs = exp_logs[exp_logs["log_level"] == "ERROR"]
-        crit_logs = exp_logs[exp_logs["log_level"] == "CRITICAL"]
-
-        error_logs = pd.concat([error_logs, crit_logs], axis=0, ignore_index=True)
-        # and logs_df["exception_type"] is not None
-
-        storage_client = storage.Client(self.project)
-        bucket = storage_client.get_bucket(bucket_name)
-        target_file = f"errors_{bq_normalize_name(self.config.experiment.normandy_slug)}"
-        target_path = "errors"
-        blob = bucket.blob(f"{target_path}/{target_file}.json")
-
-        logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
-
-        upload_json = error_logs.set_index("experiment").to_json(
-            orient="records", date_format="iso"
-        )
-
-        logger.info(upload_json)
-
-        blob.upload_from_string(
-            data=upload_json,
-            content_type="application/json",
-        )
