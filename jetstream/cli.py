@@ -32,7 +32,7 @@ from .config import AnalysisConfiguration, AnalysisSpec
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
-from .export_json import export_error_logs, export_statistics_tables
+from .export_json import export_experiment_logs, export_statistics_tables
 from .external_config import ExternalConfigCollection
 from .logging import LogConfiguration
 from .metadata import export_metadata
@@ -151,7 +151,7 @@ class SerialExecutorStrategy:
                     log_dataset = self.log_config.log_dataset_id or self.dataset_id
                     log_table = self.log_config.log_table_id or "logs"
 
-                export_error_logs(
+                export_experiment_logs(
                     self.project_id,
                     self.bucket,
                     config.experiment.normandy_slug,
@@ -663,11 +663,11 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @experiment_slug_option
 @project_id_option
 @date_option
-def export_error_logs_to_json(
+def export_experiment_logs_to_json(
     log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
-    export_error_logs(
+    export_experiment_logs(
         project_id, bucket, experiment_slug, log_project_id, log_dataset_id, log_table_id, date
     )
 

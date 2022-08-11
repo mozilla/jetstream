@@ -14,6 +14,8 @@ from jetstream import AnalysisPeriod, bq_normalize_name
 
 logger = logging.getLogger(__name__)
 
+EXPERIMENT_LOG_PATH = "errors"
+
 
 def _get_statistics_tables_last_modified(
     client: bigquery.Client, bq_dataset: str, experiment_slug: Optional[str]
@@ -146,7 +148,7 @@ def export_statistics_tables(
             )
 
 
-def _get_error_logs_as_json(
+def _get_experiment_logs_as_json(
     client: bigquery.Client,
     dataset: str,
     table: str,
@@ -196,7 +198,7 @@ def _upload_str_to_gcs(
     )
 
 
-def export_error_logs(
+def export_experiment_logs(
     project_id: str,
     bucket_name: str,
     experiment_slug: str,
@@ -205,12 +207,12 @@ def export_error_logs(
     log_table: str = "logs",
     analysis_start_time: datetime = None,
 ):
-    """Export experiment errors to GCS."""
+    """Export experiment logs to GCS."""
     logger.info(f"Retrieving logs from BigQuery: {log_project}.{log_dataset}.{log_table}")
 
     bq_log_client = bigquery.Client(log_project)
 
-    error_logs, num_logs = _get_error_logs_as_json(
+    experiment_logs, num_logs = _get_experiment_logs_as_json(
         bq_log_client, log_dataset, log_table, experiment_slug, analysis_start_time
     )
 
@@ -218,5 +220,7 @@ def export_error_logs(
     log_text += f" (newer than {analysis_start_time}" if analysis_start_time is not None else ""
     logger.info(log_text)
 
-    if error_logs is not None:
-        _upload_str_to_gcs(project_id, bucket_name, experiment_slug, "errors", error_logs)
+    if experiment_logs is not None:
+        _upload_str_to_gcs(
+            project_id, bucket_name, experiment_slug, EXPERIMENT_LOG_PATH, experiment_logs
+        )
