@@ -326,7 +326,7 @@ def test_export_errors(mock_storage_client, mock_bq_client):
     mock_blob.upload_from_string.assert_called_once_with(
         data=pd.DataFrame.from_dict(expected)
         .set_index("experiment")
-        .to_json(orient="records", date_format="iso", indent=4),
+        .to_json(orient="records", date_format="iso"),
         content_type="application/json",
     )
 
