@@ -673,7 +673,6 @@ class Analysis:
         )
 
         blob.upload_from_string(
-            # data=json.dumps(error_logs, sort_keys=True, indent=4),
             data=upload_json,
             content_type="application/json",
         )
