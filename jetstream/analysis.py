@@ -669,8 +669,10 @@ class Analysis:
         logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
         upload_json = error_logs.set_index("experiment").to_json(
-            orient="records", date_format="iso", indent=4
+            orient="records", date_format="iso"
         )
+
+        logger.info(upload_json)
 
         blob.upload_from_string(
             data=upload_json,
