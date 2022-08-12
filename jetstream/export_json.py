@@ -165,11 +165,12 @@ def _get_experiment_logs_as_json(
     if min_timestamp is not None:
         query_text += f" AND timestamp >= '{min_timestamp}'"
 
+    query_text += " ORDER BY timestamp ASC"
+
     job = client.query(query_text)
 
     # convert results to JSON
     records = [dict(row) for row in job]
-    records.sort(key=lambda r: r["timestamp"])
     converter = cattr.Converter()
     _datetime_to_json: Callable[[datetime], str] = lambda dt: dt.isoformat()
     converter.register_unstructure_hook(datetime, _datetime_to_json)
