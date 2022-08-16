@@ -167,10 +167,10 @@ def _get_experiment_logs_as_json(
 
     query_text += " ORDER BY timestamp ASC"
 
-    job = client.query(query_text)
+    results = client.query(query_text).results()
 
     # convert results to JSON
-    records = [dict(row) for row in job]
+    records = [dict(row) for row in results]
     converter = cattr.Converter()
     _datetime_to_json: Callable[[datetime], str] = lambda dt: dt.isoformat()
     converter.register_unstructure_hook(datetime, _datetime_to_json)
