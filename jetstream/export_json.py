@@ -167,7 +167,7 @@ def _get_experiment_logs_as_json(
 
     query_text += " ORDER BY timestamp ASC"
 
-    results = client.query(query_text).results()
+    results = client.query(query_text).result()
 
     # convert results to JSON
     records = [dict(row) for row in results]
