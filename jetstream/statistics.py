@@ -170,7 +170,11 @@ class Statistic(ABC):
             if reference_branch and reference_branch not in branch_list:
                 logger.warning(
                     f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             else:
                 if reference_branch is None:
@@ -191,7 +195,11 @@ class Statistic(ABC):
                                 f"Error while computing statistic {self.name()} "
                                 + f"for metric {metric}: {e}"
                             ),
-                            extra={"experiment": experiment.normandy_slug},
+                            extra={
+                                "experiment": experiment.normandy_slug,
+                                "metric": metric,
+                                "statistic": self.name(),
+                            },
                         )
 
                     df = df[df.branch != ref_branch]
@@ -542,7 +550,11 @@ class KernelDensityEstimate(Statistic):
             if grid.message:
                 logger.warning(
                     f"KernelDensityEstimate for metric {metric}, branch {branch}: {grid.message}",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             result = kde.evaluate(grid.grid)
             if group[metric].min() == 0 and grid.geometric:
@@ -597,7 +609,11 @@ class EmpiricalCDF(Statistic):
             if grid.message:
                 logger.warning(
                     f"EmpiricalCDF for metric {metric}, branch {branch}: {grid.message}",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             if group[metric].min() == 0 and grid.geometric:
                 results.append(

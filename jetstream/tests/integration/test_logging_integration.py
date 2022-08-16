@@ -12,6 +12,8 @@ class TestLoggingIntegration:
         schema = [
             bigquery.SchemaField("timestamp", "TIMESTAMP"),
             bigquery.SchemaField("experiment", "STRING"),
+            bigquery.SchemaField("metric", "STRING"),
+            bigquery.SchemaField("statistic", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("log_level", "STRING"),
             bigquery.SchemaField("exception", "STRING"),
@@ -41,11 +43,22 @@ class TestLoggingIntegration:
         logger = logging.getLogger(__name__)
         logger.info("Do not write to BigQuery")
         logger.warning("Write warning to Bigquery")
-        logger.error("Write error to BigQuery", extra={"experiment": "test_experiment"})
+        logger.error(
+            "Write error to BigQuery",
+            extra={
+                "experiment": "test_experiment",
+                "metric": "test_metric",
+                "statistic": "test_statistic",
+            },
+        )
         logger.exception(
             "Write exception to BigQuery",
             exc_info=Exception("Some exception"),
-            extra={"experiment": "test_experiment"},
+            extra={
+                "experiment": "test_experiment",
+                "metric": "test_metric",
+                "statistic": "test_statistic",
+            },
         )
 
         result = list(
@@ -60,6 +73,8 @@ class TestLoggingIntegration:
             [
                 r.message == "Write error to BigQuery"
                 and r.experiment == "test_experiment"
+                and r.metric == "test_metric"
+                and r.statistic == "test_statistic"
                 and r.log_level == "ERROR"
                 for r in result
             ]
@@ -68,6 +83,8 @@ class TestLoggingIntegration:
             [
                 r.message == "Write exception to BigQuery"
                 and r.experiment == "test_experiment"
+                and r.metric == "test_metric"
+                and r.statistic == "test_statistic"
                 and r.log_level == "ERROR"
                 and "Exception('Some exception')" in r.exception
                 for r in result

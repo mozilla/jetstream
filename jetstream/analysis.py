@@ -516,9 +516,12 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready",
+                    "Skipping %s (%s); not ready [START: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
+                    self.config.experiment.start_date.strftime("%Y-%m-%d")
+                    if self.config.experiment.start_date is not None
+                    else "None",
                 )
                 continue
 

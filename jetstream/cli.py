@@ -32,7 +32,7 @@ from .config import AnalysisConfiguration, AnalysisSpec
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
-from .export_json import export_statistics_tables
+from .export_json import export_experiment_logs, export_statistics_tables
 from .external_config import ExternalConfigCollection
 from .logging import LogConfiguration
 from .metadata import export_metadata
@@ -141,6 +141,25 @@ class SerialExecutorStrategy:
                 )
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id, analysis.start_time)
+
+                if self.log_config is None:
+                    log_project = self.project_id
+                    log_dataset = self.dataset_id
+                    log_table = "logs"
+                else:
+                    log_project = self.log_config.log_project_id or self.project_id
+                    log_dataset = self.log_config.log_dataset_id or self.dataset_id
+                    log_table = self.log_config.log_table_id or "logs"
+
+                export_experiment_logs(
+                    self.project_id,
+                    self.bucket,
+                    config.experiment.normandy_slug,
+                    log_project,
+                    log_dataset,
+                    log_table,
+                    analysis.start_time,
+                )
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
                 # this prevents Argo from retrying the analysis unnecessarily
@@ -332,20 +351,27 @@ class AnalysisExecutor:
                 raise e
 
 
-@click.group()
-@click.option(
+log_project_id_option = click.option(
     "--log_project_id",
     "--log-project-id",
     default="moz-fx-data-experiments",
     help="GCP project to write logs to",
 )
-@click.option(
+log_dataset_id_option = click.option(
     "--log_dataset_id",
     "--log-dataset-id",
     default="monitoring",
     help="Dataset to write logs to",
 )
-@click.option("--log_table_id", "--log-table-id", default="logs", help="Table to write logs to")
+log_table_id_option = click.option(
+    "--log_table_id", "--log-table-id", default="logs", help="Table to write logs to"
+)
+
+
+@click.group()
+@log_project_id_option
+@log_dataset_id_option
+@log_table_id_option
 @click.option(
     "--task_profiling_log_table_id",
     "--task-profiling-log-table-id",
@@ -464,17 +490,19 @@ recreate_enrollments_option = click.option(
     default=False,
 )
 
-
-@cli.command()
-@project_id_option
-@dataset_id_option
-@click.option(
+date_option = click.option(
     "--date",
     type=ClickDate(),
     help="Date for which experiments should be analyzed",
     metavar="YYYY-MM-DD",
     required=True,
 )
+
+
+@cli.command()
+@project_id_option
+@dataset_id_option
+@date_option
 @experiment_slug_option
 @bucket_option
 @secret_config_file_option
@@ -625,6 +653,23 @@ def rerun(
 def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
     """Export all tables as JSON to a GCS bucket."""
     export_statistics_tables(project_id, dataset_id, bucket, experiment_slug)
+
+
+@cli.command()
+@log_project_id_option
+@log_dataset_id_option
+@log_table_id_option
+@bucket_option
+@experiment_slug_option
+@project_id_option
+@date_option
+def export_experiment_logs_to_json(
+    log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
+):
+    """Export all error logs for this experiment as JSON to a GCS bucket."""
+    export_experiment_logs(
+        project_id, bucket, experiment_slug, log_project_id, log_dataset_id, log_table_id, date
+    )
 
 
 @cli.command()
