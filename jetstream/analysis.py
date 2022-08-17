@@ -9,21 +9,28 @@ import attr
 import dask
 import google
 import mozanalysis
+import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
-from mozanalysis.experiment import AnalysisBasis, TimeLimits
+from jetstream_config_parser import metric
+from jetstream_config_parser.analysis import AnalysisConfiguration
+from jetstream_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame
 
 import jetstream.errors as errors
 from jetstream.bigquery_client import BigQueryClient
-from jetstream.config import AnalysisConfiguration
 
 # from jetstream.diagnostics.resource_profiling_plugin import ResourceProfilingPlugin
 # from jetstream.diagnostics.task_monitoring_plugin import TaskMonitoringPlugin
 from jetstream.dryrun import dry_run_query
+from jetstream.exposure_signal import ExposureSignal
 from jetstream.logging import LogConfiguration, LogPlugin
+from jetstream.metric import Metric
+from jetstream.platform import PLATFORM_CONFIGS
+from jetstream.segment import Segment
 from jetstream.statistics import (
     Count,
     StatisticResult,
@@ -31,7 +38,7 @@ from jetstream.statistics import (
     Summary,
 )
 
-from . import AnalysisPeriod, bq_normalize_name
+from . import bq_normalize_name
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +56,7 @@ class Analysis:
     dataset: str
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
+    start_time: Optional[datetime] = None
 
     @property
     def bigquery(self):
@@ -227,19 +235,21 @@ class Analysis:
             if self.config.experiment.exposure_signal:
                 # if a custom exposure signal has been defined in the config, we'll
                 # need to pass it into the metrics computation
-                exposure_signal = (
-                    self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
-                        last_window_limits
-                    )
+                exposure_signal = ExposureSignal.from_exposure_signal_config(
+                    self.config.experiment.exposure_signal
                 )
+                exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(last_window_limits)
+
+            # convert metric configurations to mozanalysis metrics
+            metrics = {
+                Metric.from_metric_config(m.metric).to_mozanalysis_metric()
+                for m in self.config.metrics[period]
+                if m.metric.analysis_bases == analysis_basis
+                or analysis_basis in m.metric.analysis_bases
+            }
 
             metrics_sql = exp.build_metrics_query(
-                {
-                    m.metric.to_mozanalysis_metric()
-                    for m in self.config.metrics[period]
-                    if m.metric.analysis_bases == analysis_basis
-                    or analysis_basis in m.metric.analysis_bases
-                },
+                metrics,
                 last_window_limits,
                 enrollments_table_name,
                 analysis_basis,
@@ -253,13 +263,18 @@ class Analysis:
 
     @dask.delayed
     def calculate_statistics(
-        self, metric: Summary, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
+        self,
+        metric: metric.Summary,
+        segment_data: DataFrame,
+        segment: str,
+        analysis_basis: AnalysisBasis,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
         return (
-            metric.run(segment_data, self.config.experiment)
+            Summary.from_config(metric)
+            .run(segment_data, self.config.experiment)
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
         )
@@ -380,21 +395,27 @@ class Analysis:
 
         metrics = set()
         for v in self.config.metrics.values():
-            metrics |= {m.metric.to_mozanalysis_metric() for m in v}
+            for metric_config in v:
+                metrics.add(Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric())
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
-            exposure_signal = self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
-                limits
+            exposure_signal = ExposureSignal.from_exposure_signal_config(
+                self.config.experiment.exposure_signal
             )
+            exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(limits)
+
+        segments = []
+        for segment in self.config.experiment.segments:
+            segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
-            self.config.experiment.platform.enrollments_query_type,
+            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,
-            self.config.experiment.segments,
+            segments,
         )
 
         dry_run_query(enrollments_sql)
@@ -460,7 +481,12 @@ class Analysis:
         Run analysis using mozanalysis for a specific experiment.
         """
         global _dask_cluster
-        logger.info("Analysis.run invoked for experiment %s", self.config.experiment.normandy_slug)
+        self.start_time = datetime.now(tz=pytz.utc)
+        logger.info(
+            "Analysis.run invoked for experiment %s at %s",
+            self.config.experiment.normandy_slug,
+            self.start_time,
+        )
 
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy
@@ -509,9 +535,12 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready",
+                    "Skipping %s (%s); not ready [START: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
+                    self.config.experiment.start_date.strftime("%Y-%m-%d")
+                    if self.config.experiment.start_date is not None
+                    else "None",
                 )
                 continue
 
@@ -601,17 +630,22 @@ class Analysis:
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
-            exposure_signal = self.config.experiment.exposure_signal.to_mozanalysis_exposure_signal(
-                time_limits
+            exposure_signal = ExposureSignal.from_exposure_signal_config(
+                self.config.experiment.exposure_signal
             )
+            exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(time_limits)
+
+        segments = []
+        for segment in self.config.experiment.segments:
+            segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
         enrollments_sql = exp.build_enrollments_query(
             time_limits,
-            self.config.experiment.platform.enrollments_query_type,
+            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,
-            self.config.experiment.segments,
+            segments,
         )
 
         try:

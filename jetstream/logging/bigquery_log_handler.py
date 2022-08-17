@@ -33,6 +33,8 @@ class BigQueryLogHandler(BufferingHandler):
                     "%Y-%m-%d %H:%M:%S"
                 ),
                 "experiment": None if not hasattr(record, "experiment") else record.experiment,
+                "metric": None if not hasattr(record, "metric") else record.metric,
+                "statistic": None if not hasattr(record, "statistic") else record.statistic,
                 "message": record.getMessage(),
                 "log_level": record.levelname,
                 "exception": str(record.exc_info),

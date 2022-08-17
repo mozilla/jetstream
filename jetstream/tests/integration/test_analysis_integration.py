@@ -7,17 +7,19 @@ import dask
 import jsonschema
 import mozanalysis
 import pytz
-from mozanalysis.metrics import AnalysisBasis, DataSource, agg_sum
-from mozanalysis.segments import Segment, SegmentDataSource
+from jetstream_config_parser.analysis import AnalysisSpec
+from jetstream_config_parser.data_source import DataSource
+from jetstream_config_parser.experiment import Branch, Experiment
+from jetstream_config_parser.metric import AnalysisPeriod, Summary
+from jetstream_config_parser.segment import Segment, SegmentDataSource
+from jetstream_config_parser.statistic import Statistic
+from mozanalysis.metrics import AnalysisBasis, agg_sum
 
-from jetstream import AnalysisPeriod
 from jetstream.analysis import Analysis
-from jetstream.config import AnalysisSpec, Summary
-from jetstream.experimenter import Branch, Experiment
+from jetstream.config import ConfigLoader
 from jetstream.exposure_signal import ExposureSignal
 from jetstream.logging import LogConfiguration
 from jetstream.metric import Metric
-from jetstream.statistics import BootstrapMean
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -91,11 +93,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -105,7 +107,9 @@ class TestAnalysisIntegration:
             analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
         )
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
@@ -201,11 +205,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -215,7 +219,9 @@ class TestAnalysisIntegration:
             analysis_bases=[AnalysisBasis.EXPOSURES],
         )
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
         config.experiment.exposure_signal = ExposureSignal(
             name="ad_exposure",
             data_source=test_clients_daily,
@@ -300,11 +306,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -313,7 +319,9 @@ class TestAnalysisIntegration:
             select_expression=agg_sum("active_hours_sum"),
         )
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
@@ -362,11 +370,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -385,7 +393,9 @@ class TestAnalysisIntegration:
         )
         config.experiment.segments = [regular_user_v3]
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 
@@ -471,11 +481,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -484,9 +494,9 @@ class TestAnalysisIntegration:
             select_expression=agg_sum("active_hours_sum"),
         )
 
-        config.metrics = {
-            AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean(confidence_interval=10))]
-        }
+        stat = Statistic(name="bootstrap_mean", params={"confidence_interval": 10})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         log_config = LogConfiguration(
             log_project_id=project_id,
@@ -512,6 +522,9 @@ class TestAnalysisIntegration:
             in error_logs[0].get("message")
         )
         assert error_logs[0].get("log_level") == "ERROR"
+        assert error_logs[0].get("experiment") == "test-experiment"
+        assert error_logs[0].get("metric") == "active_hours"
+        assert error_logs[0].get("statistic") == "bootstrap_mean"
 
     # wait for profiling results to land in BigQuery
     # todo: improve this test as it might lead to flakiness
@@ -555,11 +568,11 @@ class TestAnalysisIntegration:
             app_id="firefox-desktop",
         )
 
-        config = AnalysisSpec().resolve(experiment)
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
         test_clients_daily = DataSource(
             name="clients_daily",
-            from_expr=f"`{project_id}.test_data.clients_daily`",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
         test_active_hours = Metric(
@@ -578,7 +591,9 @@ class TestAnalysisIntegration:
         )
         config.experiment.segments = [regular_user_v3]
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, BootstrapMean())]}
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 

@@ -10,9 +10,11 @@ import cattr
 import jsonschema
 import requests
 import toml
+from jetstream_config_parser.analysis import AnalysisSpec
+from jetstream_config_parser.config import Outcome
+from jetstream_config_parser.outcome import OutcomeSpec
 
-from jetstream.config import AnalysisSpec
-from jetstream.external_config import ExternalConfigCollection
+from jetstream.config import ConfigLoader
 from jetstream.metadata import ExperimentMetadata, export_metadata
 from jetstream.statistics import StatisticResult
 
@@ -39,7 +41,7 @@ def test_metadata_from_config(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[4])
+    config = spec.resolve(experiments[4], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
     assert StatisticResult.SCHEMA_VERSION == metadata.schema_version
@@ -52,6 +54,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
     assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments"]
     assert metadata.external_config is None
+    assert metadata.analysis_start_time is None
 
 
 @patch.object(requests.Session, "get")
@@ -69,13 +72,13 @@ def test_metadata_reference_branch(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[4])
+    config = spec.resolve(experiments[4], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
     assert metadata.external_config.reference_branch == "a"
     assert (
         metadata.external_config.url
-        == ExternalConfigCollection.JETSTREAM_CONFIG_URL + "/blob/main/normandy-test-slug.toml"
+        == ConfigLoader.configs.repo_url + "/blob/main/normandy-test-slug.toml"
     )
 
     config_str = dedent(
@@ -88,13 +91,13 @@ def test_metadata_reference_branch(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[2])
+    config = spec.resolve(experiments[2], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
     assert metadata.external_config is None
 
 
-def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
+def test_metadata_with_outcomes(experiments):
     config_str = dedent(
         """
         [metrics]
@@ -104,8 +107,58 @@ def test_metadata_with_outcomes(experiments, fake_outcome_resolver):
         """
     )
 
+    performance_config = dedent(
+        """
+        friendly_name = "Performance outcomes"
+        description = "Outcomes related to performance"
+        default_metrics = ["speed"]
+
+        [metrics.speed]
+        data_source = "main"
+        select_expression = "1"
+
+        [metrics.speed.statistics.bootstrap_mean]
+        """
+    )
+
+    tastiness_config = dedent(
+        """
+        friendly_name = "Tastiness outcomes"
+        description = "Outcomes related to tastiness 😋"
+
+        [metrics.meals_eaten]
+        data_source = "meals"
+        select_expression = "1"
+        friendly_name = "Meals eaten"
+        description = "Number of consumed meals"
+
+        [metrics.meals_eaten.statistics.bootstrap_mean]
+        num_samples = 10
+        pre_treatments = ["remove_nulls"]
+
+        [data_sources.meals]
+        from_expression = "meals"
+        client_id_column = "client_info.client_id"
+        """
+    )
+
+    ConfigLoader.config_collection.outcomes += [
+        Outcome(
+            slug="performance",
+            spec=OutcomeSpec.from_dict(toml.loads(performance_config)),
+            platform="firefox_desktop",
+            commit_hash="000000",
+        ),
+        Outcome(
+            slug="tastiness",
+            spec=OutcomeSpec.from_dict(toml.loads(tastiness_config)),
+            platform="firefox_desktop",
+            commit_hash="000000",
+        ),
+    ]
+
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[5])
+    config = spec.resolve(experiments[5], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
     assert "view_about_logins" in metadata.metrics
@@ -140,7 +193,7 @@ def test_metadata_from_config_missing_metadata(mock_get, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[0])
+    config = spec.resolve(experiments[0], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
     assert "my_cool_metric" in metadata.metrics
@@ -171,7 +224,7 @@ def test_export_metadata(mock_storage_client, experiments):
     )
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[0])
+    config = spec.resolve(experiments[0], ConfigLoader.configs)
 
     mock_client = MagicMock()
     mock_storage_client.return_value = mock_client
@@ -180,8 +233,9 @@ def test_export_metadata(mock_storage_client, experiments):
     mock_blob = MagicMock()
     mock_bucket.blob.return_value = mock_blob
     mock_blob.upload_from_string.return_value = ""
+    mock_analysis_start = dt.datetime.now()
 
-    export_metadata(config, "test_bucket", "project")
+    export_metadata(config, "test_bucket", "project", mock_analysis_start)
 
     mock_client.get_bucket.assert_called_once()
     mock_bucket.blob.assert_called_once()
@@ -213,6 +267,9 @@ def test_export_metadata(mock_storage_client, experiments):
                 "url": """
         + '"https://github.com/mozilla/jetstream-config/blob/main/normandy-test-slug.toml"'
         + r"""},
+            "analysis_start_time": """
+        + f'"{mock_analysis_start}"'
+        + """,
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """
@@ -224,10 +281,12 @@ def test_export_metadata(mock_storage_client, experiments):
     )
 
 
-def test_metadata_schema(experiments, fake_outcome_resolver):
+def test_metadata_schema(experiments):
     schema = json.loads((Path(__file__).parent / "data/Metadata_v1.0.json").read_text())
     converter = cattr.Converter()
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: dt.strftime("%Y-%m-%d")
+    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
+    converter.register_unstructure_hook(dt.date, _date_to_json)
+    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
     converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
 
     config_str = dedent(
@@ -243,8 +302,58 @@ def test_metadata_schema(experiments, fake_outcome_resolver):
         """
     )
 
+    performance_config = dedent(
+        """
+        friendly_name = "Performance outcomes"
+        description = "Outcomes related to performance"
+        default_metrics = ["speed"]
+
+        [metrics.speed]
+        data_source = "main"
+        select_expression = "1"
+
+        [metrics.speed.statistics.bootstrap_mean]
+        """
+    )
+
+    tastiness_config = dedent(
+        """
+        friendly_name = "Tastiness outcomes"
+        description = "Outcomes related to tastiness 😋"
+
+        [metrics.meals_eaten]
+        data_source = "meals"
+        select_expression = "1"
+        friendly_name = "Meals eaten"
+        description = "Number of consumed meals"
+
+        [metrics.meals_eaten.statistics.bootstrap_mean]
+        num_samples = 10
+        pre_treatments = ["remove_nulls"]
+
+        [data_sources.meals]
+        from_expression = "meals"
+        client_id_column = "client_info.client_id"
+        """
+    )
+
+    ConfigLoader.config_collection.outcomes += [
+        Outcome(
+            slug="performance",
+            spec=OutcomeSpec.from_dict(toml.loads(performance_config)),
+            platform="firefox_desktop",
+            commit_hash="000000",
+        ),
+        Outcome(
+            slug="tastiness",
+            spec=OutcomeSpec.from_dict(toml.loads(tastiness_config)),
+            platform="firefox_desktop",
+            commit_hash="000000",
+        ),
+    ]
+
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[5])
-    metadata = ExperimentMetadata.from_config(config)
+    config = spec.resolve(experiments[5], ConfigLoader.configs)
+    metadata = ExperimentMetadata.from_config(config, dt.datetime.now())
 
     jsonschema.validate(converter.unstructure(metadata), schema)

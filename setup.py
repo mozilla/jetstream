@@ -62,6 +62,7 @@ setup(
         "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
         "jinja2",
         "mozanalysis",
+        "mozilla-jetstream-config-parser",
         "pyarrow",
         "pytz",
         "PyYAML",

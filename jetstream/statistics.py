@@ -1,10 +1,12 @@
+import copy
 import logging
 import math
 import numbers
 import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from inspect import isabstract
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import attr
 import cattr
@@ -15,16 +17,14 @@ import mozanalysis.metrics
 import numpy as np
 import statsmodels.api as sm
 from google.cloud import bigquery
-from mozanalysis.experiment import AnalysisBasis
+from jetstream_config_parser import metric as parser_metric
+from jetstream_config_parser.experiment import Experiment
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .errors import StatisticComputationException
 from .metric import Metric
 from .pre_treatment import PreTreatment
-
-if TYPE_CHECKING:
-    import jetstream.config as config
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +43,45 @@ class Summary:
     statistic: "Statistic"
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
+    @classmethod
+    def from_config(cls, summary_config: parser_metric.Summary) -> "Summary":
+        """Create a Jetstream-native Summary representation."""
+        metric = Metric.from_metric_config(summary_config.metric)
+
+        found = False
+        for statistic in Statistic.__subclasses__():
+            if statistic.name() == summary_config.statistic.name:
+                found = True
+                break
+
+        if not found:
+            raise ValueError(f"Statistic '{summary_config.statistic.name}' does not exist.")
+
+        stats_params = copy.deepcopy(summary_config.statistic.params)
+
+        pre_treatments = []
+        for pre_treatment_conf in summary_config.pre_treatments:
+            found = False
+            for pre_treatment in PreTreatment.__subclasses__():
+                if isabstract(pre_treatment):
+                    continue
+                if pre_treatment.name() == pre_treatment_conf.name:
+                    found = True
+                    pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
+
+            if not found:
+                raise ValueError(f"Could not find pre-treatment {pre_treatment_conf.name}.")
+
+        return cls(
+            metric=metric,
+            statistic=statistic.from_dict(stats_params),
+            pre_treatments=pre_treatments,
+        )
+
     def run(
         self,
         data: DataFrame,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
@@ -127,7 +162,9 @@ class StatisticResultCollection:
             result.segment = segment
         return self
 
-    def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
+    def set_analysis_basis(
+        self, analysis_basis: parser_metric.AnalysisBasis
+    ) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
         for result in self.data:
             result.analysis_basis = analysis_basis.value
@@ -155,7 +192,7 @@ class Statistic(ABC):
         self,
         df: DataFrame,
         metric: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
@@ -170,7 +207,11 @@ class Statistic(ABC):
             if reference_branch and reference_branch not in branch_list:
                 logger.warning(
                     f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             else:
                 if reference_branch is None:
@@ -191,7 +232,11 @@ class Statistic(ABC):
                                 f"Error while computing statistic {self.name()} "
                                 + f"for metric {metric}: {e}"
                             ),
-                            extra={"experiment": experiment.normandy_slug},
+                            extra={
+                                "experiment": experiment.normandy_slug,
+                                "metric": metric,
+                                "statistic": self.name(),
+                            },
                         )
 
                     df = df[df.branch != ref_branch]
@@ -204,7 +249,7 @@ class Statistic(ABC):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> "StatisticResultCollection":
         return NotImplemented
 
@@ -307,7 +352,7 @@ class BootstrapMean(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -339,7 +384,7 @@ class Binomial(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -381,7 +426,7 @@ class Deciles(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -459,7 +504,7 @@ class Count(Statistic):
         self,
         df: DataFrame,
         metric: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ):
         return self.transform(
             df, metric, experiment.reference_branch or "control", experiment.normandy_slug
@@ -470,7 +515,7 @@ class Count(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -532,7 +577,7 @@ class KernelDensityEstimate(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -542,7 +587,11 @@ class KernelDensityEstimate(Statistic):
             if grid.message:
                 logger.warning(
                     f"KernelDensityEstimate for metric {metric}, branch {branch}: {grid.message}",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             result = kde.evaluate(grid.grid)
             if group[metric].min() == 0 and grid.geometric:
@@ -588,7 +637,7 @@ class EmpiricalCDF(Statistic):
         df: DataFrame,
         metric: str,
         reference_branch: str,
-        experiment: "config.ExperimentConfiguration",
+        experiment: Experiment,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -597,7 +646,11 @@ class EmpiricalCDF(Statistic):
             if grid.message:
                 logger.warning(
                     f"EmpiricalCDF for metric {metric}, branch {branch}: {grid.message}",
-                    extra={"experiment": experiment.normandy_slug},
+                    extra={
+                        "experiment": experiment.normandy_slug,
+                        "metric": metric,
+                        "statistic": self.name(),
+                    },
                 )
             if group[metric].min() == 0 and grid.geometric:
                 results.append(
