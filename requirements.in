@@ -291,7 +291,7 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==3.19.22
     # via mozilla-jetstream
-types-pytz==2022.1.2
+types-pytz==2022.2.1.0
     # via mozilla-jetstream
 types-pyyaml==6.0.11
     # via mozilla-jetstream
