@@ -146,7 +146,19 @@ class SerialExecutorStrategy:
                 )
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id, analysis.start_time)
-
+            except ValidationException as e:
+                # log custom Jetstream exceptions but let the workflow succeed;
+                # this prevents Argo from retrying the analysis unnecessarily
+                # when it is already clear that it won't succeed
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                )
+            except Exception as e:
+                failed = True
+                logger.exception(
+                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                )
+            finally:
                 if self.log_config is None:
                     log_project = self.project_id
                     log_dataset = self.dataset_id
@@ -164,18 +176,6 @@ class SerialExecutorStrategy:
                     log_dataset,
                     log_table,
                     analysis.start_time,
-                )
-            except ValidationException as e:
-                # log custom Jetstream exceptions but let the workflow succeed;
-                # this prevents Argo from retrying the analysis unnecessarily
-                # when it is already clear that it won't succeed
-                logger.exception(
-                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
-                )
-            except Exception as e:
-                failed = True
-                logger.exception(
-                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
                 )
         return not failed
 
