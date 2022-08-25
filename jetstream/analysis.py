@@ -73,7 +73,7 @@ class Analysis:
         prior_date_str = prior_date.strftime("%Y-%m-%d")
         current_date_str = current_date.strftime("%Y-%m-%d")
 
-        dates_enrollment = self.config.experiment.proposed_enrollment + 1
+        dates_enrollment = self.config.experiment.enrollment_period + 1
 
         if self.config.experiment.start_date is None:
             return None
@@ -337,7 +337,7 @@ class Analysis:
         if self.config.experiment.is_high_population:
             raise errors.HighPopulationException(self.config.experiment.normandy_slug)
 
-        if not self.config.experiment.proposed_enrollment:
+        if not self.config.experiment.enrollment_period:
             raise errors.NoEnrollmentPeriodException(self.config.experiment.normandy_slug)
 
         if self.config.experiment.start_date is None:
@@ -359,7 +359,7 @@ class Analysis:
         self.check_runnable()
         assert self.config.experiment.start_date is not None  # for mypy
 
-        dates_enrollment = self.config.experiment.proposed_enrollment + 1
+        dates_enrollment = self.config.experiment.enrollment_period + 1
 
         if self.config.experiment.end_date is not None:
             end_date = self.config.experiment.end_date

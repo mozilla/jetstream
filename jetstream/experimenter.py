@@ -100,6 +100,7 @@ class ExperimentV6:
     _appName: Optional[str] = None
     _appId: Optional[str] = None
     outcomes: Optional[List[Outcome]] = None
+    enrollmentEndDate: Optional[dt.datetime] = None
 
     @property
     def appName(self) -> str:
@@ -149,6 +150,7 @@ class ExperimentV6:
             app_name=self.appName,
             app_id=self.appId,
             outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
+            enrollment_end_date=self.enrollmentEndDate,
         )
 
 

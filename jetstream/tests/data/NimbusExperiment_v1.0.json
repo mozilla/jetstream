@@ -157,6 +157,13 @@
           "type": "integer",
           "description": "This represents the number of days that we expect to enroll new users.\nNote that this property is only used during the analysis phase (not by the SDK)"
         },
+        "enrollmentEndDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "This represents the actual enrollment end date."
+        },
         "referenceBranch": {
           "type": [
             "string",
