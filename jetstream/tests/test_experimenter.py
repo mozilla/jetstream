@@ -194,6 +194,7 @@ EXPERIMENTER_FIXTURE_V6 = r"""
   },
   "startDate":"2020-07-29",
   "endDate":null,
+  "enrollmentEndDate":"2020-08-05",
   "branches":[{
       "slug":"treatment",
       "ratio":1,

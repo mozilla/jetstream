@@ -105,8 +105,8 @@ class ExperimentMetadata:
                 if config.experiment.start_date is not None
                 and config.experiment.start_date != config.experiment.experiment.start_date
                 else None,
-                enrollment_period=config.experiment.proposed_enrollment
-                if config.experiment.proposed_enrollment
+                enrollment_period=config.experiment.enrollment_period
+                if config.experiment.enrollment_period
                 != config.experiment.experiment.proposed_enrollment
                 else None,
                 skip=config.experiment.skip,
