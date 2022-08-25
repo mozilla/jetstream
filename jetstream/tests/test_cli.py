@@ -388,6 +388,7 @@ class TestAnalysisExecutor:
 class TestSerialExecutorStrategy:
     def test_trivial_workflow(self, monkeypatch):
         monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
+        monkeypatch.setattr("jetstream.cli.export_experiment_logs", Mock())
         fake_analysis = Mock()
         strategy = cli.SerialExecutorStrategy(
             project_id="spam",
@@ -402,6 +403,7 @@ class TestSerialExecutorStrategy:
 
     def test_simple_workflow(self, cli_experiments, monkeypatch):
         monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
+        monkeypatch.setattr("jetstream.cli.export_experiment_logs", Mock())
         fake_analysis = Mock()
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)

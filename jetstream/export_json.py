@@ -219,7 +219,7 @@ def export_experiment_logs(
     )
 
     log_text = f"Got {num_logs} logs for experiment {experiment_slug}"
-    log_text += f" (newer than {analysis_start_time}" if analysis_start_time is not None else ""
+    log_text += f" (newer than {analysis_start_time})" if analysis_start_time is not None else ""
     logger.info(log_text)
 
     if experiment_logs is not None:
