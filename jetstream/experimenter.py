@@ -150,7 +150,9 @@ class ExperimentV6:
             app_name=self.appName,
             app_id=self.appId,
             outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
-            enrollment_end_date=self.enrollmentEndDate,
+            enrollment_end_date=pytz.utc.localize(self.enrollmentEndDate)
+            if self.enrollmentEndDate
+            else None,
         )
 
 
