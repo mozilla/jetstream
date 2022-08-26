@@ -164,7 +164,8 @@ def _get_experiment_logs_as_json(
         WHERE experiment = '{experiment_slug}'
     """
     if min_timestamp is not None:
-        query_text += f" AND timestamp >= '{min_timestamp}'"
+        floored_timestamp = min_timestamp.replace(second=0, microsecond=0)
+        query_text += f" AND timestamp >= TIMESTAMP('{floored_timestamp}')"
 
     query_text += " ORDER BY timestamp ASC"
 
