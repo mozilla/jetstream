@@ -1065,9 +1065,9 @@ types-pkg-resources==0.1.3 \
     --hash=sha256:0cb9972cee992249f93fff1a491bf2dc3ce674e5a1926e27d4f0866f7d9b6d9c \
     --hash=sha256:834a9b8d3dbea343562fd99d5d3359a726f6bf9d3733bccd2b4f3096fbab9dae
     # via -r requirements.in
-types-protobuf==3.19.22 \
-    --hash=sha256:d291388678af91bb045fafa864f142dc4ac22f5d4cdca097c7d8d8a32fa9b3ab \
-    --hash=sha256:d2b26861b0cb46a3c8669b0df507b7ef72e487da66d61f9f3576aa76ce028a83
+types-protobuf==3.20.1 \
+    --hash=sha256:36e3426476e373da6f2bb8a81a1194478cd1f33813a4e254849146d28c450e00 \
+    --hash=sha256:b0bc0ffde2a339ee25c4b47e9dd515010153ad80c21d16fb57a2429987579801
     # via -r requirements.in
 types-pytz==2022.2.1.0 \
     --hash=sha256:47cfb19c52b9f75896440541db392fd312a35b279c6307a531db71152ea63e2b \
