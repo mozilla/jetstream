@@ -176,6 +176,7 @@ class SerialExecutorStrategy:
                     log_dataset,
                     log_table,
                     analysis.start_time,
+                    self.log_config,
                 )
         return not failed
 
@@ -661,12 +662,20 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @experiment_slug_option
 @project_id_option
 @date_option
+@click.pass_context
 def export_experiment_logs_to_json(
-    log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
+    ctx, log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
     export_experiment_logs(
-        project_id, bucket, experiment_slug, log_project_id, log_dataset_id, log_table_id, date
+        project_id,
+        bucket,
+        experiment_slug,
+        log_project_id,
+        log_dataset_id,
+        log_table_id,
+        date,
+        ctx.obj["log_config"],
     )
 
 

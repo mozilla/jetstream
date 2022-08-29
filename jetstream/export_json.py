@@ -12,6 +12,7 @@ import smart_open
 from jetstream_config_parser.metric import AnalysisPeriod
 
 from jetstream import bq_normalize_name
+from .logging import LogConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -209,12 +210,14 @@ def export_experiment_logs(
     log_dataset: str,
     log_table: str = "logs",
     analysis_start_time: datetime = None,
+    log_config: Optional[LogConfiguration] = None,
 ):
     """Export experiment logs to GCS."""
     logger.info(f"Retrieving logs from BigQuery: {log_project}.{log_dataset}.{log_table}")
 
-    # explicitly flush the logs to bigquery so we know they will be available to the query
-    logger.flush()
+    if log_config.log_to_bigquery:
+        # explicitly flush the logs to bigquery so we know they will be available to the query
+        logger.flush()
 
     bq_log_client = bigquery.Client(log_project)
 
