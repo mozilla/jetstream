@@ -257,7 +257,7 @@ requests==2.28.1
     #   mozilla-jetstream-config-parser
 rsa==4.9
     # via google-auth
-scipy==1.9.0
+scipy==1.9.1
     # via
     #   mozanalysis
     #   statsmodels
