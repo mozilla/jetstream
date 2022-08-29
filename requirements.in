@@ -46,7 +46,7 @@ db-dtypes==1.0.3
     # via mozilla-jetstream
 distributed==2022.8.1
     # via dask
-exceptiongroup==1.0.0rc8
+exceptiongroup==1.0.0rc9
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
