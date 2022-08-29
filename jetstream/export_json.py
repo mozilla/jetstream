@@ -213,6 +213,9 @@ def export_experiment_logs(
     """Export experiment logs to GCS."""
     logger.info(f"Retrieving logs from BigQuery: {log_project}.{log_dataset}.{log_table}")
 
+    # explicitly flush the logs to bigquery so we know they will be available to the query
+    logger.flush()
+
     bq_log_client = bigquery.Client(log_project)
 
     experiment_logs, num_logs = _get_experiment_logs_as_json(
