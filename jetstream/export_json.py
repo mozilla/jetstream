@@ -217,7 +217,7 @@ def export_experiment_logs(
     if log_config is not None and log_config.log_to_bigquery:
         # explicitly flush the logs to bigquery so we know they will be available to the query
         logger.info("Flushing logs to BigQuery...")
-        for handler in logger.handlers:
+        for handler in logger.root.handlers:
             try:
                 handler.flush()
             except AttributeError:
