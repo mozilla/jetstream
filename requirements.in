@@ -167,7 +167,7 @@ packaging==21.3
     #   google-cloud-bigquery
     #   pytest
     #   statsmodels
-pandas==1.4.3
+pandas==1.4.4
     # via
     #   db-dtypes
     #   mozanalysis
