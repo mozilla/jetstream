@@ -162,9 +162,9 @@ flake8==4.0.1 \
     # via
     #   -r requirements.in
     #   pytest-flake8
-fsspec==2022.7.1 \
-    --hash=sha256:36c5a8e7c4fc20cf32ef6934ac0a122accc8a593ddc8478d30c3ca4dbbd95500 \
-    --hash=sha256:7f9fb19d811b027b97c4636c6073eb53bc4cbee2d3c4b33fa88b9f26906fd7d7
+fsspec==2022.8.2 \
+    --hash=sha256:6374804a2c0d24f225a67d009ee1eabb4046ad00c793c3f6df97e426c890a1d9 \
+    --hash=sha256:7f12b90964a98a7e921d27fb36be536ea036b73bf3b724ac0b0bd7b8e39c7c18
     # via
     #   -r requirements.in
     #   dask
