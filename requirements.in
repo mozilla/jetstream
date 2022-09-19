@@ -114,7 +114,7 @@ grpcio-status==1.48.1
     # via google-api-core
 heapdict==1.0.1
     # via zict
-idna==3.3
+idna==3.4
     # via requests
 importlib-resources==5.9.0
     # via jsonschema
