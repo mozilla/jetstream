@@ -74,7 +74,7 @@ google-cloud-bigquery==3.3.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.14.2
+google-cloud-bigquery-storage==2.16.0
     # via
     #   google-cloud-bigquery
     #   mozanalysis
@@ -102,7 +102,7 @@ googleapis-common-protos[grpc]==1.56.4
     #   grpcio-status
 grpc-google-iam-v1==0.12.4
     # via google-cloud-container
-grpcio==1.49.0
+grpcio==1.49.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
