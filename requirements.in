@@ -110,7 +110,7 @@ grpcio==1.49.1
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.48.1
+grpcio-status==1.49.1
     # via google-api-core
 heapdict==1.0.1
     # via zict
