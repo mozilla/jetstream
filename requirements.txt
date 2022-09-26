@@ -478,9 +478,9 @@ mozanalysis==2022.8.1 \
     --hash=sha256:b6cf47cc309a275a9da3158791b871c747189faad6f19dfe49e2ec5bbc7b2770 \
     --hash=sha256:c31a9c225352b976b37962417d08dcef1d73478a8ebc7950a2ec2d8991b9a5d7
     # via -r requirements.in
-mozilla-jetstream-config-parser==2022.8.10 \
-    --hash=sha256:75cc95fe79782f564107693ed2638bf170d7d91a235eddc786b0590dc43be56d \
-    --hash=sha256:841bd1497de98d2a8708eb7addd15282c5381f8a595a02f002d9d86ff167c558
+mozilla-jetstream-config-parser==2022.9.1 \
+    --hash=sha256:4926578b2688defa7e6e48697ad1beae007f7ddadf68728767505f686b08629f \
+    --hash=sha256:f9893fa230e2b75b0fa675010db4acb144f4d49ea0aba6ac40c19a59138c78f2
     # via -r requirements.in
 msgpack==1.0.4 \
     --hash=sha256:002b5c72b6cd9b4bafd790f364b8480e859b4712e91f43014fe01e4f957b8467 \
