@@ -140,9 +140,9 @@ dask[distributed]==2022.9.0 \
     # via
     #   -r requirements.in
     #   distributed
-db-dtypes==1.0.3 \
-    --hash=sha256:3cce84cab13a8687d5295b82ebf0f6c47ea42478ba641a5773c397addfb1b699 \
-    --hash=sha256:a46f85c53b8a242412f037eb6d524ef3adf698c7c1c71db53724bcb54df4e194
+db-dtypes==1.0.4 \
+    --hash=sha256:6527cd2ae956e1d91c6c79387fb2a2217938139efc14449f6c662bd768994e9e \
+    --hash=sha256:996c0250051c0c3faef8a9bd02b30a182d553e6a9b8d34b5344a30fe2fb9de33
     # via -r requirements.in
 distributed==2022.9.0 \
     --hash=sha256:7d0a385d154a28d3a1a3e5a34a9dae13e83fb9e498068f9de8d815dd7895c76d \

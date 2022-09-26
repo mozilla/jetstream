@@ -42,7 +42,7 @@ dask[distributed]==2022.9.0
     # via
     #   distributed
     #   mozilla-jetstream
-db-dtypes==1.0.3
+db-dtypes==1.0.4
     # via mozilla-jetstream
 distributed==2022.9.0
     # via dask
