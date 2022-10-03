@@ -238,7 +238,7 @@ python-dateutil==2.8.2
     # via
     #   google-cloud-bigquery
     #   pandas
-pytz==2022.2.1
+pytz==2022.4
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
