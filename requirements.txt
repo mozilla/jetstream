@@ -1107,9 +1107,9 @@ types-requests==2.28.11 \
     --hash=sha256:7ee827eb8ce611b02b5117cfec5da6455365b6a575f5e3ff19f655ba603e6b4e \
     --hash=sha256:af5f55e803cabcfb836dad752bd6d8a0fc8ef1cd84243061c0e27dee04ccf4fd
     # via -r requirements.in
-types-six==1.16.19 \
-    --hash=sha256:5bd851a00d761c5b5df78a379cb174a9aa63defc8d967600bbb37df607099ed2 \
-    --hash=sha256:c9892951c3fd39e193aa35952049c48b31b56bd9c0bf104eb9735de030f20c8d
+types-six==1.16.21 \
+    --hash=sha256:562b036de1a837eafe164827c5c53d7a8d703a44bb211642932dcd59e9e0f7c9 \
+    --hash=sha256:e4428b56da2505b5de228a3b5603561fa98571540fd75a90306eed8b3016ddf4
     # via -r requirements.in
 types-toml==0.10.8 \
     --hash=sha256:8300fd093e5829eb9c1fba69cee38130347d4b74ddf32d0a7df650ae55c2b599 \
