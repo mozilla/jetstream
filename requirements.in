@@ -144,7 +144,7 @@ mozilla-jetstream-config-parser==2022.8.10
     # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed
-mypy==0.971
+mypy==0.982
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
