@@ -134,6 +134,10 @@ def export_metadata(
     if config.experiment.normandy_slug is None:
         return
 
+    # do not export metadata for confidential experiments
+    if config.experiment.is_private:
+        return
+
     metadata = ExperimentMetadata.from_config(config, analysis_start_time)
 
     storage_client = storage.Client(project_id)

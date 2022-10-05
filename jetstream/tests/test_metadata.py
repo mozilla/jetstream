@@ -281,6 +281,46 @@ def test_export_metadata(mock_storage_client, experiments):
     )
 
 
+@mock.patch("google.cloud.storage.Client")
+def test_export_confidential_metadata(mock_storage_client, experiments):
+    config_str = dedent(
+        """
+        [experiment]
+        end_date = "2021-07-01"
+        is_private = true
+        dataset_id = "test"
+
+        [metrics]
+        weekly = ["view_about_logins", "my_cool_metric"]
+
+        [metrics.my_cool_metric]
+        data_source = "main"
+        select_expression = "{{agg_histogram_mean('payload.content.my_cool_histogram')}}"
+
+        [metrics.my_cool_metric.statistics.bootstrap_mean]
+
+        [metrics.view_about_logins.statistics.bootstrap_mean]
+        """
+    )
+
+    spec = AnalysisSpec.from_dict(toml.loads(config_str))
+    config = spec.resolve(experiments[0], ConfigLoader.configs)
+
+    mock_client = MagicMock()
+    mock_storage_client.return_value = mock_client
+    mock_bucket = MagicMock()
+    mock_client.get_bucket.return_value = mock_bucket
+    mock_blob = MagicMock()
+    mock_bucket.blob.return_value = mock_blob
+    mock_blob.upload_from_string.return_value = ""
+    mock_analysis_start = dt.datetime.now()
+
+    export_metadata(config, "test_bucket", "project", mock_analysis_start)
+
+    mock_client.get_bucket.assert_not_called()
+    mock_bucket.blob.assert_not_called()
+
+
 def test_metadata_schema(experiments):
     schema = json.loads((Path(__file__).parent / "data/Metadata_v1.0.json").read_text())
     converter = cattr.Converter()
