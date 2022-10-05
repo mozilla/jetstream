@@ -58,6 +58,19 @@ class _ConfigLoader:
         self._configs = self.config_collection
         return self._configs
 
+    def with_configs_from(
+        self, repo_urls: Optional[List[str]], is_private: bool = False
+    ) -> "_ConfigLoader":
+        """Load configs from another repository and merge with default configs."""
+        if repo_urls is None:
+            return self
+
+        config_collection = ConfigCollection.from_github_repos(
+            repo_urls=repo_urls, is_private=is_private
+        )
+        self.configs.merge(config_collection)
+        return self
+
     def updated_configs(self, bq_project: str, bq_dataset: str) -> List[Config]:
         """
         Return external configs that have been updated/added and
@@ -198,6 +211,7 @@ ConfigLoader = _ConfigLoader()
 def validate(
     config: Union[Outcome, Config, DefaultConfig, DefinitionConfig],
     experiment: Optional[Experiment] = None,
+    config_getter: _ConfigLoader = ConfigLoader,
 ):
     """Validate and dry run a config."""
     from jetstream.analysis import Analysis
@@ -206,10 +220,10 @@ def validate(
     if isinstance(config, Config) and not (
         isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig)
     ):
-        config.validate(ConfigLoader.configs, experiment)
-        resolved_config = config.spec.resolve(experiment, ConfigLoader.configs)
+        config.validate(config_getter.configs, experiment)
+        resolved_config = config.spec.resolve(experiment, config_getter.configs)
     elif isinstance(config, Outcome):
-        config.validate(ConfigLoader.configs)
+        config.validate(config_getter.configs)
         app_id = PLATFORM_CONFIGS[config.platform].app_id
         dummy_experiment = Experiment(
             experimenter_slug="dummy-experiment",
@@ -227,12 +241,12 @@ def validate(
             outcomes=[],
         )
 
-        spec = AnalysisSpec.default_for_experiment(dummy_experiment, ConfigLoader.configs)
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment, config_getter.configs)
         spec.merge_outcome(config.spec)
         spec.merge_parameters(config.spec.parameters)
-        resolved_config = spec.resolve(dummy_experiment, ConfigLoader.configs)
+        resolved_config = spec.resolve(dummy_experiment, config_getter.configs)
     elif isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig):
-        config.validate(ConfigLoader.configs)
+        config.validate(config_getter.configs)
 
         if config.slug in PLATFORM_CONFIGS:
             app_id = PLATFORM_CONFIGS[config.slug].app_id
@@ -257,9 +271,9 @@ def validate(
             outcomes=[],
         )
 
-        spec = AnalysisSpec.default_for_experiment(dummy_experiment, ConfigLoader.configs)
+        spec = AnalysisSpec.default_for_experiment(dummy_experiment, config_getter.configs)
         spec.merge(config.spec)
-        resolved_config = spec.resolve(dummy_experiment, ConfigLoader.configs)
+        resolved_config = spec.resolve(dummy_experiment, config_getter.configs)
     else:
         raise Exception(f"Unable to validate config: {config}")
 

@@ -496,6 +496,15 @@ date_option = click.option(
     metavar="YYYY-MM-DD",
     required=True,
 )
+config_repos_option = click.option(
+    "--config_repos", "--config-repos", help="URLs to public repos with configs", multiple=True
+)
+private_config_repos_option = click.option(
+    "--private_config_repos",
+    "--private-config-repos",
+    help="URLs to private repos with configs",
+    multiple=True,
+)
 
 
 @cli.command()
@@ -506,6 +515,8 @@ date_option = click.option(
 @bucket_option
 @secret_config_file_option
 @recreate_enrollments_option
+@config_repos_option
+@private_config_repos_option
 @click.pass_context
 def run(
     ctx,
@@ -516,6 +527,8 @@ def run(
     bucket,
     config_file,
     recreate_enrollments,
+    config_repos,
+    private_config_repos,
 ):
     """Runs analysis for the provided date."""
     analysis_executor = AnalysisExecutor(
@@ -526,6 +539,9 @@ def run(
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
         recreate_enrollments=recreate_enrollments,
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
     )
 
     success = analysis_executor.execute(
@@ -553,6 +569,8 @@ def run(
 @cluster_ip_option
 @cluster_cert_option
 @recreate_enrollments_option
+@config_repos_option
+@private_config_repos_option
 def run_argo(
     project_id,
     dataset_id,
@@ -565,6 +583,8 @@ def run_argo(
     cluster_ip,
     cluster_cert,
     recreate_enrollments,
+    config_repos,
+    private_config_repos,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -585,6 +605,9 @@ def run_argo(
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         recreate_enrollments=recreate_enrollments,
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
     ).execute(strategy=strategy)
 
 
@@ -601,6 +624,8 @@ def run_argo(
 @cluster_ip_option
 @cluster_cert_option
 @recreate_enrollments_option
+@config_repos_option
+@private_config_repos_option
 @click.pass_context
 def rerun(
     ctx,
@@ -616,6 +641,8 @@ def rerun(
     cluster_ip,
     cluster_cert,
     recreate_enrollments,
+    config_repos,
+    private_config_repos,
 ):
     """Rerun all available analyses for a specific experiment."""
     strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
@@ -640,6 +667,9 @@ def rerun(
         experiment_slugs=[experiment_slug],
         configuration_map={experiment_slug: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
     ).execute(strategy=strategy)
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
@@ -691,6 +721,8 @@ def export_experiment_logs_to_json(
 @cluster_cert_option
 @return_status_option
 @recreate_enrollments_option
+@config_repos_option
+@private_config_repos_option
 @click.pass_context
 def rerun_config_changed(
     ctx,
@@ -705,12 +737,17 @@ def rerun_config_changed(
     cluster_cert,
     return_status,
     recreate_enrollments,
+    config_repos,
+    private_config_repos,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
     strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     # get experiment-specific external configs
+    ConfigLoader.with_configs_from(config_repos).with_configs_from(
+        private_config_repos, is_private=True
+    )
     updated_configs = ConfigLoader.updated_configs(project_id, dataset_id)
     experiments_with_updated_defaults = ConfigLoader.updated_defaults(project_id, dataset_id)
     experiment_slugs = set(
@@ -736,6 +773,7 @@ def rerun_config_changed(
         date=All,
         experiment_slugs=experiment_slugs,
         recreate_enrollments=recreate_enrollments,
+        config_getter=ConfigLoader,
     ).execute(strategy=strategy)
 
     client = BigQueryClient(project_id, dataset_id)
@@ -748,7 +786,9 @@ def rerun_config_changed(
 
 @cli.command("validate_config")
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
-def validate_config(path: Iterable[os.PathLike]):
+@config_repos_option
+@private_config_repos_option
+def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos):
     """Validate config files."""
     dirty = False
     collection = ExperimentCollection.from_experimenter()
@@ -768,7 +808,13 @@ def validate_config(path: Iterable[os.PathLike]):
             print(f"{config_file} OK")
             continue
         entity = entity_from_path(config_file)
-        call = partial(validate, config=entity)
+        call = partial(
+            validate,
+            config=entity,
+            config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+                private_config_repos, is_private=True
+            ),
+        )
         if (
             isinstance(entity, Config)
             and not isinstance(entity, DefaultConfig)
@@ -778,7 +824,14 @@ def validate_config(path: Iterable[os.PathLike]):
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
                 continue
-            call = partial(validate, config=entity, experiment=experiments[0])
+            call = partial(
+                validate,
+                config=entity,
+                config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+                    private_config_repos, is_private=True
+                ),
+                experiment=experiments[0],
+            )
         try:
             call()
         except DryRunFailedError as e:
@@ -800,8 +853,17 @@ def validate_config(path: Iterable[os.PathLike]):
 @experiment_slug_option
 @secret_config_file_option
 @recreate_enrollments_option
+@config_repos_option
+@private_config_repos_option
 def ensure_enrollments(
-    project_id, dataset_id, bucket, experiment_slug, config_file, recreate_enrollments
+    project_id,
+    dataset_id,
+    bucket,
+    experiment_slug,
+    config_file,
+    recreate_enrollments,
+    config_repos,
+    private_config_repos,
 ):
     """Ensure that enrollment tables for experiment are up-to-date or re-create."""
     AnalysisExecutor(
@@ -812,4 +874,7 @@ def ensure_enrollments(
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
     ).ensure_enrollments()
