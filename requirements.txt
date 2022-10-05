@@ -47,9 +47,9 @@ cachetools==5.2.0 \
     # via
     #   -r requirements.in
     #   google-auth
-cattrs==22.2.0 \
-    --hash=sha256:bc12b1f0d000b9f9bee83335887d532a1d3e99a833d1bf0882151c97d3e68c21 \
-    --hash=sha256:f0eed5642399423cf656e7b66ce92cdc5b963ecafd041d1b24d136fdde7acf6d
+cattrs==22.1.0 \
+    --hash=sha256:94b67b64cf92c994f8784c40c082177dc916e0489a73a9a36b24eb18a9db40c6 \
+    --hash=sha256:d55c477b4672f93606e992049f15d526dc7867e6c756cd6256d4af92e2b1e364
     # via
     #   -r requirements.in
     #   mozilla-jetstream-config-parser
@@ -480,9 +480,9 @@ mozanalysis==2022.8.1 \
     --hash=sha256:b6cf47cc309a275a9da3158791b871c747189faad6f19dfe49e2ec5bbc7b2770 \
     --hash=sha256:c31a9c225352b976b37962417d08dcef1d73478a8ebc7950a2ec2d8991b9a5d7
     # via -r requirements.in
-mozilla-jetstream-config-parser==2022.10.1 \
-    --hash=sha256:36a94e64085a1ee34e4158d41d25a133d6123616cb76a0557e4fba9b35201f25 \
-    --hash=sha256:cf625122d8522f089c6b3e8d7c8474aaaa0e5e8f9761c7a3df91155b98e560ff
+mozilla-jetstream-config-parser==2022.10.3 \
+    --hash=sha256:d23d0433fc22c3b5eb20407873850bd2433809bf217f87da22f7fb7ac0d2315a \
+    --hash=sha256:dc31c5afd1465a5e181e64ecc9683ef0a3f87c34b4f020ff67815061baebb705
     # via -r requirements.in
 msgpack==1.0.4 \
     --hash=sha256:002b5c72b6cd9b4bafd790f364b8480e859b4712e91f43014fe01e4f957b8467 \

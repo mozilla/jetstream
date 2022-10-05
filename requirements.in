@@ -16,7 +16,7 @@ black==22.8.0
     # via pytest-black
 cachetools==5.2.0
     # via google-auth
-cattrs==22.2.0
+cattrs==22.1.0
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
@@ -140,7 +140,7 @@ mccabe<0.7.0
 mozanalysis==2022.8.1
     # via mozilla-jetstream
     # via -r -
-mozilla-jetstream-config-parser==2022.10.1
+mozilla-jetstream-config-parser==2022.10.3
     # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed

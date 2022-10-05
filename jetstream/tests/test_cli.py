@@ -101,6 +101,47 @@ class TestCli:
             assert "Skipping example config" in result.output
             assert result.exit_code == 0
 
+    def test_validate_private_example_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                [experiment]
+                start_date = "2020-12-31"
+                end_date = "2021-02-01"
+                proposed_enrollment = 7
+                enrollment_period = 7
+                dataset_id = "test"
+                """
+            )
+
+            with open("my_cool_experiment.toml", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml", "--is_private"])
+
+            assert result.exit_code == 0
+
+    def test_validate_private_example_config_no_dataset(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                [experiment]
+                start_date = "2020-12-31"
+                end_date = "2021-02-01"
+                proposed_enrollment = 7
+                enrollment_period = 7
+                """
+            )
+
+            with open("my_cool_experiment.toml", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml", "--is_private"])
+            assert result.exit_code == 1
+            assert "dataset_id needs to be explicitly set for private experiments" in str(result)
+
     def test_validate_example_outcome_config(self, runner, monkeypatch):
         monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():

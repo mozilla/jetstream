@@ -141,9 +141,13 @@ class SerialExecutorStrategy:
         failed = False
         for config, date in worklist:
             try:
-                analysis = self.analysis_class(
-                    self.project_id, self.dataset_id, config, self.log_config
-                )
+                if config.experiment.is_private or config.experiment.dataset_id is not None:
+                    # private experiments must override the dataset and set it to a private dataset
+                    dataset_id = config.experiment.dataset_id
+                else:
+                    dataset_id = self.dataset_id
+
+                analysis = self.analysis_class(self.project_id, dataset_id, config, self.log_config)
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id, analysis.start_time)
             except ValidationException as e:
@@ -229,16 +233,23 @@ class AnalysisExecutor:
                 worklist.append((config, run_date))
 
             if self.recreate_enrollments:
-                self._delete_enrollment_table(config.experiment)
+                self._delete_enrollment_table(config)
 
         return strategy.execute(worklist, self.configuration_map)
 
-    def _delete_enrollment_table(self, experiment: Experiment) -> None:
+    def _delete_enrollment_table(self, config: AnalysisConfiguration) -> None:
         """Deletes all enrollment table associated with the experiment."""
-        print(f"Delete enrollment table for {experiment.normandy_slug}")
-        client = BigQueryClient(project=self.project_id, dataset=self.dataset_id)
-        normalized_slug = bq_normalize_name(experiment.normandy_slug)
-        enrollments_table = f"{self.project_id}.{self.dataset_id}.enrollments_{normalized_slug}"
+        print(f"Delete enrollment table for {config.experiment.normandy_slug}")
+
+        if config.experiment.is_private or config.experiment.dataset_id is not None:
+            # private experiments must override the dataset and set it to a private dataset
+            dataset_id = config.experiment.dataset_id
+        else:
+            dataset_id = self.dataset_id
+
+        client = BigQueryClient(project=self.project_id, dataset=dataset_id)
+        normalized_slug = bq_normalize_name(config.experiment.normandy_slug)
+        enrollments_table = f"{self.project_id}.{dataset_id}.enrollments_{normalized_slug}"
         client.delete_table(enrollments_table)
 
     def _experiments_to_configs(
@@ -788,7 +799,14 @@ def rerun_config_changed(
 @click.argument("path", type=click.Path(exists=True), nargs=-1)
 @config_repos_option
 @private_config_repos_option
-def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos):
+@click.option(
+    "--is_private",
+    "--is-private",
+    help="Treat the configs as private configs",
+    is_flag=True,
+    default=False,
+)
+def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
     """Validate config files."""
     dirty = False
     collection = ExperimentCollection.from_experimenter()
@@ -807,7 +825,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             FunctionsSpec.from_dict(toml.load(config_file))
             print(f"{config_file} OK")
             continue
-        entity = entity_from_path(config_file)
+        entity = entity_from_path(config_file, is_private)
         call = partial(
             validate,
             config=entity,
