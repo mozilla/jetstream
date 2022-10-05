@@ -1,6 +1,6 @@
 import pytest
-from jetstream.config import ConfigLoader
 
+from jetstream.config import ConfigLoader
 from jetstream.platform import (
     Platform,
     PlatformConfigurationException,

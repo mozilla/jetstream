@@ -16,11 +16,11 @@ black==22.8.0
     # via pytest-black
 cachetools==5.2.0
     # via google-auth
-cattrs==22.1.0
+cattrs==22.2.0
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
-certifi==2022.9.14
+certifi==2022.9.24
     # via requests
 charset-normalizer==2.1.1
     # via requests
@@ -34,21 +34,21 @@ cloudpickle==2.2.0
     # via
     #   dask
     #   distributed
-coverage[toml]==6.4.4
+coverage[toml]==6.5.0
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.9.0
+dask[distributed]==2022.9.2
     # via
     #   distributed
     #   mozilla-jetstream
-db-dtypes==1.0.3
+db-dtypes==1.0.4
     # via mozilla-jetstream
-distributed==2022.9.0
+distributed==2022.9.2
     # via dask
 exceptiongroup==1.0.0rc9
     # via cattrs
-flake8==4.0.1
+flake8<5.0.0
     # via pytest-flake8
 fsspec==2022.8.2
     # via dask
@@ -65,21 +65,21 @@ google-api-core[grpc]==2.10.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.11.0
+google-auth==2.12.0
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.3.2
+google-cloud-bigquery==3.3.3
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.16.0
+google-cloud-bigquery-storage==2.16.1
     # via
     #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.11.2
+google-cloud-container==2.12.1
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -91,7 +91,7 @@ google-cloud-storage==2.5.0
     #   smart-open
 google-crc32c==1.5.0
     # via google-resumable-media
-google-resumable-media==2.3.3
+google-resumable-media==2.4.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -110,7 +110,7 @@ grpcio==1.49.1
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.48.1
+grpcio-status==1.49.1
     # via google-api-core
 heapdict==1.0.1
     # via zict
@@ -135,16 +135,16 @@ locket==1.0.0
     #   partd
 markupsafe==2.1.1
     # via jinja2
-mccabe==0.6.1
+mccabe<0.7.0
     # via flake8
 mozanalysis==2022.8.1
     # via mozilla-jetstream
     # via -r -
-mozilla-jetstream-config-parser==2022.8.10
+mozilla-jetstream-config-parser==2022.10.1
     # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed
-mypy==0.971
+mypy==0.982
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
@@ -189,7 +189,7 @@ proto-plus==1.22.1
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==4.21.6
+protobuf==4.21.7
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -214,9 +214,9 @@ pyasn1==0.4.8
     #   rsa
 pyasn1-modules==0.2.8
     # via google-auth
-pycodestyle==2.8.0
+pycodestyle<2.9.0
     # via flake8
-pyflakes==2.4.0
+pyflakes<2.5.0
     # via flake8
 pyparsing==3.0.9
     # via packaging
@@ -230,7 +230,7 @@ pytest==7.1.3
     #   pytest-flake8
 pytest-black==0.3.12
     # via mozilla-jetstream
-pytest-cov==3.0.0
+pytest-cov==4.0.0
     # via mozilla-jetstream
 pytest-flake8==1.1.1
     # via mozilla-jetstream
@@ -238,7 +238,7 @@ python-dateutil==2.8.2
     # via
     #   google-cloud-bigquery
     #   pandas
-pytz==2022.2.1
+pytz==2022.4
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
@@ -301,17 +301,17 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==3.20.4
     # via mozilla-jetstream
-types-pytz==2022.2.1.0
+types-pytz==2022.4.0.0
     # via mozilla-jetstream
-types-pyyaml==6.0.11
+types-pyyaml==6.0.12
     # via mozilla-jetstream
-types-requests==2.28.11
+types-requests==2.28.11.1
     # via mozilla-jetstream
-types-six==1.16.19
+types-six==1.16.21
     # via mozilla-jetstream
 types-toml==0.10.8
     # via mozilla-jetstream
-types-urllib3==1.26.24
+types-urllib3==1.26.25
     # via types-requests
 typing-extensions==4.3.0
     # via
