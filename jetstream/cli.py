@@ -550,13 +550,13 @@ def run(
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
         recreate_enrollments=recreate_enrollments,
-        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
-            private_config_repos, is_private=True
-        ),
     )
 
     success = analysis_executor.execute(
-        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
+        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"]),
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
     )
 
     sys.exit(0 if success else 1)
@@ -616,10 +616,12 @@ def run_argo(
         date=date,
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         recreate_enrollments=recreate_enrollments,
+    ).execute(
+        strategy=strategy,
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
-    ).execute(strategy=strategy)
+    )
 
 
 @cli.command("rerun")
@@ -678,10 +680,12 @@ def rerun(
         experiment_slugs=[experiment_slug],
         configuration_map={experiment_slug: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
+    ).execute(
+        strategy=strategy,
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
-    ).execute(strategy=strategy)
+    )
     BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
 
 
@@ -784,8 +788,10 @@ def rerun_config_changed(
         date=All,
         experiment_slugs=experiment_slugs,
         recreate_enrollments=recreate_enrollments,
+    ).execute(
+        strategy=strategy,
         config_getter=ConfigLoader,
-    ).execute(strategy=strategy)
+    )
 
     client = BigQueryClient(project_id, dataset_id)
     for slug in experiment_slugs:
@@ -892,7 +898,8 @@ def ensure_enrollments(
         experiment_slugs=[experiment_slug] if experiment_slug else All,
         configuration_map={experiment_slug: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
+    ).ensure_enrollments(
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
-    ).ensure_enrollments()
+    )
