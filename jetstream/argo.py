@@ -133,7 +133,7 @@ class ArgoApi:
     Argo Kubernetes API handler.
 
     Argo exposes 2 REST APIs, a Kubernetes API that is also used by the
-    argo CLI (https://argoproj.github.io/argo/cli/argo/) and since v2.5 an
+    argo CLI (https://argoproj.github.io/argo-workflows/cli/argo/) and since v2.5 an
     argo-server API. This handler sends requests to the Kubernetes API as this does
     not require setting up a load balancer or port-forwarding to access the argo-server API.
     """
