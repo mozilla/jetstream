@@ -58,7 +58,7 @@ gitpython==3.1.27
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
-google-api-core[grpc]==2.10.1
+google-api-core[grpc]==2.10.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
