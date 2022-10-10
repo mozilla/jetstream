@@ -116,7 +116,7 @@ heapdict==1.0.1
     # via zict
 idna==3.4
     # via requests
-importlib-resources==5.9.0
+importlib-resources==5.10.0
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
