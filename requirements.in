@@ -12,7 +12,7 @@ attrs==22.1.0
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
     #   pytest
-black==22.8.0
+black==22.10.0
     # via pytest-black
 cachetools==5.2.0
     # via google-auth
