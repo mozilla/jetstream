@@ -12,7 +12,7 @@ attrs==22.1.0
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
     #   pytest
-black==22.8.0
+black==22.10.0
     # via pytest-black
 cachetools==5.2.0
     # via google-auth
@@ -54,11 +54,11 @@ fsspec==2022.8.2
     # via dask
 gitdb==4.0.9
     # via gitpython
-gitpython==3.1.27
+gitpython==3.1.29
     # via
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
-google-api-core[grpc]==2.10.1
+google-api-core[grpc]==2.10.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -70,16 +70,16 @@ google-auth==2.12.0
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.3.3
+google-cloud-bigquery==3.3.5
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.16.1
+google-cloud-bigquery-storage==2.16.2
     # via
     #   google-cloud-bigquery
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.12.1
+google-cloud-container==2.12.2
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -116,7 +116,7 @@ heapdict==1.0.1
     # via zict
 idna==3.4
     # via requests
-importlib-resources==5.9.0
+importlib-resources==5.10.0
     # via jsonschema
 iniconfig==1.1.1
     # via pytest
@@ -140,7 +140,7 @@ mccabe<0.7.0
 mozanalysis==2022.8.1
     # via mozilla-jetstream
     # via -r -
-mozilla-jetstream-config-parser==2022.10.3
+mozilla-jetstream-config-parser==2022.10.5
     # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed
@@ -150,7 +150,7 @@ mypy-extensions==0.4.3
     # via
     #   black
     #   mypy
-numpy==1.23.3
+numpy==1.23.4
     # via
     #   db-dtypes
     #   mozanalysis
@@ -176,7 +176,7 @@ partd==1.3.0
     # via dask
 pathspec==0.10.1
     # via black
-patsy==0.5.2
+patsy==0.5.3
     # via statsmodels
 pkgutil-resolve-name==1.3.10
     # via jsonschema
@@ -257,7 +257,7 @@ requests==2.28.1
     #   mozilla-jetstream-config-parser
 rsa==4.9
     # via google-auth
-scipy==1.9.1
+scipy==1.9.2
     # via
     #   mozanalysis
     #   statsmodels
@@ -305,7 +305,7 @@ types-pytz==2022.4.0.0
     # via mozilla-jetstream
 types-pyyaml==6.0.12
     # via mozilla-jetstream
-types-requests==2.28.11.1
+types-requests==2.28.11.2
     # via mozilla-jetstream
 types-six==1.16.21
     # via mozilla-jetstream
@@ -313,7 +313,7 @@ types-toml==0.10.8
     # via mozilla-jetstream
 types-urllib3==1.26.25
     # via types-requests
-typing-extensions==4.3.0
+typing-extensions==4.4.0
     # via
     #   black
     #   mypy
@@ -323,5 +323,5 @@ urllib3==1.26.12
     #   requests
 zict==2.2.0
     # via distributed
-zipp==3.8.1
+zipp==3.9.0
     # via importlib-resources
