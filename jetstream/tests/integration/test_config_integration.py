@@ -5,9 +5,9 @@ from textwrap import dedent
 import pytest
 import pytz
 import toml
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.config import Config, DefaultConfig, Outcome
-from jetstream_config_parser.outcome import OutcomeSpec
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.config import Config, DefaultConfig, Outcome
+from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError

@@ -23,16 +23,16 @@ import datetime as dt
 from typing import List, Optional, Union
 
 from google.cloud import bigquery
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.config import (
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.config import (
     Config,
     ConfigCollection,
     DefaultConfig,
     DefinitionConfig,
     Outcome,
 )
-from jetstream_config_parser.data_source import DataSource
-from jetstream_config_parser.experiment import Experiment
+from metric_config_parser.data_source import DataSource
+from metric_config_parser.experiment import Experiment
 from pytz import UTC
 
 from . import bq_normalize_name

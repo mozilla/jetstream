@@ -8,9 +8,9 @@ from unittest.mock import Mock
 import pytest
 import pytz
 import toml
-from jetstream_config_parser import segment
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.metric import AnalysisPeriod
+from metric_config_parser import segment
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.metric import AnalysisPeriod
 
 import jetstream.analysis
 from jetstream.analysis import Analysis

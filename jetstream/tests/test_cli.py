@@ -8,9 +8,9 @@ import attr
 import pytest
 import toml
 from click.testing import CliRunner
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.config import Config, ConfigCollection
-from jetstream_config_parser.experiment import Branch, Experiment
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.config import Config, ConfigCollection
+from metric_config_parser.experiment import Branch, Experiment
 from pytz import UTC
 
 from jetstream import cli, experimenter

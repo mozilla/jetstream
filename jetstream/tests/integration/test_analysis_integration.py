@@ -7,12 +7,12 @@ import dask
 import jsonschema
 import mozanalysis
 import pytz
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.data_source import DataSource
-from jetstream_config_parser.experiment import Branch, Experiment
-from jetstream_config_parser.metric import AnalysisPeriod, Summary
-from jetstream_config_parser.segment import Segment, SegmentDataSource
-from jetstream_config_parser.statistic import Statistic
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.data_source import DataSource
+from metric_config_parser.experiment import Branch, Experiment
+from metric_config_parser.metric import AnalysisPeriod, Summary
+from metric_config_parser.segment import Segment, SegmentDataSource
+from metric_config_parser.statistic import Statistic
 from mozanalysis.metrics import AnalysisBasis, agg_sum
 
 from jetstream.analysis import Analysis

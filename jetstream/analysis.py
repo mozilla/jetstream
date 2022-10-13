@@ -13,9 +13,9 @@ import pytz
 from dask.distributed import Client, LocalCluster
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
-from jetstream_config_parser import metric
-from jetstream_config_parser.analysis import AnalysisConfiguration
-from jetstream_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser import metric
+from metric_config_parser.analysis import AnalysisConfiguration
+from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
 from pandas import DataFrame

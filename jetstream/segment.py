@@ -1,5 +1,5 @@
 import attr
-from jetstream_config_parser import segment
+from metric_config_parser import segment
 from mozanalysis import segments
 
 
