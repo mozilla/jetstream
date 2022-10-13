@@ -26,7 +26,10 @@ jobs:
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest --black --flake8 --ignore=jetstream/tests/integration/
+        command: venv/bin/pytest --black --ignore=jetstream/tests/integration/
+    - run:
+        name: flake8
+        command: venv/bin/flake8 jetstream
     - run:
         name: isort
         command: venv/bin/isort --check jetstream
@@ -65,7 +68,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY_INTEGRATION_TEST" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          venv/bin/pytest --black --flake8 --integration jetstream/tests/integration/
+          venv/bin/pytest --black --integration jetstream/tests/integration/
 
 workflows:
   version: 2.1
