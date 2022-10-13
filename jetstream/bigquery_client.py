@@ -10,7 +10,7 @@ import google.cloud.bigquery.job
 import google.cloud.bigquery.table
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
-from jetstream_config_parser.metric import AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod
 
 from . import bq_normalize_name
 

@@ -3,8 +3,8 @@ from typing import List, Optional
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
-from jetstream_config_parser import data_source
-from jetstream_config_parser import metric as parser_metric
+from metric_config_parser import data_source
+from metric_config_parser import metric as parser_metric
 
 
 class Metric(parser_metric.Metric):

@@ -6,7 +6,7 @@ from typing import Callable, Dict, List, Optional
 import attr
 import cattr
 import google.cloud.storage as storage
-from jetstream_config_parser.analysis import AnalysisConfiguration
+from metric_config_parser.analysis import AnalysisConfiguration
 
 from jetstream import bq_normalize_name
 from jetstream.config import ConfigLoader

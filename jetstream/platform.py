@@ -3,7 +3,7 @@ from typing import Any, Dict, MutableMapping
 
 import attr
 import toml
-from jetstream_config_parser.analysis import AnalysisSpec
+from metric_config_parser.analysis import AnalysisSpec
 
 from jetstream.config import ConfigLoader
 

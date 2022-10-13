@@ -12,7 +12,7 @@ attrs==22.1.0 \
     #   cattrs
     #   jsonschema
     #   mozanalysis
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
     #   pytest
 black==22.10.0 \
     --hash=sha256:14ff67aec0a47c424bc99b71005202045dc09270da44a27848d534600ac64fc7 \
@@ -50,7 +50,7 @@ cattrs==22.1.0 \
     --hash=sha256:d55c477b4672f93606e992049f15d526dc7867e6c756cd6256d4af92e2b1e364
     # via
     #   -r requirements.in
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
 certifi==2022.9.24 \
     --hash=sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14 \
     --hash=sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382
@@ -70,7 +70,7 @@ click==8.1.3 \
     #   -r requirements.in
     #   black
     #   distributed
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
 cloudpickle==2.2.0 \
     --hash=sha256:3f4219469c55453cfe4737e564b67c2a149109dabf7f242478948b895f61106f \
     --hash=sha256:7428798d5926d8fcbfd092d18d01a2a03daf8237d8fcdc8095d256b8490796f0
@@ -177,7 +177,7 @@ gitpython==3.1.29 \
     --hash=sha256:cc36bfc4a3f913e66805a28e84703e419d9c264c1077e537b54f0e1af85dbefd
     # via
     #   -r requirements.in
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
 google-api-core[grpc]==2.10.2 \
     --hash=sha256:10c06f7739fe57781f87523375e8e1a3a4674bf6392cd6131a3222182b971320 \
     --hash=sha256:34f24bd1d5f72a8c4519773d99ca6bf080a6c4e041b4e9f024fe230191dda62e
@@ -412,7 +412,7 @@ jinja2==3.1.2 \
     # via
     #   -r requirements.in
     #   distributed
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
 jsonschema==4.16.0 \
     --hash=sha256:165059f076eff6971bae5b742fc029a7b4ef3f9bcf04c14e4776a7605de14b23 \
     --hash=sha256:9e74b8f9738d6a946d70705dc692b74b5429cd0960d58e79ffecfc43b2221eb9
@@ -478,9 +478,8 @@ mozanalysis==2022.8.1 \
     --hash=sha256:b6cf47cc309a275a9da3158791b871c747189faad6f19dfe49e2ec5bbc7b2770 \
     --hash=sha256:c31a9c225352b976b37962417d08dcef1d73478a8ebc7950a2ec2d8991b9a5d7
     # via -r requirements.in
-mozilla-jetstream-config-parser==2022.10.5 \
-    --hash=sha256:2f26d2f4d443369e58c212aa40ff98482a32990a10ea21167939f4f1a225ca56 \
-    --hash=sha256:5e46af92279eaf08d3cb9477b120699850781d9fa2c8a536d74c236c04c73cf4
+mozilla-metric-config-parser==2022.10.6 \
+    --hash=sha256:77952d4eae93e3805b171f0e2ee1e012abb163d52c37f59f6c3eb39f731886e2
     # via -r requirements.in
 msgpack==1.0.4 \
     --hash=sha256:002b5c72b6cd9b4bafd790f364b8480e859b4712e91f43014fe01e4f957b8467 \
@@ -882,7 +881,7 @@ pytz==2022.4 \
     --hash=sha256:48ce799d83b6f8aab2020e369b627446696619e79645419610b9facd909b3174
     # via
     #   -r requirements.in
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
     #   pandas
 pyyaml==6.0 \
     --hash=sha256:0283c35a6a9fbf047493e3a0ce8d79ef5030852c51e9d911a27badfde0605293 \
@@ -930,7 +929,7 @@ requests==2.28.1 \
     #   google-api-core
     #   google-cloud-bigquery
     #   google-cloud-storage
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
 rsa==4.9 \
     --hash=sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 \
     --hash=sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21
@@ -1024,7 +1023,7 @@ toml==0.10.2 \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
     # via
     #   -r requirements.in
-    #   mozilla-jetstream-config-parser
+    #   mozilla-metric-config-parser
     #   pytest-black
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \

@@ -1,5 +1,5 @@
-from jetstream_config_parser.data_source import DataSource
-from jetstream_config_parser.metric import AnalysisBasis
+from metric_config_parser.data_source import DataSource
+from metric_config_parser.metric import AnalysisBasis
 from mozanalysis.metrics.fenix import uri_count
 
 from jetstream.metric import Metric

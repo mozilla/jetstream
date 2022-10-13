@@ -17,8 +17,8 @@ import mozanalysis.metrics
 import numpy as np
 import statsmodels.api as sm
 from google.cloud import bigquery
-from jetstream_config_parser import metric as parser_metric
-from jetstream_config_parser.experiment import Experiment
+from metric_config_parser import metric as parser_metric
+from metric_config_parser.experiment import Experiment
 from pandas import DataFrame, Series
 from statsmodels.distributions.empirical_distribution import ECDF
 

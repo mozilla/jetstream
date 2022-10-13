@@ -6,7 +6,7 @@ import attr
 import cattr
 import pytz
 import requests
-from jetstream_config_parser import experiment
+from metric_config_parser import experiment
 
 from .util import retry_get
 

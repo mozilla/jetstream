@@ -5,7 +5,7 @@ from typing import Union
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
-from jetstream_config_parser import data_source, exposure_signal
+from metric_config_parser import data_source, exposure_signal
 from mozanalysis import exposure
 
 

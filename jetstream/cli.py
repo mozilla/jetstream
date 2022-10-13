@@ -22,15 +22,15 @@ import attr
 import click
 import pytz
 import toml
-from jetstream_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
-from jetstream_config_parser.config import (
+from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
+from metric_config_parser.config import (
     Config,
     DefaultConfig,
     DefinitionConfig,
     entity_from_path,
 )
-from jetstream_config_parser.experiment import Experiment
-from jetstream_config_parser.function import FunctionsSpec
+from metric_config_parser.experiment import Experiment
+from metric_config_parser.function import FunctionsSpec
 
 from . import bq_normalize_name
 from .analysis import Analysis
