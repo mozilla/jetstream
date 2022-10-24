@@ -323,5 +323,5 @@ urllib3==1.26.12
     #   requests
 zict==2.2.0
     # via distributed
-zipp==3.9.0
+zipp==3.10.0
     # via importlib-resources
