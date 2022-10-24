@@ -140,7 +140,7 @@ mccabe<0.7.0
 mozanalysis==2022.8.1
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2022.10.6
+mozilla-metric-config-parser==2022.10.10
     # via mozilla-jetstream
 msgpack==1.0.4
     # via distributed
