@@ -405,17 +405,6 @@ class Binomial(Statistic):
             ci_width=self.confidence_interval,
         )
 
-class Vigintiles(Deciles):
-    @staticmethod
-    def _decilize(arr):
-        vigintiles = np.arange(1, 20) * 0.1
-        arr_quantiles = np.quantile(arr, vigintiles)
-
-        arr_dict = {
-            f"{label:.1}": arr_quantile for label, arr_quantile in zip(vigintiles, arr_quantiles)
-        }
-        return arr_dict
-
 @attr.s(auto_attribs=True)
 class Deciles(Statistic):
     confidence_interval: float = 0.95
@@ -508,6 +497,17 @@ class Deciles(Statistic):
 
         return stats_results
 
+@attr.s(auto_attribs=True)
+class Vigintiles(Deciles):
+    @staticmethod
+    def _decilize(arr):
+        vigintiles = np.arange(1, 20) * 0.1
+        arr_quantiles = np.quantile(arr, vigintiles)
+
+        arr_dict = {
+            f"{label:.1}": arr_quantile for label, arr_quantile in zip(vigintiles, arr_quantiles)
+        }
+        return arr_dict
 
 class Count(Statistic):
     def apply(
