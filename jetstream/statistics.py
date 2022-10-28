@@ -503,11 +503,11 @@ class Deciles(Statistic):
 class Vigintiles(Deciles):
     @staticmethod
     def _decilize(arr):
-        vigintiles = np.arange(1, 20) * 0.1
+        vigintiles = np.arange(1, 20) * 0.05
         arr_quantiles = np.quantile(arr, vigintiles)
 
         arr_dict = {
-            f"{label:.1}": arr_quantile for label, arr_quantile in zip(vigintiles, arr_quantiles)
+            f"{label:.2}": arr_quantile for label, arr_quantile in zip(vigintiles, arr_quantiles)
         }
         return arr_dict
 
