@@ -154,6 +154,7 @@ exceptiongroup==1.0.0rc9 \
     # via
     #   -r requirements.in
     #   cattrs
+    #   pytest
 flake8==4.0.1 \
     --hash=sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d \
     --hash=sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d
@@ -393,9 +394,7 @@ idna==3.4 \
 importlib-resources==5.10.0 \
     --hash=sha256:c01b1b94210d9849f286b86bb51bcea7cd56dde0600d8db721d7b81330711668 \
     --hash=sha256:ee17ec648f85480d523596ce49eae8ead87d5631ae1551f913c0100b5edd3437
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
@@ -673,9 +672,7 @@ patsy==0.5.3 \
 pkgutil-resolve-name==1.3.10 \
     --hash=sha256:357d6c9e6a755653cfd78893817c0853af365dd51ec97f3d358a819373bbd174 \
     --hash=sha256:ca27cc078d25c5ad71a9de0a7a330146c4e014c2462d9af19c6b828280649c5e
-    # via
-    #   -r requirements.in
-    #   jsonschema
+    # via -r requirements.in
 platformdirs==2.5.2 \
     --hash=sha256:027d8e83a2d7de06bbac4e5ef7e023c02b863d7ea5d079477e722bb41ab25788 \
     --hash=sha256:58c8abb07dcb441e6ee4b11d8df0ac856038f944ab98b7be6b27b2a3c7feef19
@@ -759,9 +756,7 @@ psutil==5.9.2 \
 py==1.11.0 \
     --hash=sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719 \
     --hash=sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378
-    # via
-    #   -r requirements.in
-    #   pytest
+    # via -r requirements.in
 pyarrow==9.0.0 \
     --hash=sha256:0238998dc692efcb4e41ae74738d7c1234723271ccf520bd8312dca07d49ef8d \
     --hash=sha256:02b820ecd1da02012092c180447de449fc688d0c3f9ff8526ca301cdd60dacd0 \
@@ -850,9 +845,9 @@ pyrsistent==0.18.1 \
     # via
     #   -r requirements.in
     #   jsonschema
-pytest==7.1.3 \
-    --hash=sha256:1377bda3466d70b55e3f5cecfa55bb7cfcf219c7964629b967c37cf0bda818b7 \
-    --hash=sha256:4f365fec2dff9c1162f834d9f18af1ba13062db0c708bf7b946f8a5c76180c39
+pytest==7.2.0 \
+    --hash=sha256:892f933d339f068883b6fd5a459f03d85bfcb355e4981e146d2c7616c21fef71 \
+    --hash=sha256:c4014eb40e10f11f355ad4e3c2fb2c6c6d1919c73f3b5a433de4708202cade59
     # via
     #   -r requirements.in
     #   pytest-black
@@ -1130,7 +1125,6 @@ typing-extensions==4.4.0 \
     --hash=sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e
     # via
     #   -r requirements.in
-    #   black
     #   mypy
 urllib3==1.26.12 \
     --hash=sha256:3fa96cf423e6987997fc326ae8df396db2a8b7c667747d47ddd8ecba91f4a74e \
@@ -1148,6 +1142,4 @@ zict==2.2.0 \
 zipp==3.9.0 \
     --hash=sha256:3a7af91c3db40ec72dd9d154ae18e008c69efe8ca88dde4f9a731bb82fe2f9eb \
     --hash=sha256:972cfa31bc2fedd3fa838a51e9bc7e64b7fb725a8c00e7431554311f180e9980
-    # via
-    #   -r requirements.in
-    #   importlib-resources
+    # via -r requirements.in
