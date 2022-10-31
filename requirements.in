@@ -137,7 +137,7 @@ markupsafe==2.1.1
     # via jinja2
 mccabe<0.7.0
     # via flake8
-mozanalysis==2022.8.1
+mozanalysis==2022.10.2
     # via mozilla-jetstream
     # via -r -
 mozilla-metric-config-parser==2022.10.6
