@@ -2,7 +2,7 @@ import json
 import logging
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Callable, Dict, Optional
 
 import cattr
@@ -210,6 +210,7 @@ def export_experiment_logs(
     log_dataset: str,
     log_table: str = "logs",
     analysis_start_time: datetime = None,
+    enrollment_end: datetime = None,
     log_config: Optional[LogConfiguration] = None,
 ):
     """Export experiment logs to GCS."""
@@ -228,12 +229,22 @@ def export_experiment_logs(
 
     bq_log_client = bigquery.Client(log_project)
 
+    # Get errors before the last analysis run but still in the current weekly analysis
+    weekly_analysis_start = analysis_start_time
+    if analysis_start_time is not None and enrollment_end is not None:
+        weekly_start_temp = enrollment_end + timedelta(days=1)
+        while weekly_start_temp < analysis_start_time:
+            weekly_analysis_start = weekly_start_temp
+            weekly_start_temp += timedelta(weeks=1)
+
     experiment_logs, num_logs = _get_experiment_logs_as_json(
-        bq_log_client, log_dataset, log_table, experiment_slug, analysis_start_time
+        bq_log_client, log_dataset, log_table, experiment_slug, weekly_analysis_start
     )
 
     log_text = f"Got {num_logs} logs for experiment {experiment_slug}"
-    log_text += f" (newer than {analysis_start_time})" if analysis_start_time is not None else ""
+    log_text += (
+        f" (newer than {weekly_analysis_start})" if weekly_analysis_start is not None else ""
+    )
     logger.info(log_text)
 
     if experiment_logs is not None:
