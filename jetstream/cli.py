@@ -180,6 +180,7 @@ class SerialExecutorStrategy:
                     log_dataset,
                     log_table,
                     analysis.start_time,
+                    config.experiment.enrollment_end_date,
                     self.log_config,
                 )
         return not failed
@@ -720,6 +721,7 @@ def export_experiment_logs_to_json(
         log_dataset_id,
         log_table_id,
         date,
+        None,
         ctx.obj["log_config"],
     )
 
