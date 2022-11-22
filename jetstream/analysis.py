@@ -583,6 +583,12 @@ class Analysis:
                 for segment in segment_labels:
                     segment_data = self.subset_to_segment(segment, metrics_dataframe)
                     for m in self.config.metrics[period]:
+                        if (
+                            m.metric.analysis_bases != analysis_basis
+                            and analysis_basis not in m.metric.analysis_bases
+                        ):
+                            continue
+
                         segment_results += self.calculate_statistics(
                             m,
                             segment_data,
