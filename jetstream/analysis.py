@@ -593,6 +593,12 @@ class Analysis:
                         segment, metrics_dataframe, analysis_basis
                     )
                     for m in self.config.metrics[period]:
+                        if (
+                            m.metric.analysis_bases != analysis_basis
+                            and analysis_basis not in m.metric.analysis_bases
+                        ):
+                            continue
+
                         segment_results += self.calculate_statistics(
                             m,
                             segment_data,

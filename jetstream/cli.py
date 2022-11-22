@@ -454,8 +454,13 @@ experiment_slug_option = click.option(
     help="Experimenter or Normandy slug of the experiment to (re)run analysis for",
 )
 
-secret_config_file_option = click.option(
-    "--i-solemnly-swear-i-am-up-to-no-good", "config_file", type=click.File("rt"), hidden=True
+config_file_option = click.option(
+    "--i-solemnly-swear-i-am-up-to-no-good",
+    "--config_file",
+    "--config-file",
+    "config_file",
+    type=click.File("rt"),
+    hidden=True,
 )
 
 bucket_option = click.option(
@@ -525,7 +530,7 @@ private_config_repos_option = click.option(
 @date_option
 @experiment_slug_option
 @bucket_option
-@secret_config_file_option
+@config_file_option
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
@@ -630,7 +635,7 @@ def run_argo(
 @project_id_option
 @dataset_id_option
 @bucket_option
-@secret_config_file_option
+@config_file_option
 @argo_option
 @zone_option
 @cluster_id_option
@@ -877,7 +882,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
 @dataset_id_option
 @bucket_option
 @experiment_slug_option
-@secret_config_file_option
+@config_file_option
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
