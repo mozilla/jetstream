@@ -42,21 +42,21 @@ coverage[toml]==6.5.0
     # via
     #   mozilla-jetstream
     #   pytest-cov
-dask[distributed]==2022.10.2
+dask[distributed]==2022.11.1
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.4
     # via mozilla-jetstream
-distributed==2022.10.2
+distributed==2022.11.1
     # via dask
-exceptiongroup==1.0.1
+exceptiongroup==1.0.4
     # via
     #   cattrs
     #   pytest
 flake8==5.0.4
     # via pytest-flake8
-fsspec==2022.10.0
+fsspec==2022.11.0
     # via dask
 gitdb==4.0.9
     # via gitpython
@@ -77,7 +77,7 @@ google-auth==2.14.1
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.3.6
+google-cloud-bigquery==3.4.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -102,7 +102,7 @@ google-resumable-media==2.4.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.56.4
+googleapis-common-protos[grpc]==1.57.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1
@@ -154,13 +154,13 @@ mozilla-metric-config-parser==2022.11.2
     # via mozanalysis
 msgpack==1.0.4
     # via distributed
-mypy==0.990
+mypy==0.991
     # via mozilla-jetstream
 mypy-extensions==0.4.3
     # via
     #   black
     #   mypy
-numpy==1.23.4
+numpy==1.23.5
     # via
     #   db-dtypes
     #   mozanalysis
@@ -184,13 +184,13 @@ pandas==1.5.1
     #   statsmodels
 partd==1.3.0
     # via dask
-pathspec==0.10.1
+pathspec==0.10.2
     # via black
 patsy==0.5.3
     # via statsmodels
 pkgutil-resolve-name==1.3.10
     # via jsonschema
-platformdirs==2.5.3
+platformdirs==2.5.4
     # via black
 pluggy==1.0.0
     # via pytest
@@ -312,19 +312,19 @@ types-futures==3.3.8
     # via mozilla-jetstream
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==3.20.4.4
+types-protobuf==3.20.4.5
     # via mozilla-jetstream
 types-pytz==2022.6.0.1
     # via mozilla-jetstream
 types-pyyaml==6.0.12.2
     # via mozilla-jetstream
-types-requests==2.28.11.4
+types-requests==2.28.11.5
     # via mozilla-jetstream
-types-six==1.16.21.1
+types-six==1.16.21.4
     # via mozilla-jetstream
-types-toml==0.10.8
+types-toml==0.10.8.1
     # via mozilla-jetstream
-types-urllib3==1.26.25.3
+types-urllib3==1.26.25.4
     # via types-requests
 typing-extensions==4.4.0
     # via
