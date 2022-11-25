@@ -9,7 +9,7 @@ import google.cloud.storage as storage
 from metric_config_parser.analysis import AnalysisConfiguration
 
 from jetstream import bq_normalize_name
-from jetstream.config import ConfigLoader
+from jetstream.config import DEFAULT_CONFIG_REPO, ConfigLoader
 from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
@@ -113,10 +113,7 @@ class ExperimentMetadata:
                 != config.experiment.experiment.proposed_enrollment
                 else None,
                 skip=config.experiment.skip,
-                url=config_loader.configs.repo_url
-                + "/blob/main/"
-                + config.experiment.normandy_slug
-                + ".toml",
+                url=DEFAULT_CONFIG_REPO + "/blob/main/" + config.experiment.normandy_slug + ".toml",
             )
 
         return cls(
