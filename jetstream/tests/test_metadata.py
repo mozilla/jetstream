@@ -14,7 +14,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Outcome
 from metric_config_parser.outcome import OutcomeSpec
 
-from jetstream.config import ConfigLoader, _ConfigLoader
+from jetstream.config import DEFAULT_CONFIG_REPO, ConfigLoader, _ConfigLoader
 from jetstream.metadata import ExperimentMetadata, export_metadata
 from jetstream.statistics import StatisticResult
 
@@ -77,8 +77,7 @@ def test_metadata_reference_branch(mock_get, experiments):
 
     assert metadata.external_config.reference_branch == "a"
     assert (
-        metadata.external_config.url
-        == ConfigLoader.configs.repo_url + "/blob/main/normandy-test-slug.toml"
+        metadata.external_config.url == DEFAULT_CONFIG_REPO + "/blob/main/normandy-test-slug.toml"
     )
 
     config_str = dedent(

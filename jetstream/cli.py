@@ -268,7 +268,7 @@ class AnalysisExecutor:
         configs = []
 
         for experiment_config in experiments:
-            spec = AnalysisSpec.default_for_experiment(experiment_config, ConfigLoader.configs)
+            spec = AnalysisSpec.default_for_experiment(experiment_config, config_getter.configs)
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
                 config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
                 spec.merge(AnalysisSpec.from_dict(config_dict))
@@ -278,7 +278,7 @@ class AnalysisExecutor:
                 ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config, ConfigLoader.configs))
+            configs.append(spec.resolve(experiment_config, config_getter.configs))
 
         return configs
 

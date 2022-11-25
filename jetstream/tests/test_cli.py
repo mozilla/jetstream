@@ -346,7 +346,7 @@ class TestAnalysisExecutor:
             date=cli.All,
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
-        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
         assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_end_date_override(self):
@@ -357,7 +357,7 @@ class TestAnalysisExecutor:
             date=dt.datetime(2021, 2, 15, tzinfo=UTC),
             experiment_slugs=cli.All,
         )
-        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
         assert result == []
 
         conf = dedent(
@@ -403,7 +403,7 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader.configs)
+        result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
         assert len(result) == 2
 
     def test_ensure_enrollments(self, monkeypatch):
