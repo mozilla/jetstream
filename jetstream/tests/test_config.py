@@ -1,6 +1,6 @@
 import pytest
 
-from jetstream.config import ConfigLoader
+from jetstream.config import ConfigLoader, _ConfigLoader
 from jetstream.platform import (
     Platform,
     PlatformConfigurationException,
@@ -17,11 +17,12 @@ class TestConfigLoader:
         assert len(configs_collection.configs.configs) > 0
 
     def test_configs_from(self):
-        configs_collection = ConfigLoader.with_configs_from(
+        loader = _ConfigLoader()
+        configs_collection = loader.with_configs_from(
             ["https://github.com/mozilla/jetstream-config"]
         )
         assert configs_collection.configs is not None
-        assert len(configs_collection.configs.configs) == len(ConfigLoader.configs.configs)
+        assert len(configs_collection.configs.configs) == len(loader.configs.configs)
 
     def test_spec_for_experiment(self):
         experiment = ConfigLoader.configs.configs[0].slug

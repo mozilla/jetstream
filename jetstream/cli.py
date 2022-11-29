@@ -36,7 +36,13 @@ from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
 from .bigquery_client import BigQueryClient
-from .config import ConfigLoader, _ConfigLoader, validate
+from .config import (
+    DEFAULT_CONFIG_REPO,
+    METRIC_HUB_REPO,
+    ConfigLoader,
+    _ConfigLoader,
+    validate,
+)
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
@@ -262,7 +268,7 @@ class AnalysisExecutor:
         configs = []
 
         for experiment_config in experiments:
-            spec = AnalysisSpec.default_for_experiment(experiment_config, ConfigLoader.configs)
+            spec = AnalysisSpec.default_for_experiment(experiment_config, config_getter.configs)
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
                 config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
                 spec.merge(AnalysisSpec.from_dict(config_dict))
@@ -272,7 +278,7 @@ class AnalysisExecutor:
                 ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config, ConfigLoader.configs))
+            configs.append(spec.resolve(experiment_config, config_getter.configs))
 
         return configs
 
@@ -514,7 +520,11 @@ date_option = click.option(
     required=True,
 )
 config_repos_option = click.option(
-    "--config_repos", "--config-repos", help="URLs to public repos with configs", multiple=True
+    "--config_repos",
+    "--config-repos",
+    help="URLs to public repos with configs",
+    multiple=True,
+    default=[METRIC_HUB_REPO, DEFAULT_CONFIG_REPO],
 )
 private_config_repos_option = click.option(
     "--private_config_repos",

@@ -9,7 +9,7 @@ import google.cloud.storage as storage
 from metric_config_parser.analysis import AnalysisConfiguration
 
 from jetstream import bq_normalize_name
-from jetstream.config import ConfigLoader
+from jetstream.config import DEFAULT_CONFIG_REPO, ConfigLoader
 from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,10 @@ class ExperimentMetadata:
 
     @classmethod
     def from_config(
-        cls, config: AnalysisConfiguration, analysis_start_time: dt.datetime = None
+        cls,
+        config: AnalysisConfiguration,
+        analysis_start_time: dt.datetime = None,
+        config_loader=ConfigLoader,
     ) -> "ExperimentMetadata":
         all_metrics = [
             summary.metric for period, summaries in config.metrics.items() for summary in summaries
@@ -70,7 +73,7 @@ class ExperimentMetadata:
         }
 
         outcomes = [
-            ConfigLoader.get_outcome(experiment_outcome, config.experiment.app_name)
+            config_loader.get_outcome(experiment_outcome, config.experiment.app_name)
             for experiment_outcome in config.experiment.outcomes
         ]
 
@@ -110,10 +113,7 @@ class ExperimentMetadata:
                 != config.experiment.experiment.proposed_enrollment
                 else None,
                 skip=config.experiment.skip,
-                url=ConfigLoader.configs.repo_url
-                + "/blob/main/"
-                + config.experiment.normandy_slug
-                + ".toml",
+                url=DEFAULT_CONFIG_REPO + "/blob/main/" + config.experiment.normandy_slug + ".toml",
             )
 
         return cls(

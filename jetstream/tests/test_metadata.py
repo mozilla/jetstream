@@ -14,7 +14,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Outcome
 from metric_config_parser.outcome import OutcomeSpec
 
-from jetstream.config import ConfigLoader
+from jetstream.config import DEFAULT_CONFIG_REPO, ConfigLoader, _ConfigLoader
 from jetstream.metadata import ExperimentMetadata, export_metadata
 from jetstream.statistics import StatisticResult
 
@@ -77,8 +77,7 @@ def test_metadata_reference_branch(mock_get, experiments):
 
     assert metadata.external_config.reference_branch == "a"
     assert (
-        metadata.external_config.url
-        == ConfigLoader.configs.repo_url + "/blob/main/normandy-test-slug.toml"
+        metadata.external_config.url == DEFAULT_CONFIG_REPO + "/blob/main/normandy-test-slug.toml"
     )
 
     config_str = dedent(
@@ -142,7 +141,8 @@ def test_metadata_with_outcomes(experiments):
         """
     )
 
-    ConfigLoader.config_collection.outcomes += [
+    loader = _ConfigLoader()
+    loader.configs.outcomes += [
         Outcome(
             slug="performance",
             spec=OutcomeSpec.from_dict(toml.loads(performance_config)),
@@ -158,8 +158,8 @@ def test_metadata_with_outcomes(experiments):
     ]
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[5], ConfigLoader.configs)
-    metadata = ExperimentMetadata.from_config(config)
+    config = spec.resolve(experiments[5], loader.configs)
+    metadata = ExperimentMetadata.from_config(config, config_loader=loader)
 
     assert "view_about_logins" in metadata.metrics
     assert metadata.metrics["view_about_logins"].bigger_is_better
@@ -377,7 +377,8 @@ def test_metadata_schema(experiments):
         """
     )
 
-    ConfigLoader.config_collection.outcomes += [
+    loader = _ConfigLoader()
+    loader.configs.outcomes += [
         Outcome(
             slug="performance",
             spec=OutcomeSpec.from_dict(toml.loads(performance_config)),
@@ -393,7 +394,7 @@ def test_metadata_schema(experiments):
     ]
 
     spec = AnalysisSpec.from_dict(toml.loads(config_str))
-    config = spec.resolve(experiments[5], ConfigLoader.configs)
-    metadata = ExperimentMetadata.from_config(config, dt.datetime.now())
+    config = spec.resolve(experiments[5], loader.configs)
+    metadata = ExperimentMetadata.from_config(config, dt.datetime.now(), config_loader=loader)
 
     jsonschema.validate(converter.unstructure(metadata), schema)

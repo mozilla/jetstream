@@ -37,6 +37,9 @@ from pytz import UTC
 
 from . import bq_normalize_name
 
+DEFAULT_CONFIG_REPO = "https://github.com/mozilla/jetstream-config"
+METRIC_HUB_REPO = "https://github.com/mozilla/metric-hub"
+
 
 class _ConfigLoader:
     """
@@ -54,7 +57,9 @@ class _ConfigLoader:
             return configs
 
         if self.config_collection is None:
-            self.config_collection = ConfigCollection.from_github_repo()
+            self.config_collection = ConfigCollection.from_github_repos(
+                [METRIC_HUB_REPO, DEFAULT_CONFIG_REPO]
+            )
         self._configs = self.config_collection
         return self._configs
 
