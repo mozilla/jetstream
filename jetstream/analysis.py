@@ -326,11 +326,13 @@ class Analysis:
         else:
             segment_data = metrics_data
 
-        if analysis_basis is not None and "exposure_date" in metrics_data.columns:
-            if analysis_basis == AnalysisBasis.ENROLLMENTS:
-                segment_data = metrics_data[metrics_data["exposure_date"].isnull()]
-            elif analysis_basis == AnalysisBasis.EXPOSURES:
-                segment_data = metrics_data[metrics_data["exposure_date"].notnull()]
+        if (
+            analysis_basis == AnalysisBasis.ENROLLMENTS
+            and "enrollment_date" in metrics_data.columns
+        ):
+            segment_data = metrics_data[metrics_data["enrollment_date"].notnull()]
+        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in metrics_data.columns:
+            segment_data = metrics_data[metrics_data["exposure_date"].notnull()]
 
         return segment_data
 
