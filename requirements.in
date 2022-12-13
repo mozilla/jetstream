@@ -330,7 +330,7 @@ typing-extensions==4.4.0
     # via
     #   black
     #   mypy
-urllib3==1.26.12
+urllib3==1.26.13
     # via
     #   distributed
     #   requests
