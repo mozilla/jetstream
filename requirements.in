@@ -135,7 +135,7 @@ jinja2==3.1.2
     #   mozilla-jetstream
     #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
-jsonschema==4.17.0
+jsonschema==4.17.3
     # via mozilla-jetstream
 locket==1.0.0
     # via
