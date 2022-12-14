@@ -112,7 +112,7 @@ class ExperimentV6:
 
     @classmethod
     def from_dict(cls, d) -> "ExperimentV6":
-        converter = cattr.GenConverter()
+        converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime,
             lambda num, _: dt.datetime.strptime(num, "%Y-%m-%d"),
