@@ -7,7 +7,7 @@ orbs:
 jobs:
   build:
     docker:
-    - image: python:3.8
+    - image: python:3.10
     steps:
     - checkout
     - restore_cache:
@@ -22,7 +22,7 @@ jobs:
       run:
         name: Build
         command: |
-          python3.8 -m venv venv/
+          python3.10 -m venv venv/
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest
@@ -42,7 +42,7 @@ jobs:
         key: *cache_key
   integration:
     docker:
-    - image: python:3.8
+    - image: python:3.10
     steps:
     - checkout
     - &skip_forked_pr
@@ -57,7 +57,7 @@ jobs:
       run:
         name: Build
         command: |
-          python3.8 -m venv venv/
+          python3.10 -m venv venv/
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - &pytest_integration_test
       run:

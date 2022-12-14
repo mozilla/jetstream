@@ -52,7 +52,7 @@ def test_metadata_from_config(mock_get, experiments):
     assert metadata.metrics["my_cool_metric"].bigger_is_better is False
     assert metadata.metrics["my_cool_metric"].friendly_name == "Cool metric"
     assert metadata.metrics["my_cool_metric"].description == "Cool cool cool"
-    assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments"]
+    assert metadata.metrics["my_cool_metric"].analysis_bases == ["enrollments", "exposures"]
     assert metadata.external_config is None
     assert metadata.analysis_start_time is None
 
@@ -248,13 +248,13 @@ def test_export_metadata(mock_storage_client, experiments):
                     "friendly_name": "about:logins viewers",
                     "description": "Counts the number of clients that viewed about:logins.\n",
                     "bigger_is_better": true,
-                    "analysis_bases": ["enrollments"]
+                    "analysis_bases": ["enrollments", "exposures"]
                 },
                 "my_cool_metric": {
                     "friendly_name": "My Cool Metric",
                     "description": "",
                     "bigger_is_better": true,
-                    "analysis_bases": ["enrollments"]
+                    "analysis_bases": ["enrollments", "exposures"]
                 }
             },
             "outcomes": {},
