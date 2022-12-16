@@ -67,7 +67,7 @@ def _export_table(
         SELECT *
         FROM {dataset_id}.{table}
     """
-    )  # todo: once experimenter supports different analysis_bases, remove filter
+    )
 
     job.result()
 
