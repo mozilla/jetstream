@@ -173,7 +173,7 @@ def _get_experiment_logs_as_json(
 
     # convert results to JSON
     records = [dict(row) for row in results]
-    converter = cattr.Converter()
+    converter = cattr.GenConverter()
     _datetime_to_json: Callable[[datetime], str] = lambda dt: dt.isoformat()
     converter.register_unstructure_hook(datetime, _datetime_to_json)
 

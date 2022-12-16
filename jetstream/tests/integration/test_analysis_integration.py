@@ -341,9 +341,11 @@ class TestAnalysisIntegration:
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["a", "point"] == 0.0
-        assert count_by_branch.loc["b", "point"] == 0.0
-        assert count_by_branch.loc["b", "analysis_basis"] == "enrollments"
+        assert count_by_branch.loc["a", "point"][0] == 0.0
+        assert count_by_branch.loc["a", "point"][1] == 0.0
+        assert count_by_branch.loc["b", "point"][0] == 0.0
+        assert count_by_branch.loc["b", "point"][1] == 0.0
+        assert len(count_by_branch.loc["b", "analysis_basis"]) == 2
 
         assert (
             client.client.get_table(
@@ -452,18 +454,37 @@ class TestAnalysisIntegration:
 
         # Only one count per segment and branch, please
         assert (
-            stats.query("metric == 'identity' and statistic == 'count'")
+            stats.query(
+                "metric == 'identity' and statistic == 'count' and analysis_basis == 'enrollments'"
+            )
             .groupby(["segment", "analysis_basis", "window_index", "branch"])
             .size()
             == 1
         ).all()
 
-        count_by_branch = stats.query("segment == 'all' and statistic == 'count'").set_index(
-            "branch"
-        )
+        count_by_branch = stats.query(
+            "segment == 'all' and statistic == 'count' and analysis_basis == 'enrollments'"
+        ).set_index("branch")
         assert count_by_branch.loc["branch1", "point"] == 1.0
         assert count_by_branch.loc["branch2", "point"] == 1.0
         assert count_by_branch.loc["branch2", "analysis_basis"] == "enrollments"
+
+        assert (
+            stats.query(
+                "metric == 'identity' and statistic == 'count' and analysis_basis == 'exposures'"
+            )
+            .groupby(["segment", "analysis_basis", "window_index", "branch"])
+            .size()
+            == 1
+        ).all()
+
+        count_by_branch = stats.query(
+            "segment == 'all' and statistic == 'count' and analysis_basis == 'exposures'"
+        ).set_index("branch")
+
+        assert count_by_branch.loc["branch1", "point"] == 1.0
+        assert count_by_branch.loc["branch2", "point"] == 1.0
+        assert count_by_branch.loc["branch2", "analysis_basis"] == "exposures"
 
     def test_logging(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(

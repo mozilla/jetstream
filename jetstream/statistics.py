@@ -144,7 +144,7 @@ class StatisticResultCollection:
 
     data: List[StatisticResult] = attr.Factory(list)
 
-    converter = cattr.Converter()
+    converter = cattr.BaseConverter()
     _normalize_decimal: Callable[[Decimal], str] = lambda x: str(round(x, 6).normalize())
     converter.register_unstructure_hook(Decimal, _normalize_decimal)
     _suppress_infinites: Callable[[float], Optional[float]] = (

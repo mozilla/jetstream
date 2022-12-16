@@ -14,7 +14,7 @@ Make sure `tox` is installed globally (run `brew install tox` or `pip install to
 
 Then, run `tox` from wherever you cloned this repository. (You don't need to install jetstream first.)
 
-To run integration tests, run `tox -e py38-integration`.
+To run integration tests, run `tox -e py310-integration`.
 
 
 ## Local installation
