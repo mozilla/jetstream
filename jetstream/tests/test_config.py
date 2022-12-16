@@ -39,8 +39,16 @@ class TestConfigLoader:
         assert ConfigLoader.get_outcome("non_existing", "foo") is None
 
     def test_get_data_source(self):
-        metric = list(ConfigLoader.configs.definitions[0].spec.metrics.definitions.values())[0]
-        platform = ConfigLoader.configs.definitions[0].platform
+        config_definition = next(
+            (
+                config
+                for config in ConfigLoader.configs.definitions
+                if config.slug == "firefox_desktop"
+            ),
+            None,
+        )
+        metric = list(config_definition.spec.metrics.definitions.values())[0]
+        platform = config_definition.platform
         assert ConfigLoader.get_data_source(metric.data_source.name, platform) is not None
 
     def test_get_nonexisting_data_source(self):
