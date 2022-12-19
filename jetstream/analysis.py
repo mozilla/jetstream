@@ -315,7 +315,9 @@ class Analysis:
         )
 
     @dask.delayed
-    def subset_to_segment(self, segment: str, metrics_data: DataFrame) -> DataFrame:
+    def subset_to_segment(
+        self, segment: str, metrics_data: DataFrame, analysis_basis: AnalysisBasis = None
+    ) -> DataFrame:
         """Return metrics data for segment"""
         if segment != "all":
             if segment not in metrics_data.columns:
@@ -323,6 +325,14 @@ class Analysis:
             segment_data = metrics_data[metrics_data[segment].fillna(False)]
         else:
             segment_data = metrics_data
+
+        if (
+            analysis_basis == AnalysisBasis.ENROLLMENTS
+            and "enrollment_date" in metrics_data.columns
+        ):
+            segment_data = metrics_data[metrics_data["enrollment_date"].notnull()]
+        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in metrics_data.columns:
+            segment_data = metrics_data[metrics_data["exposure_date"].notnull()]
 
         return segment_data
 
@@ -581,7 +591,9 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    segment_data = self.subset_to_segment(segment, metrics_dataframe)
+                    segment_data = self.subset_to_segment(
+                        segment, metrics_dataframe, analysis_basis
+                    )
                     for m in self.config.metrics[period]:
                         if (
                             m.metric.analysis_bases != analysis_basis

@@ -25,4 +25,4 @@ class TestMetric:
 
         assert metric
         assert metric.name == "uri_count"
-        assert metric.analysis_bases == [AnalysisBasis.ENROLLMENTS]
+        assert metric.analysis_bases == [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]

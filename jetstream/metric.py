@@ -15,11 +15,6 @@ class Metric(parser_metric.Metric):
     metadata required for analysis.
     """
 
-    def __attrs_post_init__(self):
-        # Print warning if exposures is used
-        if parser_metric.AnalysisBasis.EXPOSURES in self.analysis_bases:
-            print(f"Using exposures analysis basis for {self.name}. Not supported in Experimenter")
-
     def to_mozanalysis_metric(self) -> mozanalysis.metrics.Metric:
         """Return Jetstream metric as mozanalysis metric."""
         return mozanalysis.metrics.Metric(
@@ -43,7 +38,8 @@ class Metric(parser_metric.Metric):
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
         analysis_bases: Optional[List[parser_metric.AnalysisBasis]] = [
-            parser_metric.AnalysisBasis.ENROLLMENTS
+            parser_metric.AnalysisBasis.ENROLLMENTS,
+            parser_metric.AnalysisBasis.EXPOSURES,
         ],
     ) -> "Metric":
         return cls(
@@ -60,7 +56,8 @@ class Metric(parser_metric.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_bases=analysis_bases or [parser_metric.AnalysisBasis.ENROLLMENTS],
+            analysis_bases=analysis_bases
+            or [parser_metric.AnalysisBasis.ENROLLMENTS, parser_metric.AnalysisBasis.EXPOSURES],
         )
 
     @classmethod

@@ -1,5 +1,4 @@
 import datetime as dt
-from unittest.mock import Mock
 
 import pytest
 import pytz
@@ -12,11 +11,6 @@ def pytest_addoption(parser):
         action="store_true",
         help="Run integration tests",
     )
-
-
-@pytest.fixture(autouse=True)
-def setup(monkeypatch):
-    monkeypatch.setattr("jetstream.metric.Metric.__attrs_post_init__", Mock())
 
 
 @pytest.fixture
