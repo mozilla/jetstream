@@ -225,10 +225,7 @@ distributed==2022.12.0 \
 exceptiongroup==1.0.4 \
     --hash=sha256:542adf9dea4055530d6e1279602fa5cb11dab2395fa650b8674eaec35fc4a828 \
     --hash=sha256:bd14967b79cd9bdb54d97323216f8fdf533e278df937aa2a90089e7d6e06e5ec
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -290,9 +287,9 @@ google-cloud-bigquery-storage==2.16.2 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-container==2.13.0 \
-    --hash=sha256:46ae03b826d75f80d222bd35005628d0ee3ec10bf8079cb3aeb5fd6b679c0052 \
-    --hash=sha256:ec037c6055820e93bc5009340cd0137ce67a5fa2196d1b506754513972ebc39a
+google-cloud-container==2.14.0 \
+    --hash=sha256:199e5afc4c91337ade0ca10f40569a71ca05ecbdee1ab27fc57e7edd11b6dfde \
+    --hash=sha256:aff02675c5c80a112aa7702f3b6c54da5b0cde9aa69ff4e6bfcfdc409fa4b821
     # via -r requirements.in
 google-cloud-core==2.3.2 \
     --hash=sha256:8417acf6466be2fa85123441696c4badda48db314c607cf1e5d543fa8bdc22fe \
@@ -397,9 +394,7 @@ googleapis-common-protos[grpc]==1.57.0 \
 grpc-google-iam-v1==0.12.4 \
     --hash=sha256:312801ae848aeb8408c099ea372b96d253077e7851aae1a9e745df984f81f20c \
     --hash=sha256:3f0ac2c940b9a855d7ce7e31fde28bddb0d9ac362d32d07c67148306931a0e30
-    # via
-    #   -r requirements.in
-    #   google-cloud-container
+    # via -r requirements.in
 grpcio==1.51.1 \
     --hash=sha256:094e64236253590d9d4075665c77b329d707b6fca864dd62b144255e199b4f87 \
     --hash=sha256:0dc5354e38e5adf2498312f7241b14c7ce3484eefa0082db4297189dcbe272e6 \
@@ -1279,12 +1274,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
