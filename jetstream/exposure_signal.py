@@ -1,27 +1,11 @@
-import enum
 from datetime import datetime
-from typing import Union
 
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
 from metric_config_parser import data_source, exposure_signal
+from metric_config_parser.exposure_signal import AnalysisWindow, WindowLimit
 from mozanalysis import exposure
-
-
-class AnalysisWindow(enum.Enum):
-    """
-    Predefined timelimits that can be used for defining when exposures
-    should be computed.
-    """
-
-    ANALYSIS_WINDOW_START = "analysis_window_start"
-    ANALYSIS_WINDOW_END = "analysis_window_end"
-    ENROLLMENT_START = "enrollment_start"
-    ENROLLMENT_END = "enrollment_end"
-
-
-WindowLimit = Union[int, AnalysisWindow, None]
 
 
 @attr.s(auto_attribs=True, frozen=True, slots=True)
