@@ -553,7 +553,7 @@ class Count(Statistic):
         for branch, n in counts.items():
             results.append(
                 StatisticResult(
-                    metric="identity",
+                    metric=metric,
                     statistic="count",
                     parameter=None,
                     branch=branch,
