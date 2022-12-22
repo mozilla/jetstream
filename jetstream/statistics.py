@@ -82,12 +82,14 @@ class Summary:
         self,
         data: DataFrame,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
-        return self.statistic.apply(data, self.metric.name, experiment)
+        return self.statistic.apply(data, self.metric.name, experiment, analysis_basis, segment)
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -193,6 +195,8 @@ class Statistic(ABC):
         df: DataFrame,
         metric: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
@@ -211,6 +215,8 @@ class Statistic(ABC):
                         "experiment": experiment.normandy_slug,
                         "metric": metric,
                         "statistic": self.name(),
+                        "analysis_basis": analysis_basis.value,
+                        "segment": segment,
                     },
                 )
             else:
@@ -222,7 +228,7 @@ class Statistic(ABC):
                 for ref_branch in ref_branch_list:
                     try:
                         statistic_result_collection.data += self.transform(
-                            df, metric, ref_branch, experiment
+                            df, metric, ref_branch, experiment, analysis_basis, segment
                         ).data
                     except Exception as e:
                         logger.exception(
@@ -236,6 +242,8 @@ class Statistic(ABC):
                                 "experiment": experiment.normandy_slug,
                                 "metric": metric,
                                 "statistic": self.name(),
+                                "analysis_basis": analysis_basis.value,
+                                "segment": segment,
                             },
                         )
 
@@ -250,6 +258,8 @@ class Statistic(ABC):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> "StatisticResultCollection":
         return NotImplemented
 
@@ -353,6 +363,8 @@ class BootstrapMean(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -385,6 +397,8 @@ class Binomial(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -427,6 +441,8 @@ class Deciles(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -456,6 +472,8 @@ class Deciles(Statistic):
                         point=decile_result["mean"],
                         lower=lower,
                         upper=upper,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
 
@@ -475,6 +493,8 @@ class Deciles(Statistic):
                         point=decile_result["exp"],
                         lower=lower_abs,
                         upper=upper_abs,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
 
@@ -493,6 +513,8 @@ class Deciles(Statistic):
                         point=decile_result["exp"],
                         lower=lower_rel,
                         upper=upper_rel,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
 
@@ -505,9 +527,16 @@ class Count(Statistic):
         df: DataFrame,
         metric: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ):
         return self.transform(
-            df, metric, experiment.reference_branch or "control", experiment.normandy_slug
+            df,
+            metric,
+            experiment.reference_branch or "control",
+            experiment.normandy_slug,
+            analysis_basis,
+            segment,
         )
 
     def transform(
@@ -516,6 +545,8 @@ class Count(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -532,6 +563,8 @@ class Count(Statistic):
                     point=n,
                     lower=None,
                     upper=None,
+                    analysis_basis=analysis_basis,
+                    segment=segment,
                 )
             )
         return StatisticResultCollection(results)
@@ -578,6 +611,8 @@ class KernelDensityEstimate(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -591,6 +626,8 @@ class KernelDensityEstimate(Statistic):
                         "experiment": experiment.normandy_slug,
                         "metric": metric,
                         "statistic": self.name(),
+                        "analysis_basis": analysis_basis.value,
+                        "segment": segment,
                     },
                 )
             result = kde.evaluate(grid.grid)
@@ -607,6 +644,8 @@ class KernelDensityEstimate(Statistic):
                         point=kde.evaluate(0)[0],
                         lower=None,
                         upper=None,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
             for x, y in zip(grid.grid, result):
@@ -622,6 +661,8 @@ class KernelDensityEstimate(Statistic):
                         point=y,
                         lower=None,
                         upper=None,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
         return StatisticResultCollection(results)
@@ -638,6 +679,8 @@ class EmpiricalCDF(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -650,6 +693,8 @@ class EmpiricalCDF(Statistic):
                         "experiment": experiment.normandy_slug,
                         "metric": metric,
                         "statistic": self.name(),
+                        "analysis_basis": analysis_basis.value,
+                        "segment": segment,
                     },
                 )
             if group[metric].min() == 0 and grid.geometric:
@@ -665,6 +710,8 @@ class EmpiricalCDF(Statistic):
                         point=f(0),
                         lower=None,
                         upper=None,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
             cdf = f(grid.grid)
@@ -681,6 +728,8 @@ class EmpiricalCDF(Statistic):
                         point=y,
                         lower=None,
                         upper=None,
+                        analysis_basis=analysis_basis,
+                        segment=segment,
                     )
                 )
         return StatisticResultCollection(results)

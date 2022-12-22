@@ -274,7 +274,7 @@ class Analysis:
         """
         return (
             Summary.from_config(metric)
-            .run(segment_data, self.config.experiment)
+            .run(segment_data, self.config.experiment, analysis_basis, segment)
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
         )
@@ -287,7 +287,14 @@ class Analysis:
         metric = "identity"
         counts = (
             Count()
-            .transform(segment_data, metric, "*", self.config.experiment.normandy_slug)
+            .transform(
+                segment_data,
+                metric,
+                "*",
+                self.config.experiment.normandy_slug,
+                analysis_basis,
+                segment,
+            )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
         ).to_dict()["data"]

@@ -14,6 +14,8 @@ class TestLoggingIntegration:
             bigquery.SchemaField("experiment", "STRING"),
             bigquery.SchemaField("metric", "STRING"),
             bigquery.SchemaField("statistic", "STRING"),
+            bigquery.SchemaField("analysis_basis", "STRING"),
+            bigquery.SchemaField("segment", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("log_level", "STRING"),
             bigquery.SchemaField("exception", "STRING"),
@@ -49,6 +51,8 @@ class TestLoggingIntegration:
                 "experiment": "test_experiment",
                 "metric": "test_metric",
                 "statistic": "test_statistic",
+                "segment": "all",
+                "analysis_basis": "enrollments",
             },
         )
         logger.exception(
@@ -58,6 +62,8 @@ class TestLoggingIntegration:
                 "experiment": "test_experiment",
                 "metric": "test_metric",
                 "statistic": "test_statistic",
+                "segment": "test_segment",
+                "analysis_basis": "exposures",
             },
         )
 
@@ -76,6 +82,8 @@ class TestLoggingIntegration:
                 and r.metric == "test_metric"
                 and r.statistic == "test_statistic"
                 and r.log_level == "ERROR"
+                and r.segment == "all"
+                and r.analysis_basis == "enrollments"
                 for r in result
             ]
         )
@@ -86,6 +94,8 @@ class TestLoggingIntegration:
                 and r.metric == "test_metric"
                 and r.statistic == "test_statistic"
                 and r.log_level == "ERROR"
+                and r.segment == "test_segment"
+                and r.analysis_basis == "exposures"
                 and "Exception('Some exception')" in r.exception
                 for r in result
             ]

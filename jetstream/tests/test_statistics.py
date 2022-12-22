@@ -5,6 +5,7 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
+from metric_config_parser.metric import AnalysisBasis
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 
 from jetstream.statistics import (
@@ -31,7 +32,9 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
-        result = stat.transform(test_data, "value", "control", None)
+        result = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        )
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -47,7 +50,9 @@ class TestStatistics:
                 "value": [False] * 7 + [True] * 3 + [False] * 5 + [True] * 5,
             }
         )
-        result = stat.transform(test_data, "value", "control", None)
+        result = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        )
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
@@ -63,7 +68,9 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
-        result = stat.transform(test_data, "asdfasdf", "control", None).data
+        result = stat.transform(
+            test_data, "asdfasdf", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).data
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
 
@@ -80,7 +87,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(test_data, "value", experiments[1])
+        result = stat.apply(test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all")
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -143,14 +150,16 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        result = stat.transform(wine, "ash", "*", None).data
+        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").data
         assert len(result) > 0
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        result = stat.transform(wine, "ash", "*", None).to_dict()["data"]
+        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").to_dict()[
+            "data"
+        ]
         for r in result:
             assert isinstance(r["point"], float)
         df = pd.DataFrame(result).astype({"parameter": float})
@@ -158,15 +167,21 @@ class TestStatistics:
 
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
-        result = stat.transform(wine, "ash", "*", experiments[0]).data
+        result = stat.transform(
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+        ).data
         assert len(result) > 0
 
         logstat = EmpiricalCDF(log_space=True)
-        result = logstat.transform(wine, "ash", "*", experiments[0]).data
+        result = logstat.transform(
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+        ).data
         assert len(result) > 0
 
         wine["ash"] = -wine["ash"]
-        result = logstat.transform(wine, "ash", "*", experiments[0]).data
+        result = logstat.transform(
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+        ).data
         assert len(result) > 0
 
         assert stat.name() == "empirical_cdf"
@@ -225,7 +240,7 @@ class TestStatisticExport:
                 "lower": 0,
                 "upper": 0,
                 "segment": "all",
-                "analysis_basis": "exposure",
+                "analysis_basis": "exposures",
                 "window_index": "3",
             },
             {
