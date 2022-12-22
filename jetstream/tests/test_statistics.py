@@ -69,8 +69,9 @@ class TestStatistics:
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
         result = stat.transform(
-            test_data, "asdfasdf", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).data
+        assert all(r.metric == "identity" for r in result)
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
 
