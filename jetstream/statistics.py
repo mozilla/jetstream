@@ -570,6 +570,55 @@ class Count(Statistic):
         return StatisticResultCollection(results)
 
 
+class Sum(Statistic):
+    def apply(
+        self,
+        df: DataFrame,
+        metric: str,
+        experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
+    ):
+        return self.transform(
+            df,
+            metric,
+            experiment.reference_branch or "control",
+            experiment.normandy_slug,
+            analysis_basis,
+            segment,
+        )
+
+    def transform(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
+    ) -> StatisticResultCollection:
+        results = []
+        sums = df.groupby("branch")[metric].sum()
+        for branch, x in sums.items():
+            results.append(
+                StatisticResult(
+                    metric=metric,
+                    statistic="sum",
+                    parameter=None,
+                    branch=branch,
+                    comparison=None,
+                    comparison_to_branch=None,
+                    ci_width=None,
+                    point=float(x),  # Potential loss of precision here.
+                    lower=None,
+                    upper=None,
+                    analysis_basis=analysis_basis,
+                    segment=segment,
+                )
+            )
+        return StatisticResultCollection(results)
+
+
 @attr.s(auto_attribs=True)
 class MakeGridResult:
     grid: np.ndarray

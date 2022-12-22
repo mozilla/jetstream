@@ -15,6 +15,7 @@ from jetstream.statistics import (
     EmpiricalCDF,
     KernelDensityEstimate,
     StatisticResult,
+    Sum,
     _make_grid,
 )
 
@@ -74,6 +75,40 @@ class TestStatistics:
         assert all(r.metric == "identity" for r in result)
         assert [r.point for r in result if r.branch == "treatment"] == [20]
         assert [r.point for r in result if r.branch == "control"] == [10]
+
+    def test_sum_int(self):
+        stat = Sum()
+        treatment_values = [0] * 5 + [-1] * 5 + [1] * 10
+        control_values = [0] * 5 + [1] * 5
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 20 + ["control"] * 10,
+                "value": treatment_values + control_values,
+            }
+        )
+        result = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).data
+        assert all(r.metric == "value" for r in result)
+        assert [r.point for r in result if r.branch == "treatment"] == [5]
+        assert [r.point for r in result if r.branch == "control"] == [5]
+
+    def test_sum_bool(self):
+        stat = Sum()
+        treatment_values = [False] * 5 + [True] * 15
+        control_values = [False] * 5 + [True] * 5
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 20 + ["control"] * 10,
+                "value": treatment_values + control_values,
+            }
+        )
+        result = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).data
+        assert all(r.metric == "value" for r in result)
+        assert [r.point for r in result if r.branch == "treatment"] == [15]
+        assert [r.point for r in result if r.branch == "control"] == [5]
 
     def test_binomial_no_reference_branch(self, experiments):
         stat = Binomial()
