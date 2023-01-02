@@ -198,7 +198,7 @@ pathspec==0.10.3
     # via black
 patsy==0.5.3
     # via statsmodels
-pillow==9.3.0
+pillow==9.4.0
     # via matplotlib
 platformdirs==2.6.0
     # via black
