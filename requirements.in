@@ -15,7 +15,7 @@ attrs==22.2.0
     #   pytest
 black==22.12.0
     # via pytest-black
-cachetools==5.2.0
+cachetools==5.2.1
     # via google-auth
 cattrs==22.2.0
     # via
@@ -40,7 +40,7 @@ cloudpickle==2.2.0
     #   distributed
 contourpy==1.0.6
     # via matplotlib
-coverage[toml]==7.0.2
+coverage[toml]==7.0.4
     # via
     #   mozilla-jetstream
     #   pytest-cov
@@ -78,7 +78,7 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.15.0
+google-auth==2.16.0
     # via
     #   google-api-core
     #   google-cloud-core
@@ -91,7 +91,7 @@ google-cloud-bigquery-storage==2.17.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.14.0
+google-cloud-container==2.15.0
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -107,7 +107,7 @@ google-resumable-media==2.4.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.57.0
+googleapis-common-protos==1.58.0
     # via
     #   google-api-core
     #   grpcio-status
@@ -123,7 +123,7 @@ heapdict==1.0.1
     # via zict
 idna==3.4
     # via requests
-iniconfig==1.1.1
+iniconfig==2.0.0
     # via pytest
 isort==5.11.4
     # via mozilla-jetstream
@@ -199,7 +199,7 @@ platformdirs==2.6.2
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.22.1
+proto-plus==1.22.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
@@ -274,7 +274,7 @@ requests==2.28.1
     #   mozilla-metric-config-parser
 rsa==4.9
     # via google-auth
-scipy==1.9.3
+scipy==1.10.0
     # via
     #   mozanalysis
     #   statsmodels

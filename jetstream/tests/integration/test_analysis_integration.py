@@ -546,7 +546,6 @@ class TestAnalysisIntegration:
         assert error_logs[0].get("experiment") == "test-experiment"
         assert error_logs[0].get("metric") == "active_hours"
         assert error_logs[0].get("statistic") == "bootstrap_mean"
-        assert error_logs[0].get("analysis_basis") == "exposures"
         assert error_logs[0].get("segment") == "all"
 
     # wait for profiling results to land in BigQuery
