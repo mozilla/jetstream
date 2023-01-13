@@ -486,6 +486,28 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch2", "point"] == 1.0
         assert count_by_branch.loc["branch2", "analysis_basis"] == "exposures"
 
+        count_by_branch = stats.query(
+            """
+            segment == 'regular_user_v3' \
+            and statistic == 'count' \
+            and analysis_basis == 'enrollments'
+            """
+        ).set_index("branch")
+
+        assert count_by_branch.loc["branch1", "point"] == 0.0
+        assert count_by_branch.loc["branch2", "point"] == 1.0
+
+        count_by_branch = stats.query(
+            """
+            segment == 'regular_user_v3' \
+            and statistic == 'count' \
+            and analysis_basis == 'exposures'
+            """
+        ).set_index("branch")
+
+        assert count_by_branch.loc["branch1", "point"] == 0.0
+        assert count_by_branch.loc["branch2", "point"] == 1.0
+
     def test_logging(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -517,6 +539,15 @@ class TestAnalysisIntegration:
 
         stat = Statistic(name="bootstrap_mean", params={"confidence_interval": 10})
 
+        test_clients_last_seen = SegmentDataSource(
+            "clients_last_seen", f"`{project_id}.test_data.clients_last_seen`"
+        )
+        regular_user_v3 = Segment(
+            "regular_user_v3",
+            test_clients_last_seen,
+            "COALESCE(LOGICAL_OR(is_regular_user_v3), FALSE)",
+        )
+        config.experiment.segments = [regular_user_v3]
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
         log_config = LogConfiguration(
@@ -538,6 +569,9 @@ class TestAnalysisIntegration:
 
         assert len(logs) >= 1
         error_logs = [log for log in logs if log.get("log_level") == "ERROR"]
+        error_logs.sort(key=lambda k: (k.get("segment"), k.get("analysis_basis")))
+
+        assert len(error_logs) == 4
         assert (
             "Error while computing statistic bootstrap_mean for metric active_hours"
             in error_logs[0].get("message")
@@ -546,7 +580,29 @@ class TestAnalysisIntegration:
         assert error_logs[0].get("experiment") == "test-experiment"
         assert error_logs[0].get("metric") == "active_hours"
         assert error_logs[0].get("statistic") == "bootstrap_mean"
+        assert error_logs[0].get("analysis_basis") == "enrollments"
         assert error_logs[0].get("segment") == "all"
+
+        assert error_logs[1].get("log_level") == "ERROR"
+        assert error_logs[1].get("experiment") == "test-experiment"
+        assert error_logs[1].get("metric") == "active_hours"
+        assert error_logs[1].get("statistic") == "bootstrap_mean"
+        assert error_logs[1].get("analysis_basis") == "exposures"
+        assert error_logs[1].get("segment") == "all"
+
+        assert error_logs[2].get("log_level") == "ERROR"
+        assert error_logs[2].get("experiment") == "test-experiment"
+        assert error_logs[2].get("metric") == "active_hours"
+        assert error_logs[2].get("statistic") == "bootstrap_mean"
+        assert error_logs[2].get("analysis_basis") == "enrollments"
+        assert error_logs[2].get("segment") == "regular_user_v3"
+
+        assert error_logs[3].get("log_level") == "ERROR"
+        assert error_logs[3].get("experiment") == "test-experiment"
+        assert error_logs[3].get("metric") == "active_hours"
+        assert error_logs[3].get("statistic") == "bootstrap_mean"
+        assert error_logs[3].get("analysis_basis") == "exposures"
+        assert error_logs[3].get("segment") == "regular_user_v3"
 
     # wait for profiling results to land in BigQuery
     # todo: improve this test as it might lead to flakiness

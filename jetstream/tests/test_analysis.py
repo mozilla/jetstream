@@ -5,12 +5,13 @@ from datetime import timedelta
 from textwrap import dedent
 from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 import pytz
 import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.metric import AnalysisPeriod
+from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
 
 import jetstream.analysis
 from jetstream.analysis import Analysis
@@ -185,6 +186,71 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     Analysis("test", "test", configured).run(
         current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
     )
+
+
+def test_subset_to_segment(experiments):
+    conf = dedent(
+        """
+        [experiment]
+        segments = ["regular_users_v3"]
+
+        [metrics.active_hours]
+        analysis_bases = ["exposures", "enrollments"]
+        """
+    )
+
+    spec = AnalysisSpec.from_dict(toml.loads(conf))
+    configured = spec.resolve(experiments[0], ConfigLoader.configs)
+    assert isinstance(configured.experiment.segments[0], segment.Segment)
+
+    metrics_data = pd.DataFrame(
+        [
+            (None, None, "1"),
+            (None, "1", None),
+            (True, None, "1"),
+            (True, "1", None),
+            (False, None, "1"),
+            (True, "1", None),
+        ],
+        columns=["regular_users_v3", "enrollment_date", "exposure_date"],
+    )
+    analysis = Analysis("test", "test", configured)
+    all_enrollments = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.ENROLLMENTS)
+    all_enrollments = all_enrollments.compute()
+    assert len(all_enrollments) == 3
+    assert len(all_enrollments[all_enrollments["regular_users_v3"] == True]) == 2  # noqa: E712
+    assert len(all_enrollments[all_enrollments["regular_users_v3"] == False]) == 0  # noqa: E712
+    assert len(all_enrollments[all_enrollments["enrollment_date"] == "1"]) == 3
+
+    all_exposures = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.EXPOSURES)
+    all_exposures = all_exposures.compute()
+    assert len(all_exposures) == 3
+    assert len(all_exposures[all_exposures["regular_users_v3"] == True]) == 1  # noqa: E712
+    assert len(all_exposures[all_exposures["regular_users_v3"] == False]) == 1  # noqa: E712
+    assert len(all_exposures[all_exposures["exposure_date"] == "1"]) == 3
+
+    segment_enrollments = analysis.subset_to_segment(
+        "regular_users_v3", metrics_data, AnalysisBasis.ENROLLMENTS
+    )
+    segment_enrollments = segment_enrollments.compute()
+    assert len(segment_enrollments) == 2
+    assert (
+        len(segment_enrollments[segment_enrollments["regular_users_v3"] == True]) == 2  # noqa: E712
+    )
+    assert (
+        len(segment_enrollments[segment_enrollments["regular_users_v3"] == False])  # noqa: E712
+        == 0
+    )
+    assert len(segment_enrollments[segment_enrollments["enrollment_date"] == "1"]) == 2
+
+    segment_exposures = analysis.subset_to_segment(
+        "regular_users_v3", metrics_data, AnalysisBasis.EXPOSURES
+    )
+    segment_exposures = segment_exposures.compute()
+    assert len(segment_exposures) == 1
+    assert len(segment_exposures[segment_exposures["regular_users_v3"] == True]) == 1  # noqa: E712
+    assert len(segment_exposures[segment_exposures["regular_users_v3"] == False]) == 0  # noqa: E712
+    assert len(segment_exposures[segment_exposures["exposure_date"] == "1"]) == 1
 
 
 def test_is_high_population_check(experiments):
