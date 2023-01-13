@@ -487,14 +487,22 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch2", "analysis_basis"] == "exposures"
 
         count_by_branch = stats.query(
-            "segment == 'regular_user_v3' and statistic == 'count' and analysis_basis == 'enrollments'"
+            """
+            segment == 'regular_user_v3'
+            and statistic == 'count'
+            and analysis_basis == 'enrollments'
+            """
         ).set_index("branch")
 
         assert count_by_branch.loc["branch1", "point"] == 0.0
         assert count_by_branch.loc["branch2", "point"] == 1.0
 
         count_by_branch = stats.query(
-            "segment == 'regular_user_v3' and statistic == 'count' and analysis_basis == 'exposures'"
+            """
+            segment == 'regular_user_v3'
+            and statistic == 'count'
+            and analysis_basis == 'exposures'
+            """
         ).set_index("branch")
 
         assert count_by_branch.loc["branch1", "point"] == 0.0
