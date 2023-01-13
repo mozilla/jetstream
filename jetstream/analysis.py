@@ -335,11 +335,11 @@ class Analysis:
 
         if (
             analysis_basis == AnalysisBasis.ENROLLMENTS
-            and "enrollment_date" in metrics_data.columns
+            and "enrollment_date" in segment_data.columns
         ):
-            segment_data = metrics_data[metrics_data["enrollment_date"].notnull()]
-        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in metrics_data.columns:
-            segment_data = metrics_data[metrics_data["exposure_date"].notnull()]
+            segment_data = segment_data[segment_data["enrollment_date"].notnull()]
+        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in segment_data.columns:
+            segment_data = segment_data[segment_data["exposure_date"].notnull()]
 
         return segment_data
 
