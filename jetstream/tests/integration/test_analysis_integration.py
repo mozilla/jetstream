@@ -488,8 +488,8 @@ class TestAnalysisIntegration:
 
         count_by_branch = stats.query(
             """
-            segment == 'regular_user_v3'
-            and statistic == 'count'
+            segment == 'regular_user_v3' \
+            and statistic == 'count' \
             and analysis_basis == 'enrollments'
             """
         ).set_index("branch")
@@ -499,8 +499,8 @@ class TestAnalysisIntegration:
 
         count_by_branch = stats.query(
             """
-            segment == 'regular_user_v3'
-            and statistic == 'count'
+            segment == 'regular_user_v3' \
+            and statistic == 'count' \
             and analysis_basis == 'exposures'
             """
         ).set_index("branch")
