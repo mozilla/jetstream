@@ -360,6 +360,9 @@ class AnalysisExecutor:
                 else:
                     end_date = self.date
 
+                if self.recreate_enrollments:
+                    self._delete_enrollment_table(config)
+
                 analysis.ensure_enrollments(end_date)
             except Exception as e:
                 logger.exception(
