@@ -38,7 +38,7 @@ cloudpickle==2.2.0
     # via
     #   dask
     #   distributed
-contourpy==1.0.6
+contourpy==1.0.7
     # via matplotlib
 coverage[toml]==7.0.4
     # via
