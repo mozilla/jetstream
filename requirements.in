@@ -334,7 +334,7 @@ types-urllib3==1.26.25.4
     # via types-requests
 typing-extensions==4.4.0
     # via mypy
-urllib3==1.26.13
+urllib3==1.26.14
     # via
     #   distributed
     #   requests
