@@ -19,7 +19,7 @@ class TestConfigLoader:
     def test_configs_from(self):
         loader = _ConfigLoader()
         configs_collection = loader.with_configs_from(
-            ["https://github.com/mozilla/jetstream-config"]
+            ["https://github.com/mozilla/metric-hub/tree/main/jetstream"]
         )
         assert configs_collection.configs is not None
         assert len(configs_collection.configs.configs) == len(loader.configs.configs)
