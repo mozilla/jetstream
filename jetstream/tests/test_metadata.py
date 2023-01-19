@@ -14,7 +14,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Outcome
 from metric_config_parser.outcome import OutcomeSpec
 
-from jetstream.config import DEFAULT_CONFIG_REPO, ConfigLoader, _ConfigLoader
+from jetstream.config import METRIC_HUB_REPO, ConfigLoader, _ConfigLoader
 from jetstream.metadata import ExperimentMetadata, export_metadata
 from jetstream.statistics import StatisticResult
 
@@ -77,7 +77,8 @@ def test_metadata_reference_branch(mock_get, experiments):
 
     assert metadata.external_config.reference_branch == "a"
     assert (
-        metadata.external_config.url == DEFAULT_CONFIG_REPO + "/blob/main/normandy-test-slug.toml"
+        metadata.external_config.url
+        == METRIC_HUB_REPO + "/blob/main/jetstream/normandy-test-slug.toml"
     )
 
     config_str = dedent(
@@ -265,7 +266,7 @@ def test_export_metadata(mock_storage_client, experiments):
                 "skip": false,
                 "start_date": null,
                 "url": """
-        + '"https://github.com/mozilla/jetstream-config/blob/main/normandy-test-slug.toml"'
+        + '"https://github.com/mozilla/metric-hub/blob/main/jetstream/normandy-test-slug.toml"'
         + r"""},
             "analysis_start_time": """
         + f'"{mock_analysis_start}"'
