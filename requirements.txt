@@ -298,10 +298,7 @@ distributed==2023.1.0 \
 exceptiongroup==1.1.0 \
     --hash=sha256:327cbda3da756e2de031a3107b81ab7b3770a602c4d16ca618298c526f4bec1e \
     --hash=sha256:bcb67d800a4497e1b404c2dd44fca47d3b7a5e5433dbab67f96c1a685cdfdf23
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -357,9 +354,9 @@ google-cloud-bigquery==3.4.1 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.18.0 \
-    --hash=sha256:2971abf697661e631ee44ea603549cbd2724c2e14ff16cac4c4c4ffb0647124d \
-    --hash=sha256:46772910f70d78265da5e7af4847939aed4bea6e2a64efe1b993c0c686b3af16
+google-cloud-bigquery-storage==2.18.1 \
+    --hash=sha256:5cd3de59ef27606989aff315c6dd2e05931fd0dd90129e616207b444945652a0 \
+    --hash=sha256:ddc97b5186dbde2009cff3254036d99d9b62b5cb737cf369f413a3cdf2ea5ae1
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -1350,12 +1347,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
