@@ -141,7 +141,7 @@ locket==1.0.0
     # via
     #   distributed
     #   partd
-markupsafe==2.1.1
+markupsafe==2.1.2
     # via jinja2
 matplotlib==3.6.3
     # via mozanalysis
