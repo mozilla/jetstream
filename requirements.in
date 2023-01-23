@@ -15,7 +15,7 @@ attrs==22.2.0
     #   pytest
 black==22.12.0
     # via pytest-black
-cachetools==5.2.1
+cachetools==5.3.0
     # via google-auth
 cattrs==22.2.0
     # via
