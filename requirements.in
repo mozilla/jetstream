@@ -152,7 +152,7 @@ mozanalysis==2022.12.1
     # via -r -
 mozilla-jetstream-config-parser==2022.10.6
     # via mozilla-jetstream
-mozilla-metric-config-parser==2023.1.1
+mozilla-metric-config-parser==2023.1.2
     # via mozanalysis
 msgpack==1.0.4
     # via distributed
