@@ -69,6 +69,27 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY_INTEGRATION_TEST" > "$GOOGLE_APPLICATION_CREDENTIALS"
           venv/bin/pytest --black --integration jetstream/tests/integration/
+  deploy:
+    docker:
+      - image: python:3.10
+    steps:
+      - checkout
+      - run:
+          name: Install deployment tools
+          command: |
+            pip install --upgrade setuptools wheel twine
+      - run:
+          name: Create the distribution files
+          command: |
+            python setup.py sdist bdist_wheel
+      - run:
+          name: Upload to PyPI
+          command: |
+            # Relies on the TWINE_USERNAME and TWINE_PASSWORD environment variables configured at:
+            #   https://app.circleci.com/settings/project/github/mozilla/jetstream/environment-variables
+            # For more on twine, see:
+            #   https://twine.readthedocs.io/en/latest/
+            twine upload --skip-existing dist/*
 
 workflows:
   version: 2.1
@@ -85,3 +106,12 @@ workflows:
             branches:
               only:
                 main
+  tagged-deploy:
+    jobs:
+      - deploy:
+          filters:
+            tags:
+              only: /[0-9]{4}.[0-9]{1,2}.[0-9]+/  # Calver: YYYY.M.MINOR
+            branches:
+              # Ignore all branches; this workflow should only run for tags.
+              ignore: /.*/
