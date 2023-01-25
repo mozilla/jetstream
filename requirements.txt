@@ -749,9 +749,9 @@ mozilla-jetstream-config-parser==2022.10.6 \
     --hash=sha256:11d028ae4db616de786c292db9831c60cceb07181a24f14f3dd84bad7f50be8b \
     --hash=sha256:1688fb61f1a7344ccea45561b29e24542dc737426e564c584ac3470a97beb126
     # via -r requirements.in
-mozilla-metric-config-parser==2023.1.2 \
-    --hash=sha256:5a6c7feeb53514dfd3bf7d29c70a3fd0da2ace34d5b28b00bdd94404afd1804e \
-    --hash=sha256:750e9628d837d8f9a8b95595daa12a20589c407915f1157450eace1cf45246c5
+mozilla-metric-config-parser==2023.1.4 \
+    --hash=sha256:405a0130cded473c6cbf61a4c8d8f3e1fd514426ea92ab9ef9cfeb6b68df918e \
+    --hash=sha256:b344defc98f5ecf8bc7496d7db08f6693634c9f266ea261d94be15f9d38e272b
     # via
     #   -r requirements.in
     #   mozanalysis
