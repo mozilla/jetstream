@@ -215,7 +215,7 @@ protobuf==4.21.12
     #   proto-plus
 psutil==5.9.4
     # via distributed
-pyarrow==10.0.1
+pyarrow==11.0.0
     # via
     #   db-dtypes
     #   mozanalysis
