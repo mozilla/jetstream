@@ -556,6 +556,12 @@ def run(
     private_config_repos,
 ):
     """Runs analysis for the provided date."""
+    if len(experiment_slug) > 1 and config_file:
+        raise ValueError(
+            "Cannot process multiple experiments with custom configs. "
+            "Trigger separate runs for experiments with custom configs"
+        )
+
     analysis_executor = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
@@ -676,6 +682,12 @@ def rerun(
     private_config_repos,
 ):
     """Rerun all available analyses for a specific experiment."""
+    if len(experiment_slug) > 1 and config_file:
+        raise ValueError(
+            "Cannot rerun multiple experiments with custom configs. "
+            "Trigger separate reruns for experiments with custom configs"
+        )
+
     strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     if argo:
@@ -709,7 +721,7 @@ def rerun(
         BigQueryClient(project_id, dataset_id).touch_tables(slug)
 
     if return_status:
-        sys.exit(0 if success else 1)
+        sys.exit(not success)
 
 
 @cli.command()
@@ -916,6 +928,12 @@ def ensure_enrollments(
     private_config_repos,
 ):
     """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+    if len(experiment_slug) > 1 and config_file:
+        raise ValueError(
+            "Cannot process multiple experiments with custom configs. "
+            "Trigger separate runs for experiments with custom configs"
+        )
+
     AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
