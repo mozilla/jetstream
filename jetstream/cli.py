@@ -454,6 +454,7 @@ cluster_id_option = click.option(
 experiment_slug_option = click.option(
     "--experiment_slug",
     "--experiment-slug",
+    multiple=True,
     help="Experimenter or Normandy slug of the experiment to (re)run analysis for",
 )
 
@@ -560,8 +561,10 @@ def run(
         dataset_id=dataset_id,
         bucket=bucket,
         date=date,
-        experiment_slugs=[experiment_slug] if experiment_slug else All,
-        configuration_map={experiment_slug: config_file} if experiment_slug and config_file else {},
+        experiment_slugs=experiment_slug if experiment_slug else All,
+        configuration_map={experiment_slug[0]: config_file}
+        if experiment_slug and config_file
+        else {},
         recreate_enrollments=recreate_enrollments,
     )
 
@@ -627,7 +630,7 @@ def run_argo(
         dataset_id=dataset_id,
         bucket=bucket,
         date=date,
-        experiment_slugs=[experiment_slug] if experiment_slug else All,
+        experiment_slugs=experiment_slug if experiment_slug else All,
         recreate_enrollments=recreate_enrollments,
     ).execute(
         strategy=strategy,
@@ -649,6 +652,7 @@ def run_argo(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
+@return_status_option
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
@@ -666,6 +670,7 @@ def rerun(
     monitor_status,
     cluster_ip,
     cluster_cert,
+    return_status,
     recreate_enrollments,
     config_repos,
     private_config_repos,
@@ -685,13 +690,13 @@ def rerun(
             cluster_cert=cluster_cert,
         )
 
-    AnalysisExecutor(
+    success = AnalysisExecutor(
         project_id=project_id,
         dataset_id=dataset_id,
         bucket=bucket,
         date=All,
-        experiment_slugs=[experiment_slug],
-        configuration_map={experiment_slug: config_file} if config_file else None,
+        experiment_slugs=experiment_slug,
+        configuration_map={experiment_slug[0]: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
     ).execute(
         strategy=strategy,
@@ -699,7 +704,12 @@ def rerun(
             private_config_repos, is_private=True
         ),
     )
-    BigQueryClient(project_id, dataset_id).touch_tables(experiment_slug)
+
+    for slug in experiment_slug:
+        BigQueryClient(project_id, dataset_id).touch_tables(slug)
+
+    if return_status:
+        sys.exit(0 if success else 1)
 
 
 @cli.command()
@@ -709,7 +719,8 @@ def rerun(
 @experiment_slug_option
 def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
     """Export all tables as JSON to a GCS bucket."""
-    export_statistics_tables(project_id, dataset_id, bucket, experiment_slug)
+    for slug in experiment_slug:
+        export_statistics_tables(project_id, dataset_id, bucket, slug)
 
 
 @cli.command()
@@ -725,17 +736,18 @@ def export_experiment_logs_to_json(
     ctx, log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
-    export_experiment_logs(
-        project_id,
-        bucket,
-        experiment_slug,
-        log_project_id,
-        log_dataset_id,
-        log_table_id,
-        date,
-        None,
-        ctx.obj["log_config"],
-    )
+    for slug in experiment_slug:
+        export_experiment_logs(
+            project_id,
+            bucket,
+            slug,
+            log_project_id,
+            log_dataset_id,
+            log_table_id,
+            date,
+            None,
+            ctx.obj["log_config"],
+        )
 
 
 @cli.command()
@@ -909,8 +921,8 @@ def ensure_enrollments(
         dataset_id=dataset_id,
         bucket=bucket,
         date=AnalysisExecutor._today(),
-        experiment_slugs=[experiment_slug] if experiment_slug else All,
-        configuration_map={experiment_slug: config_file} if config_file else None,
+        experiment_slugs=experiment_slug if experiment_slug else All,
+        configuration_map={experiment_slug[0]: config_file} if config_file else None,
         recreate_enrollments=recreate_enrollments,
     ).ensure_enrollments(
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
