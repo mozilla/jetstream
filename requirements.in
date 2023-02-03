@@ -10,17 +10,15 @@ attrs==22.2.0
     #   jsonschema
     #   mozanalysis
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
     #   pytest
-black==22.12.0
+black==23.1.0
     # via pytest-black
 cachetools==5.3.0
     # via google-auth
 cattrs==22.2.0
     # via
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
 certifi==2022.12.7
     # via requests
@@ -32,7 +30,6 @@ click==8.1.3
     #   dask
     #   distributed
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
 cloudpickle==2.2.1
     # via
@@ -40,19 +37,19 @@ cloudpickle==2.2.1
     #   distributed
 contourpy==1.0.7
     # via matplotlib
-coverage[toml]==7.0.5
+coverage[toml]==7.1.0
     # via
     #   mozilla-jetstream
     #   pytest-cov
 cycler==0.11.0
     # via matplotlib
-dask[distributed]==2023.1.0
+dask[distributed]==2023.1.1
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.5
     # via mozilla-jetstream
-distributed==2023.1.0
+distributed==2023.1.1
     # via dask
 exceptiongroup==1.1.0
     # via
@@ -69,7 +66,6 @@ gitdb==4.0.10
 gitpython==3.1.30
     # via
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
 google-api-core[grpc]==2.11.0
     # via
@@ -83,7 +79,7 @@ google-auth==2.16.0
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.4.2
+google-cloud-bigquery==3.5.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -91,7 +87,7 @@ google-cloud-bigquery-storage==2.18.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.17.1
+google-cloud-container==2.17.2
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -125,13 +121,12 @@ idna==3.4
     # via requests
 iniconfig==2.0.0
     # via pytest
-isort==5.11.4
+isort==5.12.0
     # via mozilla-jetstream
 jinja2==3.1.2
     # via
     #   distributed
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
 jsonschema==4.17.3
     # via mozilla-jetstream
@@ -150,10 +145,10 @@ mccabe==0.7.0
 mozanalysis==2022.12.1
     # via mozilla-jetstream
     # via -r -
-mozilla-jetstream-config-parser==2022.10.6
-    # via mozilla-jetstream
 mozilla-metric-config-parser==2023.1.4
-    # via mozanalysis
+    # via
+    #   mozanalysis
+    #   mozilla-jetstream
 msgpack==1.0.4
     # via distributed
 mypy==0.991
@@ -175,6 +170,7 @@ numpy==1.24.1
     #   statsmodels
 packaging==23.0
     # via
+    #   black
     #   dask
     #   db-dtypes
     #   distributed
@@ -189,7 +185,7 @@ pandas==1.5.3
     #   statsmodels
 partd==1.3.0
     # via dask
-pathspec==0.10.3
+pathspec==0.11.0
     # via black
 patsy==0.5.3
     # via statsmodels
@@ -215,7 +211,7 @@ protobuf==4.21.12
     #   proto-plus
 psutil==5.9.4
     # via distributed
-pyarrow==10.0.1
+pyarrow==11.0.0
     # via
     #   db-dtypes
     #   mozanalysis
@@ -254,7 +250,6 @@ python-dateutil==2.8.2
 pytz==2022.7.1
     # via
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
     #   pandas
 pyyaml==6.0
@@ -268,7 +263,6 @@ requests==2.28.2
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
 rsa==4.9
     # via google-auth
@@ -296,7 +290,6 @@ tblib==1.7.0
 toml==0.10.2
     # via
     #   mozilla-jetstream
-    #   mozilla-jetstream-config-parser
     #   mozilla-metric-config-parser
     #   pytest-black
 tomli==2.0.1
@@ -316,17 +309,17 @@ types-futures==3.3.8
     # via mozilla-jetstream
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==4.21.0.3
+types-protobuf==4.21.0.4
     # via mozilla-jetstream
 types-pytz==2022.7.1.0
     # via mozilla-jetstream
-types-pyyaml==6.0.12.3
+types-pyyaml==6.0.12.4
     # via mozilla-jetstream
 types-requests==2.28.11.8
     # via mozilla-jetstream
 types-six==1.16.21.4
     # via mozilla-jetstream
-types-toml==0.10.8.1
+types-toml==0.10.8.2
     # via mozilla-jetstream
 types-urllib3==1.26.25.4
     # via types-requests

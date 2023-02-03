@@ -97,7 +97,7 @@ class ArgoExecutorStrategy:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: Dict[str, List[str]] = {}
-        for (config, date) in worklist:
+        for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
             )
