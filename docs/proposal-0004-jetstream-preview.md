@@ -1,7 +1,7 @@
 # Jetstream Preview
 
 * Date: 2022-01-18
-* State: draft
+* State: Accepted
 
 Related issue: https://github.com/mozilla/jetstream/issues/1528
 
@@ -60,7 +60,7 @@ The dashboard is a static dashboard that has been added to Looker. It has a filt
 
 The queries that get executed will be saved locally into files which makes it possible for users to debug the queries (enrollment and metrics) that get executed.
 
-Running the preview command will also print out cost estimates for running analyses on the experiment.
+Running the preview command will also print out cost estimates for running analyses on the experiment. Errors that happen while running the preview analysis will also be printed out locally.
 
 The jetstream CI will need to be updated to publish jetstream to pypi. This way users do not need to pull in the jetstream repository, but can simply run `pip install mozilla-jetstream`.
 
@@ -68,18 +68,20 @@ Jetstream fetches information on how experiments are configured from the Experim
 
 ### Other ideas
 
-Metadata around cost could be stored in a temporary BigQuery table and displayed on the preview dashboard. It might be possible to also store and display the queries that were run as part of the preview including errors that occured. This would help with debugging queries early on.
+Metadata around cost and query execution times could be stored in a temporary BigQuery table and displayed on the preview dashboard. It might be possible to also store and display the queries that were run as part of the preview including errors that occured. This would help with debugging queries early on.
+
+It would be nice to have a magic link between the query template and the printed query itself with the config references in between so the user can slide around and easily see what might need to change and where. But for something more doable it'd be nice to provide a document that shows how to map these queries back to the configs they were generated from.
 
 ## Experimenter API
 
 Experimenter only has an API that surfaces experiments that are currently live. To run the preview on experiments that are currently in draft mode, changes would need to be made to surface these experiments through the API.
 
-Having access to experiments in preview would also help users to write and validate configs before the experiment has launched. Currently any pull-request adding a config for an experiment that isn't live cannot be merged or even be validated.
+Having access to experiments in preview would also help users to write and validate configs before the experiment has launched. Currently any pull-request adding a config for an experiment that isn't live cannot be merged or even be validated. Experiments in preview will only be used for validation, but will be ignored during the usual jetstream analysis runs.
 
 ## Risks
 
 There are some potential risks with providing users with the option of generating previews:
-* Users might optimize their configs based on the preview data which could impact the experiment results
+* Users might optimize their configs based on the preview data which could impact the experiment results (adding/removing segments until the results match their expectations)
     * This is probably the biggest risk, however users might already do this, but instead rerun the entire experiment multiple times until they see the results they'd like.
 * Creating a preview might take too long
     * Depending on the experiment size, and the provided preview parameters, generating a preview can take a while until results are available. Or in the worst case, if too much data is being processed the preview might not even finish when run locally.
@@ -112,6 +114,10 @@ Pro:
 Con:
 * more complex setup
 * security concerns, who/when is this triggered. We don't want to trigger it for when it gets merged on `main`, but ideally as part of the pull-requests
+
+### Display preview results in Experimenter
+
+A separate Preview Results page could be added to Experimenter showing generated preview results. These results would be pushed to a GCS bucket and would be generated nightly for new experiments. 
 
 ## Related Work
 
