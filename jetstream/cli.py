@@ -688,6 +688,10 @@ def rerun(
             "Trigger separate reruns for experiments with custom configs"
         )
 
+    # update table timestamps which indicate whether an experiment needs to be rerun
+    for slug in experiment_slug:
+        BigQueryClient(project_id, dataset_id).touch_tables(slug)
+
     strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
 
     if argo:
@@ -716,9 +720,6 @@ def rerun(
             private_config_repos, is_private=True
         ),
     )
-
-    for slug in experiment_slug:
-        BigQueryClient(project_id, dataset_id).touch_tables(slug)
 
     if return_status:
         sys.exit(not success)
@@ -807,6 +808,11 @@ def rerun_config_changed(
         experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
     )
 
+    # update the table timestamps which indicate whether a experiment needs to be rerun
+    client = BigQueryClient(project_id, dataset_id)
+    for slug in experiment_slugs:
+        client.touch_tables(slug)
+
     if argo:
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -830,10 +836,6 @@ def rerun_config_changed(
         strategy=strategy,
         config_getter=ConfigLoader,
     )
-
-    client = BigQueryClient(project_id, dataset_id)
-    for slug in experiment_slugs:
-        client.touch_tables(slug)
 
     if return_status:
         sys.exit(0 if success else 1)
