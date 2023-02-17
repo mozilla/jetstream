@@ -72,12 +72,15 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
-        jetstream, --log_to_bigquery, run, 
-        "--date={{inputs.parameters.date}}", 
-        "--experiment_slug={{inputs.parameters.slug}}", 
-        "--dataset_id={{workflow.parameters.dataset_id}}", 
-        "--project_id={{workflow.parameters.project_id}}",
-        "--bucket={{workflow.parameters.bucket}}"
+        jetstream, --log_to_bigquery, run
+      ]
+      args: [ 
+        "--date={{inputs.parameters.date}} 
+        --experiment_slug={{inputs.parameters.slug}} 
+        --dataset_id={{workflow.parameters.dataset_id}} 
+        --project_id={{workflow.parameters.project_id}} 
+        --bucket={{workflow.parameters.bucket}} 
+        {{workfow.parameters.analysis_periods}}"
       ]
       resources:
         requests:

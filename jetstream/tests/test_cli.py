@@ -11,6 +11,7 @@ from click.testing import CliRunner
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Config, ConfigCollection
 from metric_config_parser.experiment import Branch, Experiment
+from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from jetstream import cli, experimenter
@@ -459,7 +460,19 @@ class TestSerialExecutorStrategy:
         config = spec.resolve(experiment, ConfigLoader.configs)
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
         strategy.execute([(config, run_date)])
-        fake_analysis.assert_called_once_with("spam", "eggs", config, None)
+        fake_analysis.assert_called_once_with(
+            "spam",
+            "eggs",
+            config,
+            None,
+            None,
+            [
+                AnalysisPeriod.DAY,
+                AnalysisPeriod.WEEK,
+                AnalysisPeriod.DAYS_28,
+                AnalysisPeriod.OVERALL,
+            ],
+        )
         fake_analysis().run.assert_called_once_with(run_date)
 
 
@@ -480,6 +493,12 @@ class TestArgoExecutorStrategy:
                 None,
                 None,
                 lambda: cli_experiments,
+                [
+                    AnalysisPeriod.DAY,
+                    AnalysisPeriod.WEEK,
+                    AnalysisPeriod.DAYS_28,
+                    AnalysisPeriod.OVERALL,
+                ],
             )
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
             strategy.execute([(config, run_date)])
@@ -494,6 +513,8 @@ class TestArgoExecutorStrategy:
                     "project_id": "spam",
                     "dataset_id": "eggs",
                     "bucket": "bucket",
+                    "analysis_periods": "--analysis_periods=day --analysis_periods=week "
+                    + "--analysis_periods=days28 --analysis_periods=overall",
                 },
                 monitor_status=False,
                 cluster_ip=None,

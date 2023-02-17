@@ -57,6 +57,12 @@ class Analysis:
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
     start_time: Optional[datetime] = None
+    analysis_periods: List[AnalysisPeriod] = [
+        AnalysisPeriod.DAY,
+        AnalysisPeriod.WEEK,
+        AnalysisPeriod.DAYS_28,
+        AnalysisPeriod.OVERALL,
+    ]
 
     @property
     def bigquery(self):
@@ -547,6 +553,10 @@ class Analysis:
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
         for period in self.config.metrics:
+            if period not in self.analysis_periods:
+                logger.info(f"Skipping {period};")
+                continue
+
             segment_results = []
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
