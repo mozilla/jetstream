@@ -31,6 +31,7 @@ from metric_config_parser.config import (
 )
 from metric_config_parser.experiment import Experiment
 from metric_config_parser.function import FunctionsSpec
+from metric_config_parser.metric import AnalysisPeriod
 
 from . import bq_normalize_name
 from .analysis import Analysis
@@ -84,6 +85,12 @@ class ArgoExecutorStrategy:
     cluster_ip: Optional[str] = None
     cluster_cert: Optional[str] = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    analysis_periods: List[AnalysisPeriod] = [
+        AnalysisPeriod.DAY,
+        AnalysisPeriod.WEEK,
+        AnalysisPeriod.DAYS_28,
+        AnalysisPeriod.OVERALL,
+    ]
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
@@ -116,6 +123,9 @@ class ArgoExecutorStrategy:
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
+                "analysis_periods": " ".join(
+                    [f"--analysis_periods={p.value}" for p in self.analysis_periods]
+                ),
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -132,6 +142,12 @@ class SerialExecutorStrategy:
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: _ConfigLoader = ConfigLoader
+    analysis_periods: List[AnalysisPeriod] = [
+        AnalysisPeriod.DAY,
+        AnalysisPeriod.WEEK,
+        AnalysisPeriod.DAYS_28,
+        AnalysisPeriod.OVERALL,
+    ]
 
     def execute(
         self,
@@ -147,7 +163,14 @@ class SerialExecutorStrategy:
                 else:
                     dataset_id = self.dataset_id
 
-                analysis = self.analysis_class(self.project_id, dataset_id, config, self.log_config)
+                analysis = self.analysis_class(
+                    self.project_id,
+                    dataset_id,
+                    config,
+                    self.log_config,
+                    None,
+                    self.analysis_periods,
+                )
                 analysis.run(date)
                 export_metadata(config, self.bucket, self.project_id, analysis.start_time)
             except ValidationException as e:
@@ -530,6 +553,19 @@ private_config_repos_option = click.option(
     help="URLs to private repos with configs",
     multiple=True,
 )
+analysis_periods_option = click.option(
+    "--analysis_periods",
+    "--analysis-periods",
+    help="Analysis periods to run analysis for.",
+    multiple=True,
+    type=AnalysisPeriod,
+    default=[
+        AnalysisPeriod.DAY,
+        AnalysisPeriod.WEEK,
+        AnalysisPeriod.DAYS_28,
+        AnalysisPeriod.OVERALL,
+    ],
+)
 
 
 @cli.command()
@@ -542,6 +578,7 @@ private_config_repos_option = click.option(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@analysis_periods_option
 @click.pass_context
 def run(
     ctx,
@@ -554,6 +591,7 @@ def run(
     recreate_enrollments,
     config_repos,
     private_config_repos,
+    analysis_periods,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -575,7 +613,9 @@ def run(
     )
 
     success = analysis_executor.execute(
-        strategy=SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"]),
+        strategy=SerialExecutorStrategy(
+            project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+        ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
@@ -604,6 +644,7 @@ def run(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@analysis_periods_option
 def run_argo(
     project_id,
     dataset_id,
@@ -618,6 +659,7 @@ def run_argo(
     recreate_enrollments,
     config_repos,
     private_config_repos,
+    analysis_periods,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -629,6 +671,7 @@ def run_argo(
         monitor_status=monitor_status,
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
+        analysis_periods=analysis_periods,
     )
 
     AnalysisExecutor(
@@ -662,6 +705,7 @@ def run_argo(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@analysis_periods_option
 @click.pass_context
 def rerun(
     ctx,
@@ -680,6 +724,7 @@ def rerun(
     recreate_enrollments,
     config_repos,
     private_config_repos,
+    analysis_periods,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -692,7 +737,9 @@ def rerun(
     for slug in experiment_slug:
         BigQueryClient(project_id, dataset_id).touch_tables(slug)
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
+    strategy = SerialExecutorStrategy(
+        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+    )
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -704,6 +751,7 @@ def rerun(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            analysis_periods=analysis_periods,
         )
 
     success = AnalysisExecutor(
@@ -777,6 +825,7 @@ def export_experiment_logs_to_json(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@analysis_periods_option
 @click.pass_context
 def rerun_config_changed(
     ctx,
@@ -793,10 +842,13 @@ def rerun_config_changed(
     recreate_enrollments,
     config_repos,
     private_config_repos,
+    analysis_periods,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
-    strategy = SerialExecutorStrategy(project_id, dataset_id, bucket, ctx.obj["log_config"])
+    strategy = SerialExecutorStrategy(
+        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+    )
 
     # get experiment-specific external configs
     ConfigLoader.with_configs_from(config_repos).with_configs_from(
@@ -823,6 +875,7 @@ def rerun_config_changed(
             monitor_status=monitor_status,
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
+            analysis_periods=analysis_periods,
         )
 
     success = AnalysisExecutor(
