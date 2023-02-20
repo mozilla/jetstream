@@ -151,7 +151,7 @@ mozilla-metric-config-parser==2023.1.4
     #   mozilla-jetstream
 msgpack==1.0.4
     # via distributed
-mypy==1.0.0
+mypy==1.0.1
     # via mozilla-jetstream
 mypy-extensions==1.0.0
     # via
