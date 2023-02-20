@@ -63,7 +63,7 @@ fsspec==2023.1.0
     # via dask
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.30
+gitpython==3.1.31
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
