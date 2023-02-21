@@ -10,6 +10,10 @@ spec:
     - name: project_id
     - name: dataset_id
     - name: bucket
+    - name: analysis_periods_day
+    - name: analysis_periods_week
+    - name: analysis_periods_days28
+    - name: analysis_periods_overall
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -72,15 +76,16 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/jetstream:latest
       command: [
-        jetstream, --log_to_bigquery, run
-      ]
-      args: [ 
-        "--date={{inputs.parameters.date}} 
-        --experiment_slug={{inputs.parameters.slug}} 
-        --dataset_id={{workflow.parameters.dataset_id}} 
-        --project_id={{workflow.parameters.project_id}} 
-        --bucket={{workflow.parameters.bucket}} 
-        {{workfow.parameters.analysis_periods}}"
+        jetstream, --log_to_bigquery, run,
+        "--date={{inputs.parameters.date}}",
+        "--experiment_slug={{inputs.parameters.slug}}",
+        "--dataset_id={{workflow.parameters.dataset_id}}", 
+        "--project_id={{workflow.parameters.project_id}}",
+        "--bucket={{workflow.parameters.bucket}}", 
+        "--analysis_periods={{workflow.parameters.analysis_periods_day}}",
+        "--analysis_periods={{workflow.parameters.analysis_periods_week}}",
+        "--analysis_periods={{workflow.parameters.analysis_periods_days28}}",
+        "--analysis_periods={{workflow.parameters.analysis_periods_overall}}"
       ]
       resources:
         requests:
