@@ -513,8 +513,10 @@ class TestArgoExecutorStrategy:
                     "project_id": "spam",
                     "dataset_id": "eggs",
                     "bucket": "bucket",
-                    "analysis_periods": "--analysis_periods=day --analysis_periods=week "
-                    + "--analysis_periods=days28 --analysis_periods=overall",
+                    "analysis_periods_day": "day",
+                    "analysis_periods_week": "week",
+                    "analysis_periods_days28": "days28",
+                    "analysis_periods_overall": "overall",
                 },
                 monitor_status=False,
                 cluster_ip=None,

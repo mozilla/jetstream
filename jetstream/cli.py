@@ -112,6 +112,9 @@ class ArgoExecutorStrategy:
         experiments_config_list = [
             {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
         ]
+        analysis_period_default = (
+            self.analysis_periods[0] if self.analysis_periods != [] else "days28"
+        )
 
         return submit_workflow(
             project_id=self.project_id,
@@ -123,9 +126,18 @@ class ArgoExecutorStrategy:
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
-                "analysis_periods": " ".join(
-                    [f"--analysis_periods={p.value}" for p in self.analysis_periods]
-                ),
+                "analysis_periods_day": "day"
+                if AnalysisPeriod.DAY in self.analysis_periods
+                else analysis_period_default,
+                "analysis_periods_week": "week"
+                if AnalysisPeriod.WEEK in self.analysis_periods
+                else analysis_period_default,
+                "analysis_periods_days28": "days28"
+                if AnalysisPeriod.DAYS_28 in self.analysis_periods
+                else analysis_period_default,
+                "analysis_periods_overall": "overall"
+                if AnalysisPeriod.OVERALL in self.analysis_periods
+                else analysis_period_default,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
