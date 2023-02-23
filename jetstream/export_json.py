@@ -17,6 +17,7 @@ from jetstream.logging import LogConfiguration
 logger = logging.getLogger(__name__)
 
 EXPERIMENT_LOG_PATH = "errors"
+SKIP_ERROR_TYPES = ["EndedException"]
 
 
 def _get_statistics_tables_last_modified(
@@ -166,6 +167,9 @@ def _get_experiment_logs_as_json(
     if min_timestamp is not None:
         floored_timestamp = min_timestamp.replace(second=0, microsecond=0)
         query_text += f" AND timestamp >= TIMESTAMP('{floored_timestamp}')"
+
+    for exception_type in SKIP_ERROR_TYPES:
+        query_text += f" AND exception_type != '{exception_type}'"
 
     query_text += " ORDER BY timestamp ASC"
 
