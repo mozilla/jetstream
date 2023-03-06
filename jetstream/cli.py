@@ -766,8 +766,11 @@ def rerun(
         )
 
     # update table timestamps which indicate whether an experiment needs to be rerun
+    client = BigQueryClient(project_id, dataset_id)
     for slug in experiment_slug:
-        BigQueryClient(project_id, dataset_id).touch_tables(slug)
+        client.touch_tables(slug)
+        # delete existing tables
+        client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
 
     strategy = SerialExecutorStrategy(
         project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
@@ -902,6 +905,8 @@ def rerun_config_changed(
     client = BigQueryClient(project_id, dataset_id)
     for slug in experiment_slugs:
         client.touch_tables(slug)
+        # delete existing tables
+        client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
 
     if argo:
         strategy = ArgoExecutorStrategy(

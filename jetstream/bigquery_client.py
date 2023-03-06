@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import attr
 import google.cloud.bigquery
@@ -112,3 +112,23 @@ class BigQueryClient:
     def delete_table(self, table_id: str) -> None:
         """Delete the table."""
         self.client.delete_table(table_id, not_found_ok=True)
+
+    def delete_experiment_tables(
+        self, slug: str, analysis_periods: List[AnalysisPeriod], delete_enrollments: bool = False
+    ):
+        """Delete all tables associated with the specified experiment slug."""
+        normalized_slug = bq_normalize_name(slug)
+        analysis_periods_re = "|".join([p.value for p in analysis_periods])
+
+        existing_tables = self.tables_matching_regex(
+            f"^{normalized_slug}_.+_({analysis_periods_re}).*$"
+        )
+        existing_tables += self.tables_matching_regex(
+            f"^statistics_{normalized_slug}_({analysis_periods_re}).*$"
+        )
+
+        if delete_enrollments:
+            existing_tables += self.tables_matching_regex(f"^enrollments_{normalized_slug}$")
+
+        for existing_table in existing_tables:
+            self.delete_table(existing_table)
