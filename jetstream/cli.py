@@ -1,9 +1,10 @@
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from functools import partial
 from pathlib import Path
+from google.cloud import bigquery
 from typing import (
     Callable,
     Dict,
@@ -50,6 +51,9 @@ logger = logging.getLogger(__name__)
 
 
 RECOGNIZED_EXPERIMENT_TYPES = ("pref", "addon", "message", "v6")
+LOOKER_PREVIEW_URL = (
+    "https://mozilla.cloud.looker.com/dashboards/experimentation::jetstream_preview"
+)
 
 
 @attr.s
@@ -482,15 +486,21 @@ class ClickNullableString(click.ParamType):
         return value
 
 
-project_id_option = click.option(
-    "--project_id",
-    "--project-id",
-    default="moz-fx-data-experiments",
-    help="Project to write to",
-)
-dataset_id_option = click.option(
-    "--dataset_id", "--dataset-id", default="mozanalysis", help="Dataset to write to", required=True
-)
+def project_id_option(default="moz-fx-data-experiments"):
+    return click.option(
+        "--project_id",
+        "--project-id",
+        default=default,
+        help="Project to write to",
+    )
+
+
+def dataset_id_option(default="mozanalysis"):
+    click.option(
+        "--dataset_id", "--dataset-id", default=default, help="Dataset to write to", required=True
+    )
+
+
 zone_option = click.option(
     "--zone", default="us-central1-a", help="Kubernetes cluster zone", required=True
 )
@@ -598,11 +608,21 @@ analysis_periods_option = click.option(
         AnalysisPeriod.OVERALL,
     ],
 )
+sql_output_dir_option = click.option(
+    "--sql-output-dir",
+    "--sql_output_dir",
+    type=click.Path(exists=False),
+    help="Write generated SQL to given directory",
+    required=False,
+    show_default=True,
+    default=None,
+    metavar="OUTDIR",
+)
 
 
 @cli.command()
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @date_option
 @experiment_slug_option
 @bucket_option
@@ -657,8 +677,8 @@ def run(
 
 
 @cli.command()
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @click.option(
     "--date",
     type=ClickDate(),
@@ -723,8 +743,8 @@ def run_argo(
 
 @cli.command("rerun")
 @experiment_slug_option
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @bucket_option
 @config_file_option
 @argo_option
@@ -809,8 +829,8 @@ def rerun(
 
 
 @cli.command()
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @bucket_option
 @experiment_slug_option
 def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
@@ -828,7 +848,7 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @log_table_id_option
 @bucket_option
 @experiment_slug_option
-@project_id_option
+@project_id_option()
 @date_option
 @click.pass_context
 def export_experiment_logs_to_json(
@@ -853,8 +873,8 @@ def export_experiment_logs_to_json(
 
 
 @cli.command()
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @bucket_option
 @argo_option
 @zone_option
@@ -1007,8 +1027,8 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
 
 
 @cli.command()
-@project_id_option
-@dataset_id_option
+@project_id_option()
+@dataset_id_option()
 @bucket_option
 @experiment_slug_option
 @config_file_option
@@ -1044,4 +1064,144 @@ def ensure_enrollments(
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
+    )
+
+
+@cli.command()
+@project_id_option(default="mozdata")
+@dataset_id_option(default="tmp")
+@click.option(
+    "--start_date",
+    "--start-date",
+    type=ClickDate(),
+    help="Date for which project should be started to get analyzed. Default: current date - 3 days",
+    metavar="YYYY-MM-DD",
+    required=False,
+)
+@click.option(
+    "--end_date",
+    "--end-date",
+    type=ClickDate(),
+    help="Date for which project should be stop to get analyzed. Default: current date",
+    metavar="YYYY-MM-DD",
+    required=False,
+)
+@click.option(
+    "--num-days",
+    "--num-days",
+    type=int,
+    help="Number of days for which the project be analyzed. Default: 3",
+    default=3,
+    required=False,
+)
+@experiment_slug_option
+@config_file_option
+@config_repos_option
+@private_config_repos_option
+@analysis_periods_option
+@sql_output_dir_option
+@click.option(
+    "--platform",
+    type=str,
+    help="Platform/app to run analysis for. "
+    + "If not specified, use Experimenter API to determine plaftorm",
+    required=False,
+)
+@click.option(
+    "--generate-population",
+    "--generate_population",
+    is_flag=True,
+    default=False,
+    help="Generate a random population sample based on the provided population size. "
+    + "Useful if enrollment hasn't happened yet",
+)
+@click.option(
+    "--population-sample-size",
+    "--population_sample_size",
+    type=float,
+    required=False,
+    default=0.01,
+    help="Generated population sample size. "
+    + "Only used when `--generate-population` is specified. "
+    + "Use floats to specify population sizes in percent, e.g 0.01 == 1% of clients",
+)
+@click.pass_context
+def preview(
+    ctx,
+    project_id,
+    dataset_id,
+    start_date,
+    end_date,
+    num_days,
+    experiment_slug,
+    config_file,
+    config_repos,
+    private_config_repos,
+    analysis_periods,
+    sql_output_dir,
+    platform,
+    generate_population,
+    population_sample_size,
+):
+    """Create a preview for a specific experiment based on a subset of data."""
+    if start_date is None and end_date is None:
+        today_midnight = datetime.combine(datetime.today(), time.min)
+        yesterday_midnight = today_midnight - timedelta(days=1)
+        end_date = yesterday_midnight
+        start_date = end_date - timedelta(days=num_days)
+    elif start_date is None:
+        start_date = end_date - timedelta(days=num_days)
+    else:
+        end_date = start_date + timedelta(days=num_days)
+
+    start_date = pytz.utc.localize(start_date)
+    end_date = pytz.utc.localize(end_date)
+
+    # At least one of `--slug` and `--config-file` is required.  If slug is not
+    # given, find it from the config file.
+    if not experiment_slug:
+        external_config = entity_from_path(Path(config_file))
+        experiment_slug = external_config.slug
+
+    table = bq_normalize_name(experiment_slug)
+
+    # delete previously created preview tables if exist
+    client = BigQueryClient(project_id, dataset_id)
+    client.delete_experiment_tables(experiment_slug, analysis_periods, delete_enrollments=True)
+
+    collection = ExperimentCollection.from_experimenter()
+    experimenter_experiment = collection.with_slug(experiment_slug)
+
+    # todo: query sql output injection function - see opmon
+
+    # todo: generate enrollments where necessary
+    # todo: sampling of enrollments
+    # call ensure_enrollments with a custom enrollment query
+    # set all neceassry config parameters here
+
+    # run preview analysis
+    for date in [
+        start_date + timedelta(days=d) for d in range(0, (end_date - start_date).days + 1)
+    ]:
+        ctx.invoke(
+            run,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            date=date,
+            experiment_slug=experiment_slug,
+            bucket=None,
+            config_file=config_file,
+            recreate_enrollments=True,
+            config_repos=config_repos,
+            private_config_repos=private_config_repos,
+            analysis_periods=analysis_periods,
+        )
+
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    click.echo(
+        "A preview is available at: "
+        + f"{LOOKER_PREVIEW_URL}?Table='{project_id}.{dataset_id}.{table}_statistics'"
+        + f"&Submission+Date={start_date_str}+to+{end_date_str}"
     )

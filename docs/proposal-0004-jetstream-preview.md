@@ -56,7 +56,7 @@ The resulting data artifacts get written into the `mozdata.tmp` dataset by defau
 
 Once jetstream has generated the preview data it will print out a URL to a Looker dashboard. The Looker dashboard allows users to visualize the preview data. 
 
-The dashboard is a static dashboard that has been added to Looker. It has a filter field that will be pre-filled throught the URL pointing to the temporary datasets that have been generated. It will also have filters so users can select the analysis period, analysis basis, segment, metric and statistic they would like to preview. The visualization will be a line graph with confidence intervals that shows a line for every branch and comparison.
+The dashboard is a static dashboard that has been added to Looker. It has a filter field that will be pre-filled through the URL pointing to the temporary datasets that have been generated. It will also have filters so users can select the analysis period, analysis basis, segment, metric and statistic they would like to preview. The visualization will be a line graph with confidence intervals that shows a line for every branch and comparison.
 
 The queries that get executed will be saved locally into files which makes it possible for users to debug the queries (enrollment and metrics) that get executed.
 
