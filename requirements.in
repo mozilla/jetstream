@@ -37,7 +37,7 @@ cloudpickle==2.2.1
     #   distributed
 contourpy==1.0.7
     # via matplotlib
-coverage[toml]==7.1.0
+coverage[toml]==7.2.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
