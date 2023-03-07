@@ -78,10 +78,10 @@ class ExecutorStrategy(Protocol):
 class ArgoExecutorStrategy:
     project_id: str
     dataset_id: str
-    bucket: str
     zone: str
     cluster_id: str
     monitor_status: bool
+    bucket: Optional[str] = None
     cluster_ip: Optional[str] = None
     cluster_cert: Optional[str] = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
@@ -149,7 +149,7 @@ class ArgoExecutorStrategy:
 class SerialExecutorStrategy:
     project_id: str
     dataset_id: str
-    bucket: str
+    bucket: Optional[str] = None
     log_config: Optional[LogConfiguration] = None
     analysis_class: Type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
@@ -184,7 +184,9 @@ class SerialExecutorStrategy:
                     self.analysis_periods,
                 )
                 analysis.run(date)
-                export_metadata(config, self.bucket, self.project_id, analysis.start_time)
+
+                if self.bucket:
+                    export_metadata(config, self.bucket, self.project_id, analysis.start_time)
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
                 # this prevents Argo from retrying the analysis unnecessarily
@@ -207,17 +209,18 @@ class SerialExecutorStrategy:
                     log_dataset = self.log_config.log_dataset_id or self.dataset_id
                     log_table = self.log_config.log_table_id or "logs"
 
-                export_experiment_logs(
-                    self.project_id,
-                    self.bucket,
-                    config.experiment.normandy_slug,
-                    log_project,
-                    log_dataset,
-                    log_table,
-                    analysis.start_time,
-                    config.experiment.enrollment_end_date,
-                    self.log_config,
-                )
+                if self.bucket:
+                    export_experiment_logs(
+                        self.project_id,
+                        self.bucket,
+                        config.experiment.normandy_slug,
+                        log_project,
+                        log_dataset,
+                        log_table,
+                        analysis.start_time,
+                        config.experiment.enrollment_end_date,
+                        self.log_config,
+                    )
         return not failed
 
 
@@ -466,6 +469,19 @@ class ClickDate(click.ParamType):
         return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
 
+class ClickNullableString(click.ParamType):
+    name = "nullable_string"
+
+    def convert(self, value, param, ctx):
+        if not isinstance(value, str):
+            value = str(value)
+
+        if value.lower() == "none" or value.lower() == "null":
+            return None
+
+        return value
+
+
 project_id_option = click.option(
     "--project_id",
     "--project-id",
@@ -503,7 +519,11 @@ config_file_option = click.option(
 )
 
 bucket_option = click.option(
-    "--bucket", default="mozanalysis", help="GCS bucket to write to", required=True
+    "--bucket",
+    default="mozanalysis",
+    help="GCS bucket to write to",
+    required=False,
+    type=ClickNullableString(),
 )
 
 argo_option = click.option(
@@ -792,8 +812,11 @@ def rerun(
 @experiment_slug_option
 def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
     """Export all tables as JSON to a GCS bucket."""
-    for slug in experiment_slug:
-        export_statistics_tables(project_id, dataset_id, bucket, slug)
+    if bucket is None:
+        logger.warn("No bucket specified. Analysis results won't be exported to GCS.")
+    else:
+        for slug in experiment_slug:
+            export_statistics_tables(project_id, dataset_id, bucket, slug)
 
 
 @cli.command()
@@ -809,18 +832,21 @@ def export_experiment_logs_to_json(
     ctx, log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
-    for slug in experiment_slug:
-        export_experiment_logs(
-            project_id,
-            bucket,
-            slug,
-            log_project_id,
-            log_dataset_id,
-            log_table_id,
-            date,
-            None,
-            ctx.obj["log_config"],
-        )
+    if bucket is None:
+        logger.warn("No bucket specified. Logs results won't be exported to GCS.")
+    else:
+        for slug in experiment_slug:
+            export_experiment_logs(
+                project_id,
+                bucket,
+                slug,
+                log_project_id,
+                log_dataset_id,
+                log_table_id,
+                date,
+                None,
+                ctx.obj["log_config"],
+            )
 
 
 @cli.command()

@@ -484,16 +484,16 @@ class TestArgoExecutorStrategy:
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             strategy = cli.ArgoExecutorStrategy(
-                "spam",
-                "eggs",
-                "bucket",
-                "zone",
-                "cluster_id",
-                False,
-                None,
-                None,
-                lambda: cli_experiments,
-                [
+                project_id="spam",
+                dataset_id="eggs",
+                bucket="bucket",
+                zone="zone",
+                cluster_id="cluster_id",
+                monitor_status=False,
+                cluster_ip=None,
+                cluster_cert=None,
+                experiment_getter=lambda: cli_experiments,
+                analysis_periods=[
                     AnalysisPeriod.DAY,
                     AnalysisPeriod.WEEK,
                     AnalysisPeriod.DAYS_28,
