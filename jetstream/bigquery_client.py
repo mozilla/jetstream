@@ -131,4 +131,4 @@ class BigQueryClient:
             existing_tables += self.tables_matching_regex(f"^enrollments_{normalized_slug}$")
 
         for existing_table in existing_tables:
-            self.delete_table(existing_table)
+            self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
