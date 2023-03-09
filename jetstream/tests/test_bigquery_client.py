@@ -35,12 +35,12 @@ def test_delete_experiment_tables():
     )
 
     calls = [
-        call("enrollments_test_slug", not_found_ok=True),
-        call("test_slug_enrollments_day_1", not_found_ok=True),
-        call("test_slug_enrollments_week_4", not_found_ok=True),
-        call("test_slug_enrollments_overall_10", not_found_ok=True),
-        call("statistics_test_slug_day_33", not_found_ok=True),
-        call("statistics_test_slug_week_3", not_found_ok=True),
+        call("project.dataset.enrollments_test_slug", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_day_1", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_week_4", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_overall_10", not_found_ok=True),
+        call("project.dataset.statistics_test_slug_day_33", not_found_ok=True),
+        call("project.dataset.statistics_test_slug_week_3", not_found_ok=True),
     ]
     delete_call.assert_has_calls(
         calls,
@@ -62,11 +62,11 @@ def test_delete_experiment_tables():
     )
 
     calls = [
-        call("test_slug_enrollments_day_1", not_found_ok=True),
-        call("test_slug_enrollments_week_4", not_found_ok=True),
-        call("test_slug_enrollments_overall_10", not_found_ok=True),
-        call("statistics_test_slug_day_33", not_found_ok=True),
-        call("statistics_test_slug_week_3", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_day_1", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_week_4", not_found_ok=True),
+        call("project.dataset.test_slug_enrollments_overall_10", not_found_ok=True),
+        call("project.dataset.statistics_test_slug_day_33", not_found_ok=True),
+        call("project.dataset.statistics_test_slug_week_3", not_found_ok=True),
     ]
     delete_call.assert_has_calls(
         calls,
@@ -85,7 +85,7 @@ def test_delete_experiment_tables():
 
     delete_call.assert_has_calls(
         [
-            call("test_slug_enrollments_overall_10", not_found_ok=True),
+            call("project.dataset.test_slug_enrollments_overall_10", not_found_ok=True),
         ],
         any_order=True,
     )
