@@ -4,7 +4,6 @@ import sys
 from datetime import datetime, time, timedelta
 from functools import partial
 from pathlib import Path
-from google.cloud import bigquery
 from typing import (
     Callable,
     Dict,
@@ -164,6 +163,7 @@ class SerialExecutorStrategy:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
     ]
+    sql_output_dir: Optional[str] = None
 
     def execute(
         self,
@@ -186,6 +186,7 @@ class SerialExecutorStrategy:
                     self.log_config,
                     None,
                     self.analysis_periods,
+                    self.sql_output_dir,
                 )
                 analysis.run(date)
 
@@ -237,6 +238,7 @@ class AnalysisExecutor:
     experiment_slugs: Union[Iterable[str], AllType]
     configuration_map: Optional[Mapping[str, TextIO]] = attr.ib(None)
     recreate_enrollments: bool = False
+    sql_output_dir: Optional[str] = None
 
     @staticmethod
     def _today() -> datetime:
@@ -384,7 +386,9 @@ class AnalysisExecutor:
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
         for config in run_configs:
             try:
-                analysis = Analysis(self.project_id, self.dataset_id, config)
+                analysis = Analysis(
+                    self.project_id, self.dataset_id, config, sql_output_dir=self.sql_output_dir
+                )
 
                 if isinstance(self.date, AllType):
                     today = self._today()
@@ -619,7 +623,6 @@ sql_output_dir_option = click.option(
     metavar="OUTDIR",
 )
 
-
 @cli.command()
 @project_id_option()
 @dataset_id_option()
@@ -631,6 +634,7 @@ sql_output_dir_option = click.option(
 @config_repos_option
 @private_config_repos_option
 @analysis_periods_option
+@sql_output_dir_option
 @click.pass_context
 def run(
     ctx,
@@ -644,6 +648,7 @@ def run(
     config_repos,
     private_config_repos,
     analysis_periods,
+    sql_output_dir,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -1172,8 +1177,6 @@ def preview(
     collection = ExperimentCollection.from_experimenter()
     experimenter_experiment = collection.with_slug(experiment_slug)
 
-    # todo: query sql output injection function - see opmon
-
     # todo: generate enrollments where necessary
     # todo: sampling of enrollments
     # call ensure_enrollments with a custom enrollment query
@@ -1195,6 +1198,7 @@ def preview(
             config_repos=config_repos,
             private_config_repos=private_config_repos,
             analysis_periods=analysis_periods,
+            sql_output_dir=sql_output_dir,
         )
 
     start_date_str = start_date.strftime("%Y-%m-%d")

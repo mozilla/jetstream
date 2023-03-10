@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
@@ -63,6 +64,7 @@ class Analysis:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
     ]
+    sql_output_dir: Optional[str] = None
 
     @property
     def bigquery(self):
@@ -144,6 +146,12 @@ class Analysis:
             analysis_length_dates=analysis_length_dates,
             **time_limits_args,
         )
+
+    def _write_sql_output(self, destination: str, sql: str):
+        """Write SQL query to local file named after `destination`."""
+        if self.sql_output_dir:
+            Path(self.sql_output_dir).mkdir(parents=True, exist_ok=True)
+            (Path(self.sql_output_dir) / destination).write_text(sql)
 
     def _table_name(
         self, window_period: str, window_index: int, analysis_basis: Optional[AnalysisBasis] = None
@@ -263,6 +271,7 @@ class Analysis:
             )
 
             self.bigquery.execute(metrics_sql, res_table_name)
+            self._write_sql_output(res_table_name, metrics_sql)
             self._publish_view(period, analysis_basis=analysis_basis.value)
 
         return res_table_name
@@ -441,6 +450,11 @@ class Analysis:
             segments,
         )
 
+        self._write_sql_output(
+            f"enrollments_{bq_normalize_name(self.config.experiment.normandy_slug)}",
+            enrollments_sql,
+        )
+
         dry_run_query(enrollments_sql)
         print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
         print(enrollments_sql)
@@ -470,6 +484,10 @@ class Analysis:
                     1 AS num_enrollment_events,
                     1 AS num_exposure_events
             ), analysis_windows AS (""",
+        )
+
+        self._write_sql_output(
+            f"metrics_{bq_normalize_name(self.config.experiment.normandy_slug)}", metrics_sql
         )
 
         dry_run_query(metrics_sql)
@@ -684,6 +702,7 @@ class Analysis:
         )
 
         try:
+            self._write_sql_output(enrollments_table, enrollments_sql)
             self.bigquery.execute(
                 enrollments_sql,
                 enrollments_table,
