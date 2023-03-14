@@ -262,6 +262,8 @@ class Analysis:
                 or analysis_basis in m.metric.analysis_bases
             }
 
+            print(self.config)
+
             metrics_sql = exp.build_metrics_query(
                 metrics,
                 last_window_limits,
@@ -269,6 +271,8 @@ class Analysis:
                 analysis_basis,
                 exposure_signal,
             )
+
+            print(metrics_sql)
 
             self.bigquery.execute(metrics_sql, res_table_name)
             self._write_sql_output(res_table_name, metrics_sql)
@@ -658,23 +662,8 @@ class Analysis:
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
 
-    def ensure_enrollments(self, current_date: datetime) -> None:
-        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
-        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
-
-        if time_limits is None:
-            logger.info(
-                "Skipping enrollments for %s; not ready", self.config.experiment.normandy_slug
-            )
-            return
-
-        if self.config.experiment.start_date is None:
-            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
-
-        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"enrollments_{normalized_slug}"
-
-        logger.info(f"Create {enrollments_table}")
+    def enrollments_query(self, time_limits: TimeLimits) -> str:
+        """Returns the enrollments SQL query."""
         exp = mozanalysis.experiment.Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
@@ -692,7 +681,7 @@ class Analysis:
         for segment in self.config.experiment.segments:
             segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
-        enrollments_sql = exp.build_enrollments_query(
+        return exp.build_enrollments_query(
             time_limits,
             PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
@@ -700,6 +689,25 @@ class Analysis:
             exposure_signal,
             segments,
         )
+
+    def ensure_enrollments(self, current_date: datetime) -> None:
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
+
+        if time_limits is None:
+            logger.info(
+                "Skipping enrollments for %s; not ready", self.config.experiment.normandy_slug
+            )
+            return
+
+        if self.config.experiment.start_date is None:
+            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
+
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
+
+        logger.info(f"Create {enrollments_table}")
+        enrollments_sql = self.enrollments_query(time_limits=time_limits)
 
         try:
             self._write_sql_output(enrollments_table, enrollments_sql)

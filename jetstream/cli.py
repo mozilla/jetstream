@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+
 from datetime import datetime, time, timedelta
 from functools import partial
 from pathlib import Path
@@ -29,7 +30,7 @@ from metric_config_parser.config import (
     DefinitionConfig,
     entity_from_path,
 )
-from metric_config_parser.experiment import Experiment
+from metric_config_parser.experiment import Experiment, Branch
 from metric_config_parser.function import FunctionsSpec
 from metric_config_parser.metric import AnalysisPeriod
 
@@ -45,6 +46,8 @@ from .export_json import export_experiment_logs, export_statistics_tables
 from .logging import LogConfiguration
 from .metadata import export_metadata
 from .util import inclusive_date_range
+from .platform import PLATFORM_CONFIGS
+from .preview import sampled_enrollment_query, sampled_exposure_signal
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +75,7 @@ class ExecutorStrategy(Protocol):
     def execute(
         self,
         worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, TextIO]] = None,
+        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
     ) -> bool:
         ...
 
@@ -101,7 +104,7 @@ class ArgoExecutorStrategy:
     def execute(
         self,
         worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, TextIO]] = None,
+        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
     ):
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
@@ -168,7 +171,7 @@ class SerialExecutorStrategy:
     def execute(
         self,
         worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, TextIO]] = None,
+        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
     ):
         failed = False
         for config, date in worklist:
@@ -236,7 +239,7 @@ class AnalysisExecutor:
     bucket: str
     date: Union[datetime, AllType]
     experiment_slugs: Union[Iterable[str], AllType]
-    configuration_map: Optional[Mapping[str, TextIO]] = attr.ib(None)
+    configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = attr.ib(None)
     recreate_enrollments: bool = False
     sql_output_dir: Optional[str] = None
 
@@ -308,8 +311,13 @@ class AnalysisExecutor:
         for experiment_config in experiments:
             spec = AnalysisSpec.default_for_experiment(experiment_config, config_getter.configs)
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
-                config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
-                spec.merge(AnalysisSpec.from_dict(config_dict))
+                if isinstance(
+                    self.configuration_map[experiment_config.normandy_slug], AnalysisSpec
+                ):
+                    spec.merge(self.configuration_map[experiment_config.normandy_slug])
+                else:
+                    config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
+                    spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
                 if external_spec := config_getter.spec_for_experiment(
                     experiment_config.normandy_slug
@@ -500,7 +508,7 @@ def project_id_option(default="moz-fx-data-experiments"):
 
 
 def dataset_id_option(default="mozanalysis"):
-    click.option(
+    return click.option(
         "--dataset_id", "--dataset-id", default=default, help="Dataset to write to", required=True
     )
 
@@ -623,6 +631,7 @@ sql_output_dir_option = click.option(
     metavar="OUTDIR",
 )
 
+
 @cli.command()
 @project_id_option()
 @dataset_id_option()
@@ -667,11 +676,17 @@ def run(
         if experiment_slug and config_file
         else {},
         recreate_enrollments=recreate_enrollments,
+        sql_output_dir=sql_output_dir,
     )
 
     success = analysis_executor.execute(
         strategy=SerialExecutorStrategy(
-            project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+            project_id,
+            dataset_id,
+            bucket,
+            ctx.obj["log_config"],
+            analysis_periods=analysis_periods,
+            sql_output_dir=sql_output_dir,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -1110,7 +1125,8 @@ def ensure_enrollments(
     type=str,
     help="Platform/app to run analysis for. "
     + "If not specified, use Experimenter API to determine plaftorm",
-    required=False,
+    required=True,
+    default="firefox_desktop",
 )
 @click.option(
     "--generate-population",
@@ -1123,16 +1139,14 @@ def ensure_enrollments(
 @click.option(
     "--population-sample-size",
     "--population_sample_size",
-    type=float,
+    type=int,
     required=False,
-    default=0.01,
+    default=1,
     help="Generated population sample size. "
     + "Only used when `--generate-population` is specified. "
     + "Use floats to specify population sizes in percent, e.g 0.01 == 1% of clients",
 )
-@click.pass_context
 def preview(
-    ctx,
     project_id,
     dataset_id,
     start_date,
@@ -1159,53 +1173,119 @@ def preview(
     else:
         end_date = start_date + timedelta(days=num_days)
 
-    start_date = pytz.utc.localize(start_date)
-    end_date = pytz.utc.localize(end_date)
-
-    # At least one of `--slug` and `--config-file` is required.  If slug is not
+    # At least one of `--slug` and `--config-file` is required. If slug is not
     # given, find it from the config file.
     if not experiment_slug:
         external_config = entity_from_path(Path(config_file))
-        experiment_slug = external_config.slug
+        experiment_slug = [external_config.slug]
 
-    table = bq_normalize_name(experiment_slug)
+    for slug in experiment_slug:
+        click.echo(f"Generate preview for {slug}")
+        table = bq_normalize_name(slug)
 
-    # delete previously created preview tables if exist
-    client = BigQueryClient(project_id, dataset_id)
-    client.delete_experiment_tables(experiment_slug, analysis_periods, delete_enrollments=True)
+        # delete previously created preview tables if exist
+        client = BigQueryClient(project_id, dataset_id)
+        client.delete_experiment_tables(slug, analysis_periods, delete_enrollments=True)
 
-    collection = ExperimentCollection.from_experimenter()
-    experimenter_experiment = collection.with_slug(experiment_slug)
-
-    # todo: generate enrollments where necessary
-    # todo: sampling of enrollments
-    # call ensure_enrollments with a custom enrollment query
-    # set all neceassry config parameters here
-
-    # run preview analysis
-    for date in [
-        start_date + timedelta(days=d) for d in range(0, (end_date - start_date).days + 1)
-    ]:
-        ctx.invoke(
-            run,
-            project_id=project_id,
-            dataset_id=dataset_id,
-            date=date,
-            experiment_slug=experiment_slug,
-            bucket=None,
-            config_file=config_file,
-            recreate_enrollments=True,
-            config_repos=config_repos,
-            private_config_repos=private_config_repos,
-            analysis_periods=analysis_periods,
-            sql_output_dir=sql_output_dir,
+        collection = ExperimentCollection.from_experimenter()
+        experimenter_experiments = collection.with_slug(slug)
+        config_getter = ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
         )
 
-    start_date_str = start_date.strftime("%Y-%m-%d")
-    end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+        experiment: Optional[Experiment] = None
+        if experimenter_experiments.experiments != []:
+            experiment = experimenter_experiments.experiments[0]
 
-    click.echo(
-        "A preview is available at: "
-        + f"{LOOKER_PREVIEW_URL}?Table='{project_id}.{dataset_id}.{table}_statistics'"
-        + f"&Submission+Date={start_date_str}+to+{end_date_str}"
-    )
+        experiment = Experiment(
+            experimenter_slug=experiment.experimenter_slug if experiment else slug,
+            normandy_slug=experiment.normandy_slug if experiment else slug,
+            type=experiment.type if experiment else "v6",
+            status="Live",
+            start_date=start_date - timedelta(days=3),  # subtract enrollment days
+            end_date=end_date,
+            proposed_enrollment=3,
+            branches=experiment.branches if experiment else [Branch(slug="control", ratio=1)],
+            reference_branch=experiment.reference_branch if experiment else "control",
+            is_high_population=False,
+            app_name=platform,
+            app_id=PLATFORM_CONFIGS[platform].app_id,
+            outcomes=experiment.outcomes if experiment else [],
+            enrollment_end_date=None,
+        )
+
+        spec = AnalysisSpec.default_for_experiment(experiment, config_getter.configs)
+        if external_spec := config_getter.spec_for_experiment(experiment.normandy_slug):
+            spec.merge(external_spec)
+
+        config = spec.resolve(experiment=experiment, configs=config_getter.configs)
+
+        # generated sampled enrollment query
+        if generate_population:
+            spec.experiment.enrollment_query = sampled_enrollment_query(
+                start_date, config, population_sample_size
+            )
+            spec.experiment.exposure_signal = sampled_exposure_signal(
+                start_date, config, population_sample_size
+            )
+
+            for _, definition in spec.data_sources.definitions.items():
+                definition.experiments_column_type = "none"
+
+        # recreate enrollments
+        AnalysisExecutor(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            bucket=None,
+            date=start_date,
+            experiment_slugs=[slug] if slug else All,
+            configuration_map={slug: spec},
+            recreate_enrollments=True,
+        ).ensure_enrollments(
+            config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+                private_config_repos, is_private=True
+            ),
+        )
+
+        # run preview analysis
+        for date in [
+            start_date + timedelta(days=d) for d in range(0, (end_date - start_date).days + 1)
+        ]:
+            click.echo(f"Generate preview for {date}")
+
+            analysis_executor = AnalysisExecutor(
+                project_id=project_id,
+                dataset_id=dataset_id,
+                bucket=None,
+                date=date,
+                experiment_slugs=[slug] if slug else All,
+                configuration_map={slug: spec},
+                recreate_enrollments=False,
+                sql_output_dir=sql_output_dir,
+            )
+
+            # add experiment to API results if it's not already available in Experimenter
+            experiment_getter = lambda: ExperimentCollection(experiments=experiment)
+            analysis_executor.execute(
+                strategy=SerialExecutorStrategy(
+                    project_id,
+                    dataset_id,
+                    None,
+                    None,
+                    analysis_periods=analysis_periods,
+                    sql_output_dir=sql_output_dir,
+                    experiment_getter=experiment_getter,
+                ),
+                config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+                    private_config_repos, is_private=True
+                ),
+            )
+
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = (end_date + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        click.echo(
+            "A preview is available at: "
+            + f"{LOOKER_PREVIEW_URL}?Table='{project_id}.{dataset_id}.{table}_statistics'"
+            + f"&Submission+Date={start_date_str}+to+{end_date_str}"
+        )
