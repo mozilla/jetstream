@@ -1,14 +1,13 @@
-from metric_config_parser.analysis import AnalysisConfiguration
-from metric_config_parser.metric import AnalysisPeriod
-from metric_config_parser.exposure_signal import ExposureSignalDefinition
-from metric_config_parser.data_source import DataSourceReference
+from datetime import datetime
 
 import mozanalysis
-import re
+from metric_config_parser.analysis import AnalysisConfiguration
+from metric_config_parser.data_source import DataSourceReference
+from metric_config_parser.exposure_signal import ExposureSignalDefinition
+from metric_config_parser.metric import AnalysisPeriod
 
 from .analysis import Analysis
 from .platform import PLATFORM_CONFIGS
-from datetime import datetime
 
 
 def sampled_enrollment_query(
@@ -99,21 +98,21 @@ def sampled_enrollment_query(
         raise ValueError(
             f"Cannot generate population for enrollment query type '{enrollments_query_type}'"
         )
-    
+
     return enrollments_sql
 
 
 def sampled_exposure_signal(start_date, config, population_sample_size) -> ExposureSignalDefinition:
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
 
-    # add sampling and remove matching on experiment slug (because no clients enrolled) for exposures
+    # add sampling and remove matching on experiment slug (because no clients enrolled) for exposure
     if enrollments_query_type == "normandy":
         exposure_signal = ExposureSignalDefinition(
             name="sampled_preview_exposure",
             data_source=DataSourceReference(name="events"),
             select_expression=f"MOD(event_timestamp) = 0 AND sample_id < {population_sample_size}",
             description="Sampled Exposure Signal for Preview",
-            friendly_name="Sampled Exposure Signal for Preview"
+            friendly_name="Sampled Exposure Signal for Preview",
         )
     elif enrollments_query_type in ["glean-event", "fenix-fallback"]:
         exposure_signal = ExposureSignalDefinition(
@@ -121,7 +120,7 @@ def sampled_exposure_signal(start_date, config, population_sample_size) -> Expos
             data_source=DataSourceReference(name="events"),
             select_expression=f"sample_id < {population_sample_size}",
             description="Sampled Exposure Signal for Preview",
-            friendly_name="Sampled Exposure Signal for Preview"
+            friendly_name="Sampled Exposure Signal for Preview",
         )
     else:
         raise ValueError(

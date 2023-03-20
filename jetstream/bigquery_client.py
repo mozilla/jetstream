@@ -65,7 +65,7 @@ class BigQueryClient:
         query: str,
         destination_table: Optional[str] = None,
         write_disposition: Optional[google.cloud.bigquery.job.WriteDisposition] = None,
-    ) -> None:
+    ) -> google.cloud.bigquery.job.QueryJob:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
             default_project=self.project,
@@ -89,6 +89,8 @@ class BigQueryClient:
                 destination_table,
                 {"last_updated": self._current_timestamp_label()},
             )
+
+        return job
 
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
