@@ -736,9 +736,9 @@ mccabe==0.7.0 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2023.3.0 \
-    --hash=sha256:3e246487a45cdd788079dcea259343093ec98feb76c811f2714467f4beabe272 \
-    --hash=sha256:cfc64e7153a70096b2c3238a581931360c48aac52f0be512b86a7588e69f6f01
+mozanalysis==2023.3.1 \
+    --hash=sha256:30ef3b604fd082df0f509be5c2836748a315435b704f6e165f1c7879114ed847 \
+    --hash=sha256:b22614557d8e12d25385c041b1fd418bc86927649a0438df291e136dfe5c813f
     # via -r requirements.in
 mozilla-metric-config-parser==2023.3.1 \
     --hash=sha256:349c57edb3817cc68d8853818c140db29ab44a95bf479d4895c6da41ae1defcb \
@@ -1424,9 +1424,9 @@ types-pyyaml==6.0.12.8 \
     --hash=sha256:19304869a89d49af00be681e7b267414df213f4eb89634c4495fa62e8f942b9f \
     --hash=sha256:5314a4b2580999b2ea06b2e5f9a7763d860d6e09cdf21c0e9561daa9cbd60178
     # via -r requirements.in
-types-requests==2.28.11.15 \
-    --hash=sha256:a05e4c7bc967518fba5789c341ea8b0c942776ee474c7873129a61161978e586 \
-    --hash=sha256:fc8eaa09cc014699c6b63c60c2e3add0c8b09a410c818b5ac6e65f92a26dde09
+types-requests==2.28.11.16 \
+    --hash=sha256:9d4002056df7ebc4ec1f28fd701fba82c5c22549c4477116cb2656aa30ace6db \
+    --hash=sha256:a86921028335fdcc3aaf676c9d3463f867db6af2303fc65aa309b13ae1e6dd53
     # via -r requirements.in
 types-six==1.16.21.7 \
     --hash=sha256:9ce4eb910e694ab0f94400361994c44c2186e0b62cef09095a8e4c92ce011e4f \
