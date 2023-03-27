@@ -276,9 +276,9 @@ cycler==0.11.0 \
     # via
     #   -r requirements.in
     #   matplotlib
-dask[distributed]==2023.3.1 \
-    --hash=sha256:4a83c05760aedb7deeee8c16d24479292635a1ded6c3f803bf6c3d94ec9e7d20 \
-    --hash=sha256:62d334012d7cd814186931ea83ebf1a6231c2af4260ad204dc78080a55947c17
+dask[distributed]==2023.3.2 \
+    --hash=sha256:51009e92ba9a280bd417633d1ae84f3ed23a8940f0a19594a4b7797ef226fff4 \
+    --hash=sha256:5e64763d62feb18afd3ad66f364e0b4f456f7ac92e894fcc87950af75029ecdf
     # via
     #   -r requirements.in
     #   distributed
@@ -286,9 +286,9 @@ db-dtypes==1.0.5 \
     --hash=sha256:ab6782bf7a414dd7289ce4ba8ddea5ec44c1339d189c7738d7098efdfd148266 \
     --hash=sha256:ee68f30cbccf343124ef0abebc7f8cc9a74ef8ed7ee4ff61f586117e8040a9d6
     # via -r requirements.in
-distributed==2023.3.1 \
-    --hash=sha256:2551809869cd72d9957a10e1a6e5358371db31765ae6b1871541a0b7ce32090c \
-    --hash=sha256:542f691b6871eb9d3909e1f8eb4c274f09c69b89f07ff5a598de38a60237f162
+distributed==2023.3.2 \
+    --hash=sha256:3f0b4ce73289583a27376672f67895e041c71d9a6e901b4f4cc4a95dd81ec349 \
+    --hash=sha256:43b74f08ea4ea0696ae8d2f1ea53adcda998a2a159bd34dffd42e4e678ff5f8a
     # via
     #   -r requirements.in
     #   dask
@@ -339,23 +339,23 @@ google-api-core[grpc]==2.11.0 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.16.2 \
-    --hash=sha256:07e14f34ec288e3f33e00e2e3cc40c8942aa5d4ceac06256a28cd8e786591420 \
-    --hash=sha256:2fef3cf94876d1a0e204afece58bb4d83fb57228aaa366c64045039fda6770a2
+google-auth==2.16.3 \
+    --hash=sha256:4dfcfd8ecd1cf03ddc97fddfb3b1f2973ea4f3f664aa0d8cfaf582ef9f0c60e7 \
+    --hash=sha256:611779ce33a3aee265b94b74d4bb8c188f33010f5814761250a0ebbde94cc745
     # via
     #   -r requirements.in
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.7.0 \
-    --hash=sha256:cf9f543fad3aaf4871c53f56b718e1ef94a9a778b17f16890015f6fc25c328ec \
-    --hash=sha256:d273e6a4fddd24317055c4f7a727b78edb165e714e646d8276df0761fa7023d0
+google-cloud-bigquery==3.8.0 \
+    --hash=sha256:354e84d7f4dafd8b880eb8b10ab088dff74bb1f4133b873cb42c5b4008ace317 \
+    --hash=sha256:4445d90ef81ddac1da414565df0c886de4c9be267c11057486dae1a5a46ef7e6
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.19.0 \
-    --hash=sha256:df0e62aad63e787a4390020b1b0dacbf56f0d806a97225adf32d7cb8609c7294 \
-    --hash=sha256:e5bb0ead3e0822bc4e9cf229bd1d13d4c38f19e50d53aa1d70ab3cd9a37c07c2
+google-cloud-bigquery-storage==2.19.1 \
+    --hash=sha256:0d9b5f42a703f3210b4b3ad45a18139191f934740fdf3629b1b22fd95adf0bba \
+    --hash=sha256:e2cb6cb7f0fe027f440903d70c33bf843a2af5714eb3f15b1473335cbd736365
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -531,6 +531,12 @@ idna==3.4 \
     # via
     #   -r requirements.in
     #   requests
+importlib-metadata==6.1.0 \
+    --hash=sha256:43ce9281e097583d758c2c708c4376371261a02c34682491a8e98352365aad20 \
+    --hash=sha256:ff80f3b5394912eb1b108fcfd444dc78b7f1f3e16b16188054bd01cb9cb86f09
+    # via
+    #   -r requirements.in
+    #   dask
 iniconfig==2.0.0 \
     --hash=sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3 \
     --hash=sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
@@ -736,9 +742,9 @@ mccabe==0.7.0 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2023.3.1 \
-    --hash=sha256:30ef3b604fd082df0f509be5c2836748a315435b704f6e165f1c7879114ed847 \
-    --hash=sha256:b22614557d8e12d25385c041b1fd418bc86927649a0438df291e136dfe5c813f
+mozanalysis==2023.3.4 \
+    --hash=sha256:9b851032226645c4801661ebfd2d0b26a7add2673f0aded66416dfe33b9e04e3 \
+    --hash=sha256:f6a926693fd06c6bc6edea6fa97a5ac3653750acdae26e67b2dd2bfcf3ede6de
     # via -r requirements.in
 mozilla-metric-config-parser==2023.3.1 \
     --hash=sha256:349c57edb3817cc68d8853818c140db29ab44a95bf479d4895c6da41ae1defcb \
@@ -1033,9 +1039,9 @@ pillow==9.4.0 \
     # via
     #   -r requirements.in
     #   matplotlib
-platformdirs==3.1.1 \
-    --hash=sha256:024996549ee88ec1a9aa99ff7f8fc819bb59e2c3477b410d90a16d32d6e707aa \
-    --hash=sha256:e5986afb596e4bb5bde29a79ac9061aa955b94fca2399b7aaac4090860920dd8
+platformdirs==3.2.0 \
+    --hash=sha256:d5b638ca397f25f979350ff789db335903d7ea010ab28903f57b27e1b16c2b08 \
+    --hash=sha256:ebe11c0d7a805086e99506aa331612429a72ca7cd52a1f0d277dc4adc20cb10e
     # via
     #   -r requirements.in
     #   black
@@ -1213,9 +1219,9 @@ python-dateutil==2.8.2 \
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-pytz==2022.7.1 \
-    --hash=sha256:01a0681c4b9684a28304615eba55d1ab31ae00bf68ec157ec3708a8182dbbcd0 \
-    --hash=sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a
+pytz==2023.2 \
+    --hash=sha256:8a8baaf1e237175b02f5c751eea67168043a749c843989e2b3015aa1ad9db68b \
+    --hash=sha256:a27dcf612c05d2ebde626f7d506555f10dfc815b3eddccfaadfc7d99b11c9a07
     # via
     #   -r requirements.in
     #   mozilla-metric-config-parser
@@ -1416,9 +1422,9 @@ types-protobuf==4.22.0.0 \
     --hash=sha256:1e59294618c9518f35f17ae1a3d866cdf7e998eb4b9907d41e9ebe5b84fde636 \
     --hash=sha256:bf2b414d815dc387c0a041d9207db054c7cdb94591bb233d9b71a85243e05efc
     # via -r requirements.in
-types-pytz==2022.7.1.2 \
-    --hash=sha256:40ca448a928d566f7d44ddfde0066e384f7ffbd4da2778e42a4570eaca572446 \
-    --hash=sha256:487d3e8e9f4071eec8081746d53fa982bbc05812e719dcbf2ebf3d55a1a4cd28
+types-pytz==2023.2.0.0 \
+    --hash=sha256:a6cca439e1f87be0ce745181543b58587f4e685d6b14627255dced68004ba05e \
+    --hash=sha256:eec7c806220776cde7b2fb20371853ddd0d14fa7544ca3c6862433ade37469df
     # via -r requirements.in
 types-pyyaml==6.0.12.8 \
     --hash=sha256:19304869a89d49af00be681e7b267414df213f4eb89634c4495fa62e8f942b9f \
@@ -1436,9 +1442,9 @@ types-toml==0.10.8.5 \
     --hash=sha256:2432017febe43174af0f3c65f03116e3d3cf43e7e1406b8200e106da8cf98992 \
     --hash=sha256:bf80fce7d2d74be91148f47b88d9ae5adeb1024abef22aa2fdbabc036d6b8b3c
     # via -r requirements.in
-types-urllib3==1.26.25.8 \
-    --hash=sha256:95ea847fbf0bf675f50c8ae19a665baedcf07e6b4641662c4c3c72e7b2edf1a9 \
-    --hash=sha256:ecf43c42d8ee439d732a1110b4901e9017a79a38daca26f08e42c8460069392c
+types-urllib3==1.26.25.9 \
+    --hash=sha256:160727879bdbe52f11f5feeca092a473f38d68ed3be88abb461b59cda40fb9bc \
+    --hash=sha256:b327d360ba4a9edd80ea82f5990ba19e76175a20b5b64be4b4813d9a1c424caa
     # via
     #   -r requirements.in
     #   types-requests
@@ -1461,3 +1467,9 @@ zict==2.2.0 \
     # via
     #   -r requirements.in
     #   distributed
+zipp==3.15.0 \
+    --hash=sha256:112929ad649da941c23de50f356a2b5570c954b65150642bccdd66bf194d224b \
+    --hash=sha256:48904fc76a60e542af151aded95726c1a5c34ed43ab4134b597665c86d7ad556
+    # via
+    #   -r requirements.in
+    #   importlib-metadata
