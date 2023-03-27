@@ -65,13 +65,16 @@ def submit_workflow(
         # link to logs
         logger.info(
             "To connect to Argo dashboard forward port by running: "
-            + f"gcloud container clusters get-credentials jetstream --zone {zone} "
-            + f"--project {project_id} && "
-            + "kubectl port-forward --namespace argo $(kubectl get pod --namespace argo "
-            + "--selector='app=argo-server' --output jsonpath='{.items[0].metadata.name}') "
-            + "8080:2746"
+            + f"gcloud container clusters get-credentials jetstream --region={zone} && "
+            + "kubectl -n argo exec $(kubectl get pod -n argo -l 'app=argo-server' "
+            + "-o jsonpath='{.items[0].metadata.name}') -- argo auth token \n\n"
+            + "Copy the Bearer token.\n"
         )
-        logger.info("The dashboard can be accessed via 127.0.0.1:8080")
+        logger.info("kubectl -n argo port-forward svc/argo-server 2746:2746 \n")
+        logger.info(
+            "The dashboard can be accessed via 127.0.0.1:2746. "
+            + "Use the Bearer token for authentication."
+        )
 
         while not finished:
             workflow = api.get_workflow(

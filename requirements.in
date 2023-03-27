@@ -22,7 +22,7 @@ cattrs==22.2.0
     #   mozilla-metric-config-parser
 certifi==2022.12.7
     # via requests
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
     # via requests
 click==8.1.3
     # via
@@ -37,29 +37,29 @@ cloudpickle==2.2.1
     #   distributed
 contourpy==1.0.7
     # via matplotlib
-coverage[toml]==7.2.1
+coverage[toml]==7.2.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
 cycler==0.11.0
     # via matplotlib
-dask[distributed]==2023.3.0
+dask[distributed]==2023.3.2
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.0.5
     # via mozilla-jetstream
-distributed==2023.3.0
+distributed==2023.3.2
     # via dask
-exceptiongroup==1.1.0
+exceptiongroup==1.1.1
     # via
     #   cattrs
     #   pytest
 flake8==6.0.0
     # via pytest-flake8
-fonttools==4.38.0
+fonttools==4.39.2
     # via matplotlib
-fsspec==2023.1.0
+fsspec==2023.3.0
     # via dask
 gitdb==4.0.10
     # via gitpython
@@ -74,16 +74,16 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.16.1
+google-auth==2.16.3
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.6.0
+google-cloud-bigquery==3.8.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.19.0
+google-cloud-bigquery-storage==2.19.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -103,7 +103,7 @@ google-resumable-media==2.4.1
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.58.0
+googleapis-common-protos==1.59.0
     # via
     #   google-api-core
     #   grpcio-status
@@ -119,6 +119,8 @@ heapdict==1.0.1
     # via zict
 idna==3.4
     # via requests
+importlib-metadata==6.1.0
+    # via dask
 iniconfig==2.0.0
     # via pytest
 isort==5.12.0
@@ -138,20 +140,20 @@ locket==1.0.0
     #   partd
 markupsafe==2.1.2
     # via jinja2
-matplotlib==3.7.0
+matplotlib==3.7.1
     # via mozanalysis
 mccabe==0.7.0
     # via flake8
-mozanalysis==2023.2.1
+mozanalysis==2023.3.4
     # via mozilla-jetstream
     # via -r -
 mozilla-metric-config-parser==2023.3.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-msgpack==1.0.4
+msgpack==1.0.5
     # via distributed
-mypy==1.0.1
+mypy==1.1.1
     # via mozilla-jetstream
 mypy-extensions==1.0.0
     # via
@@ -185,13 +187,13 @@ pandas==1.5.3
     #   statsmodels
 partd==1.3.0
     # via dask
-pathspec==0.11.0
+pathspec==0.11.1
     # via black
 patsy==0.5.3
     # via statsmodels
 pillow==9.4.0
     # via matplotlib
-platformdirs==3.0.0
+platformdirs==3.2.0
     # via black
 pluggy==1.0.0
     # via pytest
@@ -200,7 +202,7 @@ proto-plus==1.22.2
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==4.22.0
+protobuf==4.22.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -230,7 +232,7 @@ pyparsing==3.0.9
     # via matplotlib
 pyrsistent==0.19.3
     # via jsonschema
-pytest==7.2.1
+pytest==7.2.2
     # via
     #   mozilla-jetstream
     #   pytest-black
@@ -247,7 +249,7 @@ python-dateutil==2.8.2
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-pytz==2022.7.1
+pytz==2023.2
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
@@ -311,23 +313,25 @@ types-pkg-resources==0.1.3
     # via mozilla-jetstream
 types-protobuf==4.22.0.0
     # via mozilla-jetstream
-types-pytz==2022.7.1.2
+types-pytz==2023.2.0.0
     # via mozilla-jetstream
 types-pyyaml==6.0.12.8
     # via mozilla-jetstream
-types-requests==2.28.11.15
+types-requests==2.28.11.16
     # via mozilla-jetstream
-types-six==1.16.21.6
+types-six==1.16.21.7
     # via mozilla-jetstream
 types-toml==0.10.8.5
     # via mozilla-jetstream
-types-urllib3==1.26.25.8
+types-urllib3==1.26.25.9
     # via types-requests
 typing-extensions==4.5.0
     # via mypy
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   distributed
     #   requests
 zict==2.2.0
     # via distributed
+zipp==3.15.0
+    # via importlib-metadata
