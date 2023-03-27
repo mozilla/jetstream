@@ -544,6 +544,7 @@ def test_convert_experiment_v6_to_experiment():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
+        isEnrollmentPaused=True,
     )
 
     experiment = experiment_v6.to_experiment()
@@ -556,6 +557,7 @@ def test_convert_experiment_v6_to_experiment():
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
     assert experiment.outcomes == []
+    assert experiment.is_enrollment_paused is True
 
 
 def test_fixture_validates():

@@ -642,6 +642,13 @@ class Analysis:
 
     def ensure_enrollments(self, current_date: datetime) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        if (
+            hasattr(self.config.experiment, "is_enrollment_paused")
+            and not self.config.experiment.is_enrollment_paused
+        ):
+            logger.info(f"Enrollment not complete for {self.config.experiment.normandy_slug}")
+            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
+
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
 
         if time_limits is None:
