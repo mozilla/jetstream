@@ -472,6 +472,7 @@ class TestSerialExecutorStrategy:
                 AnalysisPeriod.DAYS_28,
                 AnalysisPeriod.OVERALL,
             ],
+            None,
         )
         fake_analysis().run.assert_called_once_with(run_date)
 
