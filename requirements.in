@@ -321,7 +321,7 @@ types-requests==2.28.11.16
     # via mozilla-jetstream
 types-six==1.16.21.7
     # via mozilla-jetstream
-types-toml==0.10.8.5
+types-toml==0.10.8.6
     # via mozilla-jetstream
 types-urllib3==1.26.25.9
     # via types-requests
