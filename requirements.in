@@ -107,7 +107,7 @@ googleapis-common-protos==1.59.0
     # via
     #   google-api-core
     #   grpcio-status
-grpcio==1.51.3
+grpcio==1.53.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
