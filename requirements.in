@@ -57,7 +57,7 @@ exceptiongroup==1.1.1
     #   pytest
 flake8==6.0.0
     # via pytest-flake8
-fonttools==4.39.2
+fonttools==4.39.3
     # via matplotlib
 fsspec==2023.3.0
     # via dask
