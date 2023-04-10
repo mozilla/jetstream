@@ -311,7 +311,7 @@ types-futures==3.3.8
     # via mozilla-jetstream
 types-pkg-resources==0.1.3
     # via mozilla-jetstream
-types-protobuf==4.22.0.0
+types-protobuf==4.22.0.2
     # via mozilla-jetstream
 types-pytz==2023.2.0.0
     # via mozilla-jetstream
