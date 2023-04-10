@@ -232,7 +232,7 @@ pyparsing==3.0.9
     # via matplotlib
 pyrsistent==0.19.3
     # via jsonschema
-pytest==7.2.2
+pytest==7.3.0
     # via
     #   mozilla-jetstream
     #   pytest-black
