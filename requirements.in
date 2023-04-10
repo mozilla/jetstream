@@ -119,7 +119,7 @@ heapdict==1.0.1
     # via zict
 idna==3.4
     # via requests
-importlib-metadata==6.1.0
+importlib-metadata==6.3.0
     # via dask
 iniconfig==2.0.0
     # via pytest
