@@ -15,6 +15,8 @@ class PreTreatment(ABC):
     calculating statistics.
     """
 
+    needs_analysis_period: bool = False
+
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
@@ -91,6 +93,18 @@ class CensorValuesAboveThreshold(PreTreatment):
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         mask = df[col] < self.threshold
         return df.loc[mask, :]
+
+
+@attr.s(auto_attribs=True)
+class NormalizeOverAnalysisPeriod(PreTreatment):
+    """Normalizes the row values over a given analysis period (number of days)."""
+
+    needs_analysis_period: bool = True
+    analysis_period: int = 1
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        df[col] = df[col] / self.analysis_period
+        return df
 
 
 @attr.s(auto_attribs=True)

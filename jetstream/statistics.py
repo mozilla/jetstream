@@ -44,7 +44,9 @@ class Summary:
     pre_treatments: List[PreTreatment] = attr.Factory(list)
 
     @classmethod
-    def from_config(cls, summary_config: parser_metric.Summary) -> "Summary":
+    def from_config(
+        cls, summary_config: parser_metric.Summary, analysis_period: Optional[int]
+    ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
 
@@ -67,6 +69,10 @@ class Summary:
                     continue
                 if pre_treatment.name() == pre_treatment_conf.name:
                     found = True
+                    # inject analysis_period from experiment if needed
+                    if pre_treatment.needs_analysis_period:
+                        pre_treatment_conf.args["analysis_period"] = analysis_period
+
                     pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
 
             if not found:
