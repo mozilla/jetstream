@@ -40,6 +40,11 @@ class ExplicitSkipException(ValidationException):
         super().__init__(f"{normandy_slug} -> {message}")
 
 
+class RolloutSkipException(ValidationException):
+    def __init__(self, normandy_slug, message="Experiment is a rollout and will not be analyzed."):
+        super().__init__(f"{normandy_slug} -> {message}")
+
+
 class InvalidConfigurationException(Exception):
     """Exception thrown when experiment configuration is invalid."""
 

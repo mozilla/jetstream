@@ -387,6 +387,9 @@ class Analysis:
         ):
             raise errors.EndedException(self.config.experiment.normandy_slug)
 
+        if self.config.experiment.is_rollout:
+            raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
+
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
