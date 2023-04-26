@@ -645,9 +645,9 @@ class Analysis:
                             continue
 
                         analysis_length_dates = 1
-                        if period.value == period.OVERALL:
+                        if period.value == AnalysisPeriod.OVERALL:
                             analysis_length_dates = time_limits.analysis_length_dates
-                        elif period.value == period.WEEKLY:
+                        elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
                         segment_results += self.calculate_statistics(

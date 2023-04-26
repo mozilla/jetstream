@@ -15,8 +15,6 @@ class PreTreatment(ABC):
     calculating statistics.
     """
 
-    analysis_period: int
-
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
