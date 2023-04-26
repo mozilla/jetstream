@@ -641,12 +641,18 @@ class Analysis:
                         ):
                             continue
 
+                        analysis_length_dates = 1
+                        if period.value == period.OVERALL:
+                            analysis_length_dates = time_limits.analysis_length_dates
+                        elif period.value == period.WEEKLY:
+                            analysis_length_dates = 7
+
                         segment_results += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
-                            time_limits.analysis_length_dates,
+                            analysis_length_dates,
                         ).to_dict()["data"]
 
                     segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
