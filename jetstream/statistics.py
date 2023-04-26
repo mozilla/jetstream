@@ -69,9 +69,8 @@ class Summary:
                     continue
                 if pre_treatment.name() == pre_treatment_conf.name:
                     found = True
-                    # inject analysis_period from experiment if needed
-                    if pre_treatment.needs_analysis_period:
-                        pre_treatment_conf.args["analysis_period"] = analysis_period
+                    # inject analysis_period from experiment
+                    pre_treatment_conf.args["analysis_period"] = analysis_period
 
                     pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
 
