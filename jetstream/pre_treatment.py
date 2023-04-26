@@ -15,7 +15,7 @@ class PreTreatment(ABC):
     calculating statistics.
     """
 
-    analysis_period: int = 1
+    analysis_period: int
 
     @classmethod
     def name(cls):
@@ -99,7 +99,7 @@ class CensorValuesAboveThreshold(PreTreatment):
 class NormalizeOverAnalysisPeriod(PreTreatment):
     """Normalizes the row values over a given analysis period (number of days)."""
 
-    analysis_period: int
+    analysis_period: int = 1
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         df[col] = df[col] / self.analysis_period
