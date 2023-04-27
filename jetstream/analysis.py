@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List, Optional
 
@@ -44,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 DASK_DASHBOARD_ADDRESS = "127.0.0.1:8782"
 DASK_N_PROCESSES = int(os.getenv("JETSTREAM_PROCESSES", 0)) or None  # Defaults to number of CPUs
+COST_PER_BYTE = 1 / 1024 / 1024 / 1024 / 1024 * 5
 
 _dask_cluster = None
 
@@ -63,6 +65,7 @@ class Analysis:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
     ]
+    sql_output_dir: Optional[str] = None
 
     @property
     def bigquery(self):
@@ -144,6 +147,12 @@ class Analysis:
             analysis_length_dates=analysis_length_dates,
             **time_limits_args,
         )
+
+    def _write_sql_output(self, destination: str, sql: str):
+        """Write SQL query to local file named after `destination`."""
+        if self.sql_output_dir:
+            Path(self.sql_output_dir).mkdir(parents=True, exist_ok=True)
+            (Path(self.sql_output_dir) / destination).write_text(sql)
 
     def _table_name(
         self, window_period: str, window_index: int, analysis_basis: Optional[AnalysisBasis] = None
@@ -262,7 +271,11 @@ class Analysis:
                 exposure_signal,
             )
 
-            self.bigquery.execute(metrics_sql, res_table_name)
+            results = self.bigquery.execute(metrics_sql, res_table_name)
+            logger.info(
+                f"Metric query cost: {results.total_bytes_billed * COST_PER_BYTE}",
+            )
+            self._write_sql_output(res_table_name, metrics_sql)
             self._publish_view(period, analysis_basis=analysis_basis.value)
 
         return res_table_name
@@ -274,12 +287,13 @@ class Analysis:
         segment_data: DataFrame,
         segment: str,
         analysis_basis: AnalysisBasis,
+        analysis_length_dates: int,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
         return (
-            Summary.from_config(metric)
+            Summary.from_config(metric, analysis_length_dates)
             .run(segment_data, self.config.experiment, analysis_basis, segment)
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
@@ -373,6 +387,9 @@ class Analysis:
         ):
             raise errors.EndedException(self.config.experiment.normandy_slug)
 
+        if self.config.experiment.is_rollout:
+            raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
+
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
@@ -441,6 +458,11 @@ class Analysis:
             segments,
         )
 
+        self._write_sql_output(
+            f"enrollments_{bq_normalize_name(self.config.experiment.normandy_slug)}",
+            enrollments_sql,
+        )
+
         dry_run_query(enrollments_sql)
         print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
         print(enrollments_sql)
@@ -470,6 +492,10 @@ class Analysis:
                     1 AS num_enrollment_events,
                     1 AS num_exposure_events
             ), analysis_windows AS (""",
+        )
+
+        self._write_sql_output(
+            f"metrics_{bq_normalize_name(self.config.experiment.normandy_slug)}", metrics_sql
         )
 
         dry_run_query(metrics_sql)
@@ -618,11 +644,18 @@ class Analysis:
                         ):
                             continue
 
+                        analysis_length_dates = 1
+                        if period.value == AnalysisPeriod.OVERALL:
+                            analysis_length_dates = time_limits.analysis_length_dates
+                        elif period.value == AnalysisPeriod.WEEK:
+                            analysis_length_dates = 7
+
                         segment_results += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
+                            analysis_length_dates,
                         ).to_dict()["data"]
 
                     segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
@@ -640,30 +673,8 @@ class Analysis:
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
 
-    def ensure_enrollments(self, current_date: datetime) -> None:
-        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
-        if (
-            hasattr(self.config.experiment, "is_enrollment_paused")
-            and not self.config.experiment.is_enrollment_paused
-        ):
-            logger.info(f"Enrollment not complete for {self.config.experiment.normandy_slug}")
-            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
-
-        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
-
-        if time_limits is None:
-            logger.info(
-                "Skipping enrollments for %s; not ready", self.config.experiment.normandy_slug
-            )
-            return
-
-        if self.config.experiment.start_date is None:
-            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
-
-        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        enrollments_table = f"enrollments_{normalized_slug}"
-
-        logger.info(f"Create {enrollments_table}")
+    def enrollments_query(self, time_limits: TimeLimits) -> str:
+        """Returns the enrollments SQL query."""
         exp = mozanalysis.experiment.Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
@@ -681,7 +692,7 @@ class Analysis:
         for segment in self.config.experiment.segments:
             segments.append(Segment.from_segment_config(segment).to_mozanalysis_segment())
 
-        enrollments_sql = exp.build_enrollments_query(
+        return exp.build_enrollments_query(
             time_limits,
             PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
@@ -690,11 +701,34 @@ class Analysis:
             segments,
         )
 
+    def ensure_enrollments(self, current_date: datetime) -> None:
+        """Ensure that enrollment tables for experiment are up-to-date or re-create."""
+        time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
+
+        if time_limits is None:
+            logger.info(
+                "Skipping enrollments for %s; not ready", self.config.experiment.normandy_slug
+            )
+            return
+
+        if self.config.experiment.start_date is None:
+            raise errors.NoStartDateException(self.config.experiment.normandy_slug)
+
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table = f"enrollments_{normalized_slug}"
+
+        logger.info(f"Create {enrollments_table}")
+        enrollments_sql = self.enrollments_query(time_limits=time_limits)
+
         try:
-            self.bigquery.execute(
+            self._write_sql_output(enrollments_table, enrollments_sql)
+            results = self.bigquery.execute(
                 enrollments_sql,
                 enrollments_table,
                 google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
+            )
+            logger.info(
+                "Enrollment query cost: " + f"{results.total_bytes_billed * COST_PER_BYTE}",
             )
         except Conflict:
             pass

@@ -94,6 +94,17 @@ class CensorValuesAboveThreshold(PreTreatment):
 
 
 @attr.s(auto_attribs=True)
+class NormalizeOverAnalysisPeriod(PreTreatment):
+    """Normalizes the row values over a given analysis period (number of days)."""
+
+    analysis_period_length: int = 1
+
+    def apply(self, df: DataFrame, col: str) -> DataFrame:
+        df[col] = df[col] / self.analysis_period_length
+        return df
+
+
+@attr.s(auto_attribs=True)
 class Log(PreTreatment):
     base: Optional[float] = 10.0
 

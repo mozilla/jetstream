@@ -102,6 +102,7 @@ class ExperimentV6:
     outcomes: Optional[List[Outcome]] = None
     enrollmentEndDate: Optional[dt.datetime] = None
     isEnrollmentPaused: Optional[bool] = False
+    isRollout: bool = False
 
     @property
     def appName(self) -> str:
@@ -155,6 +156,7 @@ class ExperimentV6:
             if self.enrollmentEndDate
             else None,
             is_enrollment_paused=bool(self.isEnrollmentPaused),
+            is_rollout=self.isRollout,
         )
 
 

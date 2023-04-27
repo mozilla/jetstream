@@ -19,6 +19,7 @@ class LogConfiguration:
     task_monitoring_log_table_id: Optional[str]
     log_to_bigquery: bool = False
     capacity: int = 50
+    log_level: int = logging.WARNING
 
     def setup_logger(self, client=None):
         logging.basicConfig(
@@ -31,7 +32,7 @@ class LogConfiguration:
             bigquery_handler = BigQueryLogHandler(
                 self.log_project_id, self.log_dataset_id, self.log_table_id, client, self.capacity
             )
-            bigquery_handler.setLevel(logging.WARNING)
+            bigquery_handler.setLevel(self.log_level)
             logger.addHandler(bigquery_handler)
 
 
