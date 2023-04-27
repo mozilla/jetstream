@@ -97,10 +97,10 @@ class CensorValuesAboveThreshold(PreTreatment):
 class NormalizeOverAnalysisPeriod(PreTreatment):
     """Normalizes the row values over a given analysis period (number of days)."""
 
-    analysis_period: int = 1
+    analysis_period_length: int = 1
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
-        df[col] = df[col] / self.analysis_period
+        df[col] = df[col] / self.analysis_period_length
         return df
 
 
