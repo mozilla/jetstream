@@ -287,12 +287,13 @@ class Analysis:
         segment_data: DataFrame,
         segment: str,
         analysis_basis: AnalysisBasis,
+        analysis_length_dates: int,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
         return (
-            Summary.from_config(metric)
+            Summary.from_config(metric, analysis_length_dates)
             .run(segment_data, self.config.experiment, analysis_basis, segment)
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
@@ -643,11 +644,18 @@ class Analysis:
                         ):
                             continue
 
+                        analysis_length_dates = 1
+                        if period.value == AnalysisPeriod.OVERALL:
+                            analysis_length_dates = time_limits.analysis_length_dates
+                        elif period.value == AnalysisPeriod.WEEK:
+                            analysis_length_dates = 7
+
                         segment_results += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
+                            analysis_length_dates,
                         ).to_dict()["data"]
 
                     segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
