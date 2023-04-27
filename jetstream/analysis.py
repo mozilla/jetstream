@@ -389,7 +389,7 @@ class Analysis:
 
         if (
             hasattr(self.config.experiment, "is_enrollment_paused")
-            and not self.config.experiment.is_enrollment_paused
+            and self.config.experiment.is_enrollment_paused is False
         ):
             raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
 

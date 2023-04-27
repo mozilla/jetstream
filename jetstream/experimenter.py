@@ -101,7 +101,7 @@ class ExperimentV6:
     _appId: Optional[str] = None
     outcomes: Optional[List[Outcome]] = None
     enrollmentEndDate: Optional[dt.datetime] = None
-    isEnrollmentPaused: Optional[bool] = False
+    isEnrollmentPaused: Optional[bool] = None
     isRollout: bool = False
 
     @property

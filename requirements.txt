@@ -530,6 +530,12 @@ importlib-metadata==6.5.0 \
     # via
     #   -r requirements.in
     #   dask
+importlib-resources==5.12.0 \
+    --hash=sha256:4be82589bf5c1d7999aedf2a45159d10cb3ca4f19b2271f8792bc8e6da7b22f6 \
+    --hash=sha256:7b1deeebbf351c7578e09bf2f63fa2ce8b5ffec296e0d349139d43cca061a81a
+    # via
+    #   jsonschema
+    #   matplotlib
 iniconfig==2.0.0 \
     --hash=sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3 \
     --hash=sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
@@ -739,9 +745,9 @@ mozanalysis==2023.4.2 \
     --hash=sha256:26a5965d18f7fc555c6cdf69c6afb83740a9a73448d184ab44d8f1bdf61a1c86 \
     --hash=sha256:4530663c5e437438f7f4f8b57a957d69dda6e88ec3d9760528a1bd8b8c964352
     # via -r requirements.in
-mozilla-metric-config-parser==2023.4.2 \
-    --hash=sha256:183637ec38e5a92b0130eb695d078c02fa73e36480e5b8a6a207d78dc19ce4ab \
-    --hash=sha256:674214af52949a64dd8af0f4fba8bcdc9eb3135a6bcdae91113c94956bc91f80
+mozilla-metric-config-parser==2023.4.3 \
+    --hash=sha256:073ca94bc9a54f8e0bac9876e47b6c4cfd1988389ff8c9f4f28d7d45582c546c \
+    --hash=sha256:10f96d9ecf234aeec598a7f641fa54d832241ea6335bfbd0832119acb1de199a
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -1464,3 +1470,4 @@ zipp==3.15.0 \
     # via
     #   -r requirements.in
     #   importlib-metadata
+    #   importlib-resources
