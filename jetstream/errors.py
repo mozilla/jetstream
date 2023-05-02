@@ -6,12 +6,17 @@ class ValidationException(Exception):
 
 
 class NoSlugException(ValidationException):
-    def __init__(self, message="Experiment has no slug"):
+    def __init__(self, message="Experiment has no slug."):
         super().__init__(message)
 
 
 class NoEnrollmentPeriodException(ValidationException):
-    def __init__(self, normandy_slug, message="Experiment has no enrollment period"):
+    def __init__(self, normandy_slug, message="Experiment has no enrollment period."):
+        super().__init__(f"{normandy_slug} -> {message}")
+
+
+class EnrollmentNotCompleteException(ValidationException):
+    def __init__(self, normandy_slug, message="Experiment has not finished enrollment."):
         super().__init__(f"{normandy_slug} -> {message}")
 
 
