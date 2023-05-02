@@ -156,7 +156,7 @@ mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
-numpy==1.24.2
+numpy==1.24.3
     # via
     #   contourpy
     #   db-dtypes
