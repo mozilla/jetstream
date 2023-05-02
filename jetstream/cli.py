@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, time, timedelta
 from functools import partial
+from multiprocessing import Pool
 from pathlib import Path
 from typing import (
     Callable,
@@ -857,6 +858,39 @@ def rerun(
 
     if return_status:
         sys.exit(not success)
+
+
+@cli.command()
+@experiment_slug_option
+@project_id_option()
+@dataset_id_option()
+@config_repos_option
+@private_config_repos_option
+@click.option(
+    "--parallelism",
+    "-p",
+    help="Number of parallel threads",
+    default=8,
+)
+def rerun_skip(
+    experiment_slug, project_id, dataset_id, config_repos, private_config_repos, parallelism
+):
+    """Skip rerun for experiments and mark them as up to date."""
+    if not experiment_slug:
+        # get experiment-specific external configs
+        ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        )
+        updated_configs = ConfigLoader.updated_configs(project_id, dataset_id)
+        experiments_with_updated_defaults = ConfigLoader.updated_defaults(project_id, dataset_id)
+        experiment_slug = set(
+            experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
+        )
+
+    client = BigQueryClient(project_id, dataset_id)
+    logger.info(f"Skip reruns for {experiment_slug}")
+    with Pool(parallelism) as pool:
+        pool.map(client.touch_tables, experiment_slug)
 
 
 @cli.command()
