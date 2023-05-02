@@ -96,6 +96,7 @@ class ExperimentV6:
     startDate: Optional[dt.datetime]
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
+    bucketConfig: experiment.BucketConfig
     referenceBranch: Optional[str]
     _appName: Optional[str] = None
     _appId: Optional[str] = None
@@ -157,6 +158,7 @@ class ExperimentV6:
             else None,
             is_enrollment_paused=bool(self.isEnrollmentPaused),
             is_rollout=self.isRollout,
+            bucket_config=self.bucketConfig,
         )
 
 
