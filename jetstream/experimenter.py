@@ -101,6 +101,7 @@ class ExperimentV6:
     _appId: Optional[str] = None
     outcomes: Optional[List[Outcome]] = None
     enrollmentEndDate: Optional[dt.datetime] = None
+    isEnrollmentPaused: Optional[bool] = None
     isRollout: bool = False
 
     @property
@@ -154,6 +155,7 @@ class ExperimentV6:
             enrollment_end_date=pytz.utc.localize(self.enrollmentEndDate)
             if self.enrollmentEndDate
             else None,
+            is_enrollment_paused=bool(self.isEnrollmentPaused),
             is_rollout=self.isRollout,
         )
 

@@ -387,6 +387,12 @@ class Analysis:
         ):
             raise errors.EndedException(self.config.experiment.normandy_slug)
 
+        if (
+            hasattr(self.config.experiment, "is_enrollment_paused")
+            and self.config.experiment.is_enrollment_paused is False
+        ):
+            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
+
         if self.config.experiment.is_rollout:
             raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
 

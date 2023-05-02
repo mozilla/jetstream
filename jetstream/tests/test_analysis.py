@@ -17,6 +17,7 @@ import jetstream.analysis
 from jetstream.analysis import Analysis
 from jetstream.config import ConfigLoader
 from jetstream.errors import (
+    EnrollmentNotCompleteException,
     ExplicitSkipException,
     HighPopulationException,
     NoEnrollmentPeriodException,
@@ -276,6 +277,25 @@ def test_skip_works(experiments):
         Analysis("test", "test", configured).run(
             current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
         )
+
+
+def test_skip_while_enrolling(experiments):
+    config = AnalysisSpec().resolve(experiments[8], ConfigLoader.configs)
+    with pytest.raises(EnrollmentNotCompleteException):
+        Analysis("test", "test", config).run(
+            current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+        )
+
+
+def test_run_when_enrolling_complete(experiments, monkeypatch):
+    config = AnalysisSpec().resolve(experiments[9], ConfigLoader.configs)
+    m = Mock()
+    m.return_value = None
+    monkeypatch.setattr("jetstream.analysis.Analysis._get_timelimits_if_ready", m)
+    # no errors expected
+    Analysis("test", "test", config).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+    )
 
 
 def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
