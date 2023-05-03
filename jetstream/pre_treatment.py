@@ -15,6 +15,8 @@ class PreTreatment(ABC):
     calculating statistics.
     """
 
+    analysis_period_length: int = 1
+
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
@@ -96,8 +98,6 @@ class CensorValuesAboveThreshold(PreTreatment):
 @attr.s(auto_attribs=True)
 class NormalizeOverAnalysisPeriod(PreTreatment):
     """Normalizes the row values over a given analysis period (number of days)."""
-
-    analysis_period_length: int = 1
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         df[col] = df[col] / self.analysis_period_length
