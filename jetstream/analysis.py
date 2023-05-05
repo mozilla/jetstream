@@ -288,13 +288,20 @@ class Analysis:
         segment: str,
         analysis_basis: AnalysisBasis,
         analysis_length_dates: int,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
         return (
             Summary.from_config(metric, analysis_length_dates)
-            .run(segment_data, self.config.experiment, analysis_basis, segment)
+            .run(
+                segment_data,
+                self.config.experiment,
+                analysis_basis,
+                segment,
+                total_enrolled_clients,
+            )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
         )
@@ -638,6 +645,8 @@ class Analysis:
                     )
                     continue
 
+                total_enrolled_clients = len(metrics_dataframe)
+
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
                     segment_data = self.subset_to_segment(
@@ -662,6 +671,7 @@ class Analysis:
                             segment,
                             analysis_basis,
                             analysis_length_dates,
+                            total_enrolled_clients,
                         ).to_dict()["data"]
 
                     segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[

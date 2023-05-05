@@ -89,12 +89,15 @@ class Summary:
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
-        return self.statistic.apply(data, self.metric.name, experiment, analysis_basis, segment)
+        return self.statistic.apply(
+            data, self.metric.name, experiment, analysis_basis, segment, total_enrolled_clients
+        )
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -202,6 +205,7 @@ class Statistic(ABC):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> "StatisticResultCollection":
         """
         Run statistic on data provided by a DataFrame and return a collection
@@ -233,7 +237,13 @@ class Statistic(ABC):
                 for ref_branch in ref_branch_list:
                     try:
                         statistic_result_collection.data += self.transform(
-                            df, metric, ref_branch, experiment, analysis_basis, segment
+                            df,
+                            metric,
+                            ref_branch,
+                            experiment,
+                            analysis_basis,
+                            segment,
+                            total_enrolled_clients,
                         ).data
                     except Exception as e:
                         logger.exception(
@@ -265,6 +275,7 @@ class Statistic(ABC):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> "StatisticResultCollection":
         return NotImplemented
 
@@ -370,6 +381,7 @@ class BootstrapMean(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -393,7 +405,7 @@ class BootstrapMean(Statistic):
 
 
 @attr.s(auto_attribs=True)
-class ReachablePopulation(BootstrapMean):
+class PerClientDAUImpact(BootstrapMean):
     def transform(
         self,
         df: DataFrame,
@@ -402,13 +414,13 @@ class ReachablePopulation(BootstrapMean):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         bootstrap_results = super().transform(
             df, metric, reference_branch, experiment, analysis_basis, segment
         )
         enrollment_fraction = experiment.bucket_config.count - experiment.bucket_config.start
-        total_clients = 0  # TODO
-        engagement_ratio = total_clients / enrollment_fraction
+        reachable_population = total_enrolled_clients / enrollment_fraction
 
         results = []
         for branch in experiment.branches:
@@ -418,10 +430,10 @@ class ReachablePopulation(BootstrapMean):
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data:
-                d.point = d.point * engagement_ratio
-                d.upper = d.upper * engagement_ratio
-                d.lower = d.lower * engagement_ratio
-                d.statistic = "reachable_population"
+                d.point = d.point * reachable_population
+                d.upper = d.upper * reachable_population
+                d.lower = d.lower * reachable_population
+                d.statistic = "per_client_dau_impact"
 
                 results.append(d)
 
@@ -440,6 +452,7 @@ class Binomial(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -484,6 +497,7 @@ class Deciles(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         stats_results = StatisticResultCollection([])
 
@@ -588,6 +602,7 @@ class Count(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         results = []
         counts = df.groupby("branch").size()
@@ -637,6 +652,7 @@ class Sum(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         results = []
         sums = df.groupby("branch")[metric].sum()
@@ -703,6 +719,7 @@ class KernelDensityEstimate(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
@@ -771,6 +788,7 @@ class EmpiricalCDF(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         results = []
         for branch, group in df.groupby("branch"):
