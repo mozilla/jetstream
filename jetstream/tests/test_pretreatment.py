@@ -74,3 +74,11 @@ class TestPreTreatment:
         ex1 = pt.apply(example_data, "a")
         assert ex1.loc[1, "a"] == 0
         assert np.isnan(ex1.loc[1, "b"])
+
+    def test_normalize_analysis_perioby_d(self, example_data):
+        pt = pre_treatment.NormalizeOverAnalysisPeriod(analysis_period_length=10)
+        ex1 = pt.apply(example_data, "a")
+        assert ex1.loc[0, "a"] == 1 / 10
+        assert ex1.loc[0, "b"] == 2
+        assert ex1.loc[2, "a"] == 1 / 2
+        assert ex1.loc[2, "b"] == 7

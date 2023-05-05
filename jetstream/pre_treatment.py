@@ -15,6 +15,8 @@ class PreTreatment(ABC):
     calculating statistics.
     """
 
+    analysis_period_length: int = attr.ib(kw_only=True, default=1)
+
     @classmethod
     def name(cls):
         """Return snake-cased name of the statistic."""
