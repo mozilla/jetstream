@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisBasis
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 
@@ -14,6 +16,7 @@ from jetstream.statistics import (
     Count,
     EmpiricalCDF,
     KernelDensityEstimate,
+    PerClientDAUImpact,
     StatisticResult,
     Sum,
     _make_grid,
@@ -34,7 +37,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
         result = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         )
 
         branch_results = [r for r in result.data if r.comparison is None]
@@ -43,8 +46,34 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower and treatment_result.upper
 
-    def test_reachable_populations(self):
-        assert False
+    def test_per_client_dau_impact(self):
+        stat = PerClientDAUImpact()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+        )
+        experiment = Experiment(
+            experimenter_slug="test_slug",
+            type="pref",
+            status="Live",
+            start_date=dt.datetime.now(),
+            end_date=None,
+            proposed_enrollment=7,
+            branches=[Branch(slug="control", ratio=1), Branch(slug="treatment", ratio=1)],
+            normandy_slug="normandy-test-slug",
+            reference_branch=None,
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit="test-unit", namespace="test", start=50, count=100
+            ),
+        )
+        result = stat.transform(
+            test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all", 50
+        )
+
+        print(result)
+        assert result is True
 
     def test_binomial(self):
         stat = Binomial()
@@ -55,7 +84,7 @@ class TestStatistics:
             }
         )
         result = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         )
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -73,7 +102,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
         result = stat.transform(
-            test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert all(r.metric == "identity" for r in result)
         assert [r.point for r in result if r.branch == "treatment"] == [20]
@@ -90,7 +119,7 @@ class TestStatistics:
             }
         )
         result = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert all(r.metric == "value" for r in result)
         assert [r.point for r in result if r.branch == "treatment"] == [5]
@@ -107,7 +136,7 @@ class TestStatistics:
             }
         )
         result = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert all(r.metric == "value" for r in result)
         assert [r.point for r in result if r.branch == "treatment"] == [15]
@@ -126,7 +155,7 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all")
+        result = stat.apply(test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all", 0)
 
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -189,16 +218,16 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").data
+        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all", 0).data
         assert len(result) > 0
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").to_dict()[
-            "data"
-        ]
+        result = stat.transform(
+            wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all", 0
+        ).to_dict()["data"]
         for r in result:
             assert isinstance(r["point"], float)
         df = pd.DataFrame(result).astype({"parameter": float})
@@ -207,19 +236,19 @@ class TestStatistics:
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
         result = stat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert len(result) > 0
 
         logstat = EmpiricalCDF(log_space=True)
         result = logstat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert len(result) > 0
 
         wine["ash"] = -wine["ash"]
         result = logstat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
         ).data
         assert len(result) > 0
 

@@ -321,6 +321,7 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 analysis_basis,
                 segment,
+                0,  # not used by Count, but required for Statistic
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)

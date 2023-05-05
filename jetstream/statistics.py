@@ -417,7 +417,13 @@ class PerClientDAUImpact(BootstrapMean):
         total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         bootstrap_results = super().transform(
-            df, metric, reference_branch, experiment, analysis_basis, segment
+            df,
+            metric,
+            reference_branch,
+            experiment,
+            analysis_basis,
+            segment,
+            total_enrolled_clients,
         )
         enrollment_fraction = experiment.bucket_config.count - experiment.bucket_config.start
         reachable_population = total_enrolled_clients / enrollment_fraction
@@ -584,6 +590,7 @@ class Count(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ):
         return self.transform(
             df,
@@ -592,6 +599,7 @@ class Count(Statistic):
             experiment.normandy_slug,
             analysis_basis,
             segment,
+            total_enrolled_clients,
         )
 
     def transform(
@@ -634,6 +642,7 @@ class Sum(Statistic):
         experiment: Experiment,
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ):
         return self.transform(
             df,
@@ -642,6 +651,7 @@ class Sum(Statistic):
             experiment.normandy_slug,
             analysis_basis,
             segment,
+            total_enrolled_clients,
         )
 
     def transform(
