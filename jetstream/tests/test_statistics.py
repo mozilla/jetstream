@@ -43,6 +43,9 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower and treatment_result.upper
 
+    def test_reachable_populations(self):
+        assert False
+
     def test_binomial(self):
         stat = Binomial()
         test_data = pd.DataFrame(

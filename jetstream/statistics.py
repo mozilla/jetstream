@@ -403,16 +403,20 @@ class ReachablePopulation(BootstrapMean):
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        bootstrap_results_data = super().transform(
+        bootstrap_results = super().transform(
             df, metric, reference_branch, experiment, analysis_basis, segment
-        ).data
+        )
         enrollment_fraction = experiment.bucket_config.count - experiment.bucket_config.start
         total_clients = 0  # TODO
         engagement_ratio = total_clients / enrollment_fraction
 
         results = []
         for branch in experiment.branches:
-            branch_data = [x for x in bootstrap_results_data if x.branch == branch.slug and x.comparison == "difference"]
+            branch_data = [
+                x
+                for x in bootstrap_results.data
+                if x.branch == branch.slug and x.comparison == "difference"
+            ]
             for d in branch_data:
                 d.point = d.point * engagement_ratio
                 d.upper = d.upper * engagement_ratio
@@ -420,9 +424,8 @@ class ReachablePopulation(BootstrapMean):
                 d.statistic = "reachable_population"
 
                 results.append(d)
-        
-        return results
 
+        return StatisticResultCollection(results)
 
 
 @attr.s(auto_attribs=True)

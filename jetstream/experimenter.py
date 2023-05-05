@@ -129,6 +129,14 @@ class ExperimentV6:
                 _appId=cattr.override(rename="appId"),
             ),
         )
+        converter.register_structure_hook(
+            experiment.BucketConfig,
+            cattr.gen.make_dict_structure_fn(
+                experiment.BucketConfig,
+                converter,
+                randomization_unit=cattr.override(rename="randomizationUnit"),
+            ),
+        )
         return converter.structure(d, cls)
 
     def to_experiment(self) -> experiment.Experiment:
