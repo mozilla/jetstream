@@ -294,10 +294,7 @@ distributed==2023.4.0 \
 exceptiongroup==1.1.1 \
     --hash=sha256:232c37c63e4f682982c8b6459f33a8981039e5fb8756b2074364e5055c498c9e \
     --hash=sha256:d484c3090ba2889ae2928419117447a14daf3c1231d5e30d0aae34f354f01785
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -739,9 +736,9 @@ mozanalysis==2023.4.2 \
     --hash=sha256:26a5965d18f7fc555c6cdf69c6afb83740a9a73448d184ab44d8f1bdf61a1c86 \
     --hash=sha256:4530663c5e437438f7f4f8b57a957d69dda6e88ec3d9760528a1bd8b8c964352
     # via -r requirements.in
-mozilla-metric-config-parser==2023.4.3 \
-    --hash=sha256:073ca94bc9a54f8e0bac9876e47b6c4cfd1988389ff8c9f4f28d7d45582c546c \
-    --hash=sha256:10f96d9ecf234aeec598a7f641fa54d832241ea6335bfbd0832119acb1de199a
+mozilla-metric-config-parser==2023.5.1 \
+    --hash=sha256:53da61e6168494692fdf975c06a82a583ecdfde17f900f88848da50a61a2e0df \
+    --hash=sha256:924d55d61744f68b3c709b9a355ea71d4528fbfa114cc2f5374349cc84dbaee0
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -1361,12 +1358,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
