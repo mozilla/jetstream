@@ -92,7 +92,7 @@ google-cloud-core==2.3.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==2.8.0
+google-cloud-storage==2.9.0
     # via
     #   mozilla-jetstream
     #   smart-open
