@@ -135,16 +135,16 @@ class ArgoExecutorStrategy:
                 "bucket": self.bucket,
                 "analysis_periods_day": "day"
                 if AnalysisPeriod.DAY in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_week": "week"
                 if AnalysisPeriod.WEEK in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_days28": "days28"
                 if AnalysisPeriod.DAYS_28 in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_overall": "overall"
                 if AnalysisPeriod.OVERALL in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
