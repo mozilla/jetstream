@@ -17,7 +17,7 @@ from jetstream.logging import LogConfiguration
 logger = logging.getLogger(__name__)
 
 EXPERIMENT_LOG_PATH = "errors"
-SKIP_ERROR_TYPES = ["EndedException"]
+SKIP_ERROR_TYPES = ["EndedException", "EnrollmentNotCompleteException"]
 
 
 def _get_statistics_tables_last_modified(

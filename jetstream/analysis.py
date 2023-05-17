@@ -390,12 +390,6 @@ class Analysis:
         if self.config.experiment.is_rollout:
             raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
 
-        if (
-            hasattr(self.config.experiment, "is_enrollment_paused")
-            and self.config.experiment.is_enrollment_paused is False
-        ):
-            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
-
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
@@ -545,6 +539,12 @@ class Analysis:
 
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy
+
+        if (
+            hasattr(self.config.experiment, "is_enrollment_paused")
+            and self.config.experiment.is_enrollment_paused is False
+        ):
+            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
 
         self.ensure_enrollments(current_date)
 
