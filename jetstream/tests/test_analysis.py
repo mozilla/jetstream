@@ -287,6 +287,15 @@ def test_skip_while_enrolling(experiments):
         )
 
 
+def test_validation_working_while_enrolling(experiments):
+    config = AnalysisSpec().resolve(experiments[8], ConfigLoader.configs)
+    assert experiments[8].is_enrollment_paused is False
+    try:
+        Analysis("test", "test", config).validate()
+    except Exception as e:
+        assert False, f"Raised {e}"
+
+
 def test_run_when_enrolling_complete(experiments, monkeypatch):
     config = AnalysisSpec().resolve(experiments[9], ConfigLoader.configs)
     m = Mock()
