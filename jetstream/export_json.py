@@ -7,6 +7,7 @@ from typing import Callable, Dict, Optional
 
 import cattr
 import google.cloud.bigquery as bigquery
+from google.cloud.exceptions import BadRequest
 import google.cloud.storage as storage
 import smart_open
 from metric_config_parser.metric import AnalysisPeriod
@@ -62,15 +63,24 @@ def _export_table(
     storage_client: storage.Client,
 ):
     """Export a single table or view to GCS as JSON."""
-    # since views cannot get exported directly, write data into a temporary table
-    job = client.query(
-        f"""
-        SELECT *
-        FROM {dataset_id}.{table}
-    """
-    )
+    try:
+        # since views cannot get exported directly, write data into a temporary table
+        job = client.query(
+            f"""
+            SELECT *
+            FROM {dataset_id}.{table}
+        """
+        )
 
-    job.result()
+        job.result()
+    except BadRequest as e:
+        if "does not match any table" in e.message:
+            logger.error(
+                f"google.cloud.exceptions.BadRequest: {e.args[0]}. Skipping query and export..."
+            )
+            return
+        else:
+            raise e
 
     # add a random string to the identifier to prevent collision errors if there
     # happen to be multiple instances running that export data for the same experiment
