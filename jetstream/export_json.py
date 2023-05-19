@@ -7,9 +7,9 @@ from typing import Callable, Dict, Optional
 
 import cattr
 import google.cloud.bigquery as bigquery
-from google.cloud.exceptions import BadRequest
 import google.cloud.storage as storage
 import smart_open
+from google.cloud.exceptions import BadRequest
 from metric_config_parser.metric import AnalysisPeriod
 
 from jetstream import bq_normalize_name
