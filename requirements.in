@@ -73,7 +73,7 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.18.0
+google-auth==2.18.1
     # via
     #   google-api-core
     #   google-cloud-core
@@ -106,13 +106,13 @@ googleapis-common-protos==1.59.0
     # via
     #   google-api-core
     #   grpcio-status
-grpcio==1.54.2
+grpcio==1.55.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.54.2
+grpcio-status==1.55.0
     # via google-api-core
 idna==3.4
     # via requests
@@ -199,7 +199,7 @@ proto-plus==1.22.2
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==4.23.0
+protobuf==4.23.1
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -256,7 +256,7 @@ pyyaml==6.0
     #   dask
     #   distributed
     #   mozilla-jetstream
-requests==2.30.0
+requests==2.31.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -312,9 +312,9 @@ types-protobuf==4.23.0.1
     # via mozilla-jetstream
 types-pytz==2023.3.0.0
     # via mozilla-jetstream
-types-pyyaml==6.0.12.9
+types-pyyaml==6.0.12.10
     # via mozilla-jetstream
-types-requests==2.30.0.0
+types-requests==2.31.0.0
     # via mozilla-jetstream
 types-six==1.16.21.8
     # via mozilla-jetstream
@@ -322,11 +322,11 @@ types-toml==0.10.8.6
     # via mozilla-jetstream
 types-urllib3==1.26.25.13
     # via types-requests
-typing-extensions==4.5.0
+typing-extensions==4.6.0
     # via mypy
 tzdata==2023.3
     # via pandas
-urllib3==1.26.15
+urllib3==1.26.16
     # via
     #   distributed
     #   google-auth
