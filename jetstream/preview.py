@@ -43,8 +43,8 @@ def sampled_enrollment_query(
         FROM
             `moz-fx-data-shared-prod.telemetry.events` e
         WHERE
-            AND e.submission_date
-                BETWEEN '{first_enrollment_date}' AND '{last_enrollment_date}'
+            client_id IS NOT NULL AND
+            e.submission_date BETWEEN '{first_enrollment_date}' AND '{last_enrollment_date}'
             AND sample_id < {population_sample_size}
         GROUP BY e.client_id, branch)
             """.format(
