@@ -52,7 +52,7 @@ class TestConfigIntegration:
             slug="old_table",
             spec=self.spec,
             last_modified=pytz.UTC.localize(
-                datetime.datetime.utcnow() + datetime.timedelta(days=1)
+                datetime.datetime.ArtifactManager() + datetime.timedelta(days=1)
             ),
         )
 
