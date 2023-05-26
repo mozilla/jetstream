@@ -31,6 +31,8 @@ spec:
             value: "{{item.slug}}"
           - name: dates
             value: "{{item.dates}}"
+          - name: image
+            value: "{{item.image}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
         continueOn:
           failed: true
@@ -38,6 +40,7 @@ spec:
   - name: ensure-enrollments-and-analyze
     inputs:
       parameters:
+        - name: image
         - name: slug
         - name: dates
     steps:
@@ -47,6 +50,8 @@ spec:
             parameters:
               - name: slug
                 value: "{{inputs.parameters.slug}}"
+              - name: image
+                value: "{{inputs.parameters.image}}"
       - - name: analyse-and-export
           template: analyse-and-export
           arguments:
@@ -55,14 +60,17 @@ spec:
                 value: "{{inputs.parameters.slug}}"
               - name: date
                 value: "{{item}}"
+              - name: image
+                value: "{{inputs.parameters.image}}"
           withParam: "{{inputs.parameters.dates}}"
 
   - name: ensure-enrollments
     inputs: 
       parameters:
+      - name: image
       - name: slug  
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
       command: [
         jetstream, --log_to_bigquery, ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
@@ -73,10 +81,11 @@ spec:
   - name: analyse-experiment
     inputs:
       parameters:
+      - name: image
       - name: date
       - name: slug
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
       command: [
         jetstream, --log_to_bigquery, run,
         "--date={{inputs.parameters.date}}",
@@ -105,9 +114,10 @@ spec:
   - name: export-statistics
     inputs:
       parameters:
+        - name: image
         - name: slug
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream:latest
+      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
       command: [
         jetstream, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 

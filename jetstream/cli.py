@@ -38,6 +38,7 @@ from metric_config_parser.metric import AnalysisPeriod
 from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
+from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
 from .config import CONFIGS, METRIC_HUB_REPO, ConfigLoader, _ConfigLoader, validate
 from .dryrun import DryRunFailedError
@@ -116,8 +117,11 @@ class ArgoExecutorStrategy:
                 date.strftime("%Y-%m-%d")
             )
 
+        artifact_manager = ArtifactManager(project=self.project_id, dataset=self.dataset_id)
+
         experiments_config_list = [
-            {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
+            {"slug": slug, "dates": dates, "image": artifact_manager.image_for_slug(slug)}
+            for slug, dates in experiments_config.items()
         ]
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else "days28"
