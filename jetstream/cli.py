@@ -1241,7 +1241,7 @@ def preview(
         experiment_slug = [external_config.slug]
 
     for slug in experiment_slug:
-        collection = ExperimentCollection.from_experimenter()
+        collection = ExperimentCollection.from_experimenter(with_draft_experiments=True)
         experimenter_experiments = collection.with_slug(slug)
         if experimenter_experiments.experiments == [] and not config_file:
             click.echo(
@@ -1348,6 +1348,7 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
+            experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
         )
 
         # run preview analysis
@@ -1375,11 +1376,12 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda: ExperimentCollection(experiments=experiment),
+                    experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
+                experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
             )
 
         click.echo(
