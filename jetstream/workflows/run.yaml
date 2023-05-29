@@ -16,6 +16,7 @@ spec:
     - name: analysis_periods_week
     - name: analysis_periods_days28
     - name: analysis_periods_overall
+    - name: image
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -31,7 +32,7 @@ spec:
             value: "{{item.slug}}"
           - name: dates
             value: "{{item.dates}}"
-          - name: image
+          - name: image_hash
             value: "{{item.image}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
         continueOn:
@@ -40,7 +41,7 @@ spec:
   - name: ensure-enrollments-and-analyze
     inputs:
       parameters:
-        - name: image
+        - name: image_hash
         - name: slug
         - name: dates
     steps:
@@ -50,8 +51,8 @@ spec:
             parameters:
               - name: slug
                 value: "{{inputs.parameters.slug}}"
-              - name: image
-                value: "{{inputs.parameters.image}}"
+              - name: image_hash
+                value: "{{inputs.parameters.image_hash}}"
       - - name: analyse-and-export
           template: analyse-and-export
           arguments:
@@ -60,17 +61,17 @@ spec:
                 value: "{{inputs.parameters.slug}}"
               - name: date
                 value: "{{item}}"
-              - name: image
-                value: "{{inputs.parameters.image}}"
+              - name: image_hash
+                value: "{{inputs.parameters.image_hash}}"
           withParam: "{{inputs.parameters.dates}}"
 
   - name: ensure-enrollments
     inputs: 
       parameters:
-      - name: image
+      - name: image_hash
       - name: slug  
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
+      image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@{{inputs.parameters.image_hash}}
       command: [
         jetstream, --log_to_bigquery, ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
@@ -81,11 +82,11 @@ spec:
   - name: analyse-experiment
     inputs:
       parameters:
-      - name: image
+      - name: image_hash
       - name: date
       - name: slug
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
+      image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@{{inputs.parameters.image_hash}}
       command: [
         jetstream, --log_to_bigquery, run,
         "--date={{inputs.parameters.date}}",
@@ -114,10 +115,10 @@ spec:
   - name: export-statistics
     inputs:
       parameters:
-        - name: image
+        - name: image_hash
         - name: slug
     container:
-      image: gcr.io/moz-fx-data-experiments/jetstream@{{inputs.parameters.image}}
+      image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@{{inputs.parameters.image_hash}}
       command: [
         jetstream, export-statistics-to-json, 
         "--dataset_id={{workflow.parameters.dataset_id}}", 

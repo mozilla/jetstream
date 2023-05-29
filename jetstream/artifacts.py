@@ -14,6 +14,7 @@ class ArtifactManager:
     """Access docker images in the artifact registry."""
 
     project: str
+    image: str
     _client: Optional[artifactregistry.ArtifactRegistryClient] = None
 
     @property
@@ -33,7 +34,7 @@ class ArtifactManager:
         images = []
 
         for image_data in result:
-            if "/jetstream@sha256" in image_data.name:
+            if f"/{self.image}@sha256" in image_data.name:
                 images.append(image_data)
 
         return images
@@ -49,7 +50,7 @@ class ArtifactManager:
         if last_updated:
             return self._image_for_date(last_updated)
         else:
-            return self._latest_image()
+            return self.latest_image()
 
     def _slug_last_updated(self, slug: str) -> Optional[datetime]:
         """
@@ -113,6 +114,6 @@ class ArtifactManager:
         else:
             raise ValueError(f"No jetstream docker image available in {self.project}")
 
-    def _latest_image(self) -> Optional[str]:
+    def latest_image(self) -> Optional[str]:
         """Return the latest docker image hash."""
         return self._image_for_date(date=pytz.UTC.localize(datetime.utcnow()))
