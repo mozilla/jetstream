@@ -15,7 +15,7 @@ black==23.3.0
     # via pytest-black
 cachetools==5.3.1
     # via google-auth
-cattrs==22.2.0
+cattrs==23.1.2
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
@@ -73,23 +73,23 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.19.0
+google-auth==2.19.1
     # via
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.8.1
+google-cloud-artifact-registry==1.8.1 
     # via
     #   mozilla-jetstream
-google-cloud-bigquery==3.10.0
-    # via
-    #   mozanalysis
-    #   mozilla-jetstream
-google-cloud-bigquery-storage==2.19.1
+google-cloud-bigquery==3.11.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.21.0
+google-cloud-bigquery-storage==2.20.0
+    # via
+    #   mozanalysis
+    #   mozilla-jetstream
+google-cloud-container==2.22.0
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -325,8 +325,10 @@ types-toml==0.10.8.6
     # via mozilla-jetstream
 types-urllib3==1.26.25.13
     # via types-requests
-typing-extensions==4.6.2
-    # via mypy
+typing-extensions==4.6.3
+    # via
+    #   cattrs
+    #   mypy
 tzdata==2023.3
     # via pandas
 urllib3==1.26.16

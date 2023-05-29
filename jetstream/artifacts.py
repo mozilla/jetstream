@@ -3,10 +3,9 @@ from typing import List, Optional
 
 import attr
 import pytz
-from google.cloud import artifactregistry, bigquery
-from pytz import UTC
+from google.cloud import artifactregistry
 
-from . import bq_normalize_name
+from jetstream.bigquery_client import BigQueryClient
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -14,6 +13,7 @@ class ArtifactManager:
     """Access docker images in the artifact registry."""
 
     project: str
+    dataset: str
     image: str
     _client: Optional[artifactregistry.ArtifactRegistryClient] = None
 
@@ -43,47 +43,16 @@ class ArtifactManager:
         """
         Get the image that should be used to analyse the experiment with the provided slug.
 
-        The image is determined based on the oldes last updated timestamp of the analysis results.
+        The image is determined based on the oldest last updated timestamp of the analysis results
+        (in other words, the timestamp from the first time the experiment was analyzed).
         """
-        last_updated = self._slug_last_updated(slug)
+        client = BigQueryClient(self.project, self.dataset)
+        last_updated = client.experiment_table_first_updated(slug=slug)
 
         if last_updated:
             return self._image_for_date(last_updated)
         else:
             return self.latest_image()
-
-    def _slug_last_updated(self, slug: str) -> Optional[datetime]:
-        """
-        Determine the last updated timestamp of the slug based on the statistic table labels.
-
-        Returns `None` if no table related to the experiment exists.
-        """
-        client = bigquery.Client(self.project)
-        table_prefix = bq_normalize_name(slug)
-
-        job = client.query(
-            rf"""
-            SELECT
-                table_name,
-                REGEXP_EXTRACT_ALL(
-                    option_value,
-                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
-                ) AS last_updated
-            FROM
-            {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
-            WHERE option_name = 'labels' AND table_name LIKE "statistics_{table_prefix}%"
-            """
-        )
-        result = list(job.result())
-
-        table_last_updated = None
-
-        for row in result:
-            if not len(row.last_updated):
-                continue
-            table_last_updated = UTC.localize(datetime.utcfromtimestamp(int(row.last_updated[0])))
-
-        return table_last_updated
 
     def _image_for_date(self, date: datetime) -> str:
         """Return the hash for the image that was the latest on the provided date."""
@@ -94,7 +63,7 @@ class ArtifactManager:
         for image in self.images:
             updated_timestamp = image.update_time
 
-            if (latest_updated is None and image.update_time <= date) or (
+            if (latest_updated is None and image.update_time <= date) or (  # type: ignore
                 latest_updated
                 and latest_updated.update_time < updated_timestamp
                 and image.update_time <= date
@@ -114,6 +83,6 @@ class ArtifactManager:
         else:
             raise ValueError(f"No jetstream docker image available in {self.project}")
 
-    def latest_image(self) -> Optional[str]:
+    def latest_image(self) -> str:
         """Return the latest docker image hash."""
         return self._image_for_date(date=pytz.UTC.localize(datetime.utcnow()))

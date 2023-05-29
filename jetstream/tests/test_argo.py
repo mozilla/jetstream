@@ -78,8 +78,8 @@ class TestArgo:
                 manifest,
                 {
                     "experiments": [
-                        {"date": "2020-01-01", "slug": "a"},
-                        {"date": "2020-01-02", "slug": "b"},
+                        {"date": "2020-01-01", "slug": "a", "image_hash": "abc"},
+                        {"date": "2020-01-02", "slug": "b", "image_hash": "abc"},
                     ]
                 },
             )
@@ -87,5 +87,6 @@ class TestArgo:
             assert updated_manifest["spec"]["arguments"]["parameters"][0]["name"] == "experiments"
             assert (
                 updated_manifest["spec"]["arguments"]["parameters"][0]["value"]
-                == '[{"date": "2020-01-01", "slug": "a"}, {"date": "2020-01-02", "slug": "b"}]'
+                == '[{"date": "2020-01-01", "slug": "a", "image_hash": "abc"}, '
+                + '{"date": "2020-01-02", "slug": "b", "image_hash": "abc"}]'
             )

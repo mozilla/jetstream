@@ -1,5 +1,6 @@
 import re
 import time
+from datetime import datetime
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import attr
@@ -11,6 +12,7 @@ import google.cloud.bigquery.table
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
 from metric_config_parser.metric import AnalysisPeriod
+from pytz import UTC
 
 from . import bq_normalize_name
 
@@ -105,7 +107,7 @@ class BigQueryClient:
         perpetually stale."""
         normalized_slug = bq_normalize_name(normandy_slug)
         analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}_({analysis_periods})_.*$"
         tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
@@ -134,3 +136,34 @@ class BigQueryClient:
 
         for existing_table in existing_tables:
             self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
+
+    def experiment_table_first_updated(self, slug: str) -> Optional[datetime]:
+        """Get the timestamp for when an experiment related table was updated last."""
+        table_prefix = bq_normalize_name(slug)
+
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE option_name = 'labels' AND table_name LIKE "enrollments_{table_prefix}%"
+            """
+        )
+        result = list(job.result())
+
+        table_first_updated = None
+
+        for row in result:
+            if not len(row.last_updated):
+                continue
+            updated_timestamp = UTC.localize(datetime.utcfromtimestamp(int(row.last_updated[0])))
+
+            if table_first_updated is None or updated_timestamp < table_first_updated:
+                table_first_updated = updated_timestamp
+
+        return table_first_updated

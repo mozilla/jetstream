@@ -119,7 +119,9 @@ class ArgoExecutorStrategy:
                 date.strftime("%Y-%m-%d")
             )
 
-        artifact_manager = ArtifactManager(project=self.project_id, image=self.image)
+        artifact_manager = ArtifactManager(
+            project=self.project_id, dataset=self.dataset_id, image=self.image
+        )
 
         image_version = self.image_version
         if self.image_version == "latest":
@@ -129,7 +131,9 @@ class ArgoExecutorStrategy:
             {
                 "slug": slug,
                 "dates": dates,
-                "image": image_version if image_version else artifact_manager.image_for_slug(slug),
+                "image_hash": image_version
+                if image_version
+                else artifact_manager.image_for_slug(slug),
             }
             for slug, dates in experiments_config.items()
         ]

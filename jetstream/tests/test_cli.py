@@ -15,6 +15,8 @@ from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from jetstream import cli, experimenter
+from jetstream.artifacts import ArtifactManager
+from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import ConfigLoader, _ConfigLoader
 
 
@@ -478,10 +480,14 @@ class TestSerialExecutorStrategy:
 
 
 class TestArgoExecutorStrategy:
-    def test_simple_workflow(self, cli_experiments):
+    def test_simple_workflow(self, cli_experiments, monkeypatch, docker_images):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
         config = spec.resolve(experiment, ConfigLoader.configs)
+        mock_artifact_client = Mock()
+        mock_artifact_client.list_docker_images.return_value = docker_images
+        monkeypatch.setattr(BigQueryClient, "experiment_table_first_updated", lambda _, slug: None)
+        monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             strategy = cli.ArgoExecutorStrategy(
@@ -510,7 +516,13 @@ class TestArgoExecutorStrategy:
                 cluster_id="cluster_id",
                 workflow_file=strategy.RUN_WORKFLOW,
                 parameters={
-                    "experiments": [{"slug": "my_cool_experiment", "dates": ["2020-10-31"]}],
+                    "experiments": [
+                        {
+                            "slug": "my_cool_experiment",
+                            "dates": ["2020-10-31"],
+                            "image_hash": "xxxxx",
+                        }
+                    ],
                     "project_id": "spam",
                     "dataset_id": "eggs",
                     "bucket": "bucket",
@@ -518,6 +530,66 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_week": "week",
                     "analysis_periods_days28": "days28",
                     "analysis_periods_overall": "overall",
+                    "image": "jetstream",
+                },
+                monitor_status=False,
+                cluster_ip=None,
+                cluster_cert=None,
+            )
+
+    def test_simple_workflow_custom_image(self, cli_experiments, monkeypatch, docker_images):
+        experiment = cli_experiments.experiments[0]
+        spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
+        config = spec.resolve(experiment, ConfigLoader.configs)
+        mock_artifact_client = Mock()
+        mock_artifact_client.list_docker_images.return_value = docker_images
+        monkeypatch.setattr(BigQueryClient, "experiment_table_first_updated", lambda _, slug: None)
+        monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
+
+        with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
+            strategy = cli.ArgoExecutorStrategy(
+                project_id="spam",
+                dataset_id="eggs",
+                bucket="bucket",
+                zone="zone",
+                cluster_id="cluster_id",
+                monitor_status=False,
+                cluster_ip=None,
+                cluster_cert=None,
+                experiment_getter=lambda: cli_experiments,
+                analysis_periods=[
+                    AnalysisPeriod.DAY,
+                    AnalysisPeriod.WEEK,
+                    AnalysisPeriod.DAYS_28,
+                    AnalysisPeriod.OVERALL,
+                ],
+                image="unrelated",
+                image_version="latest",
+            )
+            run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
+            strategy.execute([(config, run_date)])
+
+            submit_workflow_mock.assert_called_once_with(
+                project_id="spam",
+                zone="zone",
+                cluster_id="cluster_id",
+                workflow_file=strategy.RUN_WORKFLOW,
+                parameters={
+                    "experiments": [
+                        {
+                            "slug": "my_cool_experiment",
+                            "dates": ["2020-10-31"],
+                            "image_hash": "aaaaa",
+                        }
+                    ],
+                    "project_id": "spam",
+                    "dataset_id": "eggs",
+                    "bucket": "bucket",
+                    "analysis_periods_day": "day",
+                    "analysis_periods_week": "week",
+                    "analysis_periods_days28": "days28",
+                    "analysis_periods_overall": "overall",
+                    "image": "unrelated",
                 },
                 monitor_status=False,
                 cluster_ip=None,
