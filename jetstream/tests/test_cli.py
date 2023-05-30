@@ -2,7 +2,7 @@ import datetime as dt
 import os
 from textwrap import dedent
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import attr
 import pytest
@@ -16,7 +16,6 @@ from pytz import UTC
 
 from jetstream import cli, experimenter
 from jetstream.artifacts import ArtifactManager
-from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import ConfigLoader, _ConfigLoader
 
 
@@ -195,7 +194,7 @@ class TestAnalysisExecutor:
         assert success
         assert strategy.worklist == []
 
-    def test_single_date(self, monkeypatch):
+    def test_single_date(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -203,9 +202,6 @@ class TestAnalysisExecutor:
             date=dt.datetime(2020, 10, 28, tzinfo=UTC),
             experiment_slugs=["my_cool_experiment"],
         )
-
-        bigquery_mock_client = Mock()
-        monkeypatch.setattr("jetstream.cli.BigQueryClient", bigquery_mock_client)
 
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
@@ -217,9 +213,9 @@ class TestAnalysisExecutor:
         assert len(strategy.worklist) == 1
         assert strategy.worklist[0][0].experiment.normandy_slug == "my_cool_experiment"
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
-        assert bigquery_mock_client.called is False
+        assert bq_client_mock.experiment_table_first_updated.called_once_with("my_cool_experiment")
 
-    def test_recreate_enrollments(self, monkeypatch):
+    def test_recreate_enrollments(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -229,8 +225,6 @@ class TestAnalysisExecutor:
             recreate_enrollments=True,
         )
 
-        bigquery_mock_client = Mock()
-        monkeypatch.setattr("jetstream.cli.BigQueryClient", bigquery_mock_client)
         strategy = DummyExecutorStrategy("project", "dataset")
         success = executor.execute(
             experiment_getter=cli_experiments,
@@ -241,11 +235,11 @@ class TestAnalysisExecutor:
         assert len(strategy.worklist) == 1
         assert strategy.worklist[0][0].experiment.normandy_slug == "my_cool_experiment"
         assert strategy.worklist[0][1] == dt.datetime(2020, 10, 28, tzinfo=UTC)
-        assert bigquery_mock_client.delete_table.called_once_with(
+        assert bq_client_mock.delete_table.called_once_with(
             "project.dataset.enrollments_my_cool_experiment"
         )
 
-    def test_all_single_date(self, cli_experiments):
+    def test_all_single_date(self, bq_client_mock, cli_experiments):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -265,7 +259,7 @@ class TestAnalysisExecutor:
             x.normandy_slug for x in cli_experiments.experiments
         }
 
-    def test_any_date(self):
+    def test_any_date(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -286,7 +280,7 @@ class TestAnalysisExecutor:
             "my_cool_experiment"
         }
 
-    def test_post_facto_rerun_includes_overall_date(self):
+    def test_post_facto_rerun_includes_overall_date(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -322,7 +316,7 @@ class TestAnalysisExecutor:
                 today=dt.datetime(2020, 12, 31, tzinfo=UTC),
             )
 
-    def test_bogus_experiment(self):
+    def test_bogus_experiment(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -341,7 +335,7 @@ class TestAnalysisExecutor:
             "my_cool_experiment"
         }
 
-    def test_experiments_to_analyze(self):
+    def test_experiments_to_analyze(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -352,7 +346,7 @@ class TestAnalysisExecutor:
         result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
         assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
 
-    def test_experiments_to_analyze_end_date_override(self):
+    def test_experiments_to_analyze_end_date_override(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -409,7 +403,7 @@ class TestAnalysisExecutor:
         result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
         assert len(result) == 2
 
-    def test_ensure_enrollments(self, monkeypatch):
+    def test_ensure_enrollments(self, bq_client_mock, monkeypatch):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",
@@ -445,7 +439,7 @@ class TestSerialExecutorStrategy:
         strategy.execute([])
         fake_analysis().run.assert_not_called()
 
-    def test_simple_workflow(self, cli_experiments, monkeypatch):
+    def test_simple_workflow(self, bq_client_mock, cli_experiments, monkeypatch):
         monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         monkeypatch.setattr("jetstream.cli.export_experiment_logs", Mock())
         fake_analysis = Mock()
@@ -486,29 +480,35 @@ class TestArgoExecutorStrategy:
         config = spec.resolve(experiment, ConfigLoader.configs)
         mock_artifact_client = Mock()
         mock_artifact_client.list_docker_images.return_value = docker_images
-        monkeypatch.setattr(BigQueryClient, "experiment_table_first_updated", lambda _, slug: None)
         monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
-            strategy = cli.ArgoExecutorStrategy(
-                project_id="spam",
-                dataset_id="eggs",
-                bucket="bucket",
-                zone="zone",
-                cluster_id="cluster_id",
-                monitor_status=False,
-                cluster_ip=None,
-                cluster_cert=None,
-                experiment_getter=lambda: cli_experiments,
-                analysis_periods=[
-                    AnalysisPeriod.DAY,
-                    AnalysisPeriod.WEEK,
-                    AnalysisPeriod.DAYS_28,
-                    AnalysisPeriod.OVERALL,
-                ],
-            )
-            run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
-            strategy.execute([(config, run_date)])
+            with mock.patch("jetstream.artifacts.BigQueryClient") as bq_client:
+                bigquery_mock_client = MagicMock()
+                bigquery_mock_client.experiment_table_first_updated.return_value = dt.datetime(
+                    2023, 4, 1, tzinfo=UTC
+                )
+                bq_client.return_value = bigquery_mock_client
+
+                strategy = cli.ArgoExecutorStrategy(
+                    project_id="spam",
+                    dataset_id="eggs",
+                    bucket="bucket",
+                    zone="zone",
+                    cluster_id="cluster_id",
+                    monitor_status=False,
+                    cluster_ip=None,
+                    cluster_cert=None,
+                    experiment_getter=lambda: cli_experiments,
+                    analysis_periods=[
+                        AnalysisPeriod.DAY,
+                        AnalysisPeriod.WEEK,
+                        AnalysisPeriod.DAYS_28,
+                        AnalysisPeriod.OVERALL,
+                    ],
+                )
+                run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
+                strategy.execute([(config, run_date)])
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
@@ -537,13 +537,14 @@ class TestArgoExecutorStrategy:
                 cluster_cert=None,
             )
 
-    def test_simple_workflow_custom_image(self, cli_experiments, monkeypatch, docker_images):
+    def test_simple_workflow_custom_image(
+        self, bq_client_mock, cli_experiments, monkeypatch, docker_images
+    ):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
         config = spec.resolve(experiment, ConfigLoader.configs)
         mock_artifact_client = Mock()
         mock_artifact_client.list_docker_images.return_value = docker_images
-        monkeypatch.setattr(BigQueryClient, "experiment_table_first_updated", lambda _, slug: None)
         monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:

@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import pytest
+from pytz import UTC
 
 from jetstream.config import ConfigLoader, _ConfigLoader
 from jetstream.platform import (
@@ -54,6 +57,19 @@ class TestConfigLoader:
     def test_get_nonexisting_data_source(self):
         with pytest.raises(Exception):
             ConfigLoader.get_data_source("non_existing", "foo") is None
+
+    def test_as_of(self):
+        config_collection = ConfigLoader.configs.as_of(
+            UTC.localize(datetime(2023, 5, 15))
+        )  # 6a052aea23e7e2332a20c992b2e6f07468c3d161
+
+        assert config_collection is not None
+        assert config_collection.spec_for_outcome("networking", "firefox_desktop") is None
+
+        config_collection = config_collection.as_of(UTC.localize(datetime(2023, 6, 30)))
+        assert (
+            config_collection.spec_for_outcome("networking", "firefox_desktop") is not None
+        )  # 0f92ef5
 
 
 class TestGeneratePlatformConfig:
