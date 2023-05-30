@@ -13,7 +13,7 @@ attrs==23.1.0
     #   mozilla-metric-config-parser
 black==23.3.0
     # via pytest-black
-cachetools==5.3.0
+cachetools==5.3.1
     # via google-auth
 cattrs==22.2.0
     # via
@@ -36,19 +36,19 @@ cloudpickle==2.2.1
     #   distributed
 contourpy==1.0.7
     # via matplotlib
-coverage[toml]==7.2.5
+coverage[toml]==7.2.7
     # via
     #   mozilla-jetstream
     #   pytest-cov
 cycler==0.11.0
     # via matplotlib
-dask[distributed]==2023.5.0
+dask[distributed]==2023.5.1
     # via
     #   distributed
     #   mozilla-jetstream
 db-dtypes==1.1.1
     # via mozilla-jetstream
-distributed==2023.5.0
+distributed==2023.5.1
     # via dask
 exceptiongroup==1.1.1
     # via
@@ -73,7 +73,7 @@ google-api-core[grpc]==2.11.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.18.1
+google-auth==2.19.0
     # via
     #   google-api-core
     #   google-cloud-core
@@ -106,13 +106,13 @@ googleapis-common-protos==1.59.0
     # via
     #   google-api-core
     #   grpcio-status
-grpcio==1.55.0
+grpcio==1.54.2
     # via
     #   google-api-core
     #   google-cloud-bigquery
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.55.0
+grpcio-status==1.54.2
     # via google-api-core
 idna==3.4
     # via requests
@@ -177,7 +177,7 @@ packaging==23.1
     #   matplotlib
     #   pytest
     #   statsmodels
-pandas==2.0.1
+pandas==2.0.2
     # via
     #   db-dtypes
     #   mozanalysis
@@ -199,7 +199,7 @@ proto-plus==1.22.2
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==4.23.1
+protobuf==4.23.2
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -237,7 +237,7 @@ pytest==7.3.1
     #   pytest-flake8
 pytest-black==0.3.12
     # via mozilla-jetstream
-pytest-cov==4.0.0
+pytest-cov==4.1.0
     # via mozilla-jetstream
 pytest-flake8==1.1.1
     # via mozilla-jetstream
@@ -314,7 +314,7 @@ types-pytz==2023.3.0.0
     # via mozilla-jetstream
 types-pyyaml==6.0.12.10
     # via mozilla-jetstream
-types-requests==2.31.0.0
+types-requests==2.31.0.1
     # via mozilla-jetstream
 types-six==1.16.21.8
     # via mozilla-jetstream
@@ -322,7 +322,7 @@ types-toml==0.10.8.6
     # via mozilla-jetstream
 types-urllib3==1.26.25.13
     # via types-requests
-typing-extensions==4.6.0
+typing-extensions==4.6.2
     # via mypy
 tzdata==2023.3
     # via pandas
