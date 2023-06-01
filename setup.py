@@ -76,7 +76,7 @@ setup(
     extras_require=extras,
     long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
-    python_requires=">=3.6",
+    python_requires=">=3.10",
     entry_points="""
         [console_scripts]
         pensieve=jetstream.cli:cli
@@ -84,5 +84,5 @@ setup(
     """,
     # This project does not issue releases, so this number is not meaningful
     # and should not need to change.
-    version="2023.1.0",
+    version="2023.6.1",
 )
