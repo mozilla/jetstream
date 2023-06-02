@@ -2,6 +2,8 @@ import datetime as dt
 
 import pytest
 import pytz
+from google.cloud import artifactregistry
+from google.protobuf import timestamp_pb2
 from metric_config_parser.experiment import Branch, Experiment
 
 
@@ -257,4 +259,25 @@ def focus_android_experiments():
             app_id="org.mozilla.focus",
             is_high_population=False,
         )
+    ]
+
+
+@pytest.fixture
+def docker_images():
+    return [
+        artifactregistry.DockerImage(
+            name="projects/moz-fx-data-experiments/locations/us/repositories/"
+            + "gcr.io/dockerImages/jetstream@sha256:8c766a",
+            update_time=timestamp_pb2.Timestamp(seconds=1672578000),  # 2023-01-01 01:00 am
+        ),
+        artifactregistry.DockerImage(
+            name="projects/moz-fx-data-experiments/locations/us/repositories/"
+            + "gcr.io/dockerImages/unrelated@sha256:aaaaa",
+            update_time=timestamp_pb2.Timestamp(seconds=1672578000),  # 2023-01-01 01:00 am
+        ),
+        artifactregistry.DockerImage(
+            name="projects/moz-fx-data-experiments/locations/us/repositories/"
+            + "gcr.io/dockerImages/jetstream@sha256:xxxxx",
+            update_time=timestamp_pb2.Timestamp(seconds=1677675600),  # 2023-03-01 01:00 am
+        ),
     ]

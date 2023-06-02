@@ -38,6 +38,7 @@ from metric_config_parser.metric import AnalysisPeriod
 from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
+from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
 from .config import CONFIGS, METRIC_HUB_REPO, ConfigLoader, _ConfigLoader, validate
 from .dryrun import DryRunFailedError
@@ -98,6 +99,8 @@ class ArgoExecutorStrategy:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
     ]
+    image: str = "jetstream"
+    image_version: Optional[str] = None
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
@@ -116,8 +119,23 @@ class ArgoExecutorStrategy:
                 date.strftime("%Y-%m-%d")
             )
 
+        artifact_manager = ArtifactManager(
+            project=self.project_id, dataset=self.dataset_id, image=self.image
+        )
+
+        image_version = self.image_version
+        if self.image_version == "latest":
+            image_version = artifact_manager.latest_image()
+
         experiments_config_list = [
-            {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
+            {
+                "slug": slug,
+                "dates": dates,
+                "image_hash": image_version
+                if image_version
+                else artifact_manager.image_for_slug(slug),
+            }
+            for slug, dates in experiments_config.items()
         ]
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else "days28"
@@ -145,6 +163,7 @@ class ArgoExecutorStrategy:
                 "analysis_periods_overall": "overall"
                 if AnalysisPeriod.OVERALL in self.analysis_periods
                 else analysis_period_default.value,
+                "image": self.image,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -613,6 +632,19 @@ private_config_repos_option = click.option(
     multiple=True,
 )
 
+image_option = click.option(
+    "--image",
+    help="Name of the docker image to use in Argo.",
+    default="jetstream",
+)
+
+image_version_option = click.option(
+    "--image_version",
+    "--image-version",
+    help="Hash of the image to use in Argo, or 'latest'",
+    required=False,
+)
+
 
 def analysis_periods_option(
     default=[
@@ -728,6 +760,8 @@ def run(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -744,6 +778,8 @@ def run_argo(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -756,6 +792,8 @@ def run_argo(
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
         analysis_periods=analysis_periods,
+        image=image,
+        image_version=image_version,
     )
 
     AnalysisExecutor(
@@ -789,6 +827,8 @@ def run_argo(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 @click.pass_context
 def rerun(
@@ -809,6 +849,8 @@ def rerun(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -839,6 +881,8 @@ def rerun(
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
             analysis_periods=analysis_periods,
+            image=image,
+            image_version=image_version,
         )
 
     success = AnalysisExecutor(
@@ -951,6 +995,8 @@ def export_experiment_logs_to_json(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 @click.pass_context
 def rerun_config_changed(
@@ -969,6 +1015,8 @@ def rerun_config_changed(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
@@ -1004,6 +1052,8 @@ def rerun_config_changed(
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
             analysis_periods=analysis_periods,
+            image=image,
+            image_version=image_version,
         )
 
     success = AnalysisExecutor(
