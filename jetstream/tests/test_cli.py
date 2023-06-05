@@ -259,7 +259,7 @@ class TestAnalysisExecutor:
             x.normandy_slug for x in cli_experiments.experiments
         }
 
-    def test_any_date(self, bq_client_mock):
+    def test_any_date(self):
         executor = cli.AnalysisExecutor(
             project_id="project",
             dataset_id="dataset",

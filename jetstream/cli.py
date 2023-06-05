@@ -345,11 +345,11 @@ class AnalysisExecutor:
         client = BigQueryClient(self.project_id, self.dataset_id)
 
         for experiment_config in experiments:
-            # get last updated timestamp for experiment
-            last_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
+            # get first updated timestamp for experiment
+            first_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
 
             # get the configs that were the most recent when the experiment was last updated
-            config_collection = config_getter.configs.as_of(last_updated)
+            config_collection = config_getter.configs.as_of(first_updated)
             spec = AnalysisSpec.default_for_experiment(experiment_config, config_collection)
 
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
