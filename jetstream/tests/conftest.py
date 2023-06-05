@@ -1,10 +1,13 @@
 import datetime as dt
+from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 import pytz
 from google.cloud import artifactregistry
 from google.protobuf import timestamp_pb2
 from metric_config_parser.experiment import Branch, Experiment
+from pytz import UTC
 
 
 def pytest_addoption(parser):
@@ -281,3 +284,14 @@ def docker_images():
             update_time=timestamp_pb2.Timestamp(seconds=1677675600),  # 2023-03-01 01:00 am
         ),
     ]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def bq_client_mock():
+    with mock.patch("jetstream.cli.BigQueryClient") as fixture:
+        bigquery_mock_client = MagicMock()
+        bigquery_mock_client.experiment_table_first_updated.return_value = dt.datetime(
+            2023, 1, 1, tzinfo=UTC
+        )
+        fixture.return_value = bigquery_mock_client
+        yield fixture

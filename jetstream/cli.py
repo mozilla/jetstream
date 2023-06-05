@@ -69,6 +69,8 @@ All = AllType()
 
 
 class ExecutorStrategy(Protocol):
+    """Abstract class determining how the analysis should be executed."""
+
     project_id: str
 
     def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
@@ -84,6 +86,8 @@ class ExecutorStrategy(Protocol):
 
 @attr.s(auto_attribs=True)
 class ArgoExecutorStrategy:
+    """Handler for executing experiment analyses on Argo."""
+
     project_id: str
     dataset_id: str
     zone: str
@@ -119,6 +123,7 @@ class ArgoExecutorStrategy:
                 date.strftime("%Y-%m-%d")
             )
 
+        # determine the docker image that was the most recent when enrollments ended for experiments
         artifact_manager = ArtifactManager(
             project=self.project_id, dataset=self.dataset_id, image=self.image
         )
@@ -141,6 +146,7 @@ class ArgoExecutorStrategy:
             self.analysis_periods[0] if self.analysis_periods != [] else "days28"
         )
 
+        # generate and submit the Argo workflow to the cluster
         return submit_workflow(
             project_id=self.project_id,
             zone=self.zone,
@@ -173,6 +179,8 @@ class ArgoExecutorStrategy:
 
 @attr.s(auto_attribs=True)
 class SerialExecutorStrategy:
+    """Handler for executing experiment analyses serially."""
+
     project_id: str
     dataset_id: str
     bucket: Optional[str] = None
@@ -202,6 +210,7 @@ class SerialExecutorStrategy:
                 else:
                     dataset_id = self.dataset_id
 
+                # run the analysis
                 analysis = self.analysis_class(
                     self.project_id,
                     dataset_id,
@@ -213,6 +222,7 @@ class SerialExecutorStrategy:
                 )
                 analysis.run(date)
 
+                # export metadata to GCS
                 if self.bucket:
                     export_metadata(config, self.bucket, self.project_id, analysis.start_time)
             except ValidationException as e:
@@ -228,6 +238,7 @@ class SerialExecutorStrategy:
                     str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
                 )
             finally:
+                # export experiment log from BigQuery to GCS
                 if self.log_config is None:
                     log_project = self.project_id
                     log_dataset = self.dataset_id
@@ -254,6 +265,8 @@ class SerialExecutorStrategy:
 
 @attr.s(auto_attribs=True)
 class AnalysisExecutor:
+    """Executes the analyses for the specified experiments."""
+
     project_id: str
     dataset_id: str
     bucket: str
@@ -282,6 +295,7 @@ class AnalysisExecutor:
         config_getter: _ConfigLoader = ConfigLoader,
         today: Optional[datetime] = None,
     ) -> bool:
+        """Execute analyses."""
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
         worklist = []
 
@@ -328,9 +342,16 @@ class AnalysisExecutor:
     ) -> List[AnalysisConfiguration]:
         """Convert mozanalysis experiments to analysis configs."""
         configs = []
+        client = BigQueryClient(self.project_id, self.dataset_id)
 
         for experiment_config in experiments:
-            spec = AnalysisSpec.default_for_experiment(experiment_config, config_getter.configs)
+            # get first updated timestamp for experiment
+            first_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
+
+            # get the configs that were the most recent when the experiment was last updated
+            config_collection = config_getter.configs.as_of(first_updated)
+            spec = AnalysisSpec.default_for_experiment(experiment_config, config_collection)
+
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
                 if isinstance(
                     self.configuration_map[experiment_config.normandy_slug], AnalysisSpec
@@ -340,12 +361,12 @@ class AnalysisExecutor:
                     config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
                     spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
-                if external_spec := config_getter.spec_for_experiment(
+                if external_spec := config_collection.spec_for_experiment(
                     experiment_config.normandy_slug
                 ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config, config_getter.configs))
+            configs.append(spec.resolve(experiment_config, config_collection))
 
         return configs
 
