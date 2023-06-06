@@ -620,3 +620,11 @@ def test_focus_android_app_name():
     assert x.appId == "org.mozilla.focus"
     assert x.outcomes == []
     assert x.to_experiment().outcomes == []
+
+
+def test_ended_after_or_live(experiment_collection):
+    date = dt.datetime(2019, 1, 1, tzinfo=pytz.utc)
+    recent = experiment_collection.ended_after_or_live(date)
+    assert isinstance(recent, ExperimentCollection)
+    assert len(recent.experiments) > 0
+    assert all((e.status == "Live" or e.end_date >= date) for e in recent.experiments)

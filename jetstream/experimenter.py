@@ -268,3 +268,16 @@ class ExperimentCollection:
                 if ex.start_date and ex.start_date >= since
             ]
         )
+
+    def ended_after_or_live(self, after: dt.datetime) -> "ExperimentCollection":
+        """All experiments that ended after a given time or that are still live."""
+
+        cls = type(self)
+        return cls(
+            [
+                ex
+                for ex in self.ever_launched().experiments
+                if (ex.end_date and ex.end_date >= after)
+                or (ex.end_date is None and ex.status == "Live")
+            ]
+        )
