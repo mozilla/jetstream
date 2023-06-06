@@ -762,9 +762,9 @@ mozanalysis==2023.5.3 \
     --hash=sha256:3dfbe91e69a7460a7d8bf75c19ca2501d6e8160c4ad3a41d142f5601f1721b4b \
     --hash=sha256:a9bdb4d3aab005f9765b8828aa0a96a5b04d80df279156f8fd84a6e711a7a879
     # via -r requirements.in
-mozilla-metric-config-parser==2023.6.2 \
-    --hash=sha256:9d852d315a2e46d6decbc2ff9cb393c2989dee83484bbc7f85d0b17939fb224d \
-    --hash=sha256:f56b64e3a8774c014e14f5e65b0d90eba1f6910ce6f1f4a6c0f21bc13f40b02c
+mozilla-metric-config-parser==2023.6.3 \
+    --hash=sha256:5f63d1e3316f25c36400f0fb6a418f634d126950efaf7bdbe70273679680f0a0 \
+    --hash=sha256:a811cf45324fa6064e1e54004f7d2fae5bc94a134d396186c6554325244dbc32
     # via
     #   -r requirements.in
     #   mozanalysis

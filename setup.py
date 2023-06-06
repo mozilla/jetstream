@@ -85,5 +85,5 @@ setup(
     """,
     # This project does not issue releases, so this number is not meaningful
     # and should not need to change.
-    version="2023.6.1",
+    version="2023.6.2",
 )
