@@ -4,6 +4,7 @@ import sys
 from datetime import datetime, time, timedelta
 from functools import partial
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import (
     Callable,
@@ -344,7 +345,7 @@ class AnalysisExecutor:
         configs = []
         client = BigQueryClient(self.project_id, self.dataset_id)
 
-        for experiment_config in experiments:
+        def _load_experiment_config(experiment_config):
             # get first updated timestamp for experiment
             first_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
 
@@ -366,7 +367,10 @@ class AnalysisExecutor:
                 ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config, config_collection))
+            return spec.resolve(experiment_config, config_collection)
+
+        with ThreadPool() as pool:
+            configs = pool.map(_load_experiment_config, experiments)
 
         return configs
 
@@ -385,9 +389,15 @@ class AnalysisExecutor:
             if isinstance(self.date, AllType):
                 raise ValueError("Declining to re-run all experiments for all time.")
 
-            launched_experiments = (
-                experiments.ever_launched().of_type(RECOGNIZED_EXPERIMENT_TYPES).experiments
-            )
+            # only consider experiments that ended within the last 90 days or are live
+            ended_threshold = self.date - timedelta(days=90)
+            launched_experiments = [
+                e
+                for e in experiments.ended_after_or_live(ended_threshold)
+                .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                .experiments
+                if not e.is_rollout
+            ]
 
             launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
 
