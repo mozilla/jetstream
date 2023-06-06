@@ -139,6 +139,9 @@ class BigQueryClient:
 
     def experiment_table_first_updated(self, slug: str) -> Optional[datetime]:
         """Get the timestamp for when an experiment related table was updated last."""
+        if slug is None:
+            return None
+
         table_prefix = bq_normalize_name(slug)
 
         job = self.client.query(
