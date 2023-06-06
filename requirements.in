@@ -68,6 +68,7 @@ gitpython==3.1.31
     #   mozilla-metric-config-parser
 google-api-core[grpc]==2.11.0
     # via
+    #   google-cloud-artifact-registry
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
@@ -78,9 +79,8 @@ google-auth==2.19.1
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.8.1 
-    # via
-    #   mozilla-jetstream
+google-cloud-artifact-registry==1.8.1
+    # via mozilla-jetstream
 google-cloud-bigquery==3.11.0
     # via
     #   mozanalysis
@@ -89,7 +89,7 @@ google-cloud-bigquery-storage==2.20.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.22.0
+google-cloud-container==2.23.0
     # via mozilla-jetstream
 google-cloud-core==2.3.2
     # via
@@ -105,14 +105,19 @@ google-resumable-media==2.5.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.59.0
+googleapis-common-protos[grpc]==1.59.0
     # via
     #   google-api-core
+    #   grpc-google-iam-v1
     #   grpcio-status
+grpc-google-iam-v1==0.12.6
+    # via google-cloud-artifact-registry
 grpcio==1.54.2
     # via
     #   google-api-core
     #   google-cloud-bigquery
+    #   googleapis-common-protos
+    #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
 grpcio-status==1.54.2
@@ -138,7 +143,7 @@ locket==1.0.0
     # via
     #   distributed
     #   partd
-markupsafe==2.1.2
+markupsafe==2.1.3
     # via jinja2
 matplotlib==3.7.1
     # via mozanalysis
@@ -147,7 +152,7 @@ mccabe==0.7.0
 mozanalysis==2023.5.3
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2023.6.1
+mozilla-metric-config-parser==2023.6.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -199,16 +204,19 @@ pluggy==1.0.0
     # via pytest
 proto-plus==1.22.2
     # via
+    #   google-cloud-artifact-registry
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
 protobuf==4.23.2
     # via
     #   google-api-core
+    #   google-cloud-artifact-registry
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
     #   googleapis-common-protos
+    #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
 psutil==5.9.5
