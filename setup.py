@@ -55,6 +55,7 @@ setup(
         "dask[distributed]",
         "db-dtypes",
         "GitPython",
+        "google-cloud-artifact-registry",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
         "google-cloud-container",
