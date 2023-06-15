@@ -107,7 +107,7 @@ class BigQueryClient:
         perpetually stale."""
         normalized_slug = bq_normalize_name(normandy_slug)
         analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}_({analysis_periods})_.*$"
+        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
         tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
