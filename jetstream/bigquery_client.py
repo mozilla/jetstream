@@ -9,6 +9,7 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
+import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
 from metric_config_parser.metric import AnalysisPeriod
@@ -29,13 +30,19 @@ class BigQueryClient:
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
 
-    def table_to_dataframe(self, table: str) -> pd.DataFrame:
+    def table_to_dataframe(self, table: str, nan_columns: List[str] = []) -> pd.DataFrame:
         """Return all rows of the specified table as a dataframe."""
         self._storage_client = self._storage_client or BigQueryReadClient()
 
         table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
         rows = self.client.list_rows(table_ref)
-        return rows.to_dataframe(bqstorage_client=self._storage_client)
+        df = rows.to_dataframe(bqstorage_client=self._storage_client)
+
+        # append null columns with the provided names
+        for nan_col in nan_columns:
+            df[nan_col] = np.nan
+
+        return df
 
     def add_labels_to_table(self, table_name: str, labels: Mapping[str, str]) -> None:
         """Adds the provided labels to the table."""

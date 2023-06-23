@@ -81,7 +81,7 @@ google-auth==2.20.0
     #   google-cloud-storage
 google-cloud-artifact-registry==1.8.1
     # via mozilla-jetstream
-google-cloud-bigquery==3.11.1
+google-cloud-bigquery==3.11.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -112,7 +112,7 @@ googleapis-common-protos[grpc]==1.59.1
     #   grpcio-status
 grpc-google-iam-v1==0.12.6
     # via google-cloud-artifact-registry
-grpcio==1.54.2
+grpcio==1.56.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
@@ -120,7 +120,7 @@ grpcio==1.54.2
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.54.2
+grpcio-status==1.56.0
     # via google-api-core
 idna==3.4
     # via requests
@@ -152,7 +152,7 @@ mccabe==0.7.0
 mozanalysis==2023.5.3
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2023.6.4
+mozilla-metric-config-parser==2023.6.5
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -198,11 +198,11 @@ patsy==0.5.3
     # via statsmodels
 pillow==9.5.0
     # via matplotlib
-platformdirs==3.6.0
+platformdirs==3.8.0
     # via black
-pluggy==1.0.0
+pluggy==1.2.0
     # via pytest
-proto-plus==1.22.2
+proto-plus==1.22.3
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
@@ -240,7 +240,7 @@ pyparsing==3.1.0
     # via matplotlib
 pyrsistent==0.19.3
     # via jsonschema
-pytest==7.3.2
+pytest==7.4.0
     # via
     #   mozilla-jetstream
     #   pytest-black
@@ -295,7 +295,7 @@ statsmodels==0.14.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-tblib==1.7.0
+tblib==2.0.0
     # via distributed
 toml==0.10.2
     # via

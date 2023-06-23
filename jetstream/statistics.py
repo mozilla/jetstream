@@ -94,6 +94,10 @@ class Summary:
         for pre_treatment in self.pre_treatments:
             data = pre_treatment.apply(data, self.metric.name)
 
+            if self.metric.depends_on:
+                for upstream_metric in self.metric.depends_on:
+                    data = pre_treatment.apply(data, upstream_metric.metric.name)
+
         return self.statistic.apply(data, self.metric.name, experiment, analysis_basis, segment)
 
 
@@ -787,3 +791,42 @@ class EmpiricalCDF(Statistic):
                     )
                 )
         return StatisticResultCollection(results)
+
+
+@attr.s(auto_attribs=True)
+class PopulationRatio(Statistic):
+    numerator: str
+    denominator: str
+    confidence_interval: float = 0.95
+    drop_highest: float = 0.005
+    num_samples: int = 10000
+
+    def transform(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
+    ) -> StatisticResultCollection:
+        critical_point = (1 - self.confidence_interval) / 2
+        summary_quantiles = (critical_point, 1 - critical_point)
+
+        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches(
+            df,
+            col_label=[self.numerator, self.denominator],
+            ref_branch_label=reference_branch,
+            stat_fn=lambda data: {np.sum(data[:, 0]) / np.sum(data[:, 1])},
+            num_samples=self.num_samples,
+            individual_summary_quantiles=summary_quantiles,
+            threshold_quantile=1 - self.drop_highest,
+        )
+
+        return flatten_simple_compare_branches_result(
+            ma_result=ma_result,
+            metric_name=metric,
+            statistic_name="population_ratio",
+            reference_branch=reference_branch,
+            ci_width=self.confidence_interval,
+        )

@@ -14,6 +14,7 @@ from jetstream.statistics import (
     Count,
     EmpiricalCDF,
     KernelDensityEstimate,
+    PopulationRatio,
     StatisticResult,
     Sum,
     _make_grid,
@@ -241,6 +242,36 @@ class TestStatistics:
 
         with pytest.raises(ValueError):
             get_bootstrap_samples(df)
+
+    def test_population_ratio(self):
+        stat = PopulationRatio(num_samples=10, numerator="ad_click", denominator="sap")
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10,
+                "ad_click": [x for x in range(10, 0, -1)] * 2,
+                "sap": [10 * x for x in range(10, 0, -1)] * 2,
+                "ad_ratio": np.nan,
+            }
+        )
+        result = stat.transform(
+            test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        )
+
+        branch_results = [r for r in result.data if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point == control_result.point
+        assert treatment_result.point == 0.1
+        assert control_result.point == 0.1
+
+    def test_population_ratio_non_existing_metrics(self):
+        stat = PopulationRatio(num_samples=10, numerator="non_existing", denominator="non_existing")
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
+        )
+
+        with pytest.raises(Exception):
+            stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
 
 
 class TestStatisticExport:
