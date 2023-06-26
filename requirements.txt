@@ -287,10 +287,7 @@ distributed==2023.6.0 \
 exceptiongroup==1.1.1 \
     --hash=sha256:232c37c63e4f682982c8b6459f33a8981039e5fb8756b2074364e5055c498c9e \
     --hash=sha256:d484c3090ba2889ae2928419117447a14daf3c1231d5e30d0aae34f354f01785
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -1380,9 +1377,9 @@ statsmodels==0.14.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-tblib==1.7.0 \
-    --hash=sha256:059bd77306ea7b419d4f76016aef6d7027cc8a0785579b5aad198803435f882c \
-    --hash=sha256:289fa7359e580950e7d9743eab36b0691f0310fce64dee7d9c31065b8f723e23
+tblib==2.0.0 \
+    --hash=sha256:9100bfa016b047d5b980d66e7efed952fbd20bd85b56110aaf473cb97d18709a \
+    --hash=sha256:a6df30f272c08bf8be66e0775fad862005d950a6b8449b94f7c788731d70ecd7
     # via
     #   -r requirements.in
     #   distributed
@@ -1396,12 +1393,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1468,7 +1460,6 @@ typing-extensions==4.6.3 \
     --hash=sha256:d91d5919357fe7f681a9f2b5b4cb2a5f1ef0a1e9f59c4d8ff0d3491e05c0ffd5
     # via
     #   -r requirements.in
-    #   cattrs
     #   mypy
 tzdata==2023.3 \
     --hash=sha256:11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a \
