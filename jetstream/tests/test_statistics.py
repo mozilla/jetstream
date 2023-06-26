@@ -260,9 +260,9 @@ class TestStatistics:
         branch_results = [r for r in result.data if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
-        assert treatment_result.point == control_result.point
-        assert treatment_result.point == 0.1
-        assert control_result.point == 0.1
+        assert treatment_result.point == pytest.approx(control_result.point, rel=1e-5)
+        assert treatment_result.point == pytest.approx(0.1, rel=1e-5)
+        assert control_result.point == pytest.approx(0.1, rel=1e-5)
 
     def test_population_ratio_non_existing_metrics(self):
         stat = PopulationRatio(num_samples=10, numerator="non_existing", denominator="non_existing")

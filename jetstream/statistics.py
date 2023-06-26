@@ -817,7 +817,7 @@ class PopulationRatio(Statistic):
             df,
             col_label=[self.numerator, self.denominator],
             ref_branch_label=reference_branch,
-            stat_fn=lambda data: {np.sum(data[:, 0]) / np.sum(data[:, 1])},
+            stat_fn=lambda data: {np.mean(data[:, 0]) / np.mean(data[:, 1])},
             num_samples=self.num_samples,
             individual_summary_quantiles=summary_quantiles,
             threshold_quantile=1 - self.drop_highest,

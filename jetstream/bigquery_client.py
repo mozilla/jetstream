@@ -40,7 +40,8 @@ class BigQueryClient:
 
         # append null columns with the provided names
         for nan_col in nan_columns:
-            df[nan_col] = np.nan
+            if nan_col not in df.columns:
+                df[nan_col] = np.nan
 
         return df
 
