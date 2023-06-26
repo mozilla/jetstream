@@ -200,7 +200,7 @@ pillow==9.5.0
     # via matplotlib
 platformdirs==3.6.0
     # via black
-pluggy==1.0.0
+pluggy==1.2.0
     # via pytest
 proto-plus==1.22.2
     # via
