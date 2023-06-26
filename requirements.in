@@ -202,7 +202,7 @@ platformdirs==3.6.0
     # via black
 pluggy==1.0.0
     # via pytest
-proto-plus==1.22.2
+proto-plus==1.22.3
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
