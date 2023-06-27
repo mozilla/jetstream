@@ -1,55 +1,25 @@
 import datetime as dt
-import json
 import logging
-from typing import Callable, Dict, List, Optional
 
-import attr
-import cattr
 import google.cloud.storage as storage
 from metric_config_parser.analysis import AnalysisConfiguration
+from mozilla_nimbus_schemas.jetstream import ExternalConfig as ExternalConfigMetadata
+from mozilla_nimbus_schemas.jetstream import Metadata
+from mozilla_nimbus_schemas.jetstream import Metric as MetricsMetadata
+from mozilla_nimbus_schemas.jetstream import Outcome as OutcomeMetadata
 
 from jetstream import bq_normalize_name
 from jetstream.config import METRIC_HUB_REPO, ConfigLoader
-from jetstream.statistics import StatisticResult
 
 logger = logging.getLogger(__name__)
 
 
-@attr.s(auto_attribs=True)
-class MetricsMetadata:
-    friendly_name: str
-    description: str
-    bigger_is_better: bool
-    analysis_bases: List[str]
-
-
-@attr.s(auto_attribs=True)
-class OutcomeMetadata:
-    slug: str
-    friendly_name: str
-    description: str
-    metrics: List[str]
-    default_metrics: List[str]
-    commit_hash: Optional[str]
-
-
-@attr.s(auto_attribs=True)
-class ExternalConfigMetadata:
-    reference_branch: Optional[str]
-    end_date: Optional[dt.date]
-    start_date: Optional[dt.date]
-    enrollment_period: Optional[int]
-    skip: Optional[bool]
-    url: str
-
-
-@attr.s(auto_attribs=True)
-class ExperimentMetadata:
-    metrics: Dict[str, MetricsMetadata]
-    outcomes: Dict[str, OutcomeMetadata]
-    external_config: Optional[ExternalConfigMetadata]
-    analysis_start_time: Optional[dt.datetime]
-    schema_version: int = StatisticResult.SCHEMA_VERSION
+class ExperimentMetadata(Metadata):
+    class Config:
+        json_encoders = {
+            dt.date: lambda d: d.strftime("%Y-%m-%d"),
+            dt.datetime: lambda dt: str(dt),
+        }
 
     @classmethod
     def from_config(
@@ -59,7 +29,7 @@ class ExperimentMetadata:
         config_loader=ConfigLoader,
     ) -> "ExperimentMetadata":
         all_metrics = [
-            summary.metric for period, summaries in config.metrics.items() for summary in summaries
+            summary.metric for _, summaries in config.metrics.items() for summary in summaries
         ]
 
         metrics_metadata = {
@@ -151,13 +121,7 @@ def export_metadata(
 
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
-    converter = cattr.Converter()
-    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
-    converter.register_unstructure_hook(dt.date, _date_to_json)
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
-    converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
-
     blob.upload_from_string(
-        data=json.dumps(converter.unstructure(metadata), sort_keys=True, indent=4),
+        data=metadata.json(),
         content_type="application/json",
     )

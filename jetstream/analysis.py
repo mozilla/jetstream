@@ -16,9 +16,10 @@ from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
 from metric_config_parser.analysis import AnalysisConfiguration
-from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
 
 import jetstream.errors as errors
@@ -317,9 +318,9 @@ class Analysis:
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
-        ).to_dict()["data"]
+        ).dict()
 
-        return StatisticResultCollection(
+        return StatisticResultCollection.parse_obj(
             counts
             + [
                 StatisticResult(
@@ -354,11 +355,11 @@ class Analysis:
             segment_data = metrics_data
 
         if (
-            analysis_basis == AnalysisBasis.ENROLLMENTS
+            analysis_basis == AnalysisBasis.enrollments
             and "enrollment_date" in segment_data.columns
         ):
             segment_data = segment_data[segment_data["enrollment_date"].notnull()]
-        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in segment_data.columns:
+        elif analysis_basis == AnalysisBasis.exposures and "exposure_date" in segment_data.columns:
             segment_data = segment_data[segment_data["exposure_date"].notnull()]
 
         return segment_data
@@ -468,7 +469,7 @@ class Analysis:
         print(enrollments_sql)
 
         metrics_sql = exp.build_metrics_query(
-            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS
+            metrics, limits, "enrollments_table", AnalysisBasis.enrollments
         )
 
         # enrollments_table doesn't get created when performing a dry run;
@@ -596,7 +597,7 @@ class Analysis:
                 logger.info(f"Skipping {period};")
                 continue
 
-            segment_results = []
+            segment_results = StatisticResultCollection.parse_obj([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
@@ -663,22 +664,21 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results += self.calculate_statistics(
+                        segment_results.__root__ += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                        ).to_dict()["data"]
+                        )
 
-                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
-                        "data"
-                    ]
+                    print(f"COUNTS ANALYSIS BASIS {analysis_basis} ({type(analysis_basis)})")
+                    segment_results.__root__ += self.counts(segment_data, segment, analysis_basis)
 
             results.append(
                 self.save_statistics(
                     period,
-                    segment_results,
+                    segment_results.dict(),
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )

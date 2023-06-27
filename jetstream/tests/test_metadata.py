@@ -2,11 +2,9 @@ import datetime as dt
 import json
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
-import cattr
 import jsonschema
 import requests
 import toml
@@ -244,41 +242,44 @@ def test_export_metadata(mock_storage_client, experiments):
     expected = json.loads(
         r"""
         {
-            "metrics": {
-                "view_about_logins": {
-                    "friendly_name": "about:logins viewers",
-                    "description": "Counts the number of clients that viewed about:logins.\n",
-                    "bigger_is_better": true,
-                    "analysis_bases": ["enrollments", "exposures"]
-                },
-                "my_cool_metric": {
-                    "friendly_name": "My Cool Metric",
-                    "description": "",
-                    "bigger_is_better": true,
-                    "analysis_bases": ["enrollments", "exposures"]
-                }
-            },
-            "outcomes": {},
-            "external_config": {
-                "end_date": "2021-07-01",
-                "enrollment_period": null,
-                "reference_branch": null,
-                "skip": false,
-                "start_date": null,
-                "url": """
-        + '"https://github.com/mozilla/metric-hub/blob/main/jetstream/normandy-test-slug.toml"'
-        + r"""},
             "analysis_start_time": """
         + f'"{mock_analysis_start}"'
         + """,
+            "external_config": {
+                "reference_branch": null,
+                "end_date": "2021-07-01",
+                "start_date": null,
+                "enrollment_period": null,
+                "skip": false,
+                "url": """
+        + '"https://github.com/mozilla/metric-hub/blob/main/jetstream/normandy-test-slug.toml"'
+        + r"""},
+            "metrics": {
+                "my_cool_metric": {
+                    "analysis_bases": ["enrollments", "exposures"],
+                    "bigger_is_better": true,
+                    "description": "",
+                    "friendly_name": "My Cool Metric"
+                },
+                "view_about_logins": {
+                    "analysis_bases": ["enrollments", "exposures"],
+                    "bigger_is_better": true,
+                    "description": "Counts the number of clients that viewed about:logins.\n",
+                    "friendly_name": "about:logins viewers"
+                }
+            },
+            "outcomes": {},
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """
         }
     """
     )
+    # NOTE: pydantic orders the .json() output by the order in
+    # which parameters are defined in the schema class, so the
+    # `expected` order needs to match that ordering
     mock_blob.upload_from_string.assert_called_once_with(
-        data=json.dumps(expected, sort_keys=True, indent=4), content_type="application/json"
+        data=json.dumps(expected), content_type="application/json"
     )
 
 
@@ -324,11 +325,6 @@ def test_export_confidential_metadata(mock_storage_client, experiments):
 
 def test_metadata_schema(experiments):
     schema = json.loads((Path(__file__).parent / "data/Metadata_v1.0.json").read_text())
-    converter = cattr.Converter()
-    _date_to_json: Callable[[dt.date], str] = lambda d: d.strftime("%Y-%m-%d")
-    converter.register_unstructure_hook(dt.date, _date_to_json)
-    _datetime_to_json: Callable[[dt.datetime], str] = lambda dt: str(dt)
-    converter.register_unstructure_hook(dt.datetime, _datetime_to_json)
 
     config_str = dedent(
         """
@@ -398,4 +394,4 @@ def test_metadata_schema(experiments):
     config = spec.resolve(experiments[5], loader.configs)
     metadata = ExperimentMetadata.from_config(config, dt.datetime.now(), config_loader=loader)
 
-    jsonschema.validate(converter.unstructure(metadata), schema)
+    jsonschema.validate(json.loads(metadata.json()), schema)
