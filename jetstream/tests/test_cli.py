@@ -164,6 +164,46 @@ class TestCli:
             assert "Skipping example config" in result.output
             assert result.exit_code == 0
 
+    def test_validate_outcome_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                friendly_name = "outcome"
+                description = "outcome"
+
+                [metrics.ad_clicks]
+                data_source = "search"
+                select_expression = "COUNT(*)"
+
+                [metrics.ad_clicks.statistics.bootstrap_mean]
+
+                [metrics.search_count]
+                data_source = "search"
+                select_expression = "COUNT(*)"
+
+                [metrics.search_count.statistics.bootstrap_mean]
+
+                [metrics.ad_click_rate]
+                depends_on = ["ad_clicks", "search_count"]
+
+                [metrics.ad_click_rate.statistics.population_ratio]
+                numerator = "ad_clicks"
+                denominator = "search_count"
+
+                [data_sources.search]
+                from_expression = "mozdata.search.mobile_search_clients_engines_sources_daily"
+                """
+            )
+
+            os.makedirs("outcomes/fenix")
+            with open("outcomes/fenix/test.toml", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(cli.validate_config, ["outcomes/fenix/test.toml"])
+
+            assert result.exit_code == 0
+
 
 @attr.s(auto_attribs=True)
 class DummyExecutorStrategy:

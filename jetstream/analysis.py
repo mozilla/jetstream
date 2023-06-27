@@ -439,7 +439,10 @@ class Analysis:
         metrics = set()
         for v in self.config.metrics.values():
             for metric_config in v:
-                metrics.add(Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric())
+                if metric_config.metric.select_expression:
+                    metrics.add(
+                        Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric()
+                    )
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
