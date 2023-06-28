@@ -217,14 +217,14 @@ def test_subset_to_segment(experiments):
         columns=["regular_users_v3", "enrollment_date", "exposure_date"],
     )
     analysis = Analysis("test", "test", configured)
-    all_enrollments = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.enrollments)
+    all_enrollments = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.ENROLLMENTS)
     all_enrollments = all_enrollments.compute()
     assert len(all_enrollments) == 3
     assert len(all_enrollments[all_enrollments["regular_users_v3"] == True]) == 2  # noqa: E712
     assert len(all_enrollments[all_enrollments["regular_users_v3"] == False]) == 0  # noqa: E712
     assert len(all_enrollments[all_enrollments["enrollment_date"] == "1"]) == 3
 
-    all_exposures = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.exposures)
+    all_exposures = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.EXPOSURES)
     all_exposures = all_exposures.compute()
     assert len(all_exposures) == 3
     assert len(all_exposures[all_exposures["regular_users_v3"] == True]) == 1  # noqa: E712
@@ -232,7 +232,7 @@ def test_subset_to_segment(experiments):
     assert len(all_exposures[all_exposures["exposure_date"] == "1"]) == 3
 
     segment_enrollments = analysis.subset_to_segment(
-        "regular_users_v3", metrics_data, AnalysisBasis.enrollments
+        "regular_users_v3", metrics_data, AnalysisBasis.ENROLLMENTS
     )
     segment_enrollments = segment_enrollments.compute()
     assert len(segment_enrollments) == 2
@@ -246,7 +246,7 @@ def test_subset_to_segment(experiments):
     assert len(segment_enrollments[segment_enrollments["enrollment_date"] == "1"]) == 2
 
     segment_exposures = analysis.subset_to_segment(
-        "regular_users_v3", metrics_data, AnalysisBasis.exposures
+        "regular_users_v3", metrics_data, AnalysisBasis.EXPOSURES
     )
     segment_exposures = segment_exposures.compute()
     assert len(segment_exposures) == 1

@@ -35,7 +35,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
         results = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.enrollments, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
@@ -53,7 +53,7 @@ class TestStatistics:
             }
         )
         results = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.enrollments, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
@@ -71,7 +71,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
         results = stat.transform(
-            test_data, "identity", "control", None, AnalysisBasis.enrollments, "all"
+            test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert all(r.metric == "identity" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [20]
@@ -88,7 +88,7 @@ class TestStatistics:
             }
         )
         results = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.enrollments, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert all(r.metric == "value" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [5]
@@ -105,7 +105,7 @@ class TestStatistics:
             }
         )
         results = stat.transform(
-            test_data, "value", "control", None, AnalysisBasis.enrollments, "all"
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert all(r.metric == "value" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [15]
@@ -125,7 +125,7 @@ class TestStatistics:
             }
         )
         results = stat.apply(
-            test_data, "value", experiments[1], AnalysisBasis.enrollments, "all"
+            test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
@@ -187,14 +187,14 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.enrollments, "all").__root__
+        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__
         assert len(results) > 0
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.enrollments, "all").__root__
+        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__
         for r in results:
             assert isinstance(r.point, float)
         df = pd.DataFrame([r.dict() for r in results])
@@ -203,19 +203,19 @@ class TestStatistics:
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
         results = stat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.enrollments, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert len(results) > 0
 
         logstat = EmpiricalCDF(log_space=True)
         results = logstat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.enrollments, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert len(results) > 0
 
         wine["ash"] = -wine["ash"]
         results = logstat.transform(
-            wine, "ash", "*", experiments[0], AnalysisBasis.enrollments, "all"
+            wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         assert len(results) > 0
 
@@ -251,11 +251,11 @@ class TestStatistics:
                 "ad_ratio": np.nan,
             }
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        )
+        ).__root__
 
-        branch_results = [r for r in result.data if r.comparison is None]
+        branch_results = [r for r in results if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point == pytest.approx(control_result.point, rel=1e-5)

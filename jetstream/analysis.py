@@ -341,7 +341,7 @@ class Analysis:
                     analysis_basis=analysis_basis,
                 )
                 for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts}
+                if b.slug not in {c["branch"] for c in counts.__root__}
             ]
         )
 
@@ -358,11 +358,11 @@ class Analysis:
             segment_data = metrics_data
 
         if (
-            analysis_basis == AnalysisBasis.enrollments
+            analysis_basis == AnalysisBasis.ENROLLMENTS
             and "enrollment_date" in segment_data.columns
         ):
             segment_data = segment_data[segment_data["enrollment_date"].notnull()]
-        elif analysis_basis == AnalysisBasis.exposures and "exposure_date" in segment_data.columns:
+        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in segment_data.columns:
             segment_data = segment_data[segment_data["exposure_date"].notnull()]
 
         return segment_data
@@ -475,7 +475,7 @@ class Analysis:
         print(enrollments_sql)
 
         metrics_sql = exp.build_metrics_query(
-            metrics, limits, "enrollments_table", AnalysisBasis.enrollments
+            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS
         )
 
         # enrollments_table doesn't get created when performing a dry run;
@@ -692,7 +692,12 @@ class Analysis:
                             analysis_length_dates,
                         )
 
-                    print(f"COUNTS ANALYSIS BASIS {analysis_basis} ({type(analysis_basis)})")
+                    print(
+                        f"""
+                        COUNTS ANALYSIS BASIS {analysis_basis}
+                        ({type(analysis_basis)} from {analysis_basis.__module__})
+                        """
+                    )
                     segment_results.__root__ += self.counts(segment_data, segment, analysis_basis)
 
             results.append(

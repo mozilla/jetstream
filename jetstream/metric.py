@@ -39,8 +39,8 @@ class Metric(parser_metric.Metric):
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
         analysis_bases: Optional[List[AnalysisBasis]] = [
-            AnalysisBasis.enrollments,
-            AnalysisBasis.exposures,
+            AnalysisBasis.ENROLLMENTS,
+            AnalysisBasis.EXPOSURES,
         ],
     ) -> "Metric":
         return cls(
@@ -57,7 +57,7 @@ class Metric(parser_metric.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_bases=analysis_bases or [AnalysisBasis.enrollments, AnalysisBasis.exposures],
+            analysis_bases=analysis_bases or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
         )
 
     @classmethod
