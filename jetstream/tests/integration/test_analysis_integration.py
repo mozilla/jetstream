@@ -6,6 +6,7 @@ from pathlib import Path
 import dask
 import jsonschema
 import mozanalysis
+import pytest
 import pytz
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
@@ -289,6 +290,151 @@ class TestAnalysisIntegration:
             )
             is not None
         )
+
+    def test_metrics_with_depends_on(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            is_enrollment_paused=True,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        )
+
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
+
+        ratio_stat = Statistic(
+            name="population_ratio",
+            params={
+                "numerator": "active_hours",
+                "denominator": "active_hours_doubled",
+                "num_samples": 10,
+            },
+        )
+        bootstrap_stat = Statistic(name="bootstrap_mean", params={})
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+        )
+
+        test_active_hours_doubled = Metric(
+            name="active_hours_doubled",
+            data_source=test_clients_daily,
+            select_expression=f'{agg_sum("active_hours_sum")} * 2',
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+        )
+
+        test_active_hours_ratio = Metric(
+            name="active_hours_ratio",
+            select_expression=None,
+            data_source=None,
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+            depends_on=[
+                Summary(test_active_hours, bootstrap_stat),
+                Summary(test_active_hours_doubled, bootstrap_stat),
+            ],
+        )
+
+        config.metrics = {
+            AnalysisPeriod.WEEK: [
+                Summary(test_active_hours, bootstrap_stat),
+                Summary(test_active_hours_doubled, bootstrap_stat),
+                Summary(test_active_hours_ratio, ratio_stat),
+            ]
+        }
+
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+
+        query_job = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_1`
+            ORDER BY enrollment_date DESC
+        """
+        )
+
+        expected_metrics_results = [
+            {
+                "client_id": "bbbb",
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+                "active_hours_doubled": pytest.approx(0.6, rel=1e-5),
+                "active_hours": pytest.approx(0.3, rel=1e-5),
+            },
+            {
+                "client_id": "aaaa",
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "active_hours_doubled": pytest.approx(1.6, rel=1e-5),
+                "active_hours": pytest.approx(0.8, rel=1e-5),
+            },
+        ]
+
+        for i, row in enumerate(query_job.result()):
+            for k, v in expected_metrics_results[i].items():
+                assert row[k] == v
+
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.test_experiment_enrollments_weekly"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            )
+            is not None
+        )
+
+        stats = client.client.list_rows(
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+        ).to_dataframe()
+
+        ratio_by_branch = stats.query(
+            "metric == 'active_hours_ratio' and statistic == 'population_ratio' "
+            + "and analysis_basis == 'enrollments' and comparison == 'relative_uplift'"
+        ).set_index("branch")
+
+        assert ratio_by_branch.loc["branch1", "point"] == 0.0
+
+        ratio_by_branch = stats.query(
+            "metric == 'active_hours_ratio' and statistic == 'population_ratio' "
+            + "and analysis_basis == 'enrollments' and comparison == 'difference'"
+        ).set_index("branch")
+
+        assert ratio_by_branch.loc["branch1", "point"] == 0.0
+
+        ratio_by_branch = stats.query(
+            "metric == 'active_hours_ratio' and statistic == 'population_ratio' "
+            + "and analysis_basis == 'enrollments' and comparison.isnull()"
+        ).set_index("branch")
+
+        assert ratio_by_branch.loc["branch1", "point"] == 0.5
+        assert ratio_by_branch.loc["branch2", "point"] == 0.5
 
     def test_no_enrollments(
         self, monkeypatch, client, project_id, static_dataset, temporary_dataset

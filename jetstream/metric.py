@@ -64,5 +64,6 @@ class Metric(parser_metric.Metric):
     def from_metric_config(cls, metric_config: parser_metric.Metric) -> "Metric":
         """Create a metric class instance from a metric config."""
         args = attr.asdict(metric_config)
-        args["data_source"] = data_source.DataSource(**attr.asdict(metric_config.data_source))
+        if metric_config.data_source:
+            args["data_source"] = data_source.DataSource(**attr.asdict(metric_config.data_source))
         return cls(**args)
