@@ -692,12 +692,6 @@ class Analysis:
                             analysis_length_dates,
                         )
 
-                    print(
-                        f"""
-                        COUNTS ANALYSIS BASIS {analysis_basis}
-                        ({type(analysis_basis)} from {analysis_basis.__module__})
-                        """
-                    )
                     segment_results.__root__ += self.counts(segment_data, segment, analysis_basis)
 
             results.append(
