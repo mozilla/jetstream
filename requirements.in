@@ -152,7 +152,7 @@ mccabe==0.7.0
 mozanalysis==2023.5.3
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2023.6.5
+mozilla-metric-config-parser==2023.6.6
     # via
     #   mozanalysis
     #   mozilla-jetstream

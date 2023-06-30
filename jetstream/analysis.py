@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import attr
 import dask
@@ -60,7 +60,7 @@ class Analysis:
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
     start_time: Optional[datetime] = None
-    analysis_periods: List[AnalysisPeriod] = [
+    analysis_periods: list[AnalysisPeriod] = [
         AnalysisPeriod.DAY,
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
@@ -321,29 +321,28 @@ class Analysis:
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
-        ).dict()
-
-        return StatisticResultCollection.parse_obj(
-            counts
-            + [
-                StatisticResult(
-                    metric=metric,
-                    statistic="count",
-                    parameter=None,
-                    branch=b.slug,
-                    comparison=None,
-                    comparison_to_branch=None,
-                    ci_width=None,
-                    point=0,
-                    lower=None,
-                    upper=None,
-                    segment=segment,
-                    analysis_basis=analysis_basis,
-                )
-                for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts.__root__}
-            ]
         )
+
+        other_counts = [
+            StatisticResult(
+                metric=metric,
+                statistic="count",
+                parameter=None,
+                branch=b.slug,
+                comparison=None,
+                comparison_to_branch=None,
+                ci_width=None,
+                point=0,
+                lower=None,
+                upper=None,
+                segment=segment,
+                analysis_basis=analysis_basis,
+            )
+            for b in self.config.experiment.branches
+            if b.slug not in {c.branch for c in counts.__root__}
+        ]
+
+        return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
     @dask.delayed
     def subset_to_segment(
@@ -513,7 +512,7 @@ class Analysis:
     def save_statistics(
         self,
         period: AnalysisPeriod,
-        segment_results: List[Dict[str, Any]],
+        segment_results: list[dict[str, Any]],
         metrics_table: str,
     ):
         """Write statistics to BigQuery."""
@@ -523,7 +522,9 @@ class Analysis:
 
         # wait for the job to complete
         self.bigquery.load_table_from_json(
-            segment_results, f"statistics_{metrics_table}", job_config=job_config
+            segment_results,
+            f"statistics_{metrics_table}",
+            job_config=job_config,
         )
 
         self.bigquery.add_labels_to_table(
@@ -690,14 +691,16 @@ class Analysis:
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                        )
+                        ).dict()["__root__"]
 
-                    segment_results.__root__ += self.counts(segment_data, segment, analysis_basis)
+                    segment_results.__root__ += self.counts(
+                        segment_data, segment, analysis_basis
+                    ).dict()["__root__"]
 
             results.append(
                 self.save_statistics(
                     period,
-                    segment_results.dict(),
+                    segment_results.dict()["__root__"],
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )

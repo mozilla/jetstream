@@ -22,7 +22,7 @@ from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from mozilla_nimbus_schemas.jetstream import Statistic as StatisticSchema
 from mozilla_nimbus_schemas.jetstream import Statistics as StatisticsSchema
 from pandas import DataFrame, Series
-from pydantic import validator
+from pydantic import Field, validator
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .errors import StatisticComputationException
@@ -105,14 +105,7 @@ class StatisticResult(StatisticSchema):
     """
 
     _schema_version = 4
-
-    @validator("ci_width", "point", "lower", "upper", allow_reuse=True)
-    def check_number_fields(cls, v, values, field):
-        if v is not None and not isinstance(v, numbers.Number):
-            raise ValueError(f"Expected a number for {field.name}; got {repr(v)}")
-        return v
-
-    bq_schema = (
+    _bq_schema = (
         bigquery.SchemaField("metric", "STRING"),
         bigquery.SchemaField("statistic", "STRING"),
         bigquery.SchemaField("parameter", "NUMERIC"),
@@ -126,6 +119,27 @@ class StatisticResult(StatisticSchema):
         bigquery.SchemaField("segment", "STRING"),
         bigquery.SchemaField("analysis_basis", "STRING"),
     )
+
+    # override the behavior of window_index because this is not
+    # a field in the bigquery schema, and so we need to exclude
+    # it on the Jetstream side
+    window_index: str = Field(default=None, exclude=True)
+
+    @validator("ci_width", "point", "lower", "upper", allow_reuse=True)
+    def check_number_fields(cls, v, values, field):
+        if v is not None and not isinstance(v, numbers.Number):
+            raise ValueError(f"Expected a number for {field.name}; got {repr(v)}")
+        return v
+
+    # we want a class method that is also a property
+    # - this is supported in python 3.9 and 3.10 but
+    #   is *deprecated in python 3.11*
+    # - mypy does not support this stacking of decorators
+    #   so we ignore it here
+    @classmethod  # type: ignore[misc]
+    @property
+    def bq_schema(cls) -> tuple:
+        return cls._bq_schema
 
     # we want a class method that is also a property
     # - this is supported in python 3.9 and 3.10 but
