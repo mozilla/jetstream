@@ -14,8 +14,7 @@ from metric_config_parser.experiment import Branch, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
 from metric_config_parser.segment import Segment, SegmentDataSource
 from metric_config_parser.statistic import Statistic
-from mozanalysis.metrics import agg_sum
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
+from mozanalysis.metrics import AnalysisBasis, agg_sum
 
 from jetstream.analysis import Analysis
 from jetstream.config import ConfigLoader

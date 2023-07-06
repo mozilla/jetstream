@@ -6,9 +6,10 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import attr
+import cattr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.frequentist_stats.bootstrap
@@ -18,11 +19,7 @@ import statsmodels.api as sm
 from google.cloud import bigquery
 from metric_config_parser import metric as parser_metric
 from metric_config_parser.experiment import Experiment
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
-from mozilla_nimbus_schemas.jetstream import Statistic as StatisticSchema
-from mozilla_nimbus_schemas.jetstream import Statistics as StatisticsSchema
 from pandas import DataFrame, Series
-from pydantic import Field, validator
 from statsmodels.distributions.empirical_distribution import ECDF
 
 from .errors import StatisticComputationException
@@ -32,13 +29,19 @@ from .pre_treatment import PreTreatment
 logger = logging.getLogger(__name__)
 
 
+def _maybe_decimal(value) -> Optional[Decimal]:
+    if value is None:
+        return None
+    return Decimal(value)
+
+
 @attr.s(auto_attribs=True)
 class Summary:
     """Represents a metric with a statistical treatment."""
 
     metric: Metric
     statistic: "Statistic"
-    pre_treatments: list[PreTreatment] = attr.Factory(list)
+    pre_treatments: List[PreTreatment] = attr.Factory(list)
 
     @classmethod
     def from_config(
@@ -84,7 +87,7 @@ class Summary:
         self,
         data: DataFrame,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> "StatisticResultCollection":
         """Apply the statistic transformation for data related to the specified metric."""
@@ -98,14 +101,37 @@ class Summary:
         return self.statistic.apply(data, self.metric.name, experiment, analysis_basis, segment)
 
 
-class StatisticResult(StatisticSchema):
+@attr.s(auto_attribs=True, kw_only=True)
+class StatisticResult:
     """
     Represents the resulting data after applying a statistic transformation
     to metric data.
     """
 
-    _schema_version = 4
-    _bq_schema = (
+    SCHEMA_VERSION = 4
+
+    metric: str
+    statistic: str
+    branch: str
+    parameter: Optional[Decimal] = attr.ib(converter=_maybe_decimal, default=None)
+    comparison: Optional[str] = None
+    comparison_to_branch: Optional[str] = None
+    ci_width: Optional[float] = None
+    point: Optional[float] = None
+    lower: Optional[float] = None
+    upper: Optional[float] = None
+    segment: Optional[str] = None
+    analysis_basis: Optional[str] = None
+
+    def __attrs_post_init__(self):
+        for k in ("ci_width", "point", "lower", "upper"):
+            v = getattr(self, k)
+            if v is None:
+                continue
+            if not isinstance(v, numbers.Number):
+                raise ValueError(f"Expected a number for {k}; got {repr(v)}")
+
+    bq_schema = (
         bigquery.SchemaField("metric", "STRING"),
         bigquery.SchemaField("statistic", "STRING"),
         bigquery.SchemaField("parameter", "NUMERIC"),
@@ -120,66 +146,38 @@ class StatisticResult(StatisticSchema):
         bigquery.SchemaField("analysis_basis", "STRING"),
     )
 
-    # override the behavior of window_index because this is not
-    # a field in the bigquery schema, and so we need to exclude
-    # it on the Jetstream side
-    window_index: str = Field(default=None, exclude=True)
 
-    @validator("ci_width", "point", "lower", "upper", allow_reuse=True)
-    def check_number_fields(cls, v, values, field):
-        if v is not None and not isinstance(v, numbers.Number):
-            raise ValueError(f"Expected a number for {field.name}; got {repr(v)}")
-        return v
-
-    # we want a class method that is also a property
-    # - this is supported in python 3.9 and 3.10 but
-    #   is *deprecated in python 3.11*
-    # - mypy does not support this stacking of decorators
-    #   so we ignore it here
-    @classmethod  # type: ignore[misc]
-    @property
-    def bq_schema(cls) -> tuple:
-        return cls._bq_schema
-
-    # we want a class method that is also a property
-    # - this is supported in python 3.9 and 3.10 but
-    #   is *deprecated in python 3.11*
-    # - mypy does not support this stacking of decorators
-    #   so we ignore it here
-    @classmethod  # type: ignore[misc]
-    @property
-    def SCHEMA_VERSION(cls) -> int:
-        return cls._schema_version
-
-
-class StatisticResultCollection(StatisticsSchema):
+@attr.s(auto_attribs=True)
+class StatisticResultCollection:
     """
     Represents a set of statistics result data.
     """
 
-    __root__: list[StatisticResult] = []
+    data: List[StatisticResult] = attr.Factory(list)
 
-    @validator("*")
-    def normalize_decimal(cls, v):
-        if isinstance(v, Decimal):
-            return str(round(v, 6).normalize())
-        return v
+    converter = cattr.BaseConverter()
+    _normalize_decimal: Callable[[Decimal], str] = lambda x: str(round(x, 6).normalize())
+    converter.register_unstructure_hook(Decimal, _normalize_decimal)
+    _suppress_infinites: Callable[[float], Optional[float]] = (
+        lambda x: x if math.isfinite(x) else None
+    )
+    converter.register_unstructure_hook(float, _suppress_infinites)
 
-    @validator("*")
-    def suppress_infinites(cls, v):
-        if not isinstance(v, float) or math.isfinite(v):
-            return v
-        return None
+    def to_dict(self) -> Dict[str, Any]:
+        """Return statistic results as dict."""
+        return self.converter.unstructure(self)
 
     def set_segment(self, segment: str) -> "StatisticResultCollection":
         """Sets the `segment` field in-place on all children."""
-        for result in self.__root__:
+        for result in self.data:
             result.segment = segment
         return self
 
-    def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
+    def set_analysis_basis(
+        self, analysis_basis: parser_metric.AnalysisBasis
+    ) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
-        for result in self.__root__:
+        for result in self.data:
             result.analysis_basis = analysis_basis.value
         return self
 
@@ -206,7 +204,7 @@ class Statistic(ABC):
         df: DataFrame,
         metric: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> "StatisticResultCollection":
         """
@@ -214,7 +212,7 @@ class Statistic(ABC):
         of statistic results.
         """
 
-        statistic_result_collection = StatisticResultCollection.parse_obj([])
+        statistic_result_collection = StatisticResultCollection([])
 
         if metric in df:
             branch_list = df.branch.unique()
@@ -238,11 +236,9 @@ class Statistic(ABC):
 
                 for ref_branch in ref_branch_list:
                     try:
-                        statistic_result_collection.__root__.extend(
-                            self.transform(
-                                df, metric, ref_branch, experiment, analysis_basis, segment
-                            ).__root__
-                        )
+                        statistic_result_collection.data += self.transform(
+                            df, metric, ref_branch, experiment, analysis_basis, segment
+                        ).data
                     except Exception as e:
                         logger.exception(
                             f"Error while computing statistic {self.name()} "
@@ -271,13 +267,13 @@ class Statistic(ABC):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> "StatisticResultCollection":
         return NotImplemented
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]):
+    def from_dict(cls, config_dict: Dict[str, Any]):
         """Create a class instance with the specified config parameters."""
         return cls(**config_dict)  # type: ignore
 
@@ -361,7 +357,7 @@ def flatten_simple_compare_branches_result(
             )
         )
 
-    return StatisticResultCollection.parse_obj(statlist)
+    return StatisticResultCollection(statlist)
 
 
 @attr.s(auto_attribs=True)
@@ -376,7 +372,7 @@ class BootstrapMean(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
@@ -410,7 +406,7 @@ class Binomial(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
@@ -454,10 +450,10 @@ class Deciles(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        stats_results = StatisticResultCollection.parse_obj([])
+        stats_results = StatisticResultCollection([])
 
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -475,7 +471,7 @@ class Deciles(Statistic):
         for branch, branch_result in ma_result["individual"].items():
             for param, decile_result in branch_result.iterrows():
                 lower, upper = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.data.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -494,7 +490,7 @@ class Deciles(Statistic):
             abs_uplift = branch_result["abs_uplift"]
             for param, decile_result in abs_uplift.iterrows():
                 lower_abs, upper_abs = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.data.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -514,7 +510,7 @@ class Deciles(Statistic):
             rel_uplift = branch_result["rel_uplift"]
             for param, decile_result in rel_uplift.iterrows():
                 lower_rel, upper_rel = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.data.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -540,7 +536,7 @@ class Count(Statistic):
         df: DataFrame,
         metric: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ):
         return self.transform(
@@ -558,7 +554,7 @@ class Count(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         results = []
@@ -580,7 +576,7 @@ class Count(Statistic):
                     segment=segment,
                 )
             )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection(results)
 
 
 class Sum(Statistic):
@@ -589,7 +585,7 @@ class Sum(Statistic):
         df: DataFrame,
         metric: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ):
         return self.transform(
@@ -607,7 +603,7 @@ class Sum(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         results = []
@@ -629,7 +625,7 @@ class Sum(Statistic):
                     segment=segment,
                 )
             )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection(results)
 
 
 @attr.s(auto_attribs=True)
@@ -673,7 +669,7 @@ class KernelDensityEstimate(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         results = []
@@ -727,7 +723,7 @@ class KernelDensityEstimate(Statistic):
                         segment=segment,
                     )
                 )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection(results)
 
 
 @attr.s(auto_attribs=True)
@@ -741,7 +737,7 @@ class EmpiricalCDF(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         results = []
@@ -794,7 +790,7 @@ class EmpiricalCDF(Statistic):
                         segment=segment,
                     )
                 )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection(results)
 
 
 @attr.s(auto_attribs=True)
@@ -811,7 +807,7 @@ class PopulationRatio(Statistic):
         metric: str,
         reference_branch: str,
         experiment: Experiment,
-        analysis_basis: AnalysisBasis,
+        analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
