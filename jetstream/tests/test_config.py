@@ -47,7 +47,7 @@ class TestConfigLoader:
             ),
             None,
         )
-        metric = list(config_definition.spec.metrics.definitions.values())[0]
+        metric = list(config_definition.spec.metrics.definitions.values())[3]
         platform = config_definition.platform
         assert ConfigLoader.get_data_source(metric.data_source.name, platform) is not None
 
