@@ -11,8 +11,7 @@ import pytz
 import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.metric import AnalysisPeriod
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
+from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
 
 import jetstream.analysis
 from jetstream.analysis import Analysis

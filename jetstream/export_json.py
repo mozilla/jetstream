@@ -1,15 +1,16 @@
+import json
 import logging
 import random
 import string
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Callable, Dict, Optional
 
+import cattr
 import google.cloud.bigquery as bigquery
 import google.cloud.storage as storage
 import smart_open
 from google.cloud.exceptions import BadRequest
 from metric_config_parser.metric import AnalysisPeriod
-from mozilla_nimbus_schemas.jetstream import AnalysisErrors
 
 from jetstream import bq_normalize_name
 from jetstream.logging import LogConfiguration
@@ -22,7 +23,7 @@ SKIP_ERROR_TYPES = ["EndedException", "EnrollmentNotCompleteException"]
 
 def _get_statistics_tables_last_modified(
     client: bigquery.Client, bq_dataset: str, experiment_slug: Optional[str]
-) -> dict[str, datetime]:
+) -> Dict[str, datetime]:
     """Returns statistics table names and their last modified timestamp as datetime object."""
     experiment_table = "%"
     if experiment_slug:
@@ -45,7 +46,7 @@ def _get_statistics_tables_last_modified(
 
 def _get_gcs_blobs(
     storage_client: storage.Client, bucket: str, target_path: str
-) -> dict[str, datetime]:
+) -> Dict[str, datetime]:
     """Return all blobs in the GCS location with their last modified timestamp."""
     blobs = storage_client.list_blobs(bucket, prefix=target_path + "/")
 
@@ -186,9 +187,11 @@ def _get_experiment_logs_as_json(
 
     # convert results to JSON
     records = [dict(row) for row in results]
-    records_json = AnalysisErrors.parse_obj(records).json()
+    converter = cattr.GenConverter()
+    _datetime_to_json: Callable[[datetime], str] = lambda dt: dt.isoformat()
+    converter.register_unstructure_hook(datetime, _datetime_to_json)
 
-    return records_json, len(records)
+    return json.dumps(converter.unstructure(records), sort_keys=True), len(records)
 
 
 def _upload_str_to_gcs(
