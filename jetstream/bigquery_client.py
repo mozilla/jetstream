@@ -1,4 +1,3 @@
-import re
 import time
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Mapping, Optional
@@ -104,9 +103,18 @@ class BigQueryClient:
 
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
-        table_name_re = re.compile(regex)
-        existing_tables = self.client.list_tables(self.dataset)
-        return [table.table_id for table in existing_tables if table_name_re.match(table.table_id)]
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name
+            FROM
+                {self.dataset}.INFORMATION_SCHEMA.TABLES
+            WHERE
+                REGEXP_CONTAINS(table_name, r'{regex}')
+            """
+        )
+        result = list(job.result())
+        return [row.table_name for row in result]
 
     def touch_tables(self, normandy_slug: str):
         """Updates the last_updated timestamp on tables for a given experiment.
