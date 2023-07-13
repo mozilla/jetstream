@@ -532,10 +532,14 @@ class Analysis:
             # structure and the schema expected by bigquery. This error is
             # rather opaque, so we will do some extra manual logging to help
             # debugging these cases before re-raising the original exception.
-            logger.error("Got a BadRequest error from BigQuery. Details below...")
-            logger.error(f"Expected schema: {StatisticResult.bq_schema}")
-            logger.error(f"Data received: {segment_results}")
-            raise e
+            error_msg = """
+            A BadRequest error from BigQuery likely indicates a mismatch between
+            the statistics results data and the expected schema.
+            """
+            # logger.error(f"Expected schema: {StatisticResult.bq_schema}")
+            # logger.error(f"Data received: {segment_results}")
+            ve = ValueError(error_msg)
+            raise ve from e
 
         self.bigquery.add_labels_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
