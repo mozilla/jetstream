@@ -125,11 +125,30 @@ class StatisticResult(StatisticSchema):
     # it on the Jetstream side
     window_index: str = Field(default=None, exclude=True)
 
+    class Config:
+        use_enum_values = True
+
     @validator("ci_width", "point", "lower", "upper", allow_reuse=True)
     def check_number_fields(cls, v, values, field):
         if v is not None and not isinstance(v, numbers.Number):
+            if math.isnan(v):
+                return None
             raise ValueError(f"Expected a number for {field.name}; got {repr(v)}")
         return v
+
+    @validator("parameter")
+    def normalize_decimal(cls, v):
+        if isinstance(v, Decimal):
+            return str(round(v, 6).normalize())
+        if isinstance(v, float):
+            return str(round(v, 6))
+        return v
+
+    @validator("*")
+    def suppress_infinites(cls, v):
+        if not isinstance(v, float) or math.isfinite(v):
+            return v
+        return None
 
     # we want a class method that is also a property
     # - this is supported in python 3.9 and 3.10 but
@@ -158,18 +177,6 @@ class StatisticResultCollection(StatisticsSchema):
     """
 
     __root__: list[StatisticResult] = []
-
-    @validator("*")
-    def normalize_decimal(cls, v):
-        if isinstance(v, Decimal):
-            return str(round(v, 6).normalize())
-        return v
-
-    @validator("*")
-    def suppress_infinites(cls, v):
-        if not isinstance(v, float) or math.isfinite(v):
-            return v
-        return None
 
     def set_segment(self, segment: str) -> "StatisticResultCollection":
         """Sets the `segment` field in-place on all children."""

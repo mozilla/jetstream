@@ -520,12 +520,22 @@ class Analysis:
         job_config.schema = StatisticResult.bq_schema
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
-        # wait for the job to complete
-        self.bigquery.load_table_from_json(
-            segment_results,
-            f"statistics_{metrics_table}",
-            job_config=job_config,
-        )
+        try:
+            # wait for the job to complete
+            self.bigquery.load_table_from_json(
+                segment_results,
+                f"statistics_{metrics_table}",
+                job_config=job_config,
+            )
+        except google.api_core.exceptions.BadRequest as e:
+            # There was a mismatch between the segment_results __root__ dict
+            # structure and the schema expected by bigquery. This error is
+            # rather opaque, so we will do some extra manual logging to help
+            # debugging these cases before re-raising the original exception.
+            logger.error("Got a BadRequest error from BigQuery. Details below...")
+            logger.error(f"Expected schema: {StatisticResult.bq_schema}")
+            logger.error(f"Data received: {segment_results}")
+            raise e
 
         self.bigquery.add_labels_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
