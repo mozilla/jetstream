@@ -198,7 +198,7 @@ class TestStatistics:
         for r in results:
             assert isinstance(r.point, float)
         df = pd.DataFrame([r.dict() for r in results])
-        assert df["parameter"].min() == 0
+        assert float(df["parameter"].min()) == 0.0
 
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
