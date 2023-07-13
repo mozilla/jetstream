@@ -1,10 +1,9 @@
 import math
 from datetime import datetime
 
-from google.cloud import bigquery
-
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 import pytz
+from google.cloud import bigquery
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.statistics import StatisticResult, StatisticResultCollection
 
