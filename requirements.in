@@ -156,6 +156,7 @@ mozilla-metric-config-parser==2023.6.7
     # via
     #   mozanalysis
     #   mozilla-jetstream
+mozilla-nimbus-schemas==2023.6.6
 msgpack==1.0.5
     # via distributed
 mypy==1.4.0

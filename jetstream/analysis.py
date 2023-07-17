@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import attr
 import dask
@@ -16,9 +16,10 @@ from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
 from metric_config_parser.analysis import AnalysisConfiguration
-from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
 
 import jetstream.errors as errors
@@ -59,7 +60,7 @@ class Analysis:
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
     start_time: Optional[datetime] = None
-    analysis_periods: List[AnalysisPeriod] = [
+    analysis_periods: list[AnalysisPeriod] = [
         AnalysisPeriod.DAY,
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
@@ -320,29 +321,28 @@ class Analysis:
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
-        ).to_dict()["data"]
-
-        return StatisticResultCollection(
-            counts
-            + [
-                StatisticResult(
-                    metric=metric,
-                    statistic="count",
-                    parameter=None,
-                    branch=b.slug,
-                    comparison=None,
-                    comparison_to_branch=None,
-                    ci_width=None,
-                    point=0,
-                    lower=None,
-                    upper=None,
-                    segment=segment,
-                    analysis_basis=analysis_basis,
-                )
-                for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts}
-            ]
         )
+
+        other_counts = [
+            StatisticResult(
+                metric=metric,
+                statistic="count",
+                parameter=None,
+                branch=b.slug,
+                comparison=None,
+                comparison_to_branch=None,
+                ci_width=None,
+                point=0,
+                lower=None,
+                upper=None,
+                segment=segment,
+                analysis_basis=analysis_basis,
+            )
+            for b in self.config.experiment.branches
+            if b.slug not in {c.branch for c in counts.__root__}
+        ]
+
+        return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
     @dask.delayed
     def subset_to_segment(
@@ -512,7 +512,7 @@ class Analysis:
     def save_statistics(
         self,
         period: AnalysisPeriod,
-        segment_results: List[Dict[str, Any]],
+        segment_results: list[dict[str, Any]],
         metrics_table: str,
     ):
         """Write statistics to BigQuery."""
@@ -520,10 +520,26 @@ class Analysis:
         job_config.schema = StatisticResult.bq_schema
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
-        # wait for the job to complete
-        self.bigquery.load_table_from_json(
-            segment_results, f"statistics_{metrics_table}", job_config=job_config
-        )
+        try:
+            # wait for the job to complete
+            self.bigquery.load_table_from_json(
+                segment_results,
+                f"statistics_{metrics_table}",
+                job_config=job_config,
+            )
+        except google.api_core.exceptions.BadRequest as e:
+            # There was a mismatch between the segment_results __root__ dict
+            # structure and the schema expected by bigquery. This error is
+            # rather opaque, so we will do some extra manual logging to help
+            # debugging these cases before re-raising the original exception.
+            error_msg = """
+            A BadRequest error from BigQuery likely indicates a mismatch between
+            the statistics results data and the expected schema.
+            """
+            # logger.error(f"Expected schema: {StatisticResult.bq_schema}")
+            # logger.error(f"Data received: {segment_results}")
+            ve = ValueError(error_msg)
+            raise ve from e
 
         self.bigquery.add_labels_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
@@ -602,7 +618,7 @@ class Analysis:
                 logger.info(f"Skipping {period};")
                 continue
 
-            segment_results = []
+            segment_results = StatisticResultCollection.parse_obj([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
@@ -683,22 +699,22 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results += self.calculate_statistics(
+                        segment_results.__root__ += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                        ).to_dict()["data"]
+                        ).dict()["__root__"]
 
-                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
-                        "data"
-                    ]
+                    segment_results.__root__ += self.counts(
+                        segment_data, segment, analysis_basis
+                    ).dict()["__root__"]
 
             results.append(
                 self.save_statistics(
                     period,
-                    segment_results,
+                    segment_results.dict()["__root__"],
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )

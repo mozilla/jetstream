@@ -5,6 +5,7 @@ import mozanalysis.experiment
 import mozanalysis.metrics
 from metric_config_parser import data_source
 from metric_config_parser import metric as parser_metric
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 
 class Metric(parser_metric.Metric):
@@ -37,9 +38,9 @@ class Metric(parser_metric.Metric):
     def from_mozanalysis_metric(
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
-        analysis_bases: Optional[List[parser_metric.AnalysisBasis]] = [
-            parser_metric.AnalysisBasis.ENROLLMENTS,
-            parser_metric.AnalysisBasis.EXPOSURES,
+        analysis_bases: Optional[List[AnalysisBasis]] = [
+            AnalysisBasis.ENROLLMENTS,
+            AnalysisBasis.EXPOSURES,
         ],
     ) -> "Metric":
         return cls(
@@ -56,8 +57,7 @@ class Metric(parser_metric.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_bases=analysis_bases
-            or [parser_metric.AnalysisBasis.ENROLLMENTS, parser_metric.AnalysisBasis.EXPOSURES],
+            analysis_bases=analysis_bases or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
         )
 
     @classmethod

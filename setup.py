@@ -64,6 +64,7 @@ setup(
         "jinja2",
         "mozanalysis",
         "mozilla-metric-config-parser",
+        "mozilla-nimbus-schemas",
         "pyarrow",
         "pytz",
         "PyYAML",
