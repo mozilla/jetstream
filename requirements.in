@@ -277,7 +277,7 @@ requests==2.31.0
     #   mozilla-metric-config-parser
 rsa==4.9
     # via google-auth
-scipy==1.10.1
+scipy==1.11.1
     # via
     #   mozanalysis
     #   statsmodels
