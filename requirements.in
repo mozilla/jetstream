@@ -50,7 +50,7 @@ db-dtypes==1.1.1
     # via mozilla-jetstream
 distributed==2023.6.0
     # via dask
-exceptiongroup==1.1.1
+exceptiongroup==1.1.2
     # via
     #   cattrs
     #   pytest
