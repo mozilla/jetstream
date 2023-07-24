@@ -263,7 +263,7 @@ pytz==2023.3
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   pandas
-pyyaml==6.0
+pyyaml==6.0.1
     # via
     #   dask
     #   distributed
