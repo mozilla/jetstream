@@ -81,7 +81,7 @@ google-auth==2.20.0
     #   google-cloud-storage
 google-cloud-artifact-registry==1.8.1
     # via mozilla-jetstream
-google-cloud-bigquery==3.11.2
+google-cloud-bigquery==3.11.4
     # via
     #   mozanalysis
     #   mozilla-jetstream
