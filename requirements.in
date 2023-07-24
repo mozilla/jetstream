@@ -328,7 +328,7 @@ types-pyyaml==6.0.12.10
     # via mozilla-jetstream
 types-requests==2.31.0.1
     # via mozilla-jetstream
-types-six==1.16.21.8
+types-six==1.16.21.9
     # via mozilla-jetstream
 types-toml==0.10.8.6
     # via mozilla-jetstream
