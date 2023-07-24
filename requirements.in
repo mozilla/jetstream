@@ -332,7 +332,7 @@ types-six==1.16.21.8
     # via mozilla-jetstream
 types-toml==0.10.8.6
     # via mozilla-jetstream
-types-urllib3==1.26.25.13
+types-urllib3==1.26.25.14
     # via types-requests
 typing-extensions==4.6.3
     # via
