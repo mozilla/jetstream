@@ -193,7 +193,7 @@ pandas==2.0.2
     #   statsmodels
 partd==1.4.0
     # via dask
-pathspec==0.11.1
+pathspec==0.11.2
     # via black
 patsy==0.5.3
     # via statsmodels
