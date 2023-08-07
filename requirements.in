@@ -237,7 +237,7 @@ pycodestyle==2.10.0
     # via flake8
 pyflakes==3.0.1
     # via flake8
-pyparsing==3.1.0
+pyparsing==3.1.1
     # via matplotlib
 pyrsistent==0.19.3
     # via jsonschema
