@@ -79,7 +79,7 @@ google-auth==2.20.0
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.8.1
+google-cloud-artifact-registry==1.8.3
     # via mozilla-jetstream
 google-cloud-bigquery==3.11.2
     # via
