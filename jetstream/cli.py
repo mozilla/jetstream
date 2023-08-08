@@ -43,7 +43,11 @@ from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
 from .config import CONFIGS, METRIC_HUB_REPO, ConfigLoader, _ConfigLoader, validate
 from .dryrun import DryRunFailedError
-from .errors import ExplicitSkipException, ValidationException
+from .errors import (
+    EnrollmentNotCompleteException,
+    ExplicitSkipException,
+    ValidationException,
+)
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
 from .logging import LogConfiguration
@@ -466,6 +470,19 @@ class AnalysisExecutor:
 
                 if self.recreate_enrollments:
                     self._delete_enrollment_table(config)
+
+                # make sure enrollment is actually ended (and enrollment is not manually overridden)
+                if (
+                    hasattr(config.experiment, "is_enrollment_paused")
+                    and config.experiment.is_enrollment_paused is False
+                ) and (
+                    config.experiment.proposed_enrollment
+                    == config.experiment.experiment.proposed_enrollment
+                    and config.experiment.enrollment_end_date
+                    == config.experiment.experiment.enrollment_end_date
+                    and config.experiment.experiment_spec.enrollment_period is None
+                ):
+                    raise EnrollmentNotCompleteException(config.experiment.normandy_slug)
 
                 analysis.ensure_enrollments(end_date)
             except Exception as e:

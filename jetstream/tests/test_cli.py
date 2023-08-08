@@ -17,6 +17,7 @@ from pytz import UTC
 from jetstream import cli, experimenter
 from jetstream.artifacts import ArtifactManager
 from jetstream.config import ConfigLoader, _ConfigLoader
+from jetstream.errors import EnrollmentNotCompleteException
 
 
 @pytest.fixture(name="cli_experiments")
@@ -61,6 +62,37 @@ def cli_experiments():
                 app_name="firefox_desktop",
                 app_id="firefox-desktop",
             ),
+        ]
+    )
+
+
+@pytest.fixture(name="cli_experiments_enrollment_incomplete")
+def cli_experiment_enrollment_fixture():
+    return cli_experiments_enrollment_incomplete()
+
+
+def cli_experiments_enrollment_incomplete():
+    return experimenter.ExperimentCollection(
+        [
+            Experiment(
+                experimenter_slug=None,
+                normandy_slug="normandy-test-slug",
+                type="v6",
+                status="Live",
+                branches=[
+                    Branch(slug="treatment", ratio=1),
+                    Branch(slug="control", ratio=1),
+                ],
+                start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+                end_date=None,
+                proposed_enrollment=7,
+                reference_branch=None,
+                is_high_population=False,
+                app_name="firefox_ios",
+                app_id="org.mozilla.ios.Firefox",
+                enrollment_end_date=dt.datetime(2020, 1, 8, tzinfo=UTC),
+                is_enrollment_paused=False,
+            )
         ]
     )
 
@@ -461,6 +493,24 @@ class TestAnalysisExecutor:
         )
 
         assert Analysis.ensure_enrollments.called_once()
+
+    def test_ensure_enrollments_error_incomplete(self, bq_client_mock, monkeypatch):
+        executor = cli.AnalysisExecutor(
+            project_id="project",
+            dataset_id="dataset",
+            bucket="bucket",
+            date=cli.All,
+            experiment_slugs=["normandy-test-slug"],
+        )
+
+        Analysis = Mock()
+        monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
+
+        with pytest.raises(EnrollmentNotCompleteException):
+            executor.ensure_enrollments(
+                experiment_getter=cli_experiments_enrollment_incomplete,
+                config_getter=ConfigLoader,
+            )
 
 
 class TestSerialExecutorStrategy:
