@@ -472,19 +472,20 @@ class AnalysisExecutor:
                     self._delete_enrollment_table(config)
 
                 # make sure enrollment is actually ended (and enrollment is not manually overridden)
-                if (
-                    hasattr(config.experiment, "is_enrollment_paused")
-                    and config.experiment.is_enrollment_paused is False
-                ) and (
-                    config.experiment.proposed_enrollment
-                    == config.experiment.experiment.proposed_enrollment
-                    and config.experiment.enrollment_end_date
-                    == config.experiment.experiment.enrollment_end_date
-                    and config.experiment.experiment_spec.enrollment_period is None
+                if not (
+                    (
+                        hasattr(config.experiment, "is_enrollment_paused")
+                        and config.experiment.is_enrollment_paused is False
+                    )
+                    and (
+                        config.experiment.proposed_enrollment
+                        == config.experiment.experiment.proposed_enrollment
+                        and config.experiment.enrollment_end_date
+                        == config.experiment.experiment.enrollment_end_date
+                        and config.experiment.experiment_spec.enrollment_period is None
+                    )
                 ):
-                    raise EnrollmentNotCompleteException(config.experiment.normandy_slug)
-
-                analysis.ensure_enrollments(end_date)
+                    analysis.ensure_enrollments(end_date)
             except Exception as e:
                 logger.exception(
                     str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
