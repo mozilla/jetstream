@@ -17,7 +17,6 @@ from pytz import UTC
 from jetstream import cli, experimenter
 from jetstream.artifacts import ArtifactManager
 from jetstream.config import ConfigLoader, _ConfigLoader
-from jetstream.errors import EnrollmentNotCompleteException
 
 
 @pytest.fixture(name="cli_experiments")
@@ -506,11 +505,12 @@ class TestAnalysisExecutor:
         Analysis = Mock()
         monkeypatch.setattr("jetstream.cli.Analysis", Analysis)
 
-        with pytest.raises(EnrollmentNotCompleteException):
-            executor.ensure_enrollments(
-                experiment_getter=cli_experiments_enrollment_incomplete,
-                config_getter=ConfigLoader,
-            )
+        executor.ensure_enrollments(
+            experiment_getter=cli_experiments_enrollment_incomplete,
+            config_getter=ConfigLoader,
+        )
+
+        Analysis.ensure_enrollments.assert_not_called()
 
 
 class TestSerialExecutorStrategy:
