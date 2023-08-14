@@ -285,10 +285,7 @@ distributed==2023.8.0 \
 exceptiongroup==1.1.2 \
     --hash=sha256:12c3e887d6485d16943a309616de20ae5582633e0a2eda17f4e10fd61c1e8af5 \
     --hash=sha256:e346e69d186172ca7cf029c8c1d16235aa0e04035e5750b4b95039e65204328f
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.1.0 \
     --hash=sha256:d5b3857f07c030bdb5bf41c7f53799571d75c4491748a3adcd47de929e34cd23 \
     --hash=sha256:ffdfce58ea94c6580c77888a86506937f9a1a227dfcd15f245d694ae20a6b6e5
@@ -386,9 +383,9 @@ google-cloud-bigquery-storage==2.22.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-container==2.28.0 \
-    --hash=sha256:3d38aa74b88e9b3b2ea124ffe0592b5c282845ae179fe1728c4af31937259540 \
-    --hash=sha256:c8c2fcedb096b2e895fa37339eee900da2f02b14826f835dd81526e5ffb0b511
+google-cloud-container==2.29.0 \
+    --hash=sha256:4497cc823d8aad3eb1c0984e3b319f467a9f09cc925c37cf4b3749e572256792 \
+    --hash=sha256:90171dce17ebe64e4c89226eded572134f5ae70850823ea6d40b14130710c52e
     # via -r requirements.in
 google-cloud-core==2.3.3 \
     --hash=sha256:37b80273c8d7eee1ae816b3a20ae43585ea50506cb0e60f3cf5be5f87f1373cb \
@@ -1512,12 +1509,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1584,7 +1576,6 @@ typing-extensions==4.7.1 \
     --hash=sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2
     # via
     #   -r requirements.in
-    #   cattrs
     #   mypy
     #   pydantic
 tzdata==2023.3 \
