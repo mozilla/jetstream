@@ -46,7 +46,7 @@ from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
-from .logging import LogConfiguration, LOG_SOURCE
+from .logging import LOG_SOURCE, LogConfiguration
 from .metadata import export_metadata
 from .platform import PLATFORM_CONFIGS
 from .preview import sampled_enrollment_query
