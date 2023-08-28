@@ -22,6 +22,7 @@ class TestLoggingIntegration:
             bigquery.SchemaField("filename", "STRING"),
             bigquery.SchemaField("func_name", "STRING"),
             bigquery.SchemaField("exception_type", "STRING"),
+            bigquery.SchemaField("source", "STRING"),
         ]
 
         table = bigquery.Table(f"{project_id}.{temporary_dataset}.logs", schema=schema)
@@ -84,6 +85,7 @@ class TestLoggingIntegration:
                 and r.log_level == "ERROR"
                 and r.segment == "all"
                 and r.analysis_basis == "enrollments"
+                and r.source == "jetstream"
                 for r in result
             ]
         )
