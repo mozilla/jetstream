@@ -84,7 +84,7 @@ setup(
         pensieve=jetstream.cli:cli
         jetstream=jetstream.cli:cli
     """,
-    # This project does not issue releases, so this number is not meaningful
-    # and should not need to change.
-    version="2023.6.2",
+    # This project does not issue regular releases, only when there
+    # are changes that would be meaningful to our (few) dependents.
+    version="2023.8.1",
 )

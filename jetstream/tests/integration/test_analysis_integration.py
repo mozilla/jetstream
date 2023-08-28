@@ -734,6 +734,7 @@ class TestAnalysisIntegration:
         assert error_logs[0].get("statistic") == "bootstrap_mean"
         assert error_logs[0].get("analysis_basis") == "enrollments"
         assert error_logs[0].get("segment") == "all"
+        assert error_logs[0].get("source") == "jetstream"
 
         assert error_logs[1].get("log_level") == "ERROR"
         assert error_logs[1].get("experiment") == "test-experiment"
