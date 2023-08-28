@@ -46,7 +46,7 @@ from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
-from .logging import LogConfiguration
+from .logging import LogConfiguration, LOG_SOURCE
 from .metadata import export_metadata
 from .platform import PLATFORM_CONFIGS
 from .preview import sampled_enrollment_query
@@ -505,7 +505,11 @@ log_table_id_option = click.option(
     "--log_table_id", "--log-table-id", default="logs", help="Table to write logs to"
 )
 log_source = click.option(
-    "--log-source", "--log_source", default="SIZING", help="Source column for logs"
+    "--log-source",
+    "--log_source",
+    default=LOG_SOURCE.JETSTREAM,
+    type=LOG_SOURCE,
+    help="Source column for logs",
 )
 
 
@@ -1432,7 +1436,7 @@ def preview(
             task_monitoring_log_table_id=None,
             log_level=logging.INFO,
             capacity=5,
-            log_source="PREVIEW",
+            log_source=LOG_SOURCE.PREVIEW,
         )
         client.delete_table(f"{project_id}.{dataset_id}.logs_{table}")
 
