@@ -86,5 +86,5 @@ setup(
     """,
     # This project does not issue regular releases, only when there
     # are changes that would be meaningful to our (few) dependents.
-    version="2023.8.1",
+    version="2023.8.2",
 )
