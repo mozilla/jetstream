@@ -140,7 +140,7 @@ jsonschema==4.19.0
     # via mozilla-jetstream
 jsonschema-specifications==2023.7.1
     # via jsonschema
-kiwisolver==1.4.4
+kiwisolver==1.4.5
     # via matplotlib
 locket==1.0.0
     # via
