@@ -549,7 +549,7 @@ def cli(
         task_profiling_log_table_id,
         task_monitoring_log_table_id,
         log_to_bigquery,
-        log_source,
+        log_source=log_source,
     )
     log_config.setup_logger()
     ctx.ensure_object(dict)
