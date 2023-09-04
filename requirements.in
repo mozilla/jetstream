@@ -192,7 +192,7 @@ packaging==23.1
     #   matplotlib
     #   pytest
     #   statsmodels
-pandas==2.0.3
+pandas==2.1.0
     # via
     #   db-dtypes
     #   mozanalysis
