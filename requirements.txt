@@ -285,10 +285,11 @@ distributed==2023.8.0 \
 exceptiongroup==1.1.2 \
     --hash=sha256:12c3e887d6485d16943a309616de20ae5582633e0a2eda17f4e10fd61c1e8af5 \
     --hash=sha256:e346e69d186172ca7cf029c8c1d16235aa0e04035e5750b4b95039e65204328f
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
+faker==19.6.1 \
+    --hash=sha256:5d6b7880b3bea708075ddf91938424453f07053a59f8fa0453c1870df6ff3292 \
+    --hash=sha256:64c8513c53c3a809075ee527b323a0ba61517814123f3137e4912f5d43350139
+    # via polyfactory
 flake8==6.1.0 \
     --hash=sha256:d5b3857f07c030bdb5bf41c7f53799571d75c4491748a3adcd47de929e34cd23 \
     --hash=sha256:ffdfce58ea94c6580c77888a86506937f9a1a227dfcd15f245d694ae20a6b6e5
@@ -788,9 +789,9 @@ mozilla-metric-config-parser==2023.6.7 \
     # via
     #   -r requirements.in
     #   mozanalysis
-mozilla-nimbus-schemas==2023.8.1 \
-    --hash=sha256:c3bdaded744a239f10a12dfdc4001b7b238744fdc5b02766f8500799349f988e \
-    --hash=sha256:c4f0de05785b7f59442d28ed185165a40fe71baa619402ce3378bc6a956329ab
+mozilla-nimbus-schemas==2023.9.2 \
+    --hash=sha256:aa23d024bf01e67564d4dfb288397cbea8046961dc246f687a2dff05280dd4d0 \
+    --hash=sha256:ee2cb3cb042f197586689f187742e0a3c4da9090386f3f3ff48691686df6898a
     # via
     #   -r requirements.in
     #   mozilla-metric-config-parser
@@ -1067,6 +1068,10 @@ pluggy==1.2.0 \
     # via
     #   -r requirements.in
     #   pytest
+polyfactory==2.8.1 \
+    --hash=sha256:2b947f6ae8df96cfbca0ba94a573a885e4291eb893c3eb5daa7c1efa3385834e \
+    --hash=sha256:3f7525ffa6736181cf746d3c30063a953e6b566aec07e8b7268f52913a2838dd
+    # via mozilla-nimbus-schemas
 proto-plus==1.22.3 \
     --hash=sha256:a49cd903bc0b6ab41f76bf65510439d56ca76f868adf0274e738bfdd096894df \
     --hash=sha256:fdcd09713cbd42480740d2fe29c990f7fbd885a67efc328aa8be6ee3e9f76a6b
@@ -1244,6 +1249,7 @@ python-dateutil==2.8.2 \
     --hash=sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9
     # via
     #   -r requirements.in
+    #   faker
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
@@ -1512,12 +1518,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1584,8 +1585,8 @@ typing-extensions==4.7.1 \
     --hash=sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2
     # via
     #   -r requirements.in
-    #   cattrs
     #   mypy
+    #   polyfactory
     #   pydantic
 tzdata==2023.3 \
     --hash=sha256:11ef1e08e54acb0d4f95bdb1be05da659673de4acbd21bf9c69e94cc5e907a3a \
