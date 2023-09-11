@@ -300,7 +300,7 @@ six==1.16.0
     #   google-auth
     #   patsy
     #   python-dateutil
-smart-open[gcs]==6.3.0
+smart-open[gcs]==6.4.0
     # via mozilla-jetstream
 smmap==5.0.0
     # via gitdb
