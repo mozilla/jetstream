@@ -247,7 +247,7 @@ pyflakes==3.1.0
     # via flake8
 pyparsing==3.0.9
     # via matplotlib
-pytest==7.4.0
+pytest==7.4.2
     # via
     #   mozilla-jetstream
     #   pytest-black
