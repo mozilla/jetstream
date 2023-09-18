@@ -362,5 +362,5 @@ urllib3==1.26.16
     #   requests
 zict==3.0.0
     # via distributed
-zipp==3.16.2
+zipp==3.17.0
     # via importlib-metadata
