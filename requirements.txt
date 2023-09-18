@@ -285,10 +285,7 @@ distributed==2023.8.0 \
 exceptiongroup==1.1.2 \
     --hash=sha256:12c3e887d6485d16943a309616de20ae5582633e0a2eda17f4e10fd61c1e8af5 \
     --hash=sha256:e346e69d186172ca7cf029c8c1d16235aa0e04035e5750b4b95039e65204328f
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.1.0 \
     --hash=sha256:d5b3857f07c030bdb5bf41c7f53799571d75c4491748a3adcd47de929e34cd23 \
     --hash=sha256:ffdfce58ea94c6580c77888a86506937f9a1a227dfcd15f245d694ae20a6b6e5
@@ -1512,12 +1509,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1553,9 +1545,9 @@ types-protobuf==4.23.0.3 \
     --hash=sha256:035bd85066828d21f12ba42bfe941089b2b59a7d8ca64708696d63f8b4850e89 \
     --hash=sha256:772ed02906d456d71711d34c3c036b2137fd99a562a883da6d9aa232be0da357
     # via -r requirements.in
-types-pytz==2023.3.0.0 \
-    --hash=sha256:4fc2a7fbbc315f0b6630e0b899fd6c743705abe1094d007b0e612d10da15e0f3 \
-    --hash=sha256:ecdc70d543aaf3616a7e48631543a884f74205f284cefd6649ddf44c6a820aac
+types-pytz==2023.3.1.0 \
+    --hash=sha256:8e7d2198cba44a72df7628887c90f68a568e1445f14db64631af50c3cab8c090 \
+    --hash=sha256:a660a38ed86d45970603e4f3b4877c7ba947668386a896fb5d9589c17e7b8407
     # via -r requirements.in
 types-pyyaml==6.0.12.11 \
     --hash=sha256:7d340b19ca28cddfdba438ee638cd4084bde213e501a3978738543e27094775b \
@@ -1584,7 +1576,6 @@ typing-extensions==4.7.1 \
     --hash=sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2
     # via
     #   -r requirements.in
-    #   cattrs
     #   mypy
     #   pydantic
 tzdata==2023.3 \
