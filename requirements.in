@@ -148,7 +148,7 @@ locket==1.0.0
     #   partd
 markupsafe==2.1.3
     # via jinja2
-matplotlib==3.7.2
+matplotlib==3.8.0
     # via mozanalysis
 mccabe==0.7.0
     # via flake8
