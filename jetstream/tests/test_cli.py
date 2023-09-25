@@ -134,6 +134,24 @@ class TestCli:
             assert "Skipping example config" in result.output
             assert result.exit_code == 0
 
+    def test_validate_experiment_downsampling_config(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                [experiment]
+                enrollment_period = 7
+                sample_size = 10
+                """
+            )
+
+            with open("my_cool_experiment.toml", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml"])
+
+            assert result.exit_code == 0
+
     def test_validate_private_example_config(self, runner, monkeypatch):
         monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
         with runner.isolated_filesystem():
