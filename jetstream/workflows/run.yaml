@@ -101,7 +101,7 @@ spec:
       ]
       resources:
         requests:
-          memory: 10Gi   # make sure there is at least 10Gb of memory available for the task
+          memory: 16Gi   # make sure there is at least 16Gb of memory available for the task
         limits:
           cpu: 4  # limit to 4 cores
     retryStrategy:
