@@ -184,7 +184,7 @@ numpy==1.26.0
     #   pyarrow
     #   scipy
     #   statsmodels
-packaging==23.1
+packaging==23.2
     # via
     #   black
     #   dask
