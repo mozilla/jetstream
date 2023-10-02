@@ -344,7 +344,7 @@ types-pytz==2023.3.1.1
     # via mozilla-jetstream
 types-pyyaml==6.0.12.11
     # via mozilla-jetstream
-types-requests==2.31.0.3
+types-requests==2.31.0.6
     # via mozilla-jetstream
 types-six==1.16.21.9
     # via mozilla-jetstream
