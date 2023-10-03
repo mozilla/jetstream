@@ -462,6 +462,7 @@ class Analysis:
             None,
             exposure_signal,
             segments,
+            self.config.experiment.sample_size or None,
         )
 
         self._write_sql_output(
@@ -748,6 +749,7 @@ class Analysis:
             None,
             exposure_signal,
             segments,
+            self.config.experiment.sample_size or None,
         )
 
     def ensure_enrollments(self, current_date: datetime) -> None:

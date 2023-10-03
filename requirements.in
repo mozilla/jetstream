@@ -154,10 +154,10 @@ matplotlib==3.8.0
     # via mozanalysis
 mccabe==0.7.0
     # via flake8
-mozanalysis==2023.5.3
+mozanalysis==2023.9.4
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2023.9.3
+mozilla-metric-config-parser==2023.9.4
     # via
     #   mozanalysis
     #   mozilla-jetstream
