@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import attr
 import dask
@@ -16,9 +16,10 @@ from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
 from metric_config_parser.analysis import AnalysisConfiguration
-from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.experiment import TimeLimits
 from mozanalysis.utils import add_days
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
 
 import jetstream.errors as errors
@@ -59,7 +60,7 @@ class Analysis:
     config: AnalysisConfiguration
     log_config: Optional[LogConfiguration] = None
     start_time: Optional[datetime] = None
-    analysis_periods: List[AnalysisPeriod] = [
+    analysis_periods: list[AnalysisPeriod] = [
         AnalysisPeriod.DAY,
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
@@ -259,8 +260,11 @@ class Analysis:
             metrics = {
                 Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                 for m in self.config.metrics[period]
-                if m.metric.analysis_bases == analysis_basis
-                or analysis_basis in m.metric.analysis_bases
+                if (
+                    m.metric.analysis_bases == analysis_basis
+                    or analysis_basis in m.metric.analysis_bases
+                )
+                and m.metric.select_expression is not None
             }
 
             metrics_sql = exp.build_metrics_query(
@@ -325,29 +329,28 @@ class Analysis:
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
-        ).to_dict()["data"]
-
-        return StatisticResultCollection(
-            counts
-            + [
-                StatisticResult(
-                    metric=metric,
-                    statistic="count",
-                    parameter=None,
-                    branch=b.slug,
-                    comparison=None,
-                    comparison_to_branch=None,
-                    ci_width=None,
-                    point=0,
-                    lower=None,
-                    upper=None,
-                    segment=segment,
-                    analysis_basis=analysis_basis,
-                )
-                for b in self.config.experiment.branches
-                if b.slug not in {c["branch"] for c in counts}
-            ]
         )
+
+        other_counts = [
+            StatisticResult(
+                metric=metric,
+                statistic="count",
+                parameter=None,
+                branch=b.slug,
+                comparison=None,
+                comparison_to_branch=None,
+                ci_width=None,
+                point=0,
+                lower=None,
+                upper=None,
+                segment=segment,
+                analysis_basis=analysis_basis,
+            )
+            for b in self.config.experiment.branches
+            if b.slug not in {c.branch for c in counts.__root__}
+        ]
+
+        return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
     @dask.delayed
     def subset_to_segment(
@@ -398,12 +401,6 @@ class Analysis:
         if self.config.experiment.is_rollout:
             raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
 
-        if (
-            hasattr(self.config.experiment, "is_enrollment_paused")
-            and self.config.experiment.is_enrollment_paused is False
-        ):
-            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
-
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
@@ -450,7 +447,10 @@ class Analysis:
         metrics = set()
         for v in self.config.metrics.values():
             for metric_config in v:
-                metrics.add(Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric())
+                if metric_config.metric.select_expression:
+                    metrics.add(
+                        Metric.from_metric_config(metric_config.metric).to_mozanalysis_metric()
+                    )
 
         exposure_signal = None
         if self.config.experiment.exposure_signal:
@@ -470,6 +470,7 @@ class Analysis:
             None,
             exposure_signal,
             segments,
+            self.config.experiment.sample_size or None,
         )
 
         self._write_sql_output(
@@ -520,7 +521,7 @@ class Analysis:
     def save_statistics(
         self,
         period: AnalysisPeriod,
-        segment_results: List[Dict[str, Any]],
+        segment_results: list[dict[str, Any]],
         metrics_table: str,
     ):
         """Write statistics to BigQuery."""
@@ -528,10 +529,26 @@ class Analysis:
         job_config.schema = StatisticResult.bq_schema
         job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
 
-        # wait for the job to complete
-        self.bigquery.load_table_from_json(
-            segment_results, f"statistics_{metrics_table}", job_config=job_config
-        )
+        try:
+            # wait for the job to complete
+            self.bigquery.load_table_from_json(
+                segment_results,
+                f"statistics_{metrics_table}",
+                job_config=job_config,
+            )
+        except google.api_core.exceptions.BadRequest as e:
+            # There was a mismatch between the segment_results __root__ dict
+            # structure and the schema expected by bigquery. This error is
+            # rather opaque, so we will do some extra manual logging to help
+            # debugging these cases before re-raising the original exception.
+            error_msg = """
+            A BadRequest error from BigQuery likely indicates a mismatch between
+            the statistics results data and the expected schema.
+            """
+            # logger.error(f"Expected schema: {StatisticResult.bq_schema}")
+            # logger.error(f"Data received: {segment_results}")
+            ve = ValueError(error_msg)
+            raise ve from e
 
         self.bigquery.add_labels_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
@@ -553,6 +570,19 @@ class Analysis:
 
         self.check_runnable(current_date)
         assert self.config.experiment.start_date is not None  # for mypy
+
+        # make sure enrollment is actually ended (and enrollment is not manually overridden)
+        if (
+            hasattr(self.config.experiment, "is_enrollment_paused")
+            and self.config.experiment.is_enrollment_paused is False
+        ) and (
+            self.config.experiment.proposed_enrollment
+            == self.config.experiment.experiment.proposed_enrollment
+            and self.config.experiment.enrollment_end_date
+            == self.config.experiment.experiment.enrollment_end_date
+            and self.config.experiment.experiment_spec.enrollment_period is None
+        ):
+            raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
 
         self.ensure_enrollments(current_date)
 
@@ -597,7 +627,7 @@ class Analysis:
                 logger.info(f"Skipping {period};")
                 continue
 
-            segment_results = []
+            segment_results = StatisticResultCollection.parse_obj([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
@@ -636,7 +666,21 @@ class Analysis:
                 if dry_run:
                     results.append(metrics_table)
                 else:
-                    metrics_dataframe = table_to_dataframe(metrics_table)
+                    # add null columns for metrics where select_expression is not set;
+                    # this would be the case for metrics that use depends_on.
+                    # column needs to be added since metrics that are not part of the dataframe
+                    # get skipped
+                    metrics_with_depends_on = {
+                        m.metric.name
+                        for m in self.config.metrics[period]
+                        if (
+                            m.metric.analysis_bases == analysis_basis
+                            or analysis_basis in m.metric.analysis_bases
+                        )
+                        and (m.metric.select_expression is None and m.metric.depends_on is not None)
+                    }
+
+                    metrics_dataframe = table_to_dataframe(metrics_table, metrics_with_depends_on)
 
                 if dry_run:
                     logger.info(
@@ -666,23 +710,23 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results += self.calculate_statistics(
+                        segment_results.__root__ += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
                             total_enrolled_clients,
-                        ).to_dict()["data"]
+                        ).dict()["__root__"]
 
-                    segment_results += self.counts(segment_data, segment, analysis_basis).to_dict()[
-                        "data"
-                    ]
+                    segment_results.__root__ += self.counts(
+                        segment_data, segment, analysis_basis
+                    ).dict()["__root__"]
 
             results.append(
                 self.save_statistics(
                     period,
-                    segment_results,
+                    segment_results.dict()["__root__"],
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )
@@ -716,6 +760,7 @@ class Analysis:
             None,
             exposure_signal,
             segments,
+            self.config.experiment.sample_size or None,
         )
 
     def ensure_enrollments(self, current_date: datetime) -> None:

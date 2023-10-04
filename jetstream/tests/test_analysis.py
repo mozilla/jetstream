@@ -11,7 +11,8 @@ import pytz
 import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
 from jetstream.analysis import Analysis
@@ -285,6 +286,33 @@ def test_skip_while_enrolling(experiments):
         Analysis("test", "test", config).run(
             current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
         )
+
+
+def test_custom_override_skips_enrollment_paused_check(experiments, monkeypatch):
+    conf = dedent(
+        """
+        [experiment]
+        enrollment_period = 7
+        """
+    )
+    spec = AnalysisSpec.from_dict(toml.loads(conf))
+    config = spec.resolve(experiments[8], ConfigLoader.configs)
+    m = Mock()
+    m.return_value = None
+    monkeypatch.setattr("jetstream.analysis.Analysis._get_timelimits_if_ready", m)
+    # no errors expected
+    Analysis("test", "test", config).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc), dry_run=True
+    )
+
+
+def test_validation_working_while_enrolling(experiments):
+    config = AnalysisSpec().resolve(experiments[8], ConfigLoader.configs)
+    assert experiments[8].is_enrollment_paused is False
+    try:
+        Analysis("test", "test", config).validate()
+    except Exception as e:
+        assert False, f"Raised {e}"
 
 
 def test_run_when_enrolling_complete(experiments, monkeypatch):

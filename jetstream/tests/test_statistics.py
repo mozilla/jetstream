@@ -6,9 +6,9 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
-from metric_config_parser.experiment import Branch, BucketConfig, Experiment
-from metric_config_parser.metric import AnalysisBasis
+from metric_config_parser.experiment import Experiment, Branch, BucketConfig
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.statistics import (
     Binomial,
@@ -17,6 +17,7 @@ from jetstream.statistics import (
     EmpiricalCDF,
     KernelDensityEstimate,
     PerClientDAUImpact,
+    PopulationRatio,
     StatisticResult,
     Sum,
     _make_grid,
@@ -36,11 +37,11 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        )
+        ).__root__
 
-        branch_results = [r for r in result.data if r.comparison is None]
+        branch_results = [r for r in results if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
@@ -88,16 +89,16 @@ class TestStatistics:
                 "value": [False] * 7 + [True] * 3 + [False] * 5 + [True] * 5,
             }
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        )
-        branch_results = [r for r in result.data if r.comparison is None]
+        ).__root__
+        branch_results = [r for r in results if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
         assert treatment_result.point - 0.7 < 1e-5
 
-        difference = [r for r in result.data if r.comparison == "difference"][0]
+        difference = [r for r in results if r.comparison == "difference"][0]
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
@@ -106,12 +107,12 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 20 + ["control"] * 10, "value": list(range(30))}
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert all(r.metric == "identity" for r in result)
-        assert [r.point for r in result if r.branch == "treatment"] == [20]
-        assert [r.point for r in result if r.branch == "control"] == [10]
+        ).__root__
+        assert all(r.metric == "identity" for r in results)
+        assert [r.point for r in results if r.branch == "treatment"] == [20]
+        assert [r.point for r in results if r.branch == "control"] == [10]
 
     def test_sum_int(self):
         stat = Sum()
@@ -123,12 +124,12 @@ class TestStatistics:
                 "value": treatment_values + control_values,
             }
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert all(r.metric == "value" for r in result)
-        assert [r.point for r in result if r.branch == "treatment"] == [5]
-        assert [r.point for r in result if r.branch == "control"] == [5]
+        ).__root__
+        assert all(r.metric == "value" for r in results)
+        assert [r.point for r in results if r.branch == "treatment"] == [5]
+        assert [r.point for r in results if r.branch == "control"] == [5]
 
     def test_sum_bool(self):
         stat = Sum()
@@ -140,12 +141,12 @@ class TestStatistics:
                 "value": treatment_values + control_values,
             }
         )
-        result = stat.transform(
+        results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert all(r.metric == "value" for r in result)
-        assert [r.point for r in result if r.branch == "treatment"] == [15]
-        assert [r.point for r in result if r.branch == "control"] == [5]
+        ).__root__
+        assert all(r.metric == "value" for r in results)
+        assert [r.point for r in results if r.branch == "treatment"] == [15]
+        assert [r.point for r in results if r.branch == "control"] == [5]
 
     def test_binomial_no_reference_branch(self, experiments):
         stat = Binomial()
@@ -160,21 +161,21 @@ class TestStatistics:
                 + [True] * 5,
             }
         )
-        result = stat.apply(test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all", 0)
+        results = stat.apply(
+            test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all", 0
+        ).__root__
 
-        branch_results = [r for r in result.data if r.comparison is None]
+        branch_results = [r for r in results if r.comparison is None]
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
         assert treatment_result.point - 0.7 < 1e-5
 
-        difference = [r for r in result.data if r.comparison == "difference"][0]
+        difference = [r for r in results if r.comparison == "difference"][0]
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
-        comparison_branches = [
-            (r.comparison_to_branch, r.branch, r.comparison) for r in result.data
-        ]
+        comparison_branches = [(r.comparison_to_branch, r.branch, r.comparison) for r in results]
         assert (None, "control", None) in comparison_branches
         assert (None, "foo", None) in comparison_branches
         assert (None, "treatment", None) in comparison_branches
@@ -223,39 +224,41 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        result = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all", 0).data
-        assert len(result) > 0
+        results = stat.transform(
+            wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all", 0
+        ).__root__
+        assert len(results) > 0
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        result = stat.transform(
+        results = stat.transform(
             wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all", 0
-        ).to_dict()["data"]
-        for r in result:
-            assert isinstance(r["point"], float)
-        df = pd.DataFrame(result).astype({"parameter": float})
-        assert df["parameter"].min() == 0
+        ).__root__
+        for r in results:
+            assert isinstance(r.point, float)
+        df = pd.DataFrame([r.dict() for r in results])
+        assert float(df["parameter"].min()) == 0.0
 
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
-        result = stat.transform(
+        results = stat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert len(result) > 0
+        ).__root__
+        assert len(results) > 0
 
         logstat = EmpiricalCDF(log_space=True)
-        result = logstat.transform(
+        results = logstat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert len(result) > 0
+        ).__root__
+        assert len(results) > 0
 
         wine["ash"] = -wine["ash"]
-        result = logstat.transform(
+        results = logstat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all", 0
-        ).data
-        assert len(result) > 0
+        ).__root__
+        assert len(results) > 0
 
         assert stat.name() == "empirical_cdf"
 
@@ -278,6 +281,36 @@ class TestStatistics:
 
         with pytest.raises(ValueError):
             get_bootstrap_samples(df)
+
+    def test_population_ratio(self):
+        stat = PopulationRatio(num_samples=10, numerator="ad_click", denominator="sap")
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10,
+                "ad_click": [x for x in range(10, 0, -1)] * 2,
+                "sap": [10 * x for x in range(10, 0, -1)] * 2,
+                "ad_ratio": np.nan,
+            }
+        )
+        results = stat.transform(
+            test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point == pytest.approx(control_result.point, rel=1e-5)
+        assert treatment_result.point == pytest.approx(0.1, rel=1e-5)
+        assert control_result.point == pytest.approx(0.1, rel=1e-5)
+
+    def test_population_ratio_non_existing_metrics(self):
+        stat = PopulationRatio(num_samples=10, numerator="non_existing", denominator="non_existing")
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
+        )
+
+        with pytest.raises(Exception):
+            stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
 
 
 class TestStatisticExport:

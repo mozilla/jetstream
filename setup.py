@@ -55,6 +55,7 @@ setup(
         "dask[distributed]",
         "db-dtypes",
         "GitPython",
+        "google-cloud-artifact-registry",
         "google-cloud-bigquery",
         "google-cloud-bigquery-storage",
         "google-cloud-container",
@@ -63,6 +64,7 @@ setup(
         "jinja2",
         "mozanalysis",
         "mozilla-metric-config-parser",
+        "mozilla-nimbus-schemas",
         "pyarrow",
         "pytz",
         "PyYAML",
@@ -76,13 +78,13 @@ setup(
     extras_require=extras,
     long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
-    python_requires=">=3.6",
+    python_requires=">=3.10",
     entry_points="""
         [console_scripts]
         pensieve=jetstream.cli:cli
         jetstream=jetstream.cli:cli
     """,
-    # This project does not issue releases, so this number is not meaningful
-    # and should not need to change.
-    version="2023.1.0",
+    # This project does not issue regular releases, only when there
+    # are changes that would be meaningful to our (few) dependents.
+    version="2023.8.2",
 )

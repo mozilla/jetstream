@@ -1,6 +1,6 @@
 from metric_config_parser.data_source import DataSource
-from metric_config_parser.metric import AnalysisBasis
 from mozanalysis.metrics.fenix import uri_count
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.metric import Metric
 

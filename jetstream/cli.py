@@ -4,6 +4,7 @@ import sys
 from datetime import datetime, time, timedelta
 from functools import partial
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import (
     Callable,
@@ -38,13 +39,14 @@ from metric_config_parser.metric import AnalysisPeriod
 from . import bq_normalize_name
 from .analysis import Analysis
 from .argo import submit_workflow
+from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
 from .config import CONFIGS, METRIC_HUB_REPO, ConfigLoader, _ConfigLoader, validate
 from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
-from .logging import LogConfiguration
+from .logging import LOG_SOURCE, LogConfiguration
 from .metadata import export_metadata
 from .platform import PLATFORM_CONFIGS
 from .preview import sampled_enrollment_query
@@ -68,6 +70,8 @@ All = AllType()
 
 
 class ExecutorStrategy(Protocol):
+    """Abstract class determining how the analysis should be executed."""
+
     project_id: str
 
     def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
@@ -83,6 +87,8 @@ class ExecutorStrategy(Protocol):
 
 @attr.s(auto_attribs=True)
 class ArgoExecutorStrategy:
+    """Handler for executing experiment analyses on Argo."""
+
     project_id: str
     dataset_id: str
     zone: str
@@ -98,6 +104,8 @@ class ArgoExecutorStrategy:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
     ]
+    image: str = "jetstream"
+    image_version: Optional[str] = None
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
@@ -116,13 +124,30 @@ class ArgoExecutorStrategy:
                 date.strftime("%Y-%m-%d")
             )
 
+        # determine the docker image that was the most recent when enrollments ended for experiments
+        artifact_manager = ArtifactManager(
+            project=self.project_id, dataset=self.dataset_id, image=self.image
+        )
+
+        image_version = self.image_version
+        if self.image_version == "latest":
+            image_version = artifact_manager.latest_image()
+
         experiments_config_list = [
-            {"slug": slug, "dates": dates} for slug, dates in experiments_config.items()
+            {
+                "slug": slug,
+                "dates": dates,
+                "image_hash": image_version
+                if image_version
+                else artifact_manager.image_for_slug(slug),
+            }
+            for slug, dates in experiments_config.items()
         ]
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else "days28"
         )
 
+        # generate and submit the Argo workflow to the cluster
         return submit_workflow(
             project_id=self.project_id,
             zone=self.zone,
@@ -135,16 +160,17 @@ class ArgoExecutorStrategy:
                 "bucket": self.bucket,
                 "analysis_periods_day": "day"
                 if AnalysisPeriod.DAY in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_week": "week"
                 if AnalysisPeriod.WEEK in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_days28": "days28"
                 if AnalysisPeriod.DAYS_28 in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
                 "analysis_periods_overall": "overall"
                 if AnalysisPeriod.OVERALL in self.analysis_periods
-                else analysis_period_default,
+                else analysis_period_default.value,
+                "image": self.image,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -154,6 +180,8 @@ class ArgoExecutorStrategy:
 
 @attr.s(auto_attribs=True)
 class SerialExecutorStrategy:
+    """Handler for executing experiment analyses serially."""
+
     project_id: str
     dataset_id: str
     bucket: Optional[str] = None
@@ -183,6 +211,7 @@ class SerialExecutorStrategy:
                 else:
                     dataset_id = self.dataset_id
 
+                # run the analysis
                 analysis = self.analysis_class(
                     self.project_id,
                     dataset_id,
@@ -194,6 +223,7 @@ class SerialExecutorStrategy:
                 )
                 analysis.run(date)
 
+                # export metadata to GCS
                 if self.bucket:
                     export_metadata(config, self.bucket, self.project_id, analysis.start_time)
             except ValidationException as e:
@@ -209,6 +239,7 @@ class SerialExecutorStrategy:
                     str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
                 )
             finally:
+                # export experiment log from BigQuery to GCS
                 if self.log_config is None:
                     log_project = self.project_id
                     log_dataset = self.dataset_id
@@ -235,6 +266,8 @@ class SerialExecutorStrategy:
 
 @attr.s(auto_attribs=True)
 class AnalysisExecutor:
+    """Executes the analyses for the specified experiments."""
+
     project_id: str
     dataset_id: str
     bucket: str
@@ -263,6 +296,7 @@ class AnalysisExecutor:
         config_getter: _ConfigLoader = ConfigLoader,
         today: Optional[datetime] = None,
     ) -> bool:
+        """Execute analyses."""
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
         worklist = []
 
@@ -309,9 +343,16 @@ class AnalysisExecutor:
     ) -> List[AnalysisConfiguration]:
         """Convert mozanalysis experiments to analysis configs."""
         configs = []
+        client = BigQueryClient(self.project_id, self.dataset_id)
 
-        for experiment_config in experiments:
-            spec = AnalysisSpec.default_for_experiment(experiment_config, config_getter.configs)
+        def _load_experiment_config(experiment_config):
+            # get first updated timestamp for experiment
+            first_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
+
+            # get the configs that were the most recent when the experiment was last updated
+            config_collection = config_getter.configs.as_of(first_updated)
+            spec = AnalysisSpec.default_for_experiment(experiment_config, config_collection)
+
             if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
                 if isinstance(
                     self.configuration_map[experiment_config.normandy_slug], AnalysisSpec
@@ -321,12 +362,15 @@ class AnalysisExecutor:
                     config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
                     spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
-                if external_spec := config_getter.spec_for_experiment(
+                if external_spec := config_collection.spec_for_experiment(
                     experiment_config.normandy_slug
                 ):
                     spec.merge(external_spec)
 
-            configs.append(spec.resolve(experiment_config, config_getter.configs))
+            return spec.resolve(experiment_config, config_collection)
+
+        with ThreadPool() as pool:
+            configs = pool.map(_load_experiment_config, experiments)
 
         return configs
 
@@ -345,9 +389,15 @@ class AnalysisExecutor:
             if isinstance(self.date, AllType):
                 raise ValueError("Declining to re-run all experiments for all time.")
 
-            launched_experiments = (
-                experiments.ever_launched().of_type(RECOGNIZED_EXPERIMENT_TYPES).experiments
-            )
+            # only consider experiments that ended within the last 90 days or are live
+            ended_threshold = self.date - timedelta(days=90)
+            launched_experiments = [
+                e
+                for e in experiments.ended_after_or_live(ended_threshold)
+                .of_type(RECOGNIZED_EXPERIMENT_TYPES)
+                .experiments
+                if not e.is_rollout
+            ]
 
             launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
 
@@ -417,7 +467,21 @@ class AnalysisExecutor:
                 if self.recreate_enrollments:
                     self._delete_enrollment_table(config)
 
-                analysis.ensure_enrollments(end_date)
+                # make sure enrollment is actually ended (and enrollment is not manually overridden)
+                if not (
+                    (
+                        hasattr(config.experiment, "is_enrollment_paused")
+                        and config.experiment.is_enrollment_paused is False
+                    )
+                    and (
+                        config.experiment.proposed_enrollment
+                        == config.experiment.experiment.proposed_enrollment
+                        and config.experiment.enrollment_end_date
+                        == config.experiment.experiment.enrollment_end_date
+                        and config.experiment.experiment_spec.enrollment_period is None
+                    )
+                ):
+                    analysis.ensure_enrollments(end_date)
             except Exception as e:
                 logger.exception(
                     str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
@@ -440,6 +504,13 @@ log_dataset_id_option = click.option(
 log_table_id_option = click.option(
     "--log_table_id", "--log-table-id", default="logs", help="Table to write logs to"
 )
+log_source = click.option(
+    "--log-source",
+    "--log_source",
+    default=LOG_SOURCE.JETSTREAM,
+    type=LOG_SOURCE,
+    help="Source column for logs",
+)
 
 
 @click.group()
@@ -459,6 +530,7 @@ log_table_id_option = click.option(
     help="Table to write task monitoring logs to",
 )
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
+@log_source
 @click.pass_context
 def cli(
     ctx,
@@ -468,6 +540,7 @@ def cli(
     task_profiling_log_table_id,
     task_monitoring_log_table_id,
     log_to_bigquery,
+    log_source,
 ):
     log_config = LogConfiguration(
         log_project_id,
@@ -476,6 +549,7 @@ def cli(
         task_profiling_log_table_id,
         task_monitoring_log_table_id,
         log_to_bigquery,
+        log_source=log_source,
     )
     log_config.setup_logger()
     ctx.ensure_object(dict)
@@ -613,6 +687,19 @@ private_config_repos_option = click.option(
     multiple=True,
 )
 
+image_option = click.option(
+    "--image",
+    help="Name of the docker image to use in Argo.",
+    default="jetstream",
+)
+
+image_version_option = click.option(
+    "--image_version",
+    "--image-version",
+    help="Hash of the image to use in Argo, or 'latest'",
+    required=False,
+)
+
 
 def analysis_periods_option(
     default=[
@@ -728,6 +815,8 @@ def run(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -744,6 +833,8 @@ def run_argo(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -756,6 +847,8 @@ def run_argo(
         cluster_ip=cluster_ip,
         cluster_cert=cluster_cert,
         analysis_periods=analysis_periods,
+        image=image,
+        image_version=image_version,
     )
 
     AnalysisExecutor(
@@ -789,6 +882,8 @@ def run_argo(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 @click.pass_context
 def rerun(
@@ -809,6 +904,8 @@ def rerun(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -839,6 +936,8 @@ def rerun(
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
             analysis_periods=analysis_periods,
+            image=image,
+            image_version=image_version,
         )
 
     success = AnalysisExecutor(
@@ -951,6 +1050,8 @@ def export_experiment_logs_to_json(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@image_option
+@image_version_option
 @analysis_periods_option()
 @click.pass_context
 def rerun_config_changed(
@@ -969,6 +1070,8 @@ def rerun_config_changed(
     config_repos,
     private_config_repos,
     analysis_periods,
+    image,
+    image_version,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
 
@@ -1004,6 +1107,8 @@ def rerun_config_changed(
             cluster_ip=cluster_ip,
             cluster_cert=cluster_cert,
             analysis_periods=analysis_periods,
+            image=image,
+            image_version=image_version,
         )
 
     success = AnalysisExecutor(
@@ -1241,7 +1346,7 @@ def preview(
         experiment_slug = [external_config.slug]
 
     for slug in experiment_slug:
-        collection = ExperimentCollection.from_experimenter()
+        collection = ExperimentCollection.from_experimenter(with_draft_experiments=True)
         experimenter_experiments = collection.with_slug(slug)
         if experimenter_experiments.experiments == [] and not config_file:
             click.echo(
@@ -1331,6 +1436,7 @@ def preview(
             task_monitoring_log_table_id=None,
             log_level=logging.INFO,
             capacity=5,
+            log_source=LOG_SOURCE.PREVIEW,
         )
         client.delete_table(f"{project_id}.{dataset_id}.logs_{table}")
 
@@ -1348,6 +1454,7 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
+            experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
         )
 
         # run preview analysis
@@ -1375,11 +1482,12 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda: ExperimentCollection(experiments=experiment),
+                    experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
+                experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
             )
 
         click.echo(

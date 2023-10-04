@@ -1,5 +1,5 @@
-import re
 import time
+from datetime import datetime
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import attr
@@ -8,9 +8,11 @@ import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
 import google.cloud.bigquery.table
+import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
 from metric_config_parser.metric import AnalysisPeriod
+from pytz import UTC
 
 from . import bq_normalize_name
 
@@ -27,13 +29,20 @@ class BigQueryClient:
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
 
-    def table_to_dataframe(self, table: str) -> pd.DataFrame:
+    def table_to_dataframe(self, table: str, nan_columns: List[str] = []) -> pd.DataFrame:
         """Return all rows of the specified table as a dataframe."""
         self._storage_client = self._storage_client or BigQueryReadClient()
 
         table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
         rows = self.client.list_rows(table_ref)
-        return rows.to_dataframe(bqstorage_client=self._storage_client)
+        df = rows.to_dataframe(bqstorage_client=self._storage_client)
+
+        # append null columns with the provided names
+        for nan_col in nan_columns:
+            if nan_col not in df.columns:
+                df[nan_col] = np.nan
+
+        return df
 
     def add_labels_to_table(self, table_name: str, labels: Mapping[str, str]) -> None:
         """Adds the provided labels to the table."""
@@ -94,9 +103,18 @@ class BigQueryClient:
 
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
-        table_name_re = re.compile(regex)
-        existing_tables = self.client.list_tables(self.dataset)
-        return [table.table_id for table in existing_tables if table_name_re.match(table.table_id)]
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name
+            FROM
+                {self.dataset}.INFORMATION_SCHEMA.TABLES
+            WHERE
+                REGEXP_CONTAINS(table_name, r'{regex}')
+            """
+        )
+        result = list(job.result())
+        return [row.table_name for row in result]
 
     def touch_tables(self, normandy_slug: str):
         """Updates the last_updated timestamp on tables for a given experiment.
@@ -105,7 +123,7 @@ class BigQueryClient:
         perpetually stale."""
         normalized_slug = bq_normalize_name(normandy_slug)
         analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_)?{normalized_slug}_({analysis_periods})_.*$"
+        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
         tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
@@ -134,3 +152,37 @@ class BigQueryClient:
 
         for existing_table in existing_tables:
             self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
+
+    def experiment_table_first_updated(self, slug: str) -> Optional[datetime]:
+        """Get the timestamp for when an experiment related table was updated last."""
+        if slug is None:
+            return None
+
+        table_prefix = bq_normalize_name(slug)
+
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name,
+                REGEXP_EXTRACT_ALL(
+                    option_value,
+                    '.*STRUCT\\(\"last_updated\", \"([^\"]+)\"\\).*'
+                ) AS last_updated
+            FROM
+            {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE option_name = 'labels' AND table_name LIKE "enrollments_{table_prefix}%"
+            """
+        )
+        result = list(job.result())
+
+        table_first_updated = None
+
+        for row in result:
+            if not len(row.last_updated):
+                continue
+            updated_timestamp = UTC.localize(datetime.utcfromtimestamp(int(row.last_updated[0])))
+
+            if table_first_updated is None or updated_timestamp < table_first_updated:
+                table_first_updated = updated_timestamp
+
+        return table_first_updated

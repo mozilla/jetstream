@@ -180,11 +180,18 @@ class ExperimentCollection:
     # for nimbus experiments
     EXPERIMENTER_API_URL_V6 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
 
+    # experiments that are in draft state
+    EXPERIMENTER_API_URL_V6_DRAFTS = (
+        "https://experimenter.services.mozilla.com/api/v6/draft-experiments/"
+    )
+
     # user agent sent to the Experimenter API
     USER_AGENT = "jetstream"
 
     @classmethod
-    def from_experimenter(cls, session: requests.Session = None) -> "ExperimentCollection":
+    def from_experimenter(
+        cls, session: requests.Session = None, with_draft_experiments=False
+    ) -> "ExperimentCollection":
         session = session or requests.Session()
         legacy_experiments_json = retry_get(
             session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES, cls.USER_AGENT
@@ -215,7 +222,23 @@ class ExperimentCollection:
                     str(e), exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
                 )
 
-        return cls(nimbus_experiments + legacy_experiments)
+        draft_experiments = []
+        if with_draft_experiments:
+            # draft experiments are mainly used to compute previews
+            draft_experiments_json = retry_get(
+                session, cls.EXPERIMENTER_API_URL_V6_DRAFTS, cls.MAX_RETRIES, cls.USER_AGENT
+            )
+
+            for draft_experiment in draft_experiments_json:
+                try:
+                    draft_experiments.append(
+                        ExperimentV6.from_dict(draft_experiment).to_experiment()
+                    )
+                except Exception as e:
+                    print(f"Error converting draft experiment {draft_experiment['slug']}")
+                    print(str(e))
+
+        return cls(nimbus_experiments + legacy_experiments + draft_experiments)
 
     def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
@@ -253,5 +276,18 @@ class ExperimentCollection:
                 ex
                 for ex in self.ever_launched().experiments
                 if ex.start_date and ex.start_date >= since
+            ]
+        )
+
+    def ended_after_or_live(self, after: dt.datetime) -> "ExperimentCollection":
+        """All experiments that ended after a given time or that are still live."""
+
+        cls = type(self)
+        return cls(
+            [
+                ex
+                for ex in self.ever_launched().experiments
+                if (ex.end_date and ex.end_date >= after)
+                or (ex.end_date is None and ex.status == "Live")
             ]
         )
