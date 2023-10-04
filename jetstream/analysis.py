@@ -690,7 +690,8 @@ class Analysis:
                     )
                     continue
 
-                total_enrolled_clients = len(metrics_dataframe)
+                # block on getting the metrics so we can determine number of enrolled clients
+                total_enrolled_clients = len(metrics_dataframe.compute())
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
