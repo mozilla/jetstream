@@ -690,8 +690,8 @@ class Analysis:
                     )
                     continue
 
-                # block on getting the metrics so we can determine number of enrolled clients
-                total_enrolled_clients = len(metrics_dataframe.compute())
+                df_length = dask.delayed(lambda df: len(df))
+                total_enrolled_clients = df_length(metrics_dataframe)
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
