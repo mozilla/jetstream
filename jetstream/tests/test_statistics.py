@@ -71,9 +71,9 @@ class TestStatistics:
         )
         result = stat.transform(
             test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all", 20
-        )
+        ).__root__
 
-        difference = [r for r in result.data if r.comparison == "difference"][0]
+        difference = [r for r in result if r.comparison == "difference"][0]
         # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
         # at these small sample sizes, mozanalysis's bootstrap can be quite variable
         # so use a large tolerance
