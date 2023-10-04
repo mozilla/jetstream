@@ -49,7 +49,7 @@ class TestStatistics:
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
         test_data = pd.DataFrame(
-            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+            {"branch": ["control"] * 10 + ["treatment"] * 10, "value": [x / 20 for x in range(20)]}
         )
         experiment = Experiment(
             experimenter_slug="test_slug",
@@ -69,11 +69,16 @@ class TestStatistics:
             ),
         )
         result = stat.transform(
-            test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all", 50
+            test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all", 20
         )
 
-        print(result)
-        assert result is True
+        difference = [r for r in result.data if r.comparison == "difference"][0]
+        # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
+        # at these small sample sizes, mozanalysis's bootstrap can be quite variable
+        # so use a large tolerance
+        assert np.abs(difference.point - 10) < 1
+        assert np.abs(difference.lower - 7.155) < 1
+        assert np.abs(difference.upper - 12.844) < 1
 
     def test_binomial(self):
         stat = Binomial()

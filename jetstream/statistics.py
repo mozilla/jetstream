@@ -425,8 +425,6 @@ class PerClientDAUImpact(BootstrapMean):
             segment,
             total_enrolled_clients,
         )
-        enrollment_fraction = experiment.bucket_config.count - experiment.bucket_config.start
-        reachable_population = total_enrolled_clients / enrollment_fraction
 
         results = []
         for branch in experiment.branches:
@@ -436,9 +434,9 @@ class PerClientDAUImpact(BootstrapMean):
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data:
-                d.point = d.point * reachable_population
-                d.upper = d.upper * reachable_population
-                d.lower = d.lower * reachable_population
+                d.point = d.point * total_enrolled_clients
+                d.upper = d.upper * total_enrolled_clients
+                d.lower = d.lower * total_enrolled_clients
                 d.statistic = "per_client_dau_impact"
 
                 results.append(d)
