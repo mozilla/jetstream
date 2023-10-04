@@ -445,7 +445,7 @@ class PerClientDAUImpact(BootstrapMean):
         for branch in experiment.branches:
             branch_data = [
                 x
-                for x in bootstrap_results.data
+                for x in bootstrap_results.__root__
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data:
@@ -455,8 +455,9 @@ class PerClientDAUImpact(BootstrapMean):
                 d.statistic = "per_client_dau_impact"
 
                 results.append(d)
-
-        return StatisticResultCollection(results)
+        out = StatisticResultCollection()
+        out.__root__ = results
+        return out
 
 
 @attr.s(auto_attribs=True)
