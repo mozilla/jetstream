@@ -6,7 +6,7 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
-from metric_config_parser.experiment import Experiment, Branch, BucketConfig
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
@@ -293,7 +293,7 @@ class TestStatistics:
             }
         )
         results = stat.transform(
-            test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all", 0
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]

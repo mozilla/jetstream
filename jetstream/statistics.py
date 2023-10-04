@@ -455,9 +455,7 @@ class PerClientDAUImpact(BootstrapMean):
                 d.statistic = "per_client_dau_impact"
 
                 results.append(d)
-        out = StatisticResultCollection()
-        out.__root__ = results
-        return out
+        return StatisticResultCollection.parse_obj(results)
 
 
 @attr.s(auto_attribs=True)
@@ -883,6 +881,7 @@ class PopulationRatio(Statistic):
         experiment: Experiment,
         analysis_basis: AnalysisBasis,
         segment: str,
+        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
