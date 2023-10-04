@@ -76,9 +76,9 @@ class TestStatistics:
         # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
         # at these small sample sizes, mozanalysis's bootstrap can be quite variable
         # so use a large tolerance
-        assert np.abs(difference.point - 10) < 1
-        assert np.abs(difference.lower - 7.155) < 1
-        assert np.abs(difference.upper - 12.844) < 1
+        assert np.abs(difference.point - 10) < 0.5
+        assert np.abs(difference.lower - 7.155) < 0.5
+        assert np.abs(difference.upper - 12.844) < 0.5
 
     def test_binomial(self):
         stat = Binomial()
