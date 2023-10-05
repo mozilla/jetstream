@@ -5,6 +5,7 @@ from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.data_source import DataSourceReference
 from metric_config_parser.exposure_signal import ExposureSignalDefinition
 from metric_config_parser.metric import AnalysisPeriod
+from mozanalysis.experiment import EnrollmentsQueryType
 
 from .analysis import Analysis
 from .platform import PLATFORM_CONFIGS
@@ -33,7 +34,7 @@ def sampled_enrollment_query(
     )
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
 
-    if enrollments_query_type == "normandy":
+    if enrollments_query_type == EnrollmentsQueryType.NORMANDY:
         enrollments_sql = """
         (SELECT
             e.client_id,
@@ -52,7 +53,7 @@ def sampled_enrollment_query(
             last_enrollment_date=time_limits.last_enrollment_date,
             population_sample_size=population_sample_size,
         )
-    elif enrollments_query_type == "glean-event":
+    elif enrollments_query_type == EnrollmentsQueryType.GLEAN_EVENT:
         enrollments_sql = """
             (SELECT events.client_info.client_id AS client_id,
                 "control" AS branch,
@@ -72,7 +73,7 @@ def sampled_enrollment_query(
             dataset=exp.app_id,
             population_sample_size=population_sample_size,
         )
-    elif enrollments_query_type == "fenix-fallback":
+    elif enrollments_query_type == EnrollmentsQueryType.FENIX_FALLBACK:
         enrollments_sql = """
         (SELECT
             b.client_info.client_id AS client_id,
@@ -106,7 +107,7 @@ def sampled_exposure_signal(start_date, config, population_sample_size) -> Expos
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
 
     # add sampling and remove matching on experiment slug (because no clients enrolled) for exposure
-    if enrollments_query_type == "normandy":
+    if enrollments_query_type == EnrollmentsQueryType.NORMANDY:
         exposure_signal = ExposureSignalDefinition(
             name="sampled_preview_exposure",
             data_source=DataSourceReference(name="events"),
@@ -114,7 +115,10 @@ def sampled_exposure_signal(start_date, config, population_sample_size) -> Expos
             description="Sampled Exposure Signal for Preview",
             friendly_name="Sampled Exposure Signal for Preview",
         )
-    elif enrollments_query_type in ["glean-event", "fenix-fallback"]:
+    elif enrollments_query_type in [
+        EnrollmentsQueryType.GLEAN_EVENT,
+        EnrollmentsQueryType.FENIX_FALLBACK,
+    ]:
         exposure_signal = ExposureSignalDefinition(
             name="sampled_preview_exposure",
             data_source=DataSourceReference(name="events"),
