@@ -292,7 +292,6 @@ class Analysis:
         segment: str,
         analysis_basis: AnalysisBasis,
         analysis_length_dates: int,
-        total_enrolled_clients: int,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
@@ -304,7 +303,6 @@ class Analysis:
                 self.config.experiment,
                 analysis_basis,
                 segment,
-                total_enrolled_clients,
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
@@ -325,7 +323,6 @@ class Analysis:
                 self.config.experiment.normandy_slug,
                 analysis_basis,
                 segment,
-                0,  # not used by Count, but required for Statistic
             )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
@@ -690,9 +687,6 @@ class Analysis:
                     )
                     continue
 
-                df_length = dask.delayed(lambda df: len(df))
-                total_enrolled_clients = df_length(metrics_dataframe)
-
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
                     segment_data = self.subset_to_segment(
@@ -717,7 +711,6 @@ class Analysis:
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                            total_enrolled_clients,
                         ).dict()["__root__"]
 
                     segment_results.__root__ += self.counts(
