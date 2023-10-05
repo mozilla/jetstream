@@ -4,6 +4,7 @@ from typing import Any, Dict, MutableMapping
 import attr
 import toml
 from metric_config_parser.analysis import AnalysisSpec
+from mozanalysis.experiment import EnrollmentsQueryType
 
 from jetstream.config import ConfigLoader
 
@@ -44,18 +45,13 @@ class Platform:
     def validate_enrollments_query_type(self, attribute, value):
         self._check_value_not_null(attribute, value)
 
-        valid_entrollments_query_types = (
-            "glean-event",
-            "normandy",
-        )
-
-        if value not in valid_entrollments_query_types:
+        if value not in iter(EnrollmentsQueryType):
             raise PlatformConfigurationException(
                 "Invalid value provided for %s, value provided: %s. Valid options are: %s"
                 % (
                     attribute.name,
                     value,
-                    valid_entrollments_query_types,
+                    iter(EnrollmentsQueryType),
                 )
             )
 
