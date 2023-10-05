@@ -4,6 +4,7 @@ from typing import Any, Dict, MutableMapping
 import attr
 import toml
 from metric_config_parser.analysis import AnalysisSpec
+from mozanalysis.experiment import EnrollmentsQueryType
 
 from jetstream.config import ConfigLoader
 
@@ -24,8 +25,8 @@ class Platform:
     Platform configuration object. Contains all required settings for jetstream.
     More info about Jetstream configuration: https://experimenter.info/jetstream/configuration
 
-    :param enrollments_query_type: "glean-event" or "normandy"
-    :type enrollments_query_type: str
+    :param enrollments_query_type:
+    :type enrollments_query_type: mozanalysis.experiment.EnrollmentsQueryType
     :param app_id:
     :type app_id: str
 
@@ -44,24 +45,21 @@ class Platform:
     def validate_enrollments_query_type(self, attribute, value):
         self._check_value_not_null(attribute, value)
 
-        valid_entrollments_query_types = (
-            "glean-event",
-            "normandy",
-        )
-
-        if value not in valid_entrollments_query_types:
+        if value not in iter(EnrollmentsQueryType):
             raise PlatformConfigurationException(
                 "Invalid value provided for %s, value provided: %s. Valid options are: %s"
                 % (
                     attribute.name,
                     value,
-                    valid_entrollments_query_types,
+                    iter(EnrollmentsQueryType),
                 )
             )
 
         return value
 
-    enrollments_query_type: str = attr.ib(validator=validate_enrollments_query_type)
+    enrollments_query_type: EnrollmentsQueryType = attr.ib(
+        validator=validate_enrollments_query_type
+    )
     app_id: str = attr.ib(validator=_check_value_not_null)
     app_name: str = attr.ib(validator=_check_value_not_null)
 
@@ -85,7 +83,9 @@ def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Pla
 
     for platform, platform_config in config["platform"].items():
         processed_config[platform] = {
-            "enrollments_query_type": platform_config.get("enrollments_query_type", "glean-event"),
+            "enrollments_query_type": platform_config.get(
+                "enrollments_query_type", EnrollmentsQueryType.GLEAN_EVENT
+            ),
             "app_id": platform_config.get("app_id"),
             "app_name": platform,
         }

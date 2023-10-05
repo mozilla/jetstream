@@ -812,9 +812,9 @@ mccabe==0.7.0 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2023.9.4 \
-    --hash=sha256:58aa4a499216148cb9b1861e1071d6087fa93d40206e9cae34f1c6793254010b \
-    --hash=sha256:a92092c73b7bc31a6fc4492c973b2a0b535b192c0b815cf4b3e31bda66e72649
+mozanalysis==2023.10.2 \
+    --hash=sha256:8d435174b226a71e1d810c4e7655f53b3e70c91be3a8fb259634bdbad81c6f63 \
+    --hash=sha256:c96015393b3f2caa2b4fe752ac7aa7e74065018c50a6633e7f0c0b40184d2257
     # via -r requirements.in
 mozilla-metric-config-parser==2023.9.4 \
     --hash=sha256:5751c59dd9937042b46ed99465183d2fa06b2bd2078aceabafed3eef97967516 \

@@ -1,4 +1,5 @@
 import pytest
+from mozanalysis.experiment import EnrollmentsQueryType
 
 from jetstream.config import ConfigLoader, _ConfigLoader
 from jetstream.platform import (
@@ -77,7 +78,7 @@ class TestGeneratePlatformConfig:
                 },
                 {
                     "firefox_desktop": Platform(
-                        enrollments_query_type="normandy",
+                        enrollments_query_type=EnrollmentsQueryType.NORMANDY,
                         app_id="firefox-desktop",
                         app_name="firefox_desktop",
                     )
@@ -94,7 +95,7 @@ class TestGeneratePlatformConfig:
                 },
                 {
                     "firefox_desktop": Platform(
-                        enrollments_query_type="normandy",
+                        enrollments_query_type=EnrollmentsQueryType.NORMANDY,
                         app_id="firefox-desktop",
                         app_name="firefox_desktop",
                     )
@@ -110,18 +111,27 @@ class TestGeneratePlatformConfig:
                             "enrollments_query_type": "normandy",
                             "app_id": "EDI",
                         },
+                        "monitor_cirrus": {
+                            "enrollments_query_type": "cirrus",
+                            "app_id": "monitor.cirrus",
+                        },
                     }
                 },
                 {
                     "firefox_desktop": Platform(
-                        enrollments_query_type="glean-event",
+                        enrollments_query_type=EnrollmentsQueryType.GLEAN_EVENT,
                         app_id="firefox-desktop",
                         app_name="firefox_desktop",
                     ),
                     "desktop": Platform(
-                        enrollments_query_type="normandy",
+                        enrollments_query_type=EnrollmentsQueryType.NORMANDY,
                         app_id="EDI",
                         app_name="desktop",
+                    ),
+                    "monitor_cirrus": Platform(
+                        enrollments_query_type=EnrollmentsQueryType.CIRRUS,
+                        app_id="monitor.cirrus",
+                        app_name="monitor_cirrus",
                     ),
                 },
             ),
