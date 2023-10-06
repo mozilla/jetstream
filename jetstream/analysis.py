@@ -298,7 +298,12 @@ class Analysis:
         """
         return (
             Summary.from_config(metric, analysis_length_dates)
-            .run(segment_data, self.config.experiment, analysis_basis, segment)
+            .run(
+                segment_data,
+                self.config.experiment,
+                analysis_basis,
+                segment,
+            )
             .set_segment(segment)
             .set_analysis_basis(analysis_basis)
         )

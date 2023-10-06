@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
@@ -14,6 +16,7 @@ from jetstream.statistics import (
     Count,
     EmpiricalCDF,
     KernelDensityEstimate,
+    PerClientDAUImpact,
     PopulationRatio,
     StatisticResult,
     Sum,
@@ -43,6 +46,40 @@ class TestStatistics:
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
         assert treatment_result.lower and treatment_result.upper
+
+    def test_per_client_dau_impact(self):
+        stat = PerClientDAUImpact()
+        test_data = pd.DataFrame(
+            {"branch": ["control"] * 10 + ["treatment"] * 10, "value": [x / 20 for x in range(20)]}
+        )
+        experiment = Experiment(
+            experimenter_slug="test_slug",
+            type="pref",
+            status="Live",
+            start_date=dt.datetime.now(),
+            end_date=None,
+            proposed_enrollment=7,
+            branches=[Branch(slug="control", ratio=1), Branch(slug="treatment", ratio=1)],
+            normandy_slug="normandy-test-slug",
+            reference_branch=None,
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit="test-unit", namespace="test", start=50, count=100
+            ),
+        )
+        result = stat.transform(
+            test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        difference = [r for r in result if r.comparison == "difference"][0]
+        # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
+        # at these small sample sizes, mozanalysis's bootstrap can be quite variable
+        # so use a large tolerance
+        assert np.abs(difference.point - 10) < 0.5
+        assert np.abs(difference.lower - 7.155) < 0.5
+        assert np.abs(difference.upper - 12.844) < 0.5
 
     def test_binomial(self):
         stat = Binomial()

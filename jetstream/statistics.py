@@ -247,7 +247,12 @@ class Statistic(ABC):
                     try:
                         statistic_result_collection.__root__.extend(
                             self.transform(
-                                df, metric, ref_branch, experiment, analysis_basis, segment
+                                df,
+                                metric,
+                                ref_branch,
+                                experiment,
+                                analysis_basis,
+                                segment,
                             ).__root__
                         )
                     except Exception as e:
@@ -405,6 +410,47 @@ class BootstrapMean(Statistic):
             reference_branch=reference_branch,
             ci_width=self.confidence_interval,
         )
+
+
+@attr.s(auto_attribs=True)
+class PerClientDAUImpact(BootstrapMean):
+    def transform(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: Experiment,
+        analysis_basis: parser_metric.AnalysisBasis,
+        segment: str,
+    ) -> StatisticResultCollection:
+        bootstrap_results = super().transform(
+            df,
+            metric,
+            reference_branch,
+            experiment,
+            analysis_basis,
+            segment,
+        )
+
+        # df contains the client metric data filtered to the current
+        # segment/analysis basis, so we take its length to get # clients
+        num_enrolled_clients = len(df)
+
+        results = []
+        for branch in experiment.branches:
+            branch_data = [
+                x
+                for x in bootstrap_results.__root__
+                if x.branch == branch.slug and x.comparison == "difference"
+            ]
+            for d in branch_data:
+                d.point = d.point * num_enrolled_clients
+                d.upper = d.upper * num_enrolled_clients
+                d.lower = d.lower * num_enrolled_clients
+                d.statistic = "per_client_dau_impact"
+
+                results.append(d)
+        return StatisticResultCollection.parse_obj(results)
 
 
 @attr.s(auto_attribs=True)

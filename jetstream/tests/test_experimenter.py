@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import jsonschema
 import pytest
 import pytz
-from metric_config_parser.experiment import Branch, Experiment
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 
 from jetstream.experimenter import (
     ExperimentCollection,
@@ -545,6 +545,13 @@ def test_convert_experiment_v6_to_experiment():
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
         isEnrollmentPaused=True,
+        bucketConfig=BucketConfig(
+            randomization_unit="test-randomization",
+            namespace="test",
+            start=1000,
+            count=5000,
+            total=10000,
+        ),
     )
 
     experiment = experiment_v6.to_experiment()
@@ -574,6 +581,13 @@ def test_experiment_v6_status():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
+        bucketConfig=BucketConfig(
+            randomization_unit="test-randomization",
+            namespace="test",
+            start=1000,
+            count=5000,
+            total=10000,
+        ),
     )
 
     assert experiment_live.to_experiment().status == "Live"
@@ -585,6 +599,13 @@ def test_experiment_v6_status():
         proposedEnrollment=14,
         branches=[Branch(slug="control", ratio=2), Branch(slug="treatment", ratio=1)],
         referenceBranch="control",
+        bucketConfig=BucketConfig(
+            randomization_unit="test-randomization",
+            namespace="test",
+            start=1000,
+            count=5000,
+            total=10000,
+        ),
     )
 
     assert experiment_complete.to_experiment().status == "Complete"

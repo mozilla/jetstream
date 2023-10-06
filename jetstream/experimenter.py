@@ -96,6 +96,7 @@ class ExperimentV6:
     startDate: Optional[dt.datetime]
     endDate: Optional[dt.datetime]
     proposedEnrollment: int
+    bucketConfig: experiment.BucketConfig
     referenceBranch: Optional[str]
     _appName: Optional[str] = None
     _appId: Optional[str] = None
@@ -118,6 +119,14 @@ class ExperimentV6:
         converter.register_structure_hook(
             dt.datetime,
             lambda num, _: dt.datetime.strptime(num, "%Y-%m-%d"),
+        )
+        converter.register_structure_hook(
+            experiment.BucketConfig,
+            cattr.gen.make_dict_structure_fn(
+                experiment.BucketConfig,
+                converter,
+                randomization_unit=cattr.override(rename="randomizationUnit"),
+            ),
         )
         converter.register_structure_hook(
             cls,
@@ -157,6 +166,7 @@ class ExperimentV6:
             else None,
             is_enrollment_paused=bool(self.isEnrollmentPaused),
             is_rollout=self.isRollout,
+            bucket_config=self.bucketConfig,
         )
 
 
