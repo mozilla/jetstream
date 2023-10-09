@@ -59,7 +59,7 @@ faker==19.6.2
     # via polyfactory
 flake8==6.1.0
     # via pytest-flake8
-fonttools==4.42.1
+fonttools==4.43.1
     # via matplotlib
 fsspec==2023.9.2
     # via dask
