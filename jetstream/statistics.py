@@ -48,7 +48,13 @@ class Summary:
         metric = Metric.from_metric_config(summary_config.metric)
 
         found = False
-        for statistic in Statistic.__subclasses__():
+        for statistic in set(Statistic.__subclasses__()).union(
+            [
+                subsubclass
+                for subclass in Statistic.__subclasses__()
+                for subsubclass in subclass.__subclasses__()
+            ]
+        ):
             if statistic.name() == summary_config.statistic.name:
                 found = True
                 break
