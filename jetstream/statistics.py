@@ -415,7 +415,7 @@ class BootstrapMean(Statistic):
 @attr.s(auto_attribs=True)
 class PerClientDAUImpact(BootstrapMean):
     drop_highest: float = 0.0
-    
+
     def transform(
         self,
         df: DataFrame,
