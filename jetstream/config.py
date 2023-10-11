@@ -65,7 +65,7 @@ class _ConfigLoader:
         self, repo_urls: Optional[List[str]], is_private: bool = False
     ) -> "_ConfigLoader":
         """Load configs from another repository and merge with default configs."""
-        if repo_urls is None or len(repo_urls) < 1:
+        if not repo_urls:
             return self
 
         config_collection = ConfigCollection.from_github_repos(
