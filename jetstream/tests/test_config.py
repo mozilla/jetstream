@@ -39,7 +39,7 @@ class TestConfigLoader:
             ["https://github.com/mozilla/metric-hub/tree/main/jetstream"]
         )
         new_collection = base_collection.with_configs_from(())
-        assert new_collection == base_collection    
+        assert new_collection == base_collection
 
     def test_spec_for_experiment(self):
         experiment = ConfigLoader.configs.configs[0].slug
