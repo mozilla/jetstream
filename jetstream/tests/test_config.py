@@ -25,6 +25,22 @@ class TestConfigLoader:
         assert configs_collection.configs is not None
         assert len(configs_collection.configs.configs) == len(loader.configs.configs)
 
+    def test_configs_from_null(self):
+        loader = _ConfigLoader()
+        base_collection = loader.with_configs_from(
+            ["https://github.com/mozilla/metric-hub/tree/main/jetstream"]
+        )
+        new_collection = base_collection.with_configs_from(None)
+        assert new_collection == base_collection
+
+    def test_configs_from_empty(self):
+        loader = _ConfigLoader()
+        base_collection = loader.with_configs_from(
+            ["https://github.com/mozilla/metric-hub/tree/main/jetstream"]
+        )
+        new_collection = base_collection.with_configs_from(())
+        assert new_collection == base_collection
+
     def test_spec_for_experiment(self):
         experiment = ConfigLoader.configs.configs[0].slug
         assert ConfigLoader.spec_for_experiment(experiment) is not None
