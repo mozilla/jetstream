@@ -31,7 +31,7 @@ click==8.1.7
     #   distributed
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-cloudpickle==2.2.1
+cloudpickle==3.0.0
     # via
     #   dask
     #   distributed
