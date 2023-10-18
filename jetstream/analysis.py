@@ -391,7 +391,7 @@ class Analysis:
         query = dedent(
             f"""
         SELECT client_id, branch, {','.join(metric_names)}
-        FROM `moz-fx-data-experiments.mozanalysis.{metrics_table_name}`
+        FROM {metrics_table_name.replace('exposures', 'enrollments')}
         """
         )
 
