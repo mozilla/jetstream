@@ -370,7 +370,36 @@ class Analysis:
             segment_data = segment_data[segment_data["exposure_date"].notnull()]
 
         return segment_data
-
+    
+    @dask.delayed
+    def subset_metric_table(self, 
+        metrics_table_name: str, segment: str, metric: str, analysis_basis: AnalysisBasis = None
+    ) -> DataFrame:
+        query = dedent(f'''
+        SELECT *
+        FROM `moz-fx-data-experiments.mozanalysis.{metrics_table_name}`
+        ''')
+        
+        if analysis_basis == AnalysisBasis.ENROLLMENTS: 
+            basis_filter = dedent('''
+            WHERE enrollment_date IS NOT NULL
+            ''')
+        elif analysis_basis == AnalysisBasis.EXPOSURES: 
+            basis_filter = dedent('''
+            WHERE enrollment_date IS NOT NULL AND exposure_date IS NOT NULL
+            ''')
+        else: 
+            raise ValueError('Other AnalysisBasis not supported!')
+        
+        query += basis_filter
+        
+        if segment != 'all':
+            segment_filter = dedent(f'''
+            AND {segment} = TRUE
+            ''')
+            query += segment_filter
+        
+        
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
@@ -557,6 +586,7 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
+        USE_OPTIMIZATION = os.environ.get('USE_OPTIMIZATION') is not None
         global _dask_cluster
         self.start_time = datetime.now(tz=pytz.utc)
         logger.info(
@@ -616,7 +646,7 @@ class Analysis:
             #     experiment=self.config.experiment.normandy_slug,
             # )
             # _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
-
+        
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
         for period in self.config.metrics:
@@ -676,8 +706,8 @@ class Analysis:
                         )
                         and (m.metric.select_expression is None and m.metric.depends_on is not None)
                     }
-
-                    metrics_dataframe = table_to_dataframe(metrics_table, metrics_with_depends_on)
+                    if not USE_OPTIMIZATION:
+                        metrics_dataframe = table_to_dataframe(metrics_table, metrics_with_depends_on)
 
                 if dry_run:
                     logger.info(
@@ -689,16 +719,22 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    segment_data = self.subset_to_segment(
-                        segment, metrics_dataframe, analysis_basis
-                    )
+                    if not USE_OPTIMIZATION:
+                        segment_data = self.subset_to_segment(
+                            segment, metrics_dataframe, analysis_basis
+                        )
                     for m in self.config.metrics[period]:
                         if (
                             m.metric.analysis_bases != analysis_basis
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
-
+                            
+                        if USE_OPTIMIZATION: 
+                            segment_data = self.subset_metric_table(
+                                metrics_table, segment, m, analysis_basis
+                            )
+                            
                         analysis_length_dates = 1
                         if period.value == AnalysisPeriod.OVERALL:
                             analysis_length_dates = time_limits.analysis_length_dates
