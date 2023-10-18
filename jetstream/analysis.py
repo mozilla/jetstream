@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 import attr
 import dask
@@ -370,36 +370,61 @@ class Analysis:
             segment_data = segment_data[segment_data["exposure_date"].notnull()]
 
         return segment_data
-    
+
     @dask.delayed
-    def subset_metric_table(self, 
-        metrics_table_name: str, segment: str, metric: str, analysis_basis: AnalysisBasis = None
+    def subset_metric_table(
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis = None,
     ) -> DataFrame:
-        query = dedent(f'''
-        SELECT *
+        print("metrics_table_name", metrics_table_name)
+        print("segment", segment)
+        print("metric", metric)
+        print("analysis_basis", analysis_basis)
+        metric_names = [metric.name]
+        if metric.depends_on:
+            for dependency in metric.depends_on:
+                metric_names.append(dependency.metric.name)
+
+        query = dedent(
+            f"""
+        SELECT client_id, branch, {','.join(metric_names)}
         FROM `moz-fx-data-experiments.mozanalysis.{metrics_table_name}`
-        ''')
-        
-        if analysis_basis == AnalysisBasis.ENROLLMENTS: 
-            basis_filter = dedent('''
+        """
+        )
+
+        if analysis_basis == AnalysisBasis.ENROLLMENTS:
+            basis_filter = dedent(
+                """
             WHERE enrollment_date IS NOT NULL
-            ''')
-        elif analysis_basis == AnalysisBasis.EXPOSURES: 
-            basis_filter = dedent('''
+            """
+            )
+        elif analysis_basis == AnalysisBasis.EXPOSURES:
+            basis_filter = dedent(
+                """
             WHERE enrollment_date IS NOT NULL AND exposure_date IS NOT NULL
-            ''')
-        else: 
-            raise ValueError('Other AnalysisBasis not supported!')
-        
+            """
+            )
+        else:
+            raise ValueError("Other AnalysisBasis not supported!")
+
         query += basis_filter
-        
-        if segment != 'all':
-            segment_filter = dedent(f'''
+
+        if segment != "all":
+            segment_filter = dedent(
+                f"""
             AND {segment} = TRUE
-            ''')
+            """
+            )
             query += segment_filter
-        
-        
+
+        print(query)
+        results = self.bigquery.execute(query).to_dataframe()
+
+        return results
+
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
@@ -586,7 +611,7 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        USE_OPTIMIZATION = os.environ.get('USE_OPTIMIZATION') is not None
+        USE_OPTIMIZATION = os.environ.get("USE_OPTIMIZATION") is not None
         global _dask_cluster
         self.start_time = datetime.now(tz=pytz.utc)
         logger.info(
@@ -646,7 +671,7 @@ class Analysis:
             #     experiment=self.config.experiment.normandy_slug,
             # )
             # _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
-        
+
         table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
 
         for period in self.config.metrics:
@@ -707,7 +732,9 @@ class Analysis:
                         and (m.metric.select_expression is None and m.metric.depends_on is not None)
                     }
                     if not USE_OPTIMIZATION:
-                        metrics_dataframe = table_to_dataframe(metrics_table, metrics_with_depends_on)
+                        metrics_dataframe = table_to_dataframe(
+                            metrics_table, metrics_with_depends_on
+                        )
 
                 if dry_run:
                     logger.info(
@@ -729,12 +756,12 @@ class Analysis:
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
-                            
-                        if USE_OPTIMIZATION: 
+
+                        if USE_OPTIMIZATION:
                             segment_data = self.subset_metric_table(
-                                metrics_table, segment, m, analysis_basis
+                                metrics_table, segment, m.metric, analysis_basis
                             )
-                            
+
                         analysis_length_dates = 1
                         if period.value == AnalysisPeriod.OVERALL:
                             analysis_length_dates = time_limits.analysis_length_dates
