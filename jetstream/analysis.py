@@ -390,23 +390,16 @@ class Analysis:
 
         query = dedent(
             f"""
-        SELECT client_id, branch, {','.join(metric_names)}
+        SELECT branch, {','.join(metric_names)}
         FROM {metrics_table_name.replace('exposures', 'enrollments')}
+        WHERE {' IS NOT NULL AND '.join(metric_names + [''])}
         """
         )
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
-            basis_filter = dedent(
-                """
-            WHERE enrollment_date IS NOT NULL
-            """
-            )
+            basis_filter = """enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = dedent(
-                """
-            WHERE enrollment_date IS NOT NULL AND exposure_date IS NOT NULL
-            """
-            )
+            basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
         else:
             raise ValueError("Other AnalysisBasis not supported!")
 
@@ -643,7 +636,7 @@ class Analysis:
             dashboard_address=DASK_DASHBOARD_ADDRESS,
             processes=True,
             threads_per_worker=1,
-            n_workers=DASK_N_PROCESSES,
+            n_workers=DASK_N_PROCESSES
         )
         client = Client(_dask_cluster)
 
@@ -712,7 +705,7 @@ class Analysis:
 
             for analysis_basis in analysis_bases:
                 metrics_table = self.calculate_metrics(
-                    exp, time_limits, period, analysis_basis, dry_run
+                    exp, time_limits, period, analysis_basis, True
                 )
 
                 if dry_run:
