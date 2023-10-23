@@ -305,10 +305,7 @@ distributed==2023.10.0 \
 exceptiongroup==1.1.3 \
     --hash=sha256:097acd85d473d75af5bb98e41b61ff7fe35efe6675e4f9370ec6ec5126d160e9 \
     --hash=sha256:343280667a4585d195ca1cf9cef84a4e178c4b6cf2274caef9859782b567d5e3
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 faker==19.10.0 \
     --hash=sha256:63da90512d0cb3acdb71bd833bb3071cb8a196020d08b8567a01d232954f1820 \
     --hash=sha256:f321e657ed61616fbfe14dbb9ccc6b2e8282652bbcfcb503c1bd0231ff834df6
@@ -1133,9 +1130,9 @@ pluggy==1.3.0 \
     # via
     #   -r requirements.in
     #   pytest
-polyfactory==2.10.0 \
-    --hash=sha256:5ddb8a8b67a0f17722537266baeeb8a39932ca493dd757b96dac513fb090cb02 \
-    --hash=sha256:ca4f8acbb308567ee429b2f99967cecf880fa481a0788a80ad676017bb083ceb
+polyfactory==2.11.0 \
+    --hash=sha256:b31b4997cc8128568f73f641b6858ed64be0fd3fd3627071c027b619c5b14d88 \
+    --hash=sha256:f1146ee171b55575a50c93cb36d0d68c5ab69b85ab747d7791bcf986a1be1253
     # via
     #   -r requirements.in
     #   mozilla-nimbus-schemas
@@ -1598,12 +1595,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1664,8 +1656,6 @@ typing-extensions==4.8.0 \
     --hash=sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef
     # via
     #   -r requirements.in
-    #   black
-    #   cattrs
     #   mypy
     #   polyfactory
     #   pydantic

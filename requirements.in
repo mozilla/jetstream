@@ -213,7 +213,7 @@ platformdirs==3.11.0
     # via black
 pluggy==1.3.0
     # via pytest
-polyfactory==2.10.0
+polyfactory==2.11.0
     # via mozilla-nimbus-schemas
 proto-plus==1.22.3
     # via
