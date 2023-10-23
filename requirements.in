@@ -61,7 +61,7 @@ flake8==6.1.0
     # via pytest-flake8
 fonttools==4.43.1
     # via matplotlib
-fsspec==2023.9.2
+fsspec==2023.10.0
     # via dask
 gitdb==4.0.10
     # via gitpython
