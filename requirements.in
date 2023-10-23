@@ -316,7 +316,7 @@ statsmodels==0.14.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-tblib==2.0.0
+tblib==3.0.0
     # via distributed
 toml==0.10.2
     # via
