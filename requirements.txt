@@ -305,10 +305,7 @@ distributed==2023.10.0 \
 exceptiongroup==1.1.3 \
     --hash=sha256:097acd85d473d75af5bb98e41b61ff7fe35efe6675e4f9370ec6ec5126d160e9 \
     --hash=sha256:343280667a4585d195ca1cf9cef84a4e178c4b6cf2274caef9859782b567d5e3
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 faker==19.10.0 \
     --hash=sha256:63da90512d0cb3acdb71bd833bb3071cb8a196020d08b8567a01d232954f1820 \
     --hash=sha256:f321e657ed61616fbfe14dbb9ccc6b2e8282652bbcfcb503c1bd0231ff834df6
@@ -1598,12 +1595,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 toolz==0.12.0 \
     --hash=sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f \
     --hash=sha256:88c570861c440ee3f2f6037c4654613228ff40c93a6c25e0eba70d17282c6194
@@ -1635,9 +1627,9 @@ types-pkg-resources==0.1.3 \
     --hash=sha256:0cb9972cee992249f93fff1a491bf2dc3ce674e5a1926e27d4f0866f7d9b6d9c \
     --hash=sha256:834a9b8d3dbea343562fd99d5d3359a726f6bf9d3733bccd2b4f3096fbab9dae
     # via -r requirements.in
-types-protobuf==4.24.0.2 \
-    --hash=sha256:598bb2290b9b0ea65f4f63569a09deaa4475edd7bb0d8589057a38deb0b19f4f \
-    --hash=sha256:b86b0deefd1cb1582d355be4fd7a2a807cf49c993d9744d3c9fbe1cbf1e6b044
+types-protobuf==4.24.0.3 \
+    --hash=sha256:048ca006a08ac0563ff04a86ddcdda6f8877b024f5ff89ed6180510b017c3a91 \
+    --hash=sha256:6652be32c647a855cd9c01e6c556ecdc94988188c4de89942ad13e906537aaee
     # via -r requirements.in
 types-pytz==2023.3.1.1 \
     --hash=sha256:1999a123a3dc0e39a2ef6d19f3f8584211de9e6a77fe7a0259f04a524e90a5cf \
@@ -1664,8 +1656,6 @@ typing-extensions==4.8.0 \
     --hash=sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef
     # via
     #   -r requirements.in
-    #   black
-    #   cattrs
     #   mypy
     #   polyfactory
     #   pydantic
