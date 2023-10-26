@@ -12,6 +12,8 @@ import google
 import mozanalysis
 import pytz
 from dask.distributed import Client, LocalCluster
+from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
+import pickle as pkl
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
@@ -284,7 +286,6 @@ class Analysis:
 
         return res_table_name
 
-    @dask.delayed
     def calculate_statistics(
         self,
         metric: metric.Summary,
@@ -379,10 +380,6 @@ class Analysis:
         metric: Metric,
         analysis_basis: AnalysisBasis = None,
     ) -> DataFrame:
-        print("metrics_table_name", metrics_table_name)
-        print("segment", segment)
-        print("metric", metric)
-        print("analysis_basis", analysis_basis)
         metric_names = [metric.name]
         if metric.depends_on:
             for dependency in metric.depends_on:
@@ -413,7 +410,6 @@ class Analysis:
             )
             query += segment_filter
 
-        print(query)
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
@@ -749,7 +745,6 @@ class Analysis:
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
-
                         if USE_OPTIMIZATION:
                             segment_data = self.subset_metric_table(
                                 metrics_table, segment, m.metric, analysis_basis
@@ -761,7 +756,7 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results.__root__ += self.calculate_statistics(
+                        segment_results.__root__ += dask.delayed(self.calculate_statistics, name=f'metric:{m.metric.name},segment:{segment},analysis_basis:{analysis_basis}')(
                             m,
                             segment_data,
                             segment,
@@ -780,7 +775,6 @@ class Analysis:
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )
-
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
 
