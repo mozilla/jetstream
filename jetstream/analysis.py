@@ -379,10 +379,12 @@ class Analysis:
         metric: Metric,
         analysis_basis: AnalysisBasis = None,
     ) -> DataFrame:
-        metric_names = [metric.name]
         if metric.depends_on:
+            metric_names = []
             for dependency in metric.depends_on:
                 metric_names.append(dependency.metric.name)
+        else:
+            metric_names = [metric.name]
 
         query = dedent(
             f"""
