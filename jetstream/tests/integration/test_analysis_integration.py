@@ -419,7 +419,7 @@ class TestAnalysisIntegration:
             "metric == 'active_hours_ratio' and statistic == 'population_ratio' "
             + "and analysis_basis == 'enrollments' and comparison == 'relative_uplift'"
         ).set_index("branch")
-
+        print(ratio_by_branch)
         assert ratio_by_branch.loc["branch1", "point"] == 0.0
 
         ratio_by_branch = stats.query(
