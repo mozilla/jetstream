@@ -756,6 +756,7 @@ class KernelDensityEstimate(Statistic):
                         "segment": segment,
                     },
                 )
+            # exponential needed b/c `score_samples` returns log-probabilities
             result = np.exp(kde.score_samples(grid.grid[:, np.newaxis]))
             if group[metric].min() == 0 and grid.geometric:
                 results.append(
@@ -767,7 +768,7 @@ class KernelDensityEstimate(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=kde.score_samples(np.asarray([0]).reshape(-1, 1))[0],
+                        point=np.exp(kde.score_samples(np.asarray([0]).reshape(-1, 1))[0]),
                         lower=None,
                         upper=None,
                         analysis_basis=analysis_basis,

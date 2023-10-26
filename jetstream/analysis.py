@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Optional, List
+from typing import Any, Optional
 
 import attr
 import dask
