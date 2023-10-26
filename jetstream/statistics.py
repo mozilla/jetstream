@@ -14,7 +14,6 @@ import mozanalysis.bayesian_stats.binary
 import mozanalysis.frequentist_stats.bootstrap
 import mozanalysis.metrics
 import numpy as np
-import statsmodels.api as sm
 from google.cloud import bigquery
 from metric_config_parser import metric as parser_metric
 from metric_config_parser.experiment import Experiment

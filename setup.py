@@ -69,6 +69,7 @@ setup(
         "pytz",
         "PyYAML",
         "requests",
+        "scikit-learn",
         "smart_open[gcs]",
         "statsmodels",
         "toml",
