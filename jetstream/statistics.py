@@ -22,8 +22,8 @@ from mozilla_nimbus_schemas.jetstream import Statistic as StatisticSchema
 from mozilla_nimbus_schemas.jetstream import Statistics as StatisticsSchema
 from pandas import DataFrame, Series
 from pydantic import Field, validator
-from statsmodels.distributions.empirical_distribution import ECDF
 from sklearn.neighbors import KernelDensity
+from statsmodels.distributions.empirical_distribution import ECDF
 
 from .errors import StatisticComputationException
 from .metric import Metric
