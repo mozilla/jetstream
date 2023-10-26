@@ -632,7 +632,7 @@ class Analysis:
             dashboard_address=DASK_DASHBOARD_ADDRESS,
             processes=True,
             threads_per_worker=1,
-            n_workers=DASK_N_PROCESSES
+            n_workers=DASK_N_PROCESSES,
         )
         client = Client(_dask_cluster)
 
@@ -720,10 +720,6 @@ class Analysis:
                         )
                         and (m.metric.select_expression is None and m.metric.depends_on is not None)
                     }
-                    if not USE_OPTIMIZATION:
-                        metrics_dataframe = table_to_dataframe(
-                            metrics_table, metrics_with_depends_on
-                        )
 
                 if dry_run:
                     logger.info(
@@ -735,20 +731,15 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    if not USE_OPTIMIZATION:
-                        segment_data = self.subset_to_segment(
-                            segment, metrics_dataframe, analysis_basis
-                        )
                     for m in self.config.metrics[period]:
                         if (
                             m.metric.analysis_bases != analysis_basis
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
-                        if USE_OPTIMIZATION:
-                            segment_data = self.subset_metric_table(
-                                metrics_table, segment, m.metric, analysis_basis
-                            )
+                        segment_data = self.subset_metric_table(
+                            metrics_table, segment, m.metric, analysis_basis
+                        )
 
                         analysis_length_dates = 1
                         if period.value == AnalysisPeriod.OVERALL:
@@ -756,13 +747,18 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results.__root__ += dask.delayed(self.calculate_statistics, name=f'metric:{m.metric.name},segment:{segment},analysis_basis:{analysis_basis}')(
+                        segment_results.__root__ += dask.delayed(
+                            self.calculate_statistics,
+                            name=f"metric:{m.metric.name},segment:{segment},analysis_basis:{analysis_basis}",
+                        )(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                        ).dict()["__root__"]
+                        ).dict()[
+                            "__root__"
+                        ]
 
                     segment_results.__root__ += self.counts(
                         segment_data, segment, analysis_basis
