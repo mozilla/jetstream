@@ -659,8 +659,6 @@ class Analysis:
             # )
             # _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
 
-        table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
-
         for period in self.config.metrics:
             if period not in self.analysis_periods:
                 logger.info(f"Skipping {period};")
@@ -705,19 +703,21 @@ class Analysis:
                 if dry_run:
                     results.append(metrics_table)
                 else:
+                    pass
                     # add null columns for metrics where select_expression is not set;
                     # this would be the case for metrics that use depends_on.
                     # column needs to be added since metrics that are not part of the dataframe
                     # get skipped
-                    metrics_with_depends_on = {
-                        m.metric.name
-                        for m in self.config.metrics[period]
-                        if (
-                            m.metric.analysis_bases == analysis_basis
-                            or analysis_basis in m.metric.analysis_bases
-                        )
-                        and (m.metric.select_expression is None and m.metric.depends_on is not None)
-                    }
+                    # metrics_with_depends_on = {
+                    #     m.metric.name
+                    #     for m in self.config.metrics[period]
+                    #     if (
+                    #         m.metric.analysis_bases == analysis_basis
+                    #         or analysis_basis in m.metric.analysis_bases
+                    #     )
+                    #     and (m.metric.select_expression is None and
+                    #  m.metric.depends_on is not None)
+                    # }
 
                 if dry_run:
                     logger.info(
