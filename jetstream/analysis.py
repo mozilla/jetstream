@@ -12,8 +12,6 @@ import google
 import mozanalysis
 import pytz
 from dask.distributed import Client, LocalCluster
-from dask.diagnostics import Profiler, ResourceProfiler, CacheProfiler
-import pickle as pkl
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
@@ -286,6 +284,7 @@ class Analysis:
 
         return res_table_name
 
+    @dask.delayed
     def calculate_statistics(
         self,
         metric: metric.Summary,
@@ -747,18 +746,13 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results.__root__ += dask.delayed(
-                            self.calculate_statistics,
-                            name=f"metric:{m.metric.name},segment:{segment},analysis_basis:{analysis_basis}",
-                        )(
+                        segment_results.__root__ += self.calculate_statistics(
                             m,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
-                        ).dict()[
-                            "__root__"
-                        ]
+                        ).dict()["__root__"]
 
                     segment_results.__root__ += self.counts(
                         segment_data, segment, analysis_basis
