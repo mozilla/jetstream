@@ -498,7 +498,7 @@ class Binomial(Statistic):
 @attr.s(auto_attribs=True)
 class Deciles(Statistic):
     confidence_interval: float = 0.95
-    num_samples: int = 1000
+    num_samples: int = 10000
 
     @staticmethod
     def _decilize(arr):
@@ -508,7 +508,6 @@ class Deciles(Statistic):
         arr_dict = {
             f"{label:.1}": arr_quantile for label, arr_quantile in zip(deciles, arr_quantiles)
         }
-        del deciles, arr_quantiles
         return arr_dict
 
     def transform(
@@ -724,9 +723,9 @@ def _make_grid(values: Series, size: int, attempt_geometric: bool) -> MakeGridRe
 
 @attr.s(auto_attribs=True)
 class KernelDensityEstimate(Statistic):
-    bandwidth: str = "normal_reference"
+    bandwidth: str = "scott"
     adjust: float = 1.0
-    kernel: str = "gau"
+    kernel: str = "gaussian"
     grid_size: int = 256
     log_space: bool = False
 
@@ -739,14 +738,12 @@ class KernelDensityEstimate(Statistic):
         analysis_basis: AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        if self.kernel != 'gau':
-            raise ValueError('Only Gaussian kernels supported now')
+        if not np.isclose(self.adjust, 1.0):
+            raise ValueError("KDE Adjust parameter no longer supported")
         results = []
         for branch, group in df.groupby("branch"):
-            kde = KernelDensity(bandwidth='scott', kernel='gaussian')
-            #kde = sm.nonparametric.KDEUnivariate(group[metric])
+            kde = KernelDensity(bandwidth=self.bandwidth, kernel=self.kernel)
             kde.fit(group[metric].values[:, np.newaxis])
-            #kde.fit(bw=self.bandwidth, adjust=self.adjust, kernel=self.kernel)
             grid = _make_grid(group[metric], self.grid_size, self.log_space)
             if grid.message:
                 logger.warning(
@@ -759,7 +756,6 @@ class KernelDensityEstimate(Statistic):
                         "segment": segment,
                     },
                 )
-            #result = kde.evaluate(grid.grid)
             result = np.exp(kde.score_samples(grid.grid[:, np.newaxis]))
             if group[metric].min() == 0 and grid.geometric:
                 results.append(
@@ -771,7 +767,7 @@ class KernelDensityEstimate(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=kde.score_samples(np.asarray([0]).reshape(-1,1))[0],#kde.evaluate(0)[0],
+                        point=kde.score_samples(np.asarray([0]).reshape(-1, 1))[0],
                         lower=None,
                         upper=None,
                         analysis_basis=analysis_basis,

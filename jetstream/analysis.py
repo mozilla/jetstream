@@ -599,7 +599,6 @@ class Analysis:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
-        USE_OPTIMIZATION = os.environ.get("USE_OPTIMIZATION") is not None
         global _dask_cluster
         self.start_time = datetime.now(tz=pytz.utc)
         logger.info(
@@ -700,7 +699,7 @@ class Analysis:
 
             for analysis_basis in analysis_bases:
                 metrics_table = self.calculate_metrics(
-                    exp, time_limits, period, analysis_basis, True
+                    exp, time_limits, period, analysis_basis, dry_run
                 )
 
                 if dry_run:
