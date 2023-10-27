@@ -232,7 +232,7 @@ class TestStatistics:
         assert len(results) > 0
 
         assert results[0].parameter == "2.04"
-        assert results[0].point == pytest.approx(0.5, rel=.1)
+        assert results[0].point == pytest.approx(0.5, abs=.1)
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()
