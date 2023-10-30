@@ -224,8 +224,15 @@ class TestStatistics:
 
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
-        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__
+        results = sorted(
+            stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__,
+            key=lambda res: (res.branch, res.parameter),
+        )
+
         assert len(results) > 0
+
+        assert results[0].parameter == "2.04"
+        assert results[0].point == pytest.approx(0.5, abs=0.1)
 
     def test_kde_with_geom_zero(self, wine):
         wine = wine.copy()

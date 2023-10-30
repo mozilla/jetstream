@@ -71,6 +71,7 @@ setup(
         "requests",
         "smart_open[gcs]",
         "statsmodels",
+        "scikit-learn",
         "toml",
     ],
     include_package_data=True,
