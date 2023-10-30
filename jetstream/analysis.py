@@ -350,28 +350,6 @@ class Analysis:
         return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
     @dask.delayed
-    def subset_to_segment(
-        self, segment: str, metrics_data: DataFrame, analysis_basis: AnalysisBasis = None
-    ) -> DataFrame:
-        """Return metrics data for segment"""
-        if segment != "all":
-            if segment not in metrics_data.columns:
-                raise ValueError(f"Segment {segment} not in metrics table")
-            segment_data = metrics_data[metrics_data[segment].fillna(False)]
-        else:
-            segment_data = metrics_data
-
-        if (
-            analysis_basis == AnalysisBasis.ENROLLMENTS
-            and "enrollment_date" in segment_data.columns
-        ):
-            segment_data = segment_data[segment_data["enrollment_date"].notnull()]
-        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in segment_data.columns:
-            segment_data = segment_data[segment_data["exposure_date"].notnull()]
-
-        return segment_data
-
-    @dask.delayed
     def subset_metric_table(
         self,
         metrics_table_name: str,
@@ -725,6 +703,7 @@ class Analysis:
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
+
                         segment_data = self.subset_metric_table(
                             metrics_table, segment, m.metric, analysis_basis
                         )
