@@ -379,17 +379,22 @@ class Analysis:
         metric: Metric,
         analysis_basis: AnalysisBasis = None,
     ) -> DataFrame:
+        metric_names = []
+        # select placeholder column for metrics without select statement
+        # since metrics that don't appear in the df are skipped
+        # e.g., metrics with depends on such as population ratio metrics
+        empty_metric_names = []
         if metric.depends_on:
-            metric_names = []
+            empty_metric_names.append(f"NULL AS {metric.name}")
             for dependency in metric.depends_on:
                 metric_names.append(dependency.metric.name)
         else:
-            metric_names = [metric.name]
+            metric_names.append(metric.name)
 
         query = dedent(
             f"""
-        SELECT branch, {','.join(metric_names)}
-        FROM {metrics_table_name.replace('exposures', 'enrollments')}
+        SELECT branch, {','.join(metric_names + empty_metric_names)}
+        FROM {metrics_table_name}
         WHERE {' IS NOT NULL AND '.join(metric_names + [''])}
         """
         )
@@ -410,7 +415,6 @@ class Analysis:
             """
             )
             query += segment_filter
-
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
@@ -721,7 +725,6 @@ class Analysis:
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
-
                         segment_data = self.subset_metric_table(
                             metrics_table, segment, m.metric, analysis_basis
                         )
