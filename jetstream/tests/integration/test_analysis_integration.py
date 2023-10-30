@@ -843,3 +843,72 @@ class TestAnalysisIntegration:
             (Path(__file__).parent.parent / "data/Statistics_v1.0.json").read_text()
         )
         jsonschema.validate(statistics_export_data, schema)
+
+    def test_subset_metric_table(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            is_enrollment_paused=True,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        )
+
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+        )
+
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
+
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+
+        analysis = Analysis(project_id, temporary_dataset, config, None)
+
+        exposures_results = (
+            analysis.subset_metric_table(
+                "test_experiment_exposures_week_1",
+                "all",
+                test_active_hours,
+                AnalysisBasis.EXPOSURES,
+            )
+            .compute()
+            .sort_values("branch")
+            .reset_index(drop=True)
+        )
+        assert exposures_results.loc[0, "active_hours"] == pytest.approx(0.8, rel=1e-5)
+        assert exposures_results.loc[1, "active_hours"] == pytest.approx(0.3, rel=1e-5)
+
+        enrollments_results = (
+            analysis.subset_metric_table(
+                "test_experiment_enrollments_week_1",
+                "all",
+                test_active_hours,
+                AnalysisBasis.ENROLLMENTS,
+            )
+            .compute()
+            .sort_values("branch")
+            .reset_index(drop=True)
+        )
+        assert enrollments_results.loc[0, "active_hours"] == pytest.approx(0.8, rel=1e-5)
+        assert enrollments_results.loc[1, "active_hours"] == pytest.approx(0.3, rel=1e-5)
