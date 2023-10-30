@@ -5,14 +5,12 @@ from datetime import timedelta
 from textwrap import dedent
 from unittest.mock import Mock
 
-import pandas as pd
 import pytest
 import pytz
 import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.metric import AnalysisPeriod
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
 from jetstream.analysis import Analysis
