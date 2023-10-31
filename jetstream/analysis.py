@@ -386,7 +386,7 @@ class Analysis:
 
         query = dedent(
             f"""
-        SELECT branch, {','.join(metric_names + empty_metric_names)}
+        SELECT branch, {', '.join(metric_names + empty_metric_names)}
         FROM {metrics_table_name}
         WHERE {' IS NOT NULL AND '.join(metric_names + [''])}
         """
