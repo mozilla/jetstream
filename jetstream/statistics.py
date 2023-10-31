@@ -499,16 +499,6 @@ class Deciles(Statistic):
     confidence_interval: float = 0.95
     num_samples: int = 10000
 
-    @staticmethod
-    def _decilize(arr):
-        deciles = np.arange(1, 10) * 0.1
-        arr_quantiles = np.quantile(arr, deciles)
-
-        arr_dict = {
-            f"{label:.1}": arr_quantile for label, arr_quantile in zip(deciles, arr_quantiles)
-        }
-        return arr_dict
-
     def transform(
         self,
         df: DataFrame,
@@ -523,9 +513,8 @@ class Deciles(Statistic):
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
-        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches(
+        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_deciles(
             df,
-            stat_fn=self._decilize,
             col_label=metric,
             ref_branch_label=reference_branch,
             num_samples=self.num_samples,
