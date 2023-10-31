@@ -513,7 +513,7 @@ class Deciles(Statistic):
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
 
-        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_deciles(
+        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_quantiles(
             df,
             col_label=metric,
             ref_branch_label=reference_branch,
