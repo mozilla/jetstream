@@ -407,8 +407,7 @@ class Analysis:
         if segment != "all":
             segment_filter = dedent(
                 f"""
-            AND {segment} = TRUE
-            """
+            AND {segment} = TRUE"""
             )
             query += segment_filter
 

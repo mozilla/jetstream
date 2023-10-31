@@ -361,6 +361,30 @@ def test_create_subset_metric_table_query_basic():
     assert expected_query == actual_query
 
 
+def test_create_subset_metric_table_query_segment():
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL
+    AND mysegment = TRUE"""
+    )
+
+    actual_query = Analysis._create_subset_metric_table_query(
+        "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
 def test_create_subset_metric_table_query_exposures():
     metric = Metric(
         name="metric_name",
