@@ -398,7 +398,8 @@ class Analysis:
             basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
         else:
             raise ValueError(
-                f"AnalysisBasis {analysis_basis} not valid. Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+                f"AnalysisBasis {analysis_basis} not valid"
+                + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
             )
 
         query += basis_filter
