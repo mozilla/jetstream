@@ -350,7 +350,7 @@ def test_create_subset_metric_table_query_basic():
         """
     SELECT branch, metric_name
     FROM test_experiment_enrollments_1
-    WHERE metric_name IS NOT NULL AND 
+    WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
 
@@ -373,7 +373,7 @@ def test_create_subset_metric_table_query_exposures():
         """
     SELECT branch, metric_name
     FROM test_experiment_exposures_1
-    WHERE metric_name IS NOT NULL AND 
+    WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
 
@@ -414,7 +414,7 @@ def test_create_subset_metric_table_query_depends_on():
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
     FROM test_experiment_enrollments_1
-    WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND 
+    WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
 
