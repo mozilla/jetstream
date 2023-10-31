@@ -355,8 +355,23 @@ class Analysis:
         metrics_table_name: str,
         segment: str,
         metric: Metric,
-        analysis_basis: AnalysisBasis = None,
+        analysis_basis: AnalysisBasis,
     ) -> DataFrame:
+        """Pulls the metric data for this segment/analysis basis"""
+
+        query = self._create_subset_metric_table_query(
+            metrics_table_name, segment, metric, analysis_basis
+        )
+
+        results = self.bigquery.execute(query).to_dataframe()
+
+        return results
+
+    @staticmethod
+    def _create_subset_metric_table_query(
+        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+    ) -> str:
+        """Creates a SQL query string to pull a single metric for a segment/analysis-"""
         metric_names = []
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
@@ -382,7 +397,9 @@ class Analysis:
         elif analysis_basis == AnalysisBasis.EXPOSURES:
             basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
         else:
-            raise ValueError("Other AnalysisBasis not supported!")
+            raise ValueError(
+                f"AnalysisBasis {analysis_basis} not valid. Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+            )
 
         query += basis_filter
 
@@ -393,9 +410,8 @@ class Analysis:
             """
             )
             query += segment_filter
-        results = self.bigquery.execute(query).to_dataframe()
 
-        return results
+        return query
 
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
