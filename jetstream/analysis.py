@@ -350,26 +350,68 @@ class Analysis:
         return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
     @dask.delayed
-    def subset_to_segment(
-        self, segment: str, metrics_data: DataFrame, analysis_basis: AnalysisBasis = None
+    def subset_metric_table(
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis,
     ) -> DataFrame:
-        """Return metrics data for segment"""
-        if segment != "all":
-            if segment not in metrics_data.columns:
-                raise ValueError(f"Segment {segment} not in metrics table")
-            segment_data = metrics_data[metrics_data[segment].fillna(False)]
+        """Pulls the metric data for this segment/analysis basis"""
+
+        query = self._create_subset_metric_table_query(
+            metrics_table_name, segment, metric, analysis_basis
+        )
+
+        results = self.bigquery.execute(query).to_dataframe()
+
+        return results
+
+    @staticmethod
+    def _create_subset_metric_table_query(
+        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+    ) -> str:
+        """Creates a SQL query string to pull a single metric for a segment/analysis-"""
+        metric_names = []
+        # select placeholder column for metrics without select statement
+        # since metrics that don't appear in the df are skipped
+        # e.g., metrics with depends on such as population ratio metrics
+        empty_metric_names = []
+        if metric.depends_on:
+            empty_metric_names.append(f"NULL AS {metric.name}")
+            for dependency in metric.depends_on:
+                metric_names.append(dependency.metric.name)
         else:
-            segment_data = metrics_data
+            metric_names.append(metric.name)
 
-        if (
-            analysis_basis == AnalysisBasis.ENROLLMENTS
-            and "enrollment_date" in segment_data.columns
-        ):
-            segment_data = segment_data[segment_data["enrollment_date"].notnull()]
-        elif analysis_basis == AnalysisBasis.EXPOSURES and "exposure_date" in segment_data.columns:
-            segment_data = segment_data[segment_data["exposure_date"].notnull()]
+        query = dedent(
+            f"""
+        SELECT branch, {', '.join(metric_names + empty_metric_names)}
+        FROM {metrics_table_name}
+        WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
+        """
+        )
 
-        return segment_data
+        if analysis_basis == AnalysisBasis.ENROLLMENTS:
+            basis_filter = """enrollment_date IS NOT NULL"""
+        elif analysis_basis == AnalysisBasis.EXPOSURES:
+            basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+        else:
+            raise ValueError(
+                f"AnalysisBasis {analysis_basis} not valid"
+                + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+            )
+
+        query += basis_filter
+
+        if segment != "all":
+            segment_filter = dedent(
+                f"""
+            AND {segment} = TRUE"""
+            )
+            query += segment_filter
+
+        return query
 
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
@@ -617,8 +659,6 @@ class Analysis:
             # )
             # _dask_cluster.scheduler.add_plugin(task_monitoring_plugin)
 
-        table_to_dataframe = dask.delayed(self.bigquery.table_to_dataframe)
-
         for period in self.config.metrics:
             if period not in self.analysis_periods:
                 logger.info(f"Skipping {period};")
@@ -662,22 +702,6 @@ class Analysis:
 
                 if dry_run:
                     results.append(metrics_table)
-                else:
-                    # add null columns for metrics where select_expression is not set;
-                    # this would be the case for metrics that use depends_on.
-                    # column needs to be added since metrics that are not part of the dataframe
-                    # get skipped
-                    metrics_with_depends_on = {
-                        m.metric.name
-                        for m in self.config.metrics[period]
-                        if (
-                            m.metric.analysis_bases == analysis_basis
-                            or analysis_basis in m.metric.analysis_bases
-                        )
-                        and (m.metric.select_expression is None and m.metric.depends_on is not None)
-                    }
-
-                    metrics_dataframe = table_to_dataframe(metrics_table, metrics_with_depends_on)
 
                 if dry_run:
                     logger.info(
@@ -689,15 +713,16 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    segment_data = self.subset_to_segment(
-                        segment, metrics_dataframe, analysis_basis
-                    )
                     for m in self.config.metrics[period]:
                         if (
                             m.metric.analysis_bases != analysis_basis
                             and analysis_basis not in m.metric.analysis_bases
                         ):
                             continue
+
+                        segment_data = self.subset_metric_table(
+                            metrics_table, segment, m.metric, analysis_basis
+                        )
 
                         analysis_length_dates = 1
                         if period.value == AnalysisPeriod.OVERALL:

@@ -5,13 +5,13 @@ from datetime import timedelta
 from textwrap import dedent
 from unittest.mock import Mock
 
-import pandas as pd
 import pytest
 import pytz
 import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.metric import AnalysisPeriod
+from metric_config_parser.data_source import DataSource
+from metric_config_parser.metric import AnalysisPeriod, Summary
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
@@ -24,6 +24,7 @@ from jetstream.errors import (
     NoEnrollmentPeriodException,
 )
 from jetstream.experimenter import ExperimentV1
+from jetstream.metric import Metric
 
 
 def test_get_timelimits_if_ready(experiments):
@@ -190,71 +191,6 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     )
 
 
-def test_subset_to_segment(experiments):
-    conf = dedent(
-        """
-        [experiment]
-        segments = ["regular_users_v3"]
-
-        [metrics.active_hours]
-        analysis_bases = ["exposures", "enrollments"]
-        """
-    )
-
-    spec = AnalysisSpec.from_dict(toml.loads(conf))
-    configured = spec.resolve(experiments[0], ConfigLoader.configs)
-    assert isinstance(configured.experiment.segments[0], segment.Segment)
-
-    metrics_data = pd.DataFrame(
-        [
-            (None, None, "1"),
-            (None, "1", None),
-            (True, None, "1"),
-            (True, "1", None),
-            (False, None, "1"),
-            (True, "1", None),
-        ],
-        columns=["regular_users_v3", "enrollment_date", "exposure_date"],
-    )
-    analysis = Analysis("test", "test", configured)
-    all_enrollments = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.ENROLLMENTS)
-    all_enrollments = all_enrollments.compute()
-    assert len(all_enrollments) == 3
-    assert len(all_enrollments[all_enrollments["regular_users_v3"] == True]) == 2  # noqa: E712
-    assert len(all_enrollments[all_enrollments["regular_users_v3"] == False]) == 0  # noqa: E712
-    assert len(all_enrollments[all_enrollments["enrollment_date"] == "1"]) == 3
-
-    all_exposures = analysis.subset_to_segment("all", metrics_data, AnalysisBasis.EXPOSURES)
-    all_exposures = all_exposures.compute()
-    assert len(all_exposures) == 3
-    assert len(all_exposures[all_exposures["regular_users_v3"] == True]) == 1  # noqa: E712
-    assert len(all_exposures[all_exposures["regular_users_v3"] == False]) == 1  # noqa: E712
-    assert len(all_exposures[all_exposures["exposure_date"] == "1"]) == 3
-
-    segment_enrollments = analysis.subset_to_segment(
-        "regular_users_v3", metrics_data, AnalysisBasis.ENROLLMENTS
-    )
-    segment_enrollments = segment_enrollments.compute()
-    assert len(segment_enrollments) == 2
-    assert (
-        len(segment_enrollments[segment_enrollments["regular_users_v3"] == True]) == 2  # noqa: E712
-    )
-    assert (
-        len(segment_enrollments[segment_enrollments["regular_users_v3"] == False])  # noqa: E712
-        == 0
-    )
-    assert len(segment_enrollments[segment_enrollments["enrollment_date"] == "1"]) == 2
-
-    segment_exposures = analysis.subset_to_segment(
-        "regular_users_v3", metrics_data, AnalysisBasis.EXPOSURES
-    )
-    segment_exposures = segment_exposures.compute()
-    assert len(segment_exposures) == 1
-    assert len(segment_exposures[segment_exposures["regular_users_v3"] == True]) == 1  # noqa: E712
-    assert len(segment_exposures[segment_exposures["regular_users_v3"] == False]) == 0  # noqa: E712
-    assert len(segment_exposures[segment_exposures["exposure_date"] == "1"]) == 1
-
-
 def test_is_high_population_check(experiments):
     x = experiments[3]
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
@@ -400,3 +336,127 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
         )
         Analysis("spam", "eggs", config).validate()
         assert called == 2
+
+
+def test_create_subset_metric_table_query_basic():
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = Analysis._create_subset_metric_table_query(
+        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_segment():
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL
+    AND mysegment = TRUE"""
+    )
+
+    actual_query = Analysis._create_subset_metric_table_query(
+        "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_exposures():
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.EXPOSURES],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_exposures_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+    )
+
+    actual_query = Analysis._create_subset_metric_table_query(
+        "test_experiment_exposures_1", "all", metric, AnalysisBasis.EXPOSURES
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_depends_on():
+    upstream_1_metric = Metric(
+        name="upstream_1",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    upstream_1 = Summary(upstream_1_metric, None, None)
+
+    upstream_2_metric = Metric(
+        name="upstream_2",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    upstream_2 = Summary(upstream_2_metric, None, None)
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        depends_on=[upstream_1, upstream_2],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, upstream_1, upstream_2, NULL AS metric_name
+    FROM test_experiment_enrollments_1
+    WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = Analysis._create_subset_metric_table_query(
+        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_unsupported_analysis_basis():
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.EXPOSURES],
+    )
+    with pytest.raises(ValueError):
+        Analysis._create_subset_metric_table_query(
+            "test_experiment_exposures_1", "all", metric, "non-basis"
+        )
