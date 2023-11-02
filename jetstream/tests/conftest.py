@@ -149,7 +149,7 @@ def experiments():
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
-            enrollment_end_date=dt.datetime(2019, 12, 8, tzinfo=pytz.utc),
+            enrollment_end_date=None,
             is_enrollment_paused=False,
         ),
         Experiment(

@@ -611,7 +611,10 @@ class Analysis:
         assert self.config.experiment.start_date is not None  # for mypy
 
         # make sure enrollment is actually ended (and enrollment is not manually overridden)
-        if (self.config.experiment.enrollment_end_date is None) and (
+        if (
+            self.config.experiment.experiment.type == "v6"
+            and self.config.experiment.enrollment_end_date is None
+        ) and (
             self.config.experiment.proposed_enrollment
             == self.config.experiment.experiment.proposed_enrollment
             and self.config.experiment.enrollment_end_date

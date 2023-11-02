@@ -469,7 +469,10 @@ class AnalysisExecutor:
 
                 # make sure enrollment is actually ended (and enrollment is not manually overridden)
                 if not (
-                    config.experiment.enrollment_end_date is None
+                    (
+                        config.experiment.experiment.type == "v6"
+                        and config.experiment.enrollment_end_date is None
+                    )
                     and (
                         config.experiment.proposed_enrollment
                         == config.experiment.experiment.proposed_enrollment
