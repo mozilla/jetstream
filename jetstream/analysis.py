@@ -611,10 +611,7 @@ class Analysis:
         assert self.config.experiment.start_date is not None  # for mypy
 
         # make sure enrollment is actually ended (and enrollment is not manually overridden)
-        if (
-            hasattr(self.config.experiment, "is_enrollment_paused")
-            and self.config.experiment.is_enrollment_paused is False
-        ) and (
+        if (self.config.experiment.enrollment_end_date is not None) and (
             self.config.experiment.proposed_enrollment
             == self.config.experiment.experiment.proposed_enrollment
             and self.config.experiment.enrollment_end_date
