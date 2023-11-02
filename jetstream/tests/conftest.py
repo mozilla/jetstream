@@ -34,6 +34,7 @@ def experiments():
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
         ),
         Experiment(
             experimenter_slug="test_slug",
