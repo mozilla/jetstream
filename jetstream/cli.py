@@ -470,8 +470,8 @@ class AnalysisExecutor:
                 # make sure enrollment is actually ended (and enrollment is not manually overridden)
                 if not (
                     (
-                        hasattr(config.experiment, "is_enrollment_paused")
-                        and config.experiment.is_enrollment_paused is False
+                        config.experiment.experiment.type == "v6"
+                        and config.experiment.enrollment_end_date is None
                     )
                     and (
                         config.experiment.proposed_enrollment
