@@ -23,7 +23,7 @@ def experiments():
     return [
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Complete",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -34,10 +34,11 @@ def experiments():
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="addon",
+            type="v6",
             status="Complete",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -51,7 +52,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -65,7 +66,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -79,7 +80,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Complete",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -93,7 +94,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -108,7 +109,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -123,7 +124,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug="test_slug",
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
@@ -138,7 +139,7 @@ def experiments():
         ),
         Experiment(
             experimenter_slug=None,
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=None,
@@ -149,12 +150,12 @@ def experiments():
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
-            enrollment_end_date=dt.datetime(2019, 12, 8, tzinfo=pytz.utc),
+            enrollment_end_date=None,
             is_enrollment_paused=False,
         ),
         Experiment(
             experimenter_slug=None,
-            type="pref",
+            type="v6",
             status="Live",
             start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
             end_date=None,
