@@ -224,7 +224,7 @@ proto-plus==1.22.3
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==4.24.4
+protobuf==4.25.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
