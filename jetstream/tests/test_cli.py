@@ -575,6 +575,8 @@ class TestSerialExecutorStrategy:
                 AnalysisPeriod.WEEK,
                 AnalysisPeriod.DAYS_28,
                 AnalysisPeriod.OVERALL,
+                AnalysisPeriod.WEEK_PREENROLLMENT,
+                AnalysisPeriod.DAYS_28_PREENROLLMENT,
             ],
             None,
         )

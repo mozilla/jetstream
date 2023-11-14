@@ -66,7 +66,7 @@ class Analysis:
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
         AnalysisPeriod.WEEK_PREENROLLMENT,
-        AnalysisPeriod.DAYS_28_PREENROLLMENT
+        AnalysisPeriod.DAYS_28_PREENROLLMENT,
     ]
     sql_output_dir: Optional[str] = None
 
@@ -95,7 +95,11 @@ class Analysis:
             "num_dates_enrollment": dates_enrollment,
         }
 
-        if period not in [AnalysisPeriod.OVERALL, AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
+        if period not in [
+            AnalysisPeriod.OVERALL,
+            AnalysisPeriod.WEEK_PREENROLLMENT,
+            AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        ]:
             try:
                 current_time_limits = TimeLimits.for_ts(
                     last_date_full_data=current_date_str,
@@ -123,34 +127,37 @@ class Analysis:
                 return None
 
             return current_time_limits
-        
+
         elif period in [AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
-            enrollment_end_date = self.config.experiment.start_date + timedelta(days=dates_enrollment)
+            enrollment_end_date = self.config.experiment.start_date + timedelta(
+                days=dates_enrollment
+            )
 
             if enrollment_end_date.strftime("%Y-%m-%d") != prior_date.date().strftime("%Y-%m-%d"):
                 print(enrollment_end_date)
                 print(prior_date)
-                print(f'enrollment end date {enrollment_end_date.strftime("%Y-%m-%d")} is not yesterday {prior_date.date().strftime("%Y-%m-%d")}')
+                print(
+                    f'enrollment end date {enrollment_end_date.strftime("%Y-%m-%d")} is not yesterday {prior_date.date().strftime("%Y-%m-%d")}'
+                )
                 return None
             else:
-                print('FOUND IT!')
+                print("FOUND IT!")
             if period == AnalysisPeriod.WEEK_PREENROLLMENT:
                 analysis_start_days = -7 - 1
                 analysis_length_dates = 7 + 1
             else:
-                analysis_start_days = -7*4 - 1
+                analysis_start_days = -7 * 4 - 1
                 analysis_length_dates = 28 + 1
-            
+
             out = TimeLimits.for_single_analysis_window(
-                last_date_full_data = prior_date_str,
-                analysis_start_days = analysis_start_days,
-                analysis_length_dates = analysis_length_dates,
-                **time_limits_args
+                last_date_full_data=prior_date_str,
+                analysis_start_days=analysis_start_days,
+                analysis_length_dates=analysis_length_dates,
+                **time_limits_args,
             )
             print(out)
             return out
 
-        
         assert period == AnalysisPeriod.OVERALL
         if (
             self.config.experiment.end_date is None
@@ -247,7 +254,7 @@ class Analysis:
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
         """
-        print('calculating metrics')
+        print("calculating metrics")
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
@@ -707,7 +714,7 @@ class Analysis:
                     self.config.experiment.start_date.strftime("%Y-%m-%d")
                     if self.config.experiment.start_date is not None
                     else "None",
-                    current_date.strftime("%Y-%m-%d")
+                    current_date.strftime("%Y-%m-%d"),
                 )
                 continue
 
@@ -730,7 +737,6 @@ class Analysis:
                 continue
 
             for analysis_basis in analysis_bases:
-
                 metrics_table = self.calculate_metrics(
                     exp, time_limits, period, analysis_basis, dry_run
                 )
