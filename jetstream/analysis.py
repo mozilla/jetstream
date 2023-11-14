@@ -65,6 +65,8 @@ class Analysis:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
+        AnalysisPeriod.WEEK_PREENROLLMENT,
+        AnalysisPeriod.DAYS_28_PREENROLLMENT
     ]
     sql_output_dir: Optional[str] = None
 
@@ -93,7 +95,7 @@ class Analysis:
             "num_dates_enrollment": dates_enrollment,
         }
 
-        if period != AnalysisPeriod.OVERALL:
+        if period not in [AnalysisPeriod.OVERALL, AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
             try:
                 current_time_limits = TimeLimits.for_ts(
                     last_date_full_data=current_date_str,
@@ -121,7 +123,34 @@ class Analysis:
                 return None
 
             return current_time_limits
+        
+        elif period in [AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
+            enrollment_end_date = self.config.experiment.start_date + timedelta(days=dates_enrollment)
 
+            if enrollment_end_date.strftime("%Y-%m-%d") != prior_date.date().strftime("%Y-%m-%d"):
+                print(enrollment_end_date)
+                print(prior_date)
+                print(f'enrollment end date {enrollment_end_date.strftime("%Y-%m-%d")} is not yesterday {prior_date.date().strftime("%Y-%m-%d")}')
+                return None
+            else:
+                print('FOUND IT!')
+            if period == AnalysisPeriod.WEEK_PREENROLLMENT:
+                analysis_start_days = -7 - 1
+                analysis_length_dates = 7 + 1
+            else:
+                analysis_start_days = -7*4 - 1
+                analysis_length_dates = 28 + 1
+            
+            out = TimeLimits.for_single_analysis_window(
+                last_date_full_data = prior_date_str,
+                analysis_start_days = analysis_start_days,
+                analysis_length_dates = analysis_length_dates,
+                **time_limits_args
+            )
+            print(out)
+            return out
+
+        
         assert period == AnalysisPeriod.OVERALL
         if (
             self.config.experiment.end_date is None
@@ -218,6 +247,7 @@ class Analysis:
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
         """
+        print('calculating metrics')
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
@@ -228,9 +258,11 @@ class Analysis:
                 time_limits.first_enrollment_date, last_analysis_window.start
             ),
         )
-
+        print(last_window_limits)
         res_table_name = self._table_name(period.value, window, analysis_basis=analysis_basis)
+        print(res_table_name)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        print(normalized_slug)
 
         if dry_run:
             logger.info(
@@ -274,7 +306,7 @@ class Analysis:
                 analysis_basis,
                 exposure_signal,
             )
-
+            print(metrics_sql)
             results = self.bigquery.execute(metrics_sql, res_table_name)
             logger.info(
                 f"Metric query cost: {results.total_bytes_billed * COST_PER_BYTE}",
@@ -669,12 +701,13 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready [START: %s]",
+                    "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
                     self.config.experiment.start_date.strftime("%Y-%m-%d")
                     if self.config.experiment.start_date is not None
                     else "None",
+                    current_date.strftime("%Y-%m-%d")
                 )
                 continue
 
@@ -687,6 +720,7 @@ class Analysis:
             analysis_bases = []
 
             for m in self.config.metrics[period]:
+                print(m)
                 for analysis_basis in m.metric.analysis_bases:
                     analysis_bases.append(analysis_basis)
 
@@ -696,6 +730,7 @@ class Analysis:
                 continue
 
             for analysis_basis in analysis_bases:
+
                 metrics_table = self.calculate_metrics(
                     exp, time_limits, period, analysis_basis, dry_run
                 )

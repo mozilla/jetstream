@@ -194,6 +194,8 @@ class SerialExecutorStrategy:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
+        AnalysisPeriod.WEEK_PREENROLLMENT,
+        AnalysisPeriod.DAYS_28_PREENROLLMENT
     ]
     sql_output_dir: Optional[str] = None
 
@@ -707,6 +709,8 @@ def analysis_periods_option(
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
+        AnalysisPeriod.WEEK_PREENROLLMENT,
+        AnalysisPeriod.DAYS_28_PREENROLLMENT
     ]
 ):
     return click.option(
