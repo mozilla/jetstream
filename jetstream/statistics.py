@@ -42,7 +42,9 @@ class Summary:
 
     @classmethod
     def from_config(
-        cls, summary_config: parser_metric.Summary, analysis_period_length: Optional[int]
+        cls,
+        summary_config: parser_metric.Summary,
+        analysis_period_length: Optional[int],
     ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
@@ -60,7 +62,9 @@ class Summary:
                 break
 
         if not found:
-            raise ValueError(f"Statistic '{summary_config.statistic.name}' does not exist.")
+            raise ValueError(
+                f"Statistic '{summary_config.statistic.name}' does not exist."
+            )
 
         stats_params = copy.deepcopy(summary_config.statistic.params)
 
@@ -75,10 +79,14 @@ class Summary:
                     # inject analysis_period_length from experiment
                     pre_treatment.analysis_period_length = analysis_period_length or 1
 
-                    pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
+                    pre_treatments.append(
+                        pre_treatment.from_dict(pre_treatment_conf.args)
+                    )
 
             if not found:
-                raise ValueError(f"Could not find pre-treatment {pre_treatment_conf.name}.")
+                raise ValueError(
+                    f"Could not find pre-treatment {pre_treatment_conf.name}."
+                )
 
         return cls(
             metric=metric,
@@ -101,7 +109,9 @@ class Summary:
                 for upstream_metric in self.metric.depends_on:
                     data = pre_treatment.apply(data, upstream_metric.metric.name)
 
-        return self.statistic.apply(data, self.metric.name, experiment, analysis_basis, segment)
+        return self.statistic.apply(
+            data, self.metric.name, experiment, analysis_basis, segment
+        )
 
 
 class StatisticResult(StatisticSchema):
@@ -190,7 +200,9 @@ class StatisticResultCollection(StatisticsSchema):
             result.segment = segment
         return self
 
-    def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
+    def set_analysis_basis(
+        self, analysis_basis: AnalysisBasis
+    ) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
         for result in self.__root__:
             result.analysis_basis = analysis_basis.value
@@ -231,25 +243,20 @@ class Statistic(ABC):
 
         if metric in df:
             branch_list = df.branch.unique()
-            reference_branch = experiment.reference_branch
-            if reference_branch and reference_branch not in branch_list:
-                logger.warning(
-                    f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
-                    extra={
-                        "experiment": experiment.normandy_slug,
-                        "metric": metric,
-                        "statistic": self.name(),
-                        "analysis_basis": analysis_basis.value,
-                        "segment": segment,
-                    },
-                )
-            else:
-                if reference_branch is None:
-                    ref_branch_list = branch_list
-                else:
-                    ref_branch_list = [reference_branch]
 
-                for ref_branch in ref_branch_list:
+            for ref_branch in branch_list:
+                if ref_branch not in branch_list:
+                    logger.warning(
+                        f"Branch {ref_branch} not in {branch_list} for {self.name()}.",
+                        extra={
+                            "experiment": experiment.normandy_slug,
+                            "metric": metric,
+                            "statistic": self.name(),
+                            "analysis_basis": analysis_basis.value,
+                            "segment": segment,
+                        },
+                    )
+                else:
                     try:
                         statistic_result_collection.__root__.extend(
                             self.transform(
@@ -277,8 +284,6 @@ class Statistic(ABC):
                                 "segment": segment,
                             },
                         )
-
-                    df = df[df.branch != ref_branch]
 
         return statistic_result_collection
 
@@ -694,9 +699,7 @@ def _make_grid(values: Series, size: int, attempt_geometric: bool) -> MakeGridRe
     message = None
     geometric = attempt_geometric
     if geometric and (start < 0 or stop <= 0):
-        message = (
-            "Refusing to create a geometric grid for a series with negative or all-zero values"
-        )
+        message = "Refusing to create a geometric grid for a series with negative or all-zero values"
         geometric = False
     if geometric and start == 0:
         start = values.drop_duplicates().nsmallest(2).iloc[1]
@@ -755,7 +758,9 @@ class KernelDensityEstimate(Statistic):
                         comparison=None,
                         comparison_to_branch=None,
                         ci_width=None,
-                        point=np.exp(kde.score_samples(np.asarray([0]).reshape(-1, 1))[0]),
+                        point=np.exp(
+                            kde.score_samples(np.asarray([0]).reshape(-1, 1))[0]
+                        ),
                         lower=None,
                         upper=None,
                         analysis_basis=analysis_basis,
