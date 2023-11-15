@@ -135,22 +135,27 @@ class TestStatistics:
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
-        comparison_branches = [(r.comparison_to_branch, r.branch, r.comparison) for r in results]
-        assert (None, "control", None) in comparison_branches
-        assert (None, "foo", None) in comparison_branches
-        assert (None, "treatment", None) in comparison_branches
-        assert ("treatment", "control", "difference") in comparison_branches
-        assert ("treatment", "control", "relative_uplift") in comparison_branches
-        assert ("control", "treatment", "difference") in comparison_branches
-        assert ("control", "treatment", "relative_uplift") in comparison_branches
-        assert ("foo", "control", "difference") in comparison_branches
-        assert ("foo", "control", "relative_uplift") in comparison_branches
-        assert ("control", "foo", "difference") in comparison_branches
-        assert ("control", "foo", "relative_uplift") in comparison_branches
-        assert ("treatment", "foo", "difference") in comparison_branches
-        assert ("treatment", "foo", "relative_uplift") in comparison_branches
-        assert ("foo", "treatment", "difference") in comparison_branches
-        assert ("foo", "treatment", "relative_uplift") in comparison_branches
+        comparison_branches = set((r.comparison_to_branch, r.branch, r.comparison) for r in results)
+        all_comparisons = [
+            (None, "control", None),
+            (None, "foo", None),
+            (None, "treatment", None),
+            ("treatment", "control", "difference"),
+            ("treatment", "control", "relative_uplift"),
+            ("treatment", "foo", "difference"),
+            ("treatment", "foo", "relative_uplift"),
+            ("foo", "control", "difference"),
+            ("foo", "control", "relative_uplift"),
+            ("foo", "treatment", "difference"),
+            ("foo", "treatment", "relative_uplift"),
+            ("control", "treatment", "difference"),
+            ("control", "treatment", "relative_uplift"),
+            ("control", "foo", "difference"),
+            ("control", "foo", "relative_uplift"),
+        ]
+        assert sorted(all_comparisons, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))) == sorted(
+            comparison_branches, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))
+        )
 
     def test_count(self):
         stat = Count()
