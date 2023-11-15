@@ -108,15 +108,7 @@ class TestStatistics:
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
-        comparison_branches = [(r.comparison_to_branch, r.branch, r.comparison) for r in results]
-        assert (None, "control", None) in comparison_branches
-        assert (None, "treatment", None) in comparison_branches
-        assert ("control", "treatment", "difference") in comparison_branches
-        assert ("control", "treatment", "relative_uplift") in comparison_branches
-        assert ("treatment", "control", "difference") in comparison_branches
-        assert ("treatment", "control", "relative_uplift") in comparison_branches
-
-    def test_binomial_no_reference_branch(self, experiments):
+    def test_binomial_pairwise_branch_comparisons(self, experiments):
         stat = Binomial()
         test_data = pd.DataFrame(
             {
@@ -143,7 +135,9 @@ class TestStatistics:
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
-        comparison_branches = [(r.comparison_to_branch, r.branch, r.comparison) for r in results]
+        comparison_branches = [
+            (r.comparison_to_branch, r.branch, r.comparison) for r in results
+        ]
         assert (None, "control", None) in comparison_branches
         assert (None, "foo", None) in comparison_branches
         assert (None, "treatment", None) in comparison_branches
@@ -243,7 +237,9 @@ class TestStatistics:
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
         results = sorted(
-            stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__,
+            stat.transform(
+                wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all"
+            ).__root__,
             key=lambda res: (res.branch, res.parameter),
         )
 
@@ -256,7 +252,9 @@ class TestStatistics:
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__
+        results = stat.transform(
+            wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
         for r in results:
             assert isinstance(r.point, float)
         df = pd.DataFrame([r.dict() for r in results])
@@ -325,18 +323,24 @@ class TestStatistics:
         assert control_result.point == pytest.approx(0.1, rel=1e-5)
 
     def test_population_ratio_non_existing_metrics(self):
-        stat = PopulationRatio(num_samples=10, numerator="non_existing", denominator="non_existing")
+        stat = PopulationRatio(
+            num_samples=10, numerator="non_existing", denominator="non_existing"
+        )
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
         )
 
         with pytest.raises(Exception):
-            stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
+            stat.transform(
+                test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
 
 
 class TestStatisticExport:
     def test_data_schema(self):
-        schema = json.loads((Path(__file__).parent / "data/Statistics_v1.0.json").read_text())
+        schema = json.loads(
+            (Path(__file__).parent / "data/Statistics_v1.0.json").read_text()
+        )
 
         jsonschema.validate([], schema)
 
