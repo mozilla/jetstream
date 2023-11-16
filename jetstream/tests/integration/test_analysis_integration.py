@@ -434,8 +434,8 @@ class TestAnalysisIntegration:
             + "and analysis_basis == 'enrollments' and comparison.isnull()"
         ).set_index("branch")
 
-        assert ratio_by_branch.loc["branch1", "point"] == 0.5
-        assert ratio_by_branch.loc["branch2", "point"] == 0.5
+        assert (ratio_by_branch.loc["branch1", "point"] == 0.5).all()
+        assert (ratio_by_branch.loc["branch2", "point"] == 0.5).all()
 
     def test_no_enrollments(
         self, monkeypatch, client, project_id, static_dataset, temporary_dataset
