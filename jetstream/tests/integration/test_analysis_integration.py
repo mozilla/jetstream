@@ -723,39 +723,39 @@ class TestAnalysisIntegration:
         error_logs = [log for log in logs if log.get("log_level") == "ERROR"]
         error_logs.sort(key=lambda k: (k.get("segment"), k.get("analysis_basis")))
 
-        assert len(error_logs) == 4
+        assert len(error_logs) == 6
         assert (
             "Error while computing statistic bootstrap_mean for metric active_hours"
             in error_logs[0].get("message")
         )
-        assert error_logs[0].get("log_level") == "ERROR"
-        assert error_logs[0].get("experiment") == "test-experiment"
-        assert error_logs[0].get("metric") == "active_hours"
-        assert error_logs[0].get("statistic") == "bootstrap_mean"
-        assert error_logs[0].get("analysis_basis") == "enrollments"
-        assert error_logs[0].get("segment") == "all"
-        assert error_logs[0].get("source") == "jetstream"
+        assert error_logs[0].get("log_level") == error_logs[1].get("log_level") == "ERROR"
+        assert error_logs[0].get("experiment") == error_logs[1].get("experiment") == "test-experiment"
+        assert error_logs[0].get("metric") == error_logs[1].get("metric") == "active_hours"
+        assert error_logs[0].get("statistic") == error_logs[1].get("statistic") == "bootstrap_mean"
+        assert error_logs[0].get("analysis_basis") == error_logs[1].get("analysis_basis") == "enrollments"
+        assert error_logs[0].get("segment") == error_logs[1].get("segment") == "all"
+        assert error_logs[0].get("source") == error_logs[1].get("source") == "jetstream"
 
-        assert error_logs[1].get("log_level") == "ERROR"
-        assert error_logs[1].get("experiment") == "test-experiment"
-        assert error_logs[1].get("metric") == "active_hours"
-        assert error_logs[1].get("statistic") == "bootstrap_mean"
-        assert error_logs[1].get("analysis_basis") == "exposures"
-        assert error_logs[1].get("segment") == "all"
+        assert error_logs[2].get("log_level") == error_logs[3].get("log_level") == "ERROR"
+        assert error_logs[2].get("experiment") == error_logs[3].get("experiment") == "test-experiment"
+        assert error_logs[2].get("metric") == error_logs[3].get("metric") == "active_hours"
+        assert error_logs[2].get("statistic") == error_logs[3].get("statistic") == "bootstrap_mean"
+        assert error_logs[2].get("analysis_basis") == error_logs[3].get("analysis_basis") == "exposures"
+        assert error_logs[2].get("segment") == error_logs[3].get("segment") == "all"
 
-        assert error_logs[2].get("log_level") == "ERROR"
-        assert error_logs[2].get("experiment") == "test-experiment"
-        assert error_logs[2].get("metric") == "active_hours"
-        assert error_logs[2].get("statistic") == "bootstrap_mean"
-        assert error_logs[2].get("analysis_basis") == "enrollments"
-        assert error_logs[2].get("segment") == "regular_user_v3"
+        assert error_logs[4].get("log_level") == "ERROR"
+        assert error_logs[4].get("experiment") == "test-experiment"
+        assert error_logs[4].get("metric") == "active_hours"
+        assert error_logs[4].get("statistic") == "bootstrap_mean"
+        assert error_logs[4].get("analysis_basis") == "enrollments"
+        assert error_logs[4].get("segment") == "regular_user_v3"
 
-        assert error_logs[3].get("log_level") == "ERROR"
-        assert error_logs[3].get("experiment") == "test-experiment"
-        assert error_logs[3].get("metric") == "active_hours"
-        assert error_logs[3].get("statistic") == "bootstrap_mean"
-        assert error_logs[3].get("analysis_basis") == "exposures"
-        assert error_logs[3].get("segment") == "regular_user_v3"
+        assert error_logs[5].get("log_level") == "ERROR"
+        assert error_logs[5].get("experiment") == "test-experiment"
+        assert error_logs[5].get("metric") == "active_hours"
+        assert error_logs[5].get("statistic") == "bootstrap_mean"
+        assert error_logs[5].get("analysis_basis") == "exposures"
+        assert error_logs[5].get("segment") == "regular_user_v3"
 
     # wait for profiling results to land in BigQuery
     # todo: improve this test as it might lead to flakiness
