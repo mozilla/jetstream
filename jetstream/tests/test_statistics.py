@@ -50,10 +50,7 @@ class TestStatistics:
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
         test_data = pd.DataFrame(
-            {
-                "branch": ["control"] * 10 + ["treatment"] * 10,
-                "value": [x / 20 for x in range(20)],
-            }
+            {"branch": ["control"] * 10 + ["treatment"] * 10, "value": [x / 20 for x in range(20)]}
         )
         experiment = Experiment(
             experimenter_slug="test_slug",
@@ -62,10 +59,7 @@ class TestStatistics:
             start_date=dt.datetime.now(),
             end_date=None,
             proposed_enrollment=7,
-            branches=[
-                Branch(slug="control", ratio=1),
-                Branch(slug="treatment", ratio=1),
-            ],
+            branches=[Branch(slug="control", ratio=1), Branch(slug="treatment", ratio=1)],
             normandy_slug="normandy-test-slug",
             reference_branch=None,
             is_high_population=False,
@@ -107,55 +101,6 @@ class TestStatistics:
         difference = [r for r in results if r.comparison == "difference"][0]
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
-
-    def test_binomial_pairwise_branch_comparisons(self, experiments):
-        stat = Binomial()
-        test_data = pd.DataFrame(
-            {
-                "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
-                "value": [False] * 7
-                + [True] * 3
-                + [False] * 5
-                + [True] * 5
-                + [False] * 5
-                + [True] * 5,
-            }
-        )
-        results = stat.apply(
-            test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
-
-        branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
-        assert treatment_result.point < control_result.point
-        assert treatment_result.point - 0.7 < 1e-5
-
-        difference = [r for r in results if r.comparison == "difference"][0]
-        assert difference.point - 0.2 < 1e-5
-        assert difference.lower and difference.upper
-
-        comparison_branches = set((r.comparison_to_branch, r.branch, r.comparison) for r in results)
-        all_comparisons = [
-            (None, "control", None),
-            (None, "foo", None),
-            (None, "treatment", None),
-            ("treatment", "control", "difference"),
-            ("treatment", "control", "relative_uplift"),
-            ("treatment", "foo", "difference"),
-            ("treatment", "foo", "relative_uplift"),
-            ("foo", "control", "difference"),
-            ("foo", "control", "relative_uplift"),
-            ("foo", "treatment", "difference"),
-            ("foo", "treatment", "relative_uplift"),
-            ("control", "treatment", "difference"),
-            ("control", "treatment", "relative_uplift"),
-            ("control", "foo", "difference"),
-            ("control", "foo", "relative_uplift"),
-        ]
-        assert sorted(all_comparisons, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))) == sorted(
-            comparison_branches, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))
-        )
 
     def test_count(self):
         stat = Count()
@@ -202,6 +147,42 @@ class TestStatistics:
         assert all(r.metric == "value" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [15]
         assert [r.point for r in results if r.branch == "control"] == [5]
+
+    def test_binomial_no_reference_branch(self, experiments):
+        stat = Binomial()
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
+                "value": [False] * 7
+                + [True] * 3
+                + [False] * 5
+                + [True] * 5
+                + [False] * 5
+                + [True] * 5,
+            }
+        )
+        results = stat.apply(
+            test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point < control_result.point
+        assert treatment_result.point - 0.7 < 1e-5
+
+        difference = [r for r in results if r.comparison == "difference"][0]
+        assert difference.point - 0.2 < 1e-5
+        assert difference.lower and difference.upper
+
+        comparison_branches = [(r.comparison_to_branch, r.branch, r.comparison) for r in results]
+        assert (None, "control", None) in comparison_branches
+        assert (None, "foo", None) in comparison_branches
+        assert (None, "treatment", None) in comparison_branches
+        assert ("treatment", "control", "difference") in comparison_branches
+        assert ("treatment", "control", "relative_uplift") in comparison_branches
+        assert ("control", "foo", "difference") in comparison_branches
+        assert ("control", "foo", "relative_uplift") in comparison_branches
 
     @pytest.mark.parametrize("geometric", [True, False])
     def test_make_grid_makes_a_grid(self, wine, geometric):
