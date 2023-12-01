@@ -135,6 +135,9 @@ class TestStatistics:
         assert difference.point - 0.2 < 1e-5
         assert difference.lower and difference.upper
 
+        # there should only be 15 results (would be 21 without removing dupes)
+        assert len(results) == 15
+
         comparison_branches = set((r.comparison_to_branch, r.branch, r.comparison) for r in results)
         all_comparisons = [
             (None, "control", None),

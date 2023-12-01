@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 import math
 import numbers
@@ -229,22 +230,26 @@ class Statistic(ABC):
         of statistic results.
         """
 
-        statistic_result_collection = StatisticResultCollection.parse_obj([])
+        # add results to a Set to ensure uniqueness
+        results = set()
 
         if metric in df:
             branch_list = df.branch.unique()
 
             for ref_branch in branch_list:
                 try:
-                    statistic_result_collection.__root__.extend(
-                        self.transform(
-                            df,
-                            metric,
-                            ref_branch,
-                            experiment,
-                            analysis_basis,
-                            segment,
-                        ).__root__
+                    results.update(
+                        [
+                            json.dumps(x.json())
+                            for x in self.transform(
+                                df,
+                                metric,
+                                ref_branch,
+                                experiment,
+                                analysis_basis,
+                                segment,
+                            ).__root__
+                        ]
                     )
                 except Exception as e:
                     logger.exception(
@@ -262,6 +267,11 @@ class Statistic(ABC):
                             "segment": segment,
                         },
                     )
+
+        # parse stringified json results as list of StatisticResults to be returned
+        statistic_result_collection = StatisticResultCollection.parse_obj(
+            [StatisticResult.parse_raw(json.loads(r)) for r in results]
+        )
 
         return statistic_result_collection
 
