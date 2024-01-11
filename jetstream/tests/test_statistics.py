@@ -161,58 +161,6 @@ class TestStatistics:
             comparison_branches, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))
         )
 
-    def test_bootstrap_mean_pairwise_branch_comparisons(self, experiments):
-        stat = BootstrapMean()
-        test_data = pd.DataFrame(
-            {
-                "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
-                "value": [False] * 7
-                + [True] * 3
-                + [False] * 5
-                + [True] * 5
-                + [False] * 5
-                + [True] * 5,
-            }
-        )
-        results = stat.apply(
-            test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
-
-        branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
-        assert treatment_result.point < control_result.point
-        assert treatment_result.point - 0.7 < 1e-5
-
-        difference = [r for r in results if r.comparison == "difference"][0]
-        assert difference.point - 0.2 < 1e-1
-        assert difference.lower and difference.upper
-
-        # there should only be 15 results (would be 21 without removing dupes)
-        assert len(results) == 15
-
-        comparison_branches = set((r.comparison_to_branch, r.branch, r.comparison) for r in results)
-        all_comparisons = [
-            (None, "control", None),
-            (None, "foo", None),
-            (None, "treatment", None),
-            ("treatment", "control", "difference"),
-            ("treatment", "control", "relative_uplift"),
-            ("treatment", "foo", "difference"),
-            ("treatment", "foo", "relative_uplift"),
-            ("foo", "control", "difference"),
-            ("foo", "control", "relative_uplift"),
-            ("foo", "treatment", "difference"),
-            ("foo", "treatment", "relative_uplift"),
-            ("control", "treatment", "difference"),
-            ("control", "treatment", "relative_uplift"),
-            ("control", "foo", "difference"),
-            ("control", "foo", "relative_uplift"),
-        ]
-        assert sorted(all_comparisons, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))) == sorted(
-            comparison_branches, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))
-        )
-
     def test_pairwise_branch_comparison_row_counts(self, experiments):
         # tests if each statistic outputs the correct number of rows
         # under pairwise comparisons. Several have 3 branches * 5 results = 15 rows
