@@ -230,27 +230,36 @@ class Statistic(ABC):
         of statistic results.
         """
 
-        # add results to a Set to ensure uniqueness
-        results = set()
+        # add results to a dict to ensure uniqueness
+        results = dict()
 
         if metric in df:
             branch_list = df.branch.unique()
 
             for ref_branch in branch_list:
                 try:
-                    results.update(
-                        [
-                            json.dumps(x.json())
-                            for x in self.transform(
-                                df,
-                                metric,
-                                ref_branch,
-                                experiment,
-                                analysis_basis,
-                                segment,
-                            ).__root__
-                        ]
-                    )
+                    for x in self.transform(
+                        df,
+                        metric,
+                        ref_branch,
+                        experiment,
+                        analysis_basis,
+                        segment,
+                    ).__root__:
+                        results[
+                            (
+                                x.metric,
+                                x.statistic,
+                                x.branch,
+                                x.parameter,
+                                x.comparison,
+                                x.comparison_to_branch,
+                                x.ci_width,
+                                x.segment,
+                                x.analysis_basis,
+                            )
+                        ] = json.dumps(x.json())
+
                 except Exception as e:
                     logger.exception(
                         f"Error while computing statistic {self.name()} "
@@ -270,7 +279,7 @@ class Statistic(ABC):
 
         # parse stringified json results as list of StatisticResults to be returned
         statistic_result_collection = StatisticResultCollection.parse_obj(
-            [StatisticResult.parse_raw(json.loads(r)) for r in results]
+            [StatisticResult.parse_raw(json.loads(r)) for r in results.values()]
         )
 
         return statistic_result_collection
