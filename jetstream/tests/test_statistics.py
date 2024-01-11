@@ -14,6 +14,7 @@ from jetstream.statistics import (
     Binomial,
     BootstrapMean,
     Count,
+    Deciles,
     EmpiricalCDF,
     KernelDensityEstimate,
     PerClientDAUImpact,
@@ -211,6 +212,37 @@ class TestStatistics:
         assert sorted(all_comparisons, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))) == sorted(
             comparison_branches, key=lambda c: (str(c[0]), str(c[1]), str(c[2]))
         )
+
+    def test_pairwise_branch_comparison_row_counts(self, experiments):
+        # tests if each statistic outputs the correct number of rows
+        # under pairwise comparisons. Several have 3 branches * 5 results = 15 rows
+        # (one individual, and 4 comparative: an absolute & relative comparison
+        # for each of the other 2 branches), but some have more
+        expectations = {
+            Binomial: 3 * 5,
+            BootstrapMean: 3 * 5,
+            Deciles: 3 * 5 * 9,  # 9 measurements, one for each decile
+            EmpiricalCDF: 3 * 256,  # no comparative, default grid size of 256
+            KernelDensityEstimate: 3 * 256,  # no comparative, default grid size of 256
+            Sum: 3,  # no comparative
+        }
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
+                "value": [False] * 7
+                + [True] * 3
+                + [False] * 5
+                + [True] * 5
+                + [False] * 5
+                + [True] * 5,
+            }
+        )
+        for stat_class, expected_count in expectations.items():
+            stat = stat_class()
+            results = stat.apply(
+                test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
+            ).__root__
+            assert len(results) == expected_count
 
     def test_count(self):
         stat = Count()
