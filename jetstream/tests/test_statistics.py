@@ -109,7 +109,7 @@ class TestStatistics:
         assert difference.lower and difference.upper
 
     def test_binomial_pairwise_branch_comparisons(self, experiments):
-        stat = Binomial()
+        stat = BootstrapMean()
         test_data = pd.DataFrame(
             {
                 "branch": ["treatment"] * 10 + ["control"] * 10 + ["foo"] * 10,
