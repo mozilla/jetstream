@@ -231,6 +231,8 @@ class Statistic(ABC):
         """
 
         # add results to a dict to ensure uniqueness
+        # keyed by result metadata, so at most one
+        # result per unique metadata
         results = dict()
 
         if metric in df:
