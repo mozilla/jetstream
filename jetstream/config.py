@@ -71,7 +71,11 @@ class _ConfigLoader:
         config_collection = ConfigCollection.from_github_repos(
             repo_urls=repo_urls, is_private=is_private
         )
-        self.configs.merge(config_collection)
+
+        if self.config_collection is not None:
+            self.configs.merge(config_collection)
+        else:
+            self.config_collection = config_collection
         return self
 
     def updated_configs(self, bq_project: str, bq_dataset: str) -> List[Config]:
