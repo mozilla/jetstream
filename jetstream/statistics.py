@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 import math
 import numbers
@@ -42,7 +43,9 @@ class Summary:
 
     @classmethod
     def from_config(
-        cls, summary_config: parser_metric.Summary, analysis_period_length: Optional[int]
+        cls,
+        summary_config: parser_metric.Summary,
+        analysis_period_length: Optional[int],
     ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
@@ -227,58 +230,59 @@ class Statistic(ABC):
         of statistic results.
         """
 
-        statistic_result_collection = StatisticResultCollection.parse_obj([])
+        # add results to a dict to ensure uniqueness
+        # keyed by result metadata, so at most one
+        # result per unique metadata
+        results = dict()
 
         if metric in df:
             branch_list = df.branch.unique()
-            reference_branch = experiment.reference_branch
-            if reference_branch and reference_branch not in branch_list:
-                logger.warning(
-                    f"Branch {reference_branch} not in {branch_list} for {self.name()}.",
-                    extra={
-                        "experiment": experiment.normandy_slug,
-                        "metric": metric,
-                        "statistic": self.name(),
-                        "analysis_basis": analysis_basis.value,
-                        "segment": segment,
-                    },
-                )
-            else:
-                if reference_branch is None:
-                    ref_branch_list = branch_list
-                else:
-                    ref_branch_list = [reference_branch]
 
-                for ref_branch in ref_branch_list:
-                    try:
-                        statistic_result_collection.__root__.extend(
-                            self.transform(
-                                df,
-                                metric,
-                                ref_branch,
-                                experiment,
-                                analysis_basis,
-                                segment,
-                            ).__root__
-                        )
-                    except Exception as e:
-                        logger.exception(
+            for ref_branch in branch_list:
+                try:
+                    for x in self.transform(
+                        df,
+                        metric,
+                        ref_branch,
+                        experiment,
+                        analysis_basis,
+                        segment,
+                    ).__root__:
+                        results[
+                            (
+                                x.metric,
+                                x.statistic,
+                                x.branch,
+                                x.parameter,
+                                x.comparison,
+                                x.comparison_to_branch,
+                                x.ci_width,
+                                x.segment,
+                                x.analysis_basis,
+                            )
+                        ] = json.dumps(x.json())
+
+                except Exception as e:
+                    logger.exception(
+                        f"Error while computing statistic {self.name()} "
+                        + f"for metric {metric}: {e}",
+                        exc_info=StatisticComputationException(
                             f"Error while computing statistic {self.name()} "
-                            + f"for metric {metric}: {e}",
-                            exc_info=StatisticComputationException(
-                                f"Error while computing statistic {self.name()} "
-                                + f"for metric {metric}: {e}"
-                            ),
-                            extra={
-                                "experiment": experiment.normandy_slug,
-                                "metric": metric,
-                                "statistic": self.name(),
-                                "analysis_basis": analysis_basis.value,
-                                "segment": segment,
-                            },
-                        )
+                            + f"for metric {metric}: {e}"
+                        ),
+                        extra={
+                            "experiment": experiment.normandy_slug,
+                            "metric": metric,
+                            "statistic": self.name(),
+                            "analysis_basis": analysis_basis.value,
+                            "segment": segment,
+                        },
+                    )
 
-                    df = df[df.branch != ref_branch]
+        # parse stringified json results as list of StatisticResults to be returned
+        statistic_result_collection = StatisticResultCollection.parse_obj(
+            [StatisticResult.parse_raw(json.loads(r)) for r in results.values()]
+        )
 
         return statistic_result_collection
 
