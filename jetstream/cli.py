@@ -74,15 +74,13 @@ class ExecutorStrategy(Protocol):
 
     project_id: str
 
-    def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None:
-        ...
+    def __init__(self, project_id: str, dataset_id: str, *args, **kwargs) -> None: ...
 
     def execute(
         self,
         worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
         configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
 
 @attr.s(auto_attribs=True)
@@ -139,9 +137,9 @@ class ArgoExecutorStrategy:
             {
                 "slug": slug,
                 "dates": dates,
-                "image_hash": image_version
-                if image_version
-                else artifact_manager.image_for_slug(slug),
+                "image_hash": (
+                    image_version if image_version else artifact_manager.image_for_slug(slug)
+                ),
             }
             for slug, dates in experiments_config.items()
         ]
@@ -160,24 +158,36 @@ class ArgoExecutorStrategy:
                 "project_id": self.project_id,
                 "dataset_id": self.dataset_id,
                 "bucket": self.bucket,
-                "analysis_periods_day": "day"
-                if AnalysisPeriod.DAY in self.analysis_periods
-                else analysis_period_default.value,
-                "analysis_periods_week": "week"
-                if AnalysisPeriod.WEEK in self.analysis_periods
-                else analysis_period_default.value,
-                "analysis_periods_days28": "days28"
-                if AnalysisPeriod.DAYS_28 in self.analysis_periods
-                else analysis_period_default.value,
-                "analysis_periods_overall": "overall"
-                if AnalysisPeriod.OVERALL in self.analysis_periods
-                else analysis_period_default.value,
-                "analysis_periods_week_preenrollment": "week_preenrollment"
-                if AnalysisPeriod.WEEK_PREENROLLMENT in self.analysis_periods
-                else analysis_period_default.value,
-                "analysis_periods_days28_preenrollment": "days28_preenrollment"
-                if AnalysisPeriod.DAYS_28_PREENROLLMENT in self.analysis_periods
-                else analysis_period_default.value,
+                "analysis_periods_day": (
+                    "day"
+                    if AnalysisPeriod.DAY in self.analysis_periods
+                    else analysis_period_default.value
+                ),
+                "analysis_periods_week": (
+                    "week"
+                    if AnalysisPeriod.WEEK in self.analysis_periods
+                    else analysis_period_default.value
+                ),
+                "analysis_periods_days28": (
+                    "days28"
+                    if AnalysisPeriod.DAYS_28 in self.analysis_periods
+                    else analysis_period_default.value
+                ),
+                "analysis_periods_overall": (
+                    "overall"
+                    if AnalysisPeriod.OVERALL in self.analysis_periods
+                    else analysis_period_default.value
+                ),
+                "analysis_periods_week_preenrollment": (
+                    "week_preenrollment"
+                    if AnalysisPeriod.WEEK_PREENROLLMENT in self.analysis_periods
+                    else analysis_period_default.value
+                ),
+                "analysis_periods_days28_preenrollment": (
+                    "days28_preenrollment"
+                    if AnalysisPeriod.DAYS_28_PREENROLLMENT in self.analysis_periods
+                    else analysis_period_default.value
+                ),
                 "image": self.image,
             },
             monitor_status=self.monitor_status,
@@ -783,9 +793,9 @@ def run(
         bucket=bucket,
         date=date,
         experiment_slugs=experiment_slug if experiment_slug else All,
-        configuration_map={experiment_slug[0]: config_file}
-        if experiment_slug and config_file
-        else {},
+        configuration_map=(
+            {experiment_slug[0]: config_file} if experiment_slug and config_file else {}
+        ),
         recreate_enrollments=recreate_enrollments,
         sql_output_dir=sql_output_dir,
     )

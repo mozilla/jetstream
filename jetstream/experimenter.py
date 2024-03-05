@@ -145,13 +145,15 @@ class ExperimentV6:
             normandy_slug=self.slug,
             experimenter_slug=None,
             type="v6",
-            status="Live"
-            if (
-                self.endDate
-                and pytz.utc.localize(self.endDate) >= pytz.utc.localize(dt.datetime.now())
-            )
-            or self.endDate is None
-            else "Complete",
+            status=(
+                "Live"
+                if (
+                    self.endDate
+                    and pytz.utc.localize(self.endDate) >= pytz.utc.localize(dt.datetime.now())
+                )
+                or self.endDate is None
+                else "Complete"
+            ),
             start_date=pytz.utc.localize(self.startDate) if self.startDate else None,
             end_date=pytz.utc.localize(self.endDate) if self.endDate else None,
             proposed_enrollment=self.proposedEnrollment,
@@ -161,9 +163,9 @@ class ExperimentV6:
             app_name=self.appName,
             app_id=self.appId,
             outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
-            enrollment_end_date=pytz.utc.localize(self.enrollmentEndDate)
-            if self.enrollmentEndDate
-            else None,
+            enrollment_end_date=(
+                pytz.utc.localize(self.enrollmentEndDate) if self.enrollmentEndDate else None
+            ),
             is_enrollment_paused=bool(self.isEnrollmentPaused),
             is_rollout=self.isRollout,
             bucket_config=self.bucketConfig,

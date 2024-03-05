@@ -706,9 +706,11 @@ class Analysis:
                     "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
-                    self.config.experiment.start_date.strftime("%Y-%m-%d")
-                    if self.config.experiment.start_date is not None
-                    else "None",
+                    (
+                        self.config.experiment.start_date.strftime("%Y-%m-%d")
+                        if self.config.experiment.start_date is not None
+                        else "None"
+                    ),
                     current_date.strftime("%Y-%m-%d"),
                 )
                 continue
