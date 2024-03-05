@@ -137,11 +137,11 @@ class Analysis:
                 return None
 
             if period == AnalysisPeriod.WEEK_PREENROLLMENT:
-                analysis_start_days = -7 - 1
-                analysis_length_dates = 7 + 1
+                analysis_start_days = -7
+                analysis_length_dates = 7
             else:
-                analysis_start_days = -7 * 4 - 1
-                analysis_length_dates = 28 + 1
+                analysis_start_days = -7 * 4
+                analysis_length_dates = 28
 
             out = TimeLimits.for_single_analysis_window(
                 last_date_full_data=prior_date_str,
