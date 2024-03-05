@@ -84,7 +84,7 @@ google-auth==2.28.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.11.2
+google-cloud-artifact-registry==1.11.3
     # via mozilla-jetstream
 google-cloud-bigquery==3.18.0
     # via
@@ -161,7 +161,6 @@ mccabe==0.7.0
     # via flake8
 mozanalysis==2023.11.3
     # via mozilla-jetstream
-    # via -r -
 mozilla-metric-config-parser==2024.3.1
     # via
     #   mozanalysis
@@ -255,7 +254,7 @@ pyflakes==3.2.0
     # via flake8
 pyparsing==3.1.1
     # via matplotlib
-pytest==8.0.2
+pytest==7.4.4
     # via
     #   mozilla-jetstream
     #   pytest-black

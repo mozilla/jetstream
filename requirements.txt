@@ -398,9 +398,9 @@ google-auth==2.28.1 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.11.2 \
-    --hash=sha256:76ef82351e867442a7b9f2b6175da63974ca1a42bdc01b795ddfb1565eb3fa5f \
-    --hash=sha256:e40492ecbb7a17b75606173cd9b5bed050520c278f6b1d9817986bf8100669bb
+google-cloud-artifact-registry==1.11.3 \
+    --hash=sha256:8337161ecb918e389dfa3858ec133572c21eabd564404c3c5a7125af1e85c3a9 \
+    --hash=sha256:c2c49e15bb591d65dea22c82da55148c5134f71919baef8eb4d35be1d1cb20cd
     # via -r requirements.in
 google-cloud-bigquery==3.18.0 \
     --hash=sha256:3520552075502c69710d37b1e9600c84e6974ad271914677d16bfafa502857fb \
@@ -1334,9 +1334,9 @@ pyparsing==3.1.1 \
     # via
     #   -r requirements.in
     #   matplotlib
-pytest==8.0.2 \
-    --hash=sha256:d4051d623a2e0b7e51960ba963193b09ce6daeb9759a451844a21e4ddedfc1bd \
-    --hash=sha256:edfaaef32ce5172d5466b5127b42e0d6d35ebbe4453f0e3505d96afd93f6b096
+pytest==7.4.4 \
+    --hash=sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280 \
+    --hash=sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8
     # via
     #   -r requirements.in
     #   pytest-black
