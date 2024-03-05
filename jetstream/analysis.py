@@ -135,8 +135,7 @@ class Analysis:
 
             if enrollment_end_date != current_date:
                 return None
-            else:
-                print("FOUND IT!")
+
             if period == AnalysisPeriod.WEEK_PREENROLLMENT:
                 analysis_start_days = -7 - 1
                 analysis_length_dates = 7 + 1
@@ -150,7 +149,6 @@ class Analysis:
                 analysis_length_dates=analysis_length_dates,
                 **time_limits_args,
             )
-            print(out)
             return out
 
         assert period == AnalysisPeriod.OVERALL
@@ -249,7 +247,6 @@ class Analysis:
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
         """
-        print("calculating metrics")
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]
         # TODO: Add this functionality to TimeLimits.
@@ -260,11 +257,9 @@ class Analysis:
                 time_limits.first_enrollment_date, last_analysis_window.start
             ),
         )
-        print(last_window_limits)
+
         res_table_name = self._table_name(period.value, window, analysis_basis=analysis_basis)
-        print(res_table_name)
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
-        print(normalized_slug)
 
         if dry_run:
             logger.info(
@@ -308,7 +303,7 @@ class Analysis:
                 analysis_basis,
                 exposure_signal,
             )
-            print(metrics_sql)
+
             results = self.bigquery.execute(metrics_sql, res_table_name)
             logger.info(
                 f"Metric query cost: {results.total_bytes_billed * COST_PER_BYTE}",
@@ -724,7 +719,6 @@ class Analysis:
             analysis_bases = []
 
             for m in self.config.metrics[period]:
-                print(m)
                 for analysis_basis in m.metric.analysis_bases:
                     analysis_bases.append(analysis_basis)
 
