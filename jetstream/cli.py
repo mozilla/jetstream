@@ -103,6 +103,8 @@ class ArgoExecutorStrategy:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
+        AnalysisPeriod.WEEK_PREENROLLMENT,
+        AnalysisPeriod.DAYS_28_PREENROLLMENT,
     ]
     image: str = "jetstream"
     image_version: Optional[str] = None
@@ -169,6 +171,12 @@ class ArgoExecutorStrategy:
                 else analysis_period_default.value,
                 "analysis_periods_overall": "overall"
                 if AnalysisPeriod.OVERALL in self.analysis_periods
+                else analysis_period_default.value,
+                "analysis_periods_week_preenrollment": "week_preenrollment"
+                if AnalysisPeriod.WEEK_PREENROLLMENT in self.analysis_periods
+                else analysis_period_default.value,
+                "analysis_periods_days28_preenrollment": "days28_preenrollment"
+                if AnalysisPeriod.DAYS_28_PREENROLLMENT in self.analysis_periods
                 else analysis_period_default.value,
                 "image": self.image,
             },

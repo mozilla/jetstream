@@ -133,12 +133,7 @@ class Analysis:
                 days=dates_enrollment
             )
 
-            if enrollment_end_date.strftime("%Y-%m-%d") != prior_date.date().strftime("%Y-%m-%d"):
-                print(enrollment_end_date)
-                print(prior_date)
-                print(
-                    f'enrollment end date {enrollment_end_date.strftime("%Y-%m-%d")} is not yesterday {prior_date.date().strftime("%Y-%m-%d")}'
-                )
+            if enrollment_end_date != current_date:
                 return None
             else:
                 print("FOUND IT!")
