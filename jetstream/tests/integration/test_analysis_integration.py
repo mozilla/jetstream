@@ -255,7 +255,7 @@ class TestAnalysisIntegration:
                 "num_enrollment_events": 1,
                 "analysis_window_start": -7,
                 "analysis_window_end": -1,
-                "active_hours": 0.1,
+                "active_hours": 2.8,
             },
         ]
 
