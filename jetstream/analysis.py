@@ -65,6 +65,8 @@ class Analysis:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
+        AnalysisPeriod.WEEK_PREENROLLMENT,
+        AnalysisPeriod.DAYS_28_PREENROLLMENT,
     ]
     sql_output_dir: Optional[str] = None
 
@@ -93,7 +95,11 @@ class Analysis:
             "num_dates_enrollment": dates_enrollment,
         }
 
-        if period != AnalysisPeriod.OVERALL:
+        if period not in [
+            AnalysisPeriod.OVERALL,
+            AnalysisPeriod.WEEK_PREENROLLMENT,
+            AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        ]:
             try:
                 current_time_limits = TimeLimits.for_ts(
                     last_date_full_data=current_date_str,
@@ -121,6 +127,30 @@ class Analysis:
                 return None
 
             return current_time_limits
+
+        elif period in [AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
+            enrollment_end_date = self.config.experiment.start_date + timedelta(
+                days=dates_enrollment
+            )
+
+            if enrollment_end_date != current_date:
+                return None
+
+            if period == AnalysisPeriod.WEEK_PREENROLLMENT:
+                analysis_start_days = -7
+                analysis_length_dates = 7
+            elif period == AnalysisPeriod.DAYS_28_PREENROLLMENT:
+                analysis_start_days = -7 * 4
+                analysis_length_dates = 28
+            else:
+                return None
+
+            return TimeLimits.for_single_analysis_window(
+                last_date_full_data=prior_date_str,
+                analysis_start_days=analysis_start_days,
+                analysis_length_dates=analysis_length_dates,
+                **time_limits_args,
+            )
 
         assert period == AnalysisPeriod.OVERALL
         if (
@@ -669,12 +699,15 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready [START: %s]",
+                    "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
-                    self.config.experiment.start_date.strftime("%Y-%m-%d")
-                    if self.config.experiment.start_date is not None
-                    else "None",
+                    (
+                        self.config.experiment.start_date.strftime("%Y-%m-%d")
+                        if self.config.experiment.start_date is not None
+                        else "None"
+                    ),
+                    current_date.strftime("%Y-%m-%d"),
                 )
                 continue
 

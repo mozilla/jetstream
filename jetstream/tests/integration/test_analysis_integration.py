@@ -190,6 +190,81 @@ class TestAnalysisIntegration:
             is not None
         )
 
+    def test_metrics_preenrollment(
+        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+    ):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=12,
+            is_enrollment_paused=True,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+        )
+
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+            analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        )
+
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {AnalysisPeriod.WEEK_PREENROLLMENT: [Summary(test_active_hours, stat)]}
+
+        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+
+        query_job = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_preenrollment_1`
+            ORDER BY enrollment_date DESC
+        """
+        )
+
+        expected_metrics_results = [
+            {
+                "client_id": "bbbb",
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": -7,
+                "analysis_window_end": -1,
+                "active_hours": 0.2,
+            },
+            {
+                "client_id": "aaaa",
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": -7,
+                "analysis_window_end": -1,
+                "active_hours": 2.8,
+            },
+        ]
+
+        r = query_job.result()
+
+        for i, row in enumerate(r):
+            for k, v in expected_metrics_results[i].items():
+                assert row[k] == v
+
     def test_metrics_with_exposure(
         self, monkeypatch, client, project_id, static_dataset, temporary_dataset
     ):

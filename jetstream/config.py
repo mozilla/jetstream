@@ -205,9 +205,11 @@ class _ConfigLoader:
             from_expression=data_source_definition.from_expression,
             client_id_column=data_source_definition.client_id_column,
             submission_date_column=data_source_definition.submission_date_column,
-            experiments_column_type=None
-            if data_source_definition.experiments_column_type == "none"
-            else data_source_definition.experiments_column_type,
+            experiments_column_type=(
+                None
+                if data_source_definition.experiments_column_type == "none"
+                else data_source_definition.experiments_column_type
+            ),
             default_dataset=data_source_definition.default_dataset,
         )
 

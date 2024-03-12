@@ -53,9 +53,11 @@ class ExperimentMetadata(Metadata):
                 friendly_name=external_outcome.spec.friendly_name,
                 description=external_outcome.spec.description,
                 metrics=[m for m, _ in external_outcome.spec.metrics.items()],
-                default_metrics=[m.name for m in external_outcome.spec.default_metrics]
-                if external_outcome.spec.default_metrics
-                else [],
+                default_metrics=(
+                    [m.name for m in external_outcome.spec.default_metrics]
+                    if external_outcome.spec.default_metrics
+                    else []
+                ),
                 commit_hash=external_outcome.commit_hash,
             )
             for external_outcome in outcomes
@@ -66,22 +68,30 @@ class ExperimentMetadata(Metadata):
         external_config = None
         if config.experiment.has_external_config_overrides():
             external_config = ExternalConfigMetadata(
-                reference_branch=config.experiment.reference_branch
-                if config.experiment.reference_branch
-                != config.experiment.experiment.reference_branch
-                else None,
-                end_date=config.experiment.end_date.date()
-                if config.experiment.end_date is not None
-                and config.experiment.end_date != config.experiment.experiment.end_date
-                else None,
-                start_date=config.experiment.start_date.date()
-                if config.experiment.start_date is not None
-                and config.experiment.start_date != config.experiment.experiment.start_date
-                else None,
-                enrollment_period=config.experiment.enrollment_period
-                if config.experiment.enrollment_period
-                != config.experiment.experiment.proposed_enrollment
-                else None,
+                reference_branch=(
+                    config.experiment.reference_branch
+                    if config.experiment.reference_branch
+                    != config.experiment.experiment.reference_branch
+                    else None
+                ),
+                end_date=(
+                    config.experiment.end_date.date()
+                    if config.experiment.end_date is not None
+                    and config.experiment.end_date != config.experiment.experiment.end_date
+                    else None
+                ),
+                start_date=(
+                    config.experiment.start_date.date()
+                    if config.experiment.start_date is not None
+                    and config.experiment.start_date != config.experiment.experiment.start_date
+                    else None
+                ),
+                enrollment_period=(
+                    config.experiment.enrollment_period
+                    if config.experiment.enrollment_period
+                    != config.experiment.experiment.proposed_enrollment
+                    else None
+                ),
                 skip=config.experiment.skip,
                 url=METRIC_HUB_REPO
                 + "/blob/main/jetstream/"

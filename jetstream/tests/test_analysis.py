@@ -45,6 +45,14 @@ def test_get_timelimits_if_ready(experiments):
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(7)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK_PREENROLLMENT, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAYS_28_PREENROLLMENT, date) is None
+
+    date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(8)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK_PREENROLLMENT, date)
+    assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAYS_28_PREENROLLMENT, date)
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(days=13)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)

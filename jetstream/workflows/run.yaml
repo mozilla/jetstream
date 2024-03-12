@@ -97,7 +97,9 @@ spec:
         "--analysis_periods={{workflow.parameters.analysis_periods_day}}",
         "--analysis_periods={{workflow.parameters.analysis_periods_week}}",
         "--analysis_periods={{workflow.parameters.analysis_periods_days28}}",
-        "--analysis_periods={{workflow.parameters.analysis_periods_overall}}"
+        "--analysis_periods={{workflow.parameters.analysis_periods_overall}}",
+        "--analysis_periods={{workflow.parameters.analysis_periods_week_preenrollment}}",
+        "--analysis_periods={{workflow.parameters.analysis_periods_days28_preenrollment}}"
       ]
       resources:
         requests:
