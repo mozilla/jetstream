@@ -139,17 +139,18 @@ class Analysis:
             if period == AnalysisPeriod.WEEK_PREENROLLMENT:
                 analysis_start_days = -7
                 analysis_length_dates = 7
-            else:
+            elif period == AnalysisPeriod.DAYS_28_PREENROLLMENT:
                 analysis_start_days = -7 * 4
                 analysis_length_dates = 28
+            else:
+                return None
 
-            out = TimeLimits.for_single_analysis_window(
+            return TimeLimits.for_single_analysis_window(
                 last_date_full_data=prior_date_str,
                 analysis_start_days=analysis_start_days,
                 analysis_length_dates=analysis_length_dates,
                 **time_limits_args,
             )
-            return out
 
         assert period == AnalysisPeriod.OVERALL
         if (
