@@ -327,7 +327,7 @@ class TestStatistics:
 
     def test_type_conversions(self):
         df = pd.array([1, 2, np.nan], dtype="Int64")
-        
+
         np.isnan(np.array(df)).any()
 
         d = np.array(df.to_numpy(dtype="float", na_value=np.nan))
