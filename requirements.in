@@ -200,7 +200,7 @@ packaging==24.0
     #   matplotlib
     #   pytest
     #   statsmodels
-pandas==2.2.1
+pandas==2.1.4
     # via
     #   db-dtypes
     #   mozanalysis
