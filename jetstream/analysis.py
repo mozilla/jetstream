@@ -380,7 +380,6 @@ class Analysis:
 
         return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
-    @cache
     def get_contradictory_branch_cols(self, metrics_table_name: str) -> list[str]:
         query = dedent(
             f"""
@@ -404,17 +403,20 @@ class Analysis:
         analysis_basis: AnalysisBasis,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
+        
+        contradictory_cols = self.get_contradictory_branch_cols(metrics_table_name)
 
         query = self._create_subset_metric_table_query(
-            metrics_table_name, segment, metric, analysis_basis
+            metrics_table_name, segment, metric, analysis_basis, contradictory_cols
         )
 
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
 
+    @staticmethod
     def _create_subset_metric_table_query(
-        self, metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis, contradictory_cols: list[str]
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
         metric_names = []
@@ -441,12 +443,12 @@ class Analysis:
             SELECT *
             FROM {metrics_table_name}
             INNER JOIN non_dupes
+            USING(client_id)            
             WHERE num_enrollment_events = 1  
-            USING(client_id)
         )
 
         SELECT branch, {', '.join(metric_names + empty_metric_names)}
-        FROM deduped
+        FROM cleaned
         WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
         """
         )
@@ -470,7 +472,6 @@ class Analysis:
             )
             query += segment_filter
 
-        contradictory_cols = self.get_contradictory_branch_cols()
         for col in contradictory_cols:
             col_filter = dedent(
                 f"""
@@ -478,6 +479,7 @@ class Analysis:
                 """
             )
             query += col_filter
+
         return query
 
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
