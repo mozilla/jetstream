@@ -390,7 +390,6 @@ class AnalysisExecutor:
             return spec.resolve(experiment_config, config_collection)
 
         with ThreadPool() as pool:
-            configs = []
             results = []
             for experiment in experiments:
                 results.append(pool.apply_async(_load_experiment_config, args=(experiment,)))
