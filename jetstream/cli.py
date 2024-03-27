@@ -390,7 +390,19 @@ class AnalysisExecutor:
             return spec.resolve(experiment_config, config_collection)
 
         with ThreadPool() as pool:
-            configs = pool.map(_load_experiment_config, experiments)
+            # this is the same functionality as pool.map except we can catch and log
+            # errors without failing, and continue execution for successful experiments
+            results = []
+            for experiment in experiments:
+                results.append(pool.apply_async(_load_experiment_config, args=(experiment,)))
+
+            for result in results:
+                try:
+                    configs.append(result.get())
+                except ValueError as e:
+                    logger.exception(
+                        str(e), exc_info=e, extra={"experiment": experiment.normandy_slug}
+                    )
 
         return configs
 
