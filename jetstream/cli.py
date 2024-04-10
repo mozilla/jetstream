@@ -101,8 +101,8 @@ class ArgoExecutorStrategy:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
-        AnalysisPeriod.WEEK_PREENROLLMENT,
-        AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        AnalysisPeriod.PREENROLLMENT_DAYS_28,
     ]
     image: str = "jetstream"
     image_version: Optional[str] = None
@@ -178,14 +178,14 @@ class ArgoExecutorStrategy:
                     if AnalysisPeriod.OVERALL in self.analysis_periods
                     else analysis_period_default.value
                 ),
-                "analysis_periods_week_preenrollment": (
-                    "week_preenrollment"
-                    if AnalysisPeriod.WEEK_PREENROLLMENT in self.analysis_periods
+                "analysis_periods_preenrollment_week": (
+                    "preenrollment_week"
+                    if AnalysisPeriod.PREENROLLMENT_WEEK in self.analysis_periods
                     else analysis_period_default.value
                 ),
-                "analysis_periods_days28_preenrollment": (
-                    "days28_preenrollment"
-                    if AnalysisPeriod.DAYS_28_PREENROLLMENT in self.analysis_periods
+                "analysis_periods_preenrollment_days28": (
+                    "preenrollment_days28"
+                    if AnalysisPeriod.PREENROLLMENT_DAYS_28 in self.analysis_periods
                     else analysis_period_default.value
                 ),
                 "image": self.image,
@@ -212,8 +212,8 @@ class SerialExecutorStrategy:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
-        AnalysisPeriod.WEEK_PREENROLLMENT,
-        AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        AnalysisPeriod.PREENROLLMENT_DAYS_28,
     ]
     sql_output_dir: Optional[str] = None
 
@@ -739,8 +739,8 @@ def analysis_periods_option(
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
-        AnalysisPeriod.WEEK_PREENROLLMENT,
-        AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        AnalysisPeriod.PREENROLLMENT_DAYS_28,
     ]
 ):
     return click.option(
