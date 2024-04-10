@@ -178,13 +178,13 @@ class ArgoExecutorStrategy:
                     if AnalysisPeriod.OVERALL in self.analysis_periods
                     else analysis_period_default.value
                 ),
-                "analysis_periods_week_preenrollment": (
-                    "week_preenrollment"
+                "analysis_periods_preenrollment_week": (
+                    "preenrollment_week"
                     if AnalysisPeriod.PREENROLLMENT_WEEK in self.analysis_periods
                     else analysis_period_default.value
                 ),
-                "analysis_periods_days28_preenrollment": (
-                    "days28_preenrollment"
+                "analysis_periods_preenrollment_days28": (
+                    "preenrollment_days28"
                     if AnalysisPeriod.PREENROLLMENT_DAYS_28 in self.analysis_periods
                     else analysis_period_default.value
                 ),

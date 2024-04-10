@@ -233,7 +233,7 @@ class TestAnalysisIntegration:
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_preenrollment_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_preenrollment_week_1`
             ORDER BY enrollment_date DESC
         """
         )
