@@ -575,8 +575,8 @@ class TestSerialExecutorStrategy:
                 AnalysisPeriod.WEEK,
                 AnalysisPeriod.DAYS_28,
                 AnalysisPeriod.OVERALL,
-                AnalysisPeriod.WEEK_PREENROLLMENT,
-                AnalysisPeriod.DAYS_28_PREENROLLMENT,
+                AnalysisPeriod.PREENROLLMENT_WEEK,
+                AnalysisPeriod.PREENROLLMENT_DAYS_28,
             ],
             None,
         )
@@ -615,8 +615,8 @@ class TestArgoExecutorStrategy:
                         AnalysisPeriod.WEEK,
                         AnalysisPeriod.DAYS_28,
                         AnalysisPeriod.OVERALL,
-                        AnalysisPeriod.WEEK_PREENROLLMENT,
-                        AnalysisPeriod.DAYS_28_PREENROLLMENT,
+                        AnalysisPeriod.PREENROLLMENT_WEEK,
+                        AnalysisPeriod.PREENROLLMENT_DAYS_28,
                     ],
                 )
                 run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
@@ -677,8 +677,8 @@ class TestArgoExecutorStrategy:
                     AnalysisPeriod.WEEK,
                     AnalysisPeriod.DAYS_28,
                     AnalysisPeriod.OVERALL,
-                    AnalysisPeriod.WEEK_PREENROLLMENT,
-                    AnalysisPeriod.DAYS_28_PREENROLLMENT,
+                    AnalysisPeriod.PREENROLLMENT_WEEK,
+                    AnalysisPeriod.PREENROLLMENT_DAYS_28,
                 ],
                 image="unrelated",
                 image_version="latest",

@@ -225,7 +225,7 @@ class TestAnalysisIntegration:
 
         stat = Statistic(name="bootstrap_mean", params={})
 
-        config.metrics = {AnalysisPeriod.WEEK_PREENROLLMENT: [Summary(test_active_hours, stat)]}
+        config.metrics = {AnalysisPeriod.PREENROLLMENT_WEEK: [Summary(test_active_hours, stat)]}
 
         self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
 

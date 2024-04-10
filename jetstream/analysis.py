@@ -65,8 +65,8 @@ class Analysis:
         AnalysisPeriod.WEEK,
         AnalysisPeriod.DAYS_28,
         AnalysisPeriod.OVERALL,
-        AnalysisPeriod.WEEK_PREENROLLMENT,
-        AnalysisPeriod.DAYS_28_PREENROLLMENT,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        AnalysisPeriod.PREENROLLMENT_DAYS_28,
     ]
     sql_output_dir: Optional[str] = None
 
@@ -97,8 +97,8 @@ class Analysis:
 
         if period not in [
             AnalysisPeriod.OVERALL,
-            AnalysisPeriod.WEEK_PREENROLLMENT,
-            AnalysisPeriod.DAYS_28_PREENROLLMENT,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            AnalysisPeriod.PREENROLLMENT_DAYS_28,
         ]:
             try:
                 current_time_limits = TimeLimits.for_ts(
@@ -128,7 +128,7 @@ class Analysis:
 
             return current_time_limits
 
-        elif period in [AnalysisPeriod.WEEK_PREENROLLMENT, AnalysisPeriod.DAYS_28_PREENROLLMENT]:
+        elif period in [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]:
             enrollment_end_date = self.config.experiment.start_date + timedelta(
                 days=dates_enrollment
             )
@@ -136,10 +136,10 @@ class Analysis:
             if enrollment_end_date != current_date:
                 return None
 
-            if period == AnalysisPeriod.WEEK_PREENROLLMENT:
+            if period == AnalysisPeriod.PREENROLLMENT_WEEK:
                 analysis_start_days = -7
                 analysis_length_dates = 7
-            elif period == AnalysisPeriod.DAYS_28_PREENROLLMENT:
+            elif period == AnalysisPeriod.PREENROLLMENT_DAYS_28:
                 analysis_start_days = -7 * 4
                 analysis_length_dates = 28
             else:
