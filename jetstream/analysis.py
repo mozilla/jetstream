@@ -386,11 +386,12 @@ class Analysis:
         segment: str,
         metric: Metric,
         analysis_basis: AnalysisBasis,
+        preenrollment_table_name: Optional[str],
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
 
         query = self._create_subset_metric_table_query(
-            metrics_table_name, segment, metric, analysis_basis
+            metrics_table_name, segment, metric, analysis_basis, preenrollment_table_name
         )
 
         results = self.bigquery.execute(query).to_dataframe()
@@ -399,9 +400,10 @@ class Analysis:
 
     @staticmethod
     def _create_subset_metric_table_query(
-        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis, preenrollment_table_name: Optional[str]
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
+
         metric_names = []
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
@@ -413,19 +415,26 @@ class Analysis:
                 metric_names.append(dependency.metric.name)
         else:
             metric_names.append(metric.name)
+            
+        if preenrollment_table_name is not None:
+            preenrollment_metric_selects = [f'pre.{m} AS {m}_pre' for m in metric_names + empty_metric_names]
+            from_expression = f'{metrics_table_name} during LEFT JOIN {preenrollment_table_name} pre USING (client_id, branch)'
+        else:
+            preenrollment_metric_selects = []
+            from_expression = f'{metrics_table_name} during'
 
         query = dedent(
             f"""
-        SELECT branch, {', '.join(metric_names + empty_metric_names)}
-        FROM {metrics_table_name}
-        WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
+        SELECT branch, {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])} {', '} {', '.join(preenrollment_metric_selects)}
+        FROM {from_expression}
+        WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
         """
         )
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
-            basis_filter = """enrollment_date IS NOT NULL"""
+            basis_filter = """during.enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+            basis_filter = """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
         else:
             raise ValueError(
                 f"AnalysisBasis {analysis_basis} not valid"
@@ -437,7 +446,7 @@ class Analysis:
         if segment != "all":
             segment_filter = dedent(
                 f"""
-            AND {segment} = TRUE"""
+            AND during.{segment} = TRUE"""
             )
             query += segment_filter
 
@@ -732,6 +741,15 @@ class Analysis:
                 metrics_table = self.calculate_metrics(
                     exp, time_limits, period, analysis_basis, dry_run
                 )
+                
+                if period in [AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL]:
+                    preenrollment_table_name = self._table_name(
+                        AnalysisPeriod.PREENROLLMENT_WEEK.value,
+                        1,
+                        analysis_basis=AnalysisBasis.ENROLLMENTS
+                    )
+                else:
+                    preenrollment_table_name = None
 
                 if dry_run:
                     results.append(metrics_table)
@@ -754,7 +772,7 @@ class Analysis:
                             continue
 
                         segment_data = self.subset_metric_table(
-                            metrics_table, segment, m.metric, analysis_basis
+                            metrics_table, segment, m.metric, analysis_basis, preenrollment_table_name
                         )
 
                         analysis_length_dates = 1

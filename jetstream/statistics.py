@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, List
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
@@ -420,6 +420,43 @@ class BootstrapMean(Statistic):
             reference_branch=reference_branch,
             ci_width=self.confidence_interval,
         )
+    
+@attr.s(auto_attribs=True)
+class BootstrapMeanLinearModel(Statistic):
+    drop_highest: float = 0.005
+    alphas: List[float] = [0.05]
+    confidence_interval: float = 0.95
+
+    def transform(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: Experiment,
+        analysis_basis: AnalysisBasis,
+        segment: str,
+    ) -> StatisticResultCollection:
+        if f'{metric}_pre' in df.columns:
+            pretreatment_col_label = f'{metric}_pre'
+        else: 
+            pretreatment_col_label = None
+
+        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_lm(
+            df,
+            col_label=metric,
+            ref_branch_label=reference_branch,
+            pretreatment_col_label = pretreatment_col_label,
+            threshold_quantile=1 - self.drop_highest,
+            alphas = self.alphas,
+        )
+
+        return flatten_simple_compare_branches_result(
+            ma_result=ma_result,
+            metric_name=metric,
+            statistic_name="mean_lm",
+            reference_branch=reference_branch,
+            ci_width=self.confidence_interval,
+        )    
 
 
 @attr.s(auto_attribs=True)
