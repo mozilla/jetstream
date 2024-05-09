@@ -384,73 +384,123 @@ class Analysis:
         self,
         metrics_table_name: str,
         segment: str,
-        metric: Metric,
+        summary: metric.Summary,
         analysis_basis: AnalysisBasis,
-        preenrollment_table_name: Optional[str],
+        period: AnalysisPeriod,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
 
         query = self._create_subset_metric_table_query(
-            metrics_table_name, segment, metric, analysis_basis, preenrollment_table_name
+            metrics_table_name, segment, summary, analysis_basis, period
         )
 
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
 
-    @staticmethod
+
     def _create_subset_metric_table_query(
-        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis, preenrollment_table_name: Optional[str]
+        self, metrics_table_name: str, segment: str, summary: metric.Summary, analysis_basis: AnalysisBasis, period: AnalysisPeriod
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
 
-        metric_names = []
-        # select placeholder column for metrics without select statement
-        # since metrics that don't appear in the df are skipped
-        # e.g., metrics with depends on such as population ratio metrics
-        empty_metric_names = []
-        if metric.depends_on:
-            empty_metric_names.append(f"NULL AS {metric.name}")
-            for dependency in metric.depends_on:
-                metric_names.append(dependency.metric.name)
-        else:
-            metric_names.append(metric.name)
-            
-        if preenrollment_table_name is not None:
-            preenrollment_metric_selects = [f'pre.{m} AS {m}_pre' for m in metric_names + empty_metric_names]
+        _do_preenrollment = False
+        if covariate_params := summary.statistic.params.get('covariate_adjustment', False):
+            preenrollment_metric = covariate_params['metric']
+            preenrollment_period = AnalysisPeriod(covariate_params['period'])
+            if preenrollment_period != period:
+                _do_preenrollment = True
+        
+        if _do_preenrollment
+            preenrollment_table_name = self._table_name(
+                preenrollment_period.value,
+                1,
+                analysis_basis=AnalysisBasis.ENROLLMENTS
+            )
+            metric_names = []
+            # select placeholder column for metrics without select statement
+            # since metrics that don't appear in the df are skipped
+            # e.g., metrics with depends on such as population ratio metrics
+            empty_metric_names = []
+            if summary.metric.depends_on:
+                empty_metric_names.append(f"NULL AS {summary.metric.name}")
+                for dependency in summary.metric.depends_on:
+                    metric_names.append(dependency.metric.name)
+            else:
+                metric_names.append(summary.metric.name)
+
+            preenrollment_metric_select = f'pre.{preenrollment_metric} AS {preenrollment_metric}_pre' 
             from_expression = f'{metrics_table_name} during LEFT JOIN {preenrollment_table_name} pre USING (client_id, branch)'
-        else:
-            preenrollment_metric_selects = []
-            from_expression = f'{metrics_table_name} during'
 
-        query = dedent(
-            f"""
-        SELECT branch, {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])} {', '} {', '.join(preenrollment_metric_selects)}
-        FROM {from_expression}
-        WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
-        """
-        )
-
-        if analysis_basis == AnalysisBasis.ENROLLMENTS:
-            basis_filter = """during.enrollment_date IS NOT NULL"""
-        elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
-        else:
-            raise ValueError(
-                f"AnalysisBasis {analysis_basis} not valid"
-                + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
-            )
-
-        query += basis_filter
-
-        if segment != "all":
-            segment_filter = dedent(
+            query = dedent(
                 f"""
-            AND during.{segment} = TRUE"""
+            SELECT branch, {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])} {', '} {preenrollment_metric_select}
+            FROM {from_expression}
+            WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
+            """
             )
-            query += segment_filter
 
-        return query
+            if analysis_basis == AnalysisBasis.ENROLLMENTS:
+                basis_filter = """during.enrollment_date IS NOT NULL"""
+            elif analysis_basis == AnalysisBasis.EXPOSURES:
+                basis_filter = """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
+            else:
+                raise ValueError(
+                    f"AnalysisBasis {analysis_basis} not valid"
+                    + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+                )
+
+            query += basis_filter
+
+            if segment != "all":
+                segment_filter = dedent(
+                    f"""
+                AND during.{segment} = TRUE"""
+                )
+                query += segment_filter
+
+            return query
+        else: 
+            metric_names = []
+            # select placeholder column for metrics without select statement
+            # since metrics that don't appear in the df are skipped
+            # e.g., metrics with depends on such as population ratio metrics
+            empty_metric_names = []
+            if summary.metric.depends_on:
+                empty_metric_names.append(f"NULL AS {summary.metric.name}")
+                for dependency in summary.metric.depends_on:
+                    metric_names.append(dependency.metric.name)
+            else:
+                metric_names.append(summary.metric.name)
+
+            query = dedent(
+                f"""
+            SELECT branch, {', '.join(metric_names + empty_metric_names)}
+            FROM {metrics_table_name}
+            WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
+            """
+            )
+
+            if analysis_basis == AnalysisBasis.ENROLLMENTS:
+                basis_filter = """enrollment_date IS NOT NULL"""
+            elif analysis_basis == AnalysisBasis.EXPOSURES:
+                basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+            else:
+                raise ValueError(
+                    f"AnalysisBasis {analysis_basis} not valid"
+                    + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+                )
+
+            query += basis_filter
+
+            if segment != "all":
+                segment_filter = dedent(
+                    f"""
+                AND {segment} = TRUE"""
+                )
+                query += segment_filter
+
+            return query
 
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
@@ -741,15 +791,6 @@ class Analysis:
                 metrics_table = self.calculate_metrics(
                     exp, time_limits, period, analysis_basis, dry_run
                 )
-                
-                if period in [AnalysisPeriod.WEEK, AnalysisPeriod.OVERALL]:
-                    preenrollment_table_name = self._table_name(
-                        AnalysisPeriod.PREENROLLMENT_WEEK.value,
-                        1,
-                        analysis_basis=AnalysisBasis.ENROLLMENTS
-                    )
-                else:
-                    preenrollment_table_name = None
 
                 if dry_run:
                     results.append(metrics_table)
@@ -764,15 +805,15 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    for m in self.config.metrics[period]:
+                    for summary in self.config.metrics[period]:
                         if (
-                            m.metric.analysis_bases != analysis_basis
-                            and analysis_basis not in m.metric.analysis_bases
+                            summary.metric.analysis_bases != analysis_basis
+                            and analysis_basis not in summary.metric.analysis_bases
                         ):
                             continue
 
                         segment_data = self.subset_metric_table(
-                            metrics_table, segment, m.metric, analysis_basis, preenrollment_table_name
+                            metrics_table, segment, summary, analysis_basis, period
                         )
 
                         analysis_length_dates = 1
@@ -782,7 +823,7 @@ class Analysis:
                             analysis_length_dates = 7
 
                         segment_results.__root__ += self.calculate_statistics(
-                            m,
+                            summary,
                             segment_data,
                             segment,
                             analysis_basis,

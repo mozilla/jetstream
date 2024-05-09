@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any, Optional, Tuple, List
+from typing import Any, Optional, Tuple, List, Dict
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
@@ -426,6 +426,7 @@ class BootstrapMeanLinearModel(Statistic):
     drop_highest: float = 0.005
     alphas: List[float] = [0.05]
     confidence_interval: float = 0.95
+    covariate_adjustment: Optional[Dict[str,str]] = None
 
     def transform(
         self,
@@ -436,6 +437,10 @@ class BootstrapMeanLinearModel(Statistic):
         analysis_basis: AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
+        # if self.covariate_adjustment is None:
+        #     raise ValueError('missing covariate adjustment for linear model')
+        # else: 
+        #     raise ValueError(self.covariate_adjustment)
         if f'{metric}_pre' in df.columns:
             pretreatment_col_label = f'{metric}_pre'
         else: 
