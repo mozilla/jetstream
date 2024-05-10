@@ -389,40 +389,48 @@ class Analysis:
         period: AnalysisPeriod,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
-        
-        if covariate_params := summary.statistic.params.get('covariate_adjustment', False):
-            covariate_metric = covariate_params['metric']
-            covariate_period = AnalysisPeriod(covariate_params['period'])
-            if preenrollment_period != period:
-                query = _create_subset_metric_table_query_covariate(
-                    metrics_table_name, segment, summary, analysis_basis, period
+
+        if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
+            covariate_metric_name = covariate_params["metric"]
+            covariate_period = AnalysisPeriod(covariate_params["period"])
+            if covariate_period != period:
+                query = self._create_subset_metric_table_query_covariate(
+                    metrics_table_name,
+                    segment,
+                    summary.metric,
+                    analysis_basis,
+                    covariate_period,
+                    covariate_metric_name,
                 )
-        else: 
+        else:
             query = self._create_subset_metric_table_query(
-                metrics_table_name, segment, summary, analysis_basis, period
+                metrics_table_name, segment, summary.metric, analysis_basis
             )
 
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
 
-
     def _create_subset_metric_table_query(
-        self, metrics_table_name: str, segment: str, summary: metric.Summary, analysis_basis: AnalysisBasis, period: AnalysisPeriod
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis,
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
-        
+
         metric_names = []
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
         empty_metric_names = []
-        if summary.metric.depends_on:
-            empty_metric_names.append(f"NULL AS {summary.metric.name}")
-            for dependency in summary.metric.depends_on:
+        if metric.depends_on:
+            empty_metric_names.append(f"NULL AS {metric.name}")
+            for dependency in metric.depends_on:
                 metric_names.append(dependency.metric.name)
         else:
-            metric_names.append(summary.metric.name)
+            metric_names.append(metric.name)
 
         query = dedent(
             f"""
@@ -452,31 +460,35 @@ class Analysis:
             query += segment_filter
 
         return query
-        
+
     def _create_subset_metric_table_query_covariate(
-        self, metrics_table_name: str, segment: str, summary: metric.Summary, analysis_basis: AnalysisBasis, period: AnalysisPeriod
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis,
+        covariate_period: AnalysisPeriod,
+        covariate_metric_name: str,
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
 
-        preenrollment_table_name = self._table_name(
-            preenrollment_period.value,
-            1,
-            analysis_basis=AnalysisBasis.ENROLLMENTS
+        covariate_table_name = self._table_name(
+            covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
         )
         metric_names = []
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
         empty_metric_names = []
-        if summary.metric.depends_on:
-            empty_metric_names.append(f"NULL AS {summary.metric.name}")
-            for dependency in summary.metric.depends_on:
+        if metric.depends_on:
+            empty_metric_names.append(f"NULL AS {metric.name}")
+            for dependency in metric.depends_on:
                 metric_names.append(dependency.metric.name)
         else:
-            metric_names.append(summary.metric.name)
+            metric_names.append(metric.name)
 
-        preenrollment_metric_select = f'pre.{preenrollment_metric} AS {preenrollment_metric}_pre' 
-        from_expression = f'{metrics_table_name} during LEFT JOIN {preenrollment_table_name} pre USING (client_id, branch)'
+        preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
+        from_expression = f"{metrics_table_name} during LEFT JOIN {covariate_table_name} pre USING (client_id, branch)"
 
         query = dedent(
             f"""
@@ -489,7 +501,9 @@ class Analysis:
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """during.enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
+            basis_filter = (
+                """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
+            )
         else:
             raise ValueError(
                 f"AnalysisBasis {analysis_basis} not valid"
@@ -505,7 +519,7 @@ class Analysis:
             )
             query += segment_filter
 
-        return query        
+        return query
 
     def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
         if self.config.experiment.normandy_slug is None:
