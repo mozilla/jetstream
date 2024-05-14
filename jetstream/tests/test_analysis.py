@@ -26,6 +26,13 @@ from jetstream.errors import (
 from jetstream.experimenter import ExperimentV1
 from jetstream.metric import Metric
 
+def _empty_analysis(experiments):
+    x = experiments[0]
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+    return Analysis("spam", "eggs", config)
+
 
 def test_get_timelimits_if_ready(experiments):
     config = AnalysisSpec().resolve(experiments[0], ConfigLoader.configs)
@@ -346,7 +353,7 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
         assert called == 2
 
 
-def test_create_subset_metric_table_query_basic():
+def test_create_subset_metric_table_query_basic(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -362,14 +369,14 @@ def test_create_subset_metric_table_query_basic():
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_segment():
+def test_create_subset_metric_table_query_segment(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -386,14 +393,14 @@ def test_create_subset_metric_table_query_segment():
     AND mysegment = TRUE"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
         "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_exposures():
+def test_create_subset_metric_table_query_exposures(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -409,14 +416,14 @@ def test_create_subset_metric_table_query_exposures():
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
         "test_experiment_exposures_1", "all", metric, AnalysisBasis.EXPOSURES
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_depends_on():
+def test_create_subset_metric_table_query_depends_on(experiments):
     upstream_1_metric = Metric(
         name="upstream_1",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -450,14 +457,14 @@ def test_create_subset_metric_table_query_depends_on():
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_unsupported_analysis_basis():
+def test_create_subset_metric_table_query_unsupported_analysis_basis(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -465,6 +472,6 @@ def test_create_subset_metric_table_query_unsupported_analysis_basis():
         analysis_bases=[AnalysisBasis.EXPOSURES],
     )
     with pytest.raises(ValueError):
-        Analysis._create_subset_metric_table_query(
+        _empty_analysis(experiments)._create_subset_metric_table_query(
             "test_experiment_exposures_1", "all", metric, "non-basis"
         )
