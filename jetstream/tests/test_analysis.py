@@ -26,6 +26,7 @@ from jetstream.errors import (
 from jetstream.experimenter import ExperimentV1
 from jetstream.metric import Metric
 
+
 def _empty_analysis(experiments):
     x = experiments[0]
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
@@ -374,9 +375,12 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     )
 
     assert expected_query == actual_query
-    
+
+
 def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypatch):
-    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre"))
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -393,10 +397,15 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
-        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.PREENROLLMENT_WEEK, "metric_name",
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
     )
 
-    assert expected_query == actual_query    
+    assert expected_query == actual_query
 
 
 def test_create_subset_metric_table_query_univariate_segment(experiments):
@@ -421,9 +430,12 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     )
 
     assert expected_query == actual_query
-    
-def test_create_subset_metric_table_query_covariate_segment(experiments, monkeypatch):    
-    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre"))
+
+
+def test_create_subset_metric_table_query_covariate_segment(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -441,10 +453,16 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
-        "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.PREENROLLMENT_WEEK, "metric_name",
+        "test_experiment_enrollments_1",
+        "mysegment",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
     )
 
-    assert expected_query == actual_query  
+    assert expected_query == actual_query
+
 
 def test_create_subset_metric_table_query_univariate_exposures(experiments):
     metric = Metric(
@@ -468,8 +486,11 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
 
     assert expected_query == actual_query
 
-def test_create_subset_metric_table_query_covariate_exposures(experiments, monkeypatch):    
-    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre"))
+
+def test_create_subset_metric_table_query_covariate_exposures(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -486,11 +507,17 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
-        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.EXPOSURES, AnalysisPeriod.PREENROLLMENT_WEEK, "metric_name",
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.EXPOSURES,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
     )
 
-    assert expected_query == actual_query  
-    
+    assert expected_query == actual_query
+
+
 def test_create_subset_metric_table_query_univariate_depends_on(experiments):
     upstream_1_metric = Metric(
         name="upstream_1",
@@ -530,9 +557,12 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
     )
 
     assert expected_query == actual_query
-    
+
+
 def test_create_subset_metric_table_query_covariate_depends_on(experiments, monkeypatch):
-    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre"))    
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
     upstream_1_metric = Metric(
         name="upstream_1",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -558,10 +588,19 @@ def test_create_subset_metric_table_query_covariate_depends_on(experiments, monk
         depends_on=[upstream_1, upstream_2],
     )
 
-    with pytest.raises(ValueError, match = r"metrics with dependencies are not currently supported for covariate adjustment"): 
+    with pytest.raises(
+        ValueError,
+        match=r"metrics with dependencies are not currently supported for covariate adjustment",
+    ):
         _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
-        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.PREENROLLMENT_WEEK, "metric_name"
-    )
+            "test_experiment_enrollments_1",
+            "all",
+            metric,
+            AnalysisBasis.ENROLLMENTS,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            "metric_name",
+        )
+
 
 def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(experiments):
     metric = Metric(
@@ -575,6 +614,7 @@ def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
             "test_experiment_exposures_1", "all", metric, "non-basis"
         )
 
+
 def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(experiments):
     metric = Metric(
         name="metric_name",
@@ -584,5 +624,10 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(e
     )
     with pytest.raises(ValueError):
         _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
-            "test_experiment_exposures_1", "all", metric, "non-basis", AnalysisPeriod.PREENROLLMENT_WEEK, "metric_name"
-        )        
+            "test_experiment_exposures_1",
+            "all",
+            metric,
+            "non-basis",
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            "metric_name",
+        )

@@ -390,12 +390,14 @@ class Analysis:
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
 
-        query = self._create_subset_metric_table_query(metrics_table_name, segment, summary, analysis_basis, period)
+        query = self._create_subset_metric_table_query(
+            metrics_table_name, segment, summary, analysis_basis, period
+        )
 
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
-    
+
     def _create_subset_metric_table_query(
         self,
         metrics_table_name: str,
@@ -426,7 +428,7 @@ class Analysis:
             query = self._create_subset_metric_table_query_univariate(
                 metrics_table_name, segment, summary.metric, analysis_basis
             )
-            
+
         return query
 
     def _create_subset_metric_table_query_univariate(
@@ -499,7 +501,9 @@ class Analysis:
         # e.g., metrics with depends on such as population ratio metrics
         empty_metric_names = []
         if metric.depends_on:
-            raise ValueError("metrics with dependencies are not currently supported for covariate adjustment")
+            raise ValueError(
+                "metrics with dependencies are not currently supported for covariate adjustment"
+            )
         else:
             metric_names.append(metric.name)
 
