@@ -3,7 +3,7 @@ import json
 import re
 from datetime import timedelta
 from textwrap import dedent
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
