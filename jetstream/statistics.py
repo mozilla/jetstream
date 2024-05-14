@@ -420,13 +420,14 @@ class BootstrapMean(Statistic):
             reference_branch=reference_branch,
             ci_width=self.confidence_interval,
         )
-    
+
+
 @attr.s(auto_attribs=True)
 class BootstrapMeanLinearModel(Statistic):
     drop_highest: float = 0.005
     alphas: List[float] = [0.05]
     confidence_interval: float = 0.95
-    covariate_adjustment: Optional[Dict[str,str]] = None
+    covariate_adjustment: Optional[Dict[str, str]] = None
 
     def transform(
         self,
@@ -439,20 +440,20 @@ class BootstrapMeanLinearModel(Statistic):
     ) -> StatisticResultCollection:
         # if self.covariate_adjustment is None:
         #     raise ValueError('missing covariate adjustment for linear model')
-        # else: 
+        # else:
         #     raise ValueError(self.covariate_adjustment)
-        if f'{metric}_pre' in df.columns:
-            pretreatment_col_label = f'{metric}_pre'
-        else: 
+        if f"{metric}_pre" in df.columns:
+            pretreatment_col_label = f"{metric}_pre"
+        else:
             pretreatment_col_label = None
 
         ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_lm(
             df,
             col_label=metric,
             ref_branch_label=reference_branch,
-            pretreatment_col_label = pretreatment_col_label,
+            pretreatment_col_label=pretreatment_col_label,
             threshold_quantile=1 - self.drop_highest,
-            alphas = self.alphas,
+            alphas=self.alphas,
         )
 
         return flatten_simple_compare_branches_result(
@@ -461,7 +462,7 @@ class BootstrapMeanLinearModel(Statistic):
             statistic_name="mean_lm",
             reference_branch=reference_branch,
             ci_width=self.confidence_interval,
-        )    
+        )
 
 
 @attr.s(auto_attribs=True)
