@@ -411,7 +411,7 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
     )
-    
+
     assert expected_query == actual_query
 
 
