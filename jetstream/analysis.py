@@ -520,9 +520,9 @@ class Analysis:
 
         query = dedent(
             f"""
-        SELECT 
-            during.branch, 
-            {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])}{', '}
+        SELECT
+            during.branch,
+            {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])}{','}
             {preenrollment_metric_select}
         FROM (
             {from_expression}

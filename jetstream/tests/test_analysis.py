@@ -390,9 +390,9 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
 
     expected_query = dedent(
         """
-    SELECT 
-        during.branch, 
-        during.metric_name, 
+    SELECT
+        during.branch,
+        during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
         test_experiment_enrollments_1 during
@@ -452,9 +452,9 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
 
     expected_query = dedent(
         """
-    SELECT 
-        during.branch, 
-        during.metric_name, 
+    SELECT
+        during.branch,
+        during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
         test_experiment_enrollments_1 during
@@ -514,9 +514,9 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
 
     expected_query = dedent(
         """
-    SELECT 
-        during.branch, 
-        during.metric_name, 
+    SELECT
+        during.branch,
+        during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
         test_experiment_enrollments_1 during
@@ -750,9 +750,9 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
 
     expected_query = dedent(
         """
-    SELECT 
-        during.branch, 
-        during.metric_name, 
+    SELECT
+        during.branch,
+        during.metric_name,
         pre.my_metric AS my_metric_pre
     FROM (
         test_experiment_enrollments_1 during
