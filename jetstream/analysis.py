@@ -503,7 +503,7 @@ class Analysis:
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
-        empty_metric_names = []
+        empty_metric_names: list[str]  = []
         if metric.depends_on:
             raise ValueError(
                 "metrics with dependencies are not currently supported for covariate adjustment"
