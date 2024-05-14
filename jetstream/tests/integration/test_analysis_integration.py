@@ -965,6 +965,8 @@ class TestAnalysisIntegration:
         )
 
         stat = Statistic(name="bootstrap_mean", params={})
+        
+        summary = Summary(test_active_hours, stat)
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
@@ -976,8 +978,9 @@ class TestAnalysisIntegration:
             analysis.subset_metric_table(
                 "test_experiment_exposures_week_1",
                 "all",
-                test_active_hours,
+                summary,
                 AnalysisBasis.EXPOSURES,
+                AnalysisPeriod.WEEK,
             )
             .compute()
             .sort_values("branch")
@@ -990,8 +993,9 @@ class TestAnalysisIntegration:
             analysis.subset_metric_table(
                 "test_experiment_enrollments_week_1",
                 "all",
-                test_active_hours,
+                summary,
                 AnalysisBasis.ENROLLMENTS,
+                AnalysisPeriod.WEEK,                
             )
             .compute()
             .sort_values("branch")
