@@ -390,6 +390,20 @@ class Analysis:
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
 
+        query = self._create_subset_metric_table_query(metrics_table_name, segment, summary, analysis_basis, period)
+
+        results = self.bigquery.execute(query).to_dataframe()
+
+        return results
+    
+    def _create_subset_metric_table_query(
+        self,
+        metrics_table_name: str,
+        segment: str,
+        summary: metric.Summary,
+        analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
+    ) -> str:
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
             covariate_metric_name = covariate_params["metric"]
             covariate_period = AnalysisPeriod(covariate_params["period"])
@@ -405,19 +419,17 @@ class Analysis:
             else:
                 # cannot apply covariate adjustment using the current period
                 # must use a different period
-                query = self._create_subset_metric_table_query(
+                query = self._create_subset_metric_table_query_univariate(
                     metrics_table_name, segment, summary.metric, analysis_basis
                 )
         else:
-            query = self._create_subset_metric_table_query(
+            query = self._create_subset_metric_table_query_univariate(
                 metrics_table_name, segment, summary.metric, analysis_basis
             )
+            
+        return query
 
-        results = self.bigquery.execute(query).to_dataframe()
-
-        return results
-
-    def _create_subset_metric_table_query(
+    def _create_subset_metric_table_query_univariate(
         self,
         metrics_table_name: str,
         segment: str,
@@ -487,9 +499,7 @@ class Analysis:
         # e.g., metrics with depends on such as population ratio metrics
         empty_metric_names = []
         if metric.depends_on:
-            empty_metric_names.append(f"NULL AS {metric.name}")
-            for dependency in metric.depends_on:
-                metric_names.append(dependency.metric.name)
+            raise ValueError("metrics with dependencies are not currently supported for covariate adjustment")
         else:
             metric_names.append(metric.name)
 
@@ -498,7 +508,7 @@ class Analysis:
 
         query = dedent(
             f"""
-        SELECT branch, {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])} {', '} {preenrollment_metric_select}
+        SELECT during.branch, {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])}{', '}{preenrollment_metric_select}
         FROM {from_expression}
         WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
         """
