@@ -402,6 +402,12 @@ class Analysis:
                     covariate_period,
                     covariate_metric_name,
                 )
+            else:
+                # cannot apply covariate adjustment using the current period
+                # must use a different period
+                query = self._create_subset_metric_table_query(
+                    metrics_table_name, segment, summary.metric, analysis_basis
+                )
         else:
             query = self._create_subset_metric_table_query(
                 metrics_table_name, segment, summary.metric, analysis_basis

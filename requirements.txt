@@ -753,6 +753,10 @@ locket==1.0.0 \
     #   -r requirements.in
     #   distributed
     #   partd
+marginaleffects==0.0.6 \
+    --hash=sha256:3360086b7de707a9cc4b3972ac0501ec1a8f9fee6a405ad6c4d83cdbf2cb30be \
+    --hash=sha256:ba751cb5eff3f8d9d2631dc0c66cdc8632b7ea479872aa2c902210a1ee6ddbd9
+    # via mozanalysis
 markupsafe==2.1.5 \
     --hash=sha256:00e046b6dd71aa03a41079792f8473dc494d564611a8f89bbbd7cb93295ebdcf \
     --hash=sha256:075202fa5b72c86ad32dc7d0b56024ebdbcf2048c0ba09f1cde31bfdd57bcfff \
@@ -848,6 +852,7 @@ matplotlib==3.8.3 \
     --hash=sha256:fa93695d5c08544f4a0dfd0965f378e7afc410d8672816aff1e81be1f45dbf2e
     # via
     #   -r requirements.in
+    #   marginaleffects
     #   mozanalysis
 mccabe==0.7.0 \
     --hash=sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325 \
@@ -855,9 +860,9 @@ mccabe==0.7.0 \
     # via
     #   -r requirements.in
     #   flake8
-mozanalysis==2024.3.1 \
-    --hash=sha256:39d0e554668b66afe9114a88a6f653b3e2fe71c775ca3fb321f08e2d9375b1ae \
-    --hash=sha256:be8acebd759bda1cc828247ab81fe7dd12ac4e61df40619332e8019aae93916d
+mozanalysis==2024.5.1 \
+    --hash=sha256:5638553edf24bdfa2b4dab96209d6d11fc221e35874c42aa7e46cd112d41b7f9 \
+    --hash=sha256:73504c2ce4e176f84220bee16b1f9a6e5f06b0acaaca05a2cb115645b6583f9c
     # via -r requirements.in
 mozilla-metric-config-parser==2024.4.1 \
     --hash=sha256:a10908bce94fd24445ade474cc671a09c0241d2a456de84b69bc7e67eb67bbd1 \
@@ -1009,6 +1014,7 @@ numpy==1.26.4 \
     #   -r requirements.in
     #   contourpy
     #   db-dtypes
+    #   marginaleffects
     #   matplotlib
     #   mozanalysis
     #   pandas
@@ -1063,6 +1069,7 @@ pandas==2.2.1 \
     # via
     #   -r requirements.in
     #   db-dtypes
+    #   marginaleffects
     #   mozanalysis
     #   statsmodels
 partd==1.4.1 \
@@ -1082,6 +1089,7 @@ patsy==0.5.6 \
     --hash=sha256:95c6d47a7222535f84bff7f63d7303f2e297747a598db89cf5c67f0c0c7d2cdb
     # via
     #   -r requirements.in
+    #   marginaleffects
     #   statsmodels
 pillow==10.2.0 \
     --hash=sha256:0304004f8067386b477d20a518b50f3fa658a28d44e4116970abfcd94fac34a8 \
@@ -1167,6 +1175,14 @@ pluggy==1.4.0 \
     # via
     #   -r requirements.in
     #   pytest
+polars==0.20.26 \
+    --hash=sha256:25b00bd5cf44929722aa6389706559c5e8cedd6db2cfc38b27b706ed37e1b2af \
+    --hash=sha256:97d0e4b6ab6b47fa07798b447189ee9505d2085ec1a64a6aa8a65fdd429cd49f \
+    --hash=sha256:b22063acc815bc5c6d2e24292ff771ca0df306ecf97e8f6899924a1ec6d3f136 \
+    --hash=sha256:c270e366b4d8b672b204e7d48e39d255641d3d2b7bdc3a0ccd968cf53934657f \
+    --hash=sha256:db35d6eed508256a797c7f1b8e9dec4aae9c11b891797b2d38fac5627d072d34 \
+    --hash=sha256:fa83d130562a5180a47f8763a7bb9f408dbbf51eafc1380e8a2951be8ce05a2c
+    # via marginaleffects
 polyfactory==2.15.0 \
     --hash=sha256:a3ff5263756ad74acf4001f04c1b6aab7d1197cbaa070352df79573a8dcd85ec \
     --hash=sha256:ff5b6a8742cbd6fbde9f81310b9732d5421fbec31916d6ede5a977753110fbe9
@@ -1263,6 +1279,7 @@ pyarrow==15.0.1 \
     # via
     #   -r requirements.in
     #   db-dtypes
+    #   marginaleffects
     #   mozanalysis
 pyasn1==0.5.1 \
     --hash=sha256:4439847c58d40b1d0a573d07e3856e95333f1976294494c325775aeca506eb58 \
@@ -1592,6 +1609,7 @@ scipy==1.12.0 \
     --hash=sha256:f7ce148dffcd64ade37b2df9315541f9adad6efcaa86866ee7dd5db0c8f041c3
     # via
     #   -r requirements.in
+    #   marginaleffects
     #   mozanalysis
     #   scikit-learn
     #   statsmodels
@@ -1650,6 +1668,7 @@ statsmodels==0.14.1 \
     --hash=sha256:f8c30181c084173d662aaf0531867667be2ff1bee103b84feb64f149f792dbd2
     # via
     #   -r requirements.in
+    #   marginaleffects
     #   mozanalysis
 tblib==3.0.0 \
     --hash=sha256:80a6c77e59b55e83911e1e607c649836a69c103963c5f28a46cbeef44acf8129 \
