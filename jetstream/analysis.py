@@ -421,10 +421,10 @@ class Analysis:
             else:
                 # when we configure a metric, all statistics are applied to all periods
                 # however, to perform covariate adjustment we must use data from a different
-                # period. So the metric will be configured with analysis periods like 
-                # [preenrollment_week, weekly, overall] but covariate adjustment should 
-                # only be applied on weekly and overall when using preenrollment_week 
-                # as the covariate. 
+                # period. So the metric will be configured with analysis periods like
+                # [preenrollment_week, weekly, overall] but covariate adjustment should
+                # only be applied on weekly and overall when using preenrollment_week
+                # as the covariate.
                 query = self._create_subset_metric_table_query_univariate(
                     metrics_table_name, segment, summary.metric, analysis_basis
                 )
