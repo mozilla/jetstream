@@ -390,8 +390,15 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
 
     expected_query = dedent(
         """
-    SELECT during.branch, during.metric_name, pre.metric_name AS metric_name_pre
-    FROM test_experiment_enrollments_1 during LEFT JOIN table_pre pre USING (client_id, branch)
+    SELECT 
+        during.branch, 
+        during.metric_name, 
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
     )
@@ -404,7 +411,7 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
     )
-
+    
     assert expected_query == actual_query
 
 
@@ -445,8 +452,15 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
 
     expected_query = dedent(
         """
-    SELECT during.branch, during.metric_name, pre.metric_name AS metric_name_pre
-    FROM test_experiment_enrollments_1 during LEFT JOIN table_pre pre USING (client_id, branch)
+    SELECT 
+        during.branch, 
+        during.metric_name, 
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL
     AND during.mysegment = TRUE"""
@@ -500,8 +514,15 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
 
     expected_query = dedent(
         """
-    SELECT during.branch, during.metric_name, pre.metric_name AS metric_name_pre
-    FROM test_experiment_enrollments_1 during LEFT JOIN table_pre pre USING (client_id, branch)
+    SELECT 
+        during.branch, 
+        during.metric_name, 
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
     )

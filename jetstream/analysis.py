@@ -510,7 +510,7 @@ class Analysis:
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
         from_expression = dedent(
             f"""{metrics_table_name} during
-            LEFT JOIN {covariate_table_name} pre 
+            LEFT JOIN {covariate_table_name} pre
             USING (client_id, branch)"""
         )
 
@@ -520,7 +520,9 @@ class Analysis:
             during.branch, 
             {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])}{', '}
             {preenrollment_metric_select}
-        FROM ({from_expression})
+        FROM (
+            {from_expression}
+        )
         WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
         """
         )
