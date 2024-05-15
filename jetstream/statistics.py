@@ -426,6 +426,7 @@ class BootstrapMean(Statistic):
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
     drop_highest: float = 0.005
+    covariate_adjustment: dict[str, dict[str, str]] | None = None
 
     def transform(
         self,
@@ -437,8 +438,8 @@ class LinearModelMean(Statistic):
         segment: str,
     ) -> StatisticResultCollection:
 
-        if f"{metric}_pre" in df.columns:
-            covariate_col_label = f"{metric}_pre"
+        if self.covariate_adjustment is not None:
+            covariate_col_label = f"{self.covariate_adjustment.get('metric')}_pre"
         else:
             covariate_col_label = None
 

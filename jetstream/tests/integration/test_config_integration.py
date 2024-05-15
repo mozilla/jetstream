@@ -13,6 +13,7 @@ from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
+from jetstream.statistics import Summary
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -292,3 +293,10 @@ class TestConfigIntegration:
         covariate_params = statistic.params.get("covariate_adjustment")
         assert covariate_params["metric"] == "bogus_metric"
         assert AnalysisPeriod(covariate_params["period"]) == AnalysisPeriod.PREENROLLMENT_WEEK
+
+        jetstream_statistic = Summary.from_config(summary, 7).statistic
+
+        assert jetstream_statistic.covariate_adjustment == {
+            "metric": "bogus_metric",
+            "period": "preenrollment_week",
+        }
