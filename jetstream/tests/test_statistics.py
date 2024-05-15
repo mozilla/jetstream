@@ -68,14 +68,16 @@ class TestStatistics:
     def test_linear_model_mean_covariate(self):
         stat = LinearModelMean()
         np.random.seed(42)
-        y_c = np.random.normal(size=200)
-        te = np.random.normal(loc=1, scale=0.1)
+        control_mean, treatment_effect = 2,1
+        rel_diff = treatment_effect/control_mean
+        y_c = np.random.normal(loc=control_mean, scale=1, size=200)
+        te = np.random.normal(loc=treatment_effect, scale=1, size = 200)
         y_t = y_c + te
         test_data = pd.DataFrame(
             {
                 "branch": ["treatment"] * 100 + ["control"] * 100,
                 "value": np.concatenate([y_t[:100], y_c[100:]]),
-                "value_pre": y_c + np.random.normal(scale=0.1),
+                "value_pre": y_c + np.random.normal(scale=1, size = 200),
             }
         )
 
@@ -88,6 +90,23 @@ class TestStatistics:
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point > control_result.point
         assert treatment_result.lower and treatment_result.upper
+
+        rel_results = [r for r in results if r.comparison is "relative_uplift"][0]
+        results_unadj = stat.transform(
+            test_data.drop(columns = ["value_pre"]),
+            "value",
+            "control",
+            None,
+            AnalysisBasis.ENROLLMENTS,
+            "all"
+        ).__root__      
+        rel_results_unadj = [r for r in results_unadj if r.comparison is "relative_uplift"][0]
+        # test that point estimate after adjustment is closer to truth
+        assert np.abs(rel_results.point - rel_diff) < np.abs(rel_results_unadj.point - rel_diff)
+        # test that confidence intervals are tighter
+        assert rel_results.lower > rel_results_unadj.lower
+        assert rel_results.upper < rel_results_unadj.upper
+
 
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
