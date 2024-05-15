@@ -6,7 +6,9 @@ import pytest
 import pytz
 import toml
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.config import Config, DefaultConfig, Outcome
+from metric_config_parser.config import Config, ConfigCollection, DefaultConfig, Outcome
+from metric_config_parser.experiment import Channel, Experiment
+from metric_config_parser.metric import AnalysisPeriod
 from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
@@ -228,3 +230,66 @@ class TestConfigIntegration:
         )
         with pytest.raises(DryRunFailedError):
             validate(extern)
+
+            
+    def test_linear_models_covariate_parsing(self):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "source_name"
+            
+            [metrics.bogus_metric.statistics.linear_model_mean]
+            [metrics.bogus_metric.statistics.linear_model_mean.covariate_adjustment]
+            metric = "bogus_metric"
+            period = "preenrollment_week"
+            
+            [data_sources]
+            [data_sources.source_name]
+            from_expression = "project.dataset.table"
+            friendly_name = "Source"
+            description = "Source"
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+
+        dummy_experiment = Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=datetime.datetime.now(pytz.UTC),
+            proposed_enrollment=14,
+            app_name="desktop",
+            channel=Channel.NIGHTLY,
+        )
+        
+        external_configs = ConfigCollection(
+            [
+                Config(
+                    slug="dummy-experiment",
+                    spec=spec,
+                    last_modified=datetime.datetime(2021, 2, 15, tzinfo=pytz.UTC),
+                )
+            ]
+        )       
+        
+        analysis_configuration = spec.resolve(dummy_experiment, external_configs)
+        
+        summary = analysis_configuration.metrics[AnalysisPeriod.WEEK][0]
+        assert summary.metric.name == "bogus_metric"
+        
+        statistic = summary.statistic
+        assert statistic.name == "linear_model_mean"
+        
+        covariate_params = statistic.params.get("covariate_adjustment")
+        assert covariate_params["metric"] == "bogus_metric"
+        assert AnalysisPeriod(covariate_params["period"]) == AnalysisPeriod.PREENROLLMENT_WEEK
