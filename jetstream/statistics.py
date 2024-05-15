@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
