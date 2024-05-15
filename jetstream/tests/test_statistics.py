@@ -91,7 +91,7 @@ class TestStatistics:
         assert treatment_result.point > control_result.point
         assert treatment_result.lower and treatment_result.upper
 
-        rel_results = [r for r in results if r.comparison is "relative_uplift"][0]
+        rel_results = [r for r in results if r.comparison == "relative_uplift"][0]
         results_unadj = stat.transform(
             test_data.drop(columns=["value_pre"]),
             "value",
@@ -100,7 +100,7 @@ class TestStatistics:
             AnalysisBasis.ENROLLMENTS,
             "all",
         ).__root__
-        rel_results_unadj = [r for r in results_unadj if r.comparison is "relative_uplift"][0]
+        rel_results_unadj = [r for r in results_unadj if r.comparison == "relative_uplift"][0]
         # test that point estimate after adjustment is closer to truth
         assert np.abs(rel_results.point - rel_diff) < np.abs(rel_results_unadj.point - rel_diff)
         # test that confidence intervals are tighter
