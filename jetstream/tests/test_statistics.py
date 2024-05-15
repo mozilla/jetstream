@@ -66,7 +66,9 @@ class TestStatistics:
         assert treatment_result.lower and treatment_result.upper
 
     def test_linear_model_mean_covariate(self):
-        stat = LinearModelMean()
+        stat = LinearModelMean(
+            covariate_adjustment={"metric": "value", "period": "preenrollment_week"}
+        )
         np.random.seed(42)
         control_mean, treatment_effect = 2, 1
         rel_diff = treatment_effect / control_mean
@@ -92,7 +94,9 @@ class TestStatistics:
         assert treatment_result.lower and treatment_result.upper
 
         rel_results = [r for r in results if r.comparison == "relative_uplift"][0]
-        results_unadj = stat.transform(
+
+        stat_unadj = LinearModelMean()
+        results_unadj = stat_unadj.transform(
             test_data.drop(columns=["value_pre"]),
             "value",
             "control",
