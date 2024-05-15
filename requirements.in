@@ -160,7 +160,7 @@ matplotlib==3.8.3
     # via mozanalysis
 mccabe==0.7.0
     # via flake8
-mozanalysis==2024.5.1
+mozanalysis==2024.5.2
     # via mozilla-jetstream
 mozilla-metric-config-parser==2024.4.1
     # via
@@ -236,7 +236,7 @@ protobuf==4.25.3
     #   proto-plus
 psutil==5.9.8
     # via distributed
-pyarrow==15.0.1
+pyarrow==14.0.2
     # via
     #   db-dtypes
     #   mozanalysis
