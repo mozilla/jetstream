@@ -499,17 +499,11 @@ class Analysis:
         covariate_table_name = self._table_name(
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
         )
-        metric_names = []
-        # select placeholder column for metrics without select statement
-        # since metrics that don't appear in the df are skipped
-        # e.g., metrics with depends on such as population ratio metrics
-        empty_metric_names: list[str]  = []
+
         if metric.depends_on:
             raise ValueError(
                 "metrics with dependencies are not currently supported for covariate adjustment"
             )
-        else:
-            metric_names.append(metric.name)
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
         from_expression = dedent(
@@ -522,12 +516,12 @@ class Analysis:
             f"""
         SELECT
             during.branch,
-            {', '.join([f'during.{m}' for m in metric_names + empty_metric_names])}{','}
+            during.{metric.name},
             {preenrollment_metric_select}
         FROM (
             {from_expression}
         )
-        WHERE {' IS NOT NULL AND '.join([f'during.{m}' for m in metric_names] + [''])[:-1]}
+        WHERE during.{metric.name} IS NOT NULL AND
         """
         )
 
