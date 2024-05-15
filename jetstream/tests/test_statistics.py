@@ -17,6 +17,7 @@ from jetstream.statistics import (
     Deciles,
     EmpiricalCDF,
     KernelDensityEstimate,
+    LinearModelMean,
     PerClientDAUImpact,
     PopulationRatio,
     StatisticResult,
@@ -46,6 +47,46 @@ class TestStatistics:
         treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
+        assert treatment_result.lower and treatment_result.upper
+
+    def test_linear_model_mean(self):
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+        )
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point < control_result.point
+        assert treatment_result.lower and treatment_result.upper
+
+    def test_linear_model_mean_covariate(self):
+        stat = LinearModelMean()
+        np.random.seed(42)
+        y_c = np.random.normal(size=200)
+        te = np.random.normal(loc=1, scale=0.1)
+        y_t = y_c + te
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 100 + ["control"] * 100,
+                "value": np.concatenate([y_t[:100], y_c[100:]]),
+                "value_pre": y_c + np.random.normal(scale=0.1),
+            }
+        )
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point > control_result.point
         assert treatment_result.lower and treatment_result.upper
 
     def test_per_client_dau_impact(self):

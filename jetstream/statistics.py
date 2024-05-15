@@ -13,6 +13,7 @@ import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.frequentist_stats.bootstrap
+import mozanalysis.frequentist_stats.linear_models
 import mozanalysis.metrics
 import numpy as np
 from google.cloud import bigquery
@@ -423,11 +424,8 @@ class BootstrapMean(Statistic):
 
 
 @attr.s(auto_attribs=True)
-class BootstrapMeanLinearModel(Statistic):
+class LinearModelMean(Statistic):
     drop_highest: float = 0.005
-    alphas: List[float] = [0.05]
-    confidence_interval: float = 0.95
-    covariate_adjustment: Optional[Dict[str, str]] = None
 
     def transform(
         self,
@@ -438,22 +436,19 @@ class BootstrapMeanLinearModel(Statistic):
         analysis_basis: AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        # if self.covariate_adjustment is None:
-        #     raise ValueError('missing covariate adjustment for linear model')
-        # else:
-        #     raise ValueError(self.covariate_adjustment)
-        if f"{metric}_pre" in df.columns:
-            pretreatment_col_label = f"{metric}_pre"
-        else:
-            pretreatment_col_label = None
 
-        ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches_lm(
+        if f"{metric}_pre" in df.columns:
+            covariate_col_label = f"{metric}_pre"
+        else:
+            covariate_col_label = None
+
+        ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
             df,
             col_label=metric,
             ref_branch_label=reference_branch,
-            pretreatment_col_label=pretreatment_col_label,
+            covariate_col_label=covariate_col_label,
             threshold_quantile=1 - self.drop_highest,
-            alphas=self.alphas,
+            alphas=[0.05],
         )
 
         return flatten_simple_compare_branches_result(
@@ -461,7 +456,7 @@ class BootstrapMeanLinearModel(Statistic):
             metric_name=metric,
             statistic_name="mean_lm",
             reference_branch=reference_branch,
-            ci_width=self.confidence_interval,
+            ci_width=0.95,
         )
 
 
