@@ -724,6 +724,48 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
     assert expected_query == actual_query
 
 
+def test_create_subset_metric_table_query_use_covariate_implicit_metric(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {"covariate_adjustment": {"period": "preenrollment_week"}}
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.OVERALL,
+    )
+
+    assert expected_query == actual_query
+
+
 def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatch):
     wrong_method = Mock(side_effect=Exception("the wrong query builder was called"))
     right_method = Mock()

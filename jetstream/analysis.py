@@ -408,7 +408,7 @@ class Analysis:
     ) -> str:
         query = ""
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
-            covariate_metric_name = covariate_params["metric"] or summary.metric.name
+            covariate_metric_name = covariate_params.get("metric", summary.metric.name)
             covariate_period = AnalysisPeriod(covariate_params["period"])
             if covariate_period != period:
                 # when we configure a metric, all statistics are applied to all periods
