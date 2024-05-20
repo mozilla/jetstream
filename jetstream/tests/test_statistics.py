@@ -111,6 +111,13 @@ class TestStatistics:
         assert rel_results.lower > rel_results_unadj.lower
         assert rel_results.upper < rel_results_unadj.upper
 
+    def test_linear_model_mean_covariate_bad_period(self):
+        with pytest.raises(
+            ValueError,
+            match="Covariate adjustment must be done using pre-treatment analysis period",
+        ):
+            LinearModelMean(covariate_adjustment={"metric": "value", "period": "overall"})
+
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
         test_data = pd.DataFrame(

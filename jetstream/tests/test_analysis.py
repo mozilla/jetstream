@@ -680,24 +680,6 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
     )
 
 
-def test_create_subset_metric_table_query_use_covariate_bad_period(experiments, monkeypatch):
-    summary = MagicMock()
-    summary.statistic.params = {
-        "covariate_adjustment": {"metric": "my_metric", "period": "overall"}
-    }
-
-    with pytest.raises(
-        ValueError, match=r"Covariate adjustment must be done using pre-treatment analysis period"
-    ):
-        _empty_analysis(experiments)._create_subset_metric_table_query(
-            "test_experiment_enrollments_1",
-            "all",
-            summary,
-            AnalysisBasis.ENROLLMENTS,
-            AnalysisPeriod.OVERALL,
-        )
-
-
 def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatch):
     wrong_method = Mock(side_effect=Exception("the wrong query builder was called"))
     right_method = Mock()

@@ -425,14 +425,13 @@ class BootstrapMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
-    def __init__(
-        self,
-        drop_highest: float = 0.005,
-        covariate_adjustment: dict[str, dict[str, str]] | None = None,
-    ) -> None:
-        self.drop_highest = drop_highest
-        if covariate_adjustment:
-            covariate_period = parser_metric.AnalysisPeriod(covariate_adjustment["period"])
+    drop_highest: float = attr.field(default=0.005, validator=attr.validators.instance_of(float))
+    covariate_adjustment: dict[str, dict[str, str]] | None = attr.field(default=None)
+
+    @covariate_adjustment.validator
+    def check(self, attribute, value):
+        if value is not None:
+            covariate_period = parser_metric.AnalysisPeriod(value["period"])
             if covariate_period not in (
                 parser_metric.AnalysisPeriod.PREENROLLMENT_WEEK,
                 parser_metric.AnalysisPeriod.PREENROLLMENT_DAYS_28,
@@ -440,8 +439,6 @@ class LinearModelMean(Statistic):
                 raise ValueError(
                     "Covariate adjustment must be done using pre-treatment analysis period"
                 )
-
-        self.covariate_adjustment = covariate_adjustment
 
     def transform(
         self,
