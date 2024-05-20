@@ -501,8 +501,8 @@ class Analysis:
         covariate_period: AnalysisPeriod,
         covariate_metric_name: str,
     ) -> str:
-        """Creates a SQL query string to pull a during-experiment metric and join on a pre-enrollment
-        covariate for a segment/analysis"""
+        """Creates a SQL query string to pull a during-experiment metric and join on a
+        pre-enrollment covariate for a segment/analysis"""
 
         if metric.depends_on:
             raise ValueError(
