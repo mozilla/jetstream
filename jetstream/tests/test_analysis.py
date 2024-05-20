@@ -419,6 +419,43 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
     assert expected_query == actual_query
 
 
+def test_create_subset_metric_table_query_covariate_missing_table_fallback(
+    experiments, monkeypatch
+):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=False)
+    )
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
+    )
+
+    assert expected_query == actual_query
+
+
 def test_create_subset_metric_table_query_univariate_segment(experiments):
     metric = Metric(
         name="metric_name",
