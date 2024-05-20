@@ -446,7 +446,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
-    
+
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
@@ -457,9 +457,12 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     )
 
     assert expected_query == actual_query
-    
+
     # test that logging message was generated
-    assert "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"  in caplog.text
+    assert (
+        "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"
+        in caplog.text
+    )
 
 
 def test_create_subset_metric_table_query_univariate_segment(experiments):
