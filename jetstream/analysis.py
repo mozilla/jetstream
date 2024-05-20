@@ -406,10 +406,24 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
     ) -> str:
+        query = ""
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
             covariate_metric_name = covariate_params["metric"]
             covariate_period = AnalysisPeriod(covariate_params["period"])
+            if covariate_period not in (
+                AnalysisPeriod.PREENROLLMENT_WEEK,
+                AnalysisPeriod.PREENROLLMENT_DAYS_28,
+            ):
+                raise ValueError(
+                    "Covariate adjustment must be done using pre-treatment analysis period"
+                )
             if covariate_period != period:
+                # when we configure a metric, all statistics are applied to all periods
+                # however, to perform covariate adjustment we must use data from a different
+                # period. So the metric will be configured with analysis periods like
+                # [preenrollment_week, weekly, overall] but covariate adjustment should
+                # only be applied on weekly and overall when using preenrollment_week
+                # as the covariate.
                 query = self._create_subset_metric_table_query_covariate(
                     metrics_table_name,
                     segment,
@@ -418,17 +432,8 @@ class Analysis:
                     covariate_period,
                     covariate_metric_name,
                 )
-            else:
-                # when we configure a metric, all statistics are applied to all periods
-                # however, to perform covariate adjustment we must use data from a different
-                # period. So the metric will be configured with analysis periods like
-                # [preenrollment_week, weekly, overall] but covariate adjustment should
-                # only be applied on weekly and overall when using preenrollment_week
-                # as the covariate.
-                query = self._create_subset_metric_table_query_univariate(
-                    metrics_table_name, segment, summary.metric, analysis_basis
-                )
-        else:
+
+        if not query:
             query = self._create_subset_metric_table_query_univariate(
                 metrics_table_name, segment, summary.metric, analysis_basis
             )
@@ -442,7 +447,7 @@ class Analysis:
         metric: Metric,
         analysis_basis: AnalysisBasis,
     ) -> str:
-        """Creates a SQL query string to pull a single metric for a segment/analysis-"""
+        """Creates a SQL query string to pull a single metric for a segment/analysis"""
 
         metric_names = []
         # select placeholder column for metrics without select statement
@@ -494,16 +499,16 @@ class Analysis:
         covariate_period: AnalysisPeriod,
         covariate_metric_name: str,
     ) -> str:
-        """Creates a SQL query string to pull a single metric for a segment/analysis-"""
-
-        covariate_table_name = self._table_name(
-            covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
-        )
+        """Creates a SQL query string to pull a during-experiment metric and for a segment/analysis"""
 
         if metric.depends_on:
             raise ValueError(
                 "metrics with dependencies are not currently supported for covariate adjustment"
             )
+
+        covariate_table_name = self._table_name(
+            covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
+        )
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
         from_expression = dedent(
