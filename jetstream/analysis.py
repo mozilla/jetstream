@@ -410,15 +410,6 @@ class Analysis:
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
             covariate_metric_name = covariate_params["metric"]
             covariate_period = AnalysisPeriod(covariate_params["period"])
-
-            if covariate_period not in (
-                AnalysisPeriod.PREENROLLMENT_WEEK,
-                AnalysisPeriod.PREENROLLMENT_DAYS_28,
-            ):
-                raise ValueError(
-                    "Covariate adjustment must be done using pre-treatment analysis period"
-                )
-
             if covariate_period != period:
                 # when we configure a metric, all statistics are applied to all periods
                 # however, to perform covariate adjustment we must use data from a different

@@ -425,8 +425,23 @@ class BootstrapMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
-    drop_highest: float = 0.005
-    covariate_adjustment: dict[str, dict[str, str]] | None = None
+    def __init__(
+        self,
+        drop_highest: float = 0.005,
+        covariate_adjustment: dict[str, dict[str, str]] | None = None,
+    ) -> None:
+        self.drop_highest = drop_highest
+        if covariate_adjustment:
+            covariate_period = parser_metric.AnalysisPeriod(covariate_adjustment["period"])
+            if covariate_period not in (
+                parser_metric.AnalysisPeriod.PREENROLLMENT_WEEK,
+                parser_metric.AnalysisPeriod.PREENROLLMENT_DAYS_28,
+            ):
+                raise ValueError(
+                    "Covariate adjustment must be done using pre-treatment analysis period"
+                )
+
+        self.covariate_adjustment = covariate_adjustment
 
     def transform(
         self,
@@ -439,7 +454,7 @@ class LinearModelMean(Statistic):
     ) -> StatisticResultCollection:
 
         if self.covariate_adjustment is not None:
-            covariate_col_label = f"{self.covariate_adjustment.get('metric')}_pre"
+            covariate_col_label = f"{self.covariate_adjustment.get("metric", metric)}_pre"
         else:
             covariate_col_label = None
 
