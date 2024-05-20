@@ -454,7 +454,7 @@ class LinearModelMean(Statistic):
     ) -> StatisticResultCollection:
 
         if self.covariate_adjustment is not None:
-            covariate_col_label = f"{self.covariate_adjustment.get("metric", metric)}_pre"
+            covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
         else:
             covariate_col_label = None
 
