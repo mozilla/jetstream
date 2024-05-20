@@ -410,6 +410,7 @@ class Analysis:
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
             covariate_metric_name = covariate_params["metric"]
             covariate_period = AnalysisPeriod(covariate_params["period"])
+
             if covariate_period not in (
                 AnalysisPeriod.PREENROLLMENT_WEEK,
                 AnalysisPeriod.PREENROLLMENT_DAYS_28,
@@ -417,6 +418,7 @@ class Analysis:
                 raise ValueError(
                     "Covariate adjustment must be done using pre-treatment analysis period"
                 )
+
             if covariate_period != period:
                 # when we configure a metric, all statistics are applied to all periods
                 # however, to perform covariate adjustment we must use data from a different
@@ -499,7 +501,8 @@ class Analysis:
         covariate_period: AnalysisPeriod,
         covariate_metric_name: str,
     ) -> str:
-        """Creates a SQL query string to pull a during-experiment metric and for a segment/analysis"""
+        """Creates a SQL query string to pull a during-experiment metric and join on a pre-enrollment
+        covariate for a segment/analysis"""
 
         if metric.depends_on:
             raise ValueError(
