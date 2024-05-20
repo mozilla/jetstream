@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
@@ -25,6 +26,8 @@ from jetstream.errors import (
 )
 from jetstream.experimenter import ExperimentV1
 from jetstream.metric import Metric
+
+logger = logging.getLogger(__name__)
 
 
 def _empty_analysis(experiments):
@@ -420,7 +423,7 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
 
 
 def test_create_subset_metric_table_query_covariate_missing_table_fallback(
-    experiments, monkeypatch
+    experiments, monkeypatch, caplog
 ):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -443,7 +446,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
-
+    
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
@@ -454,6 +457,9 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     )
 
     assert expected_query == actual_query
+    
+    # test that logging message was generated
+    assert "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"  in caplog.text
 
 
 def test_create_subset_metric_table_query_univariate_segment(experiments):

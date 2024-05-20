@@ -514,7 +514,7 @@ class Analysis:
         if not self._check_if_table_exists(covariate_table_name):
             logger.error(
                 (
-                    f"Covariate adjustment table {covariate_table_name} does not exist"
+                    f"Covariate adjustment table {covariate_table_name} does not exist, "
                     "falling back to unadjusted inferences"
                 )
             )
