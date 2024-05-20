@@ -300,3 +300,62 @@ class TestConfigIntegration:
             "metric": "bogus_metric",
             "period": "preenrollment_week",
         }
+
+    def test_linear_models_covariate_parsing_bad_period(self):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "source_name"
+
+            [metrics.bogus_metric.statistics.linear_model_mean]
+            [metrics.bogus_metric.statistics.linear_model_mean.covariate_adjustment]
+            period = "overall"
+
+            [data_sources]
+            [data_sources.source_name]
+            from_expression = "project.dataset.table"
+            friendly_name = "Source"
+            description = "Source"
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+
+        dummy_experiment = Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=datetime.datetime.now(pytz.UTC),
+            proposed_enrollment=14,
+            app_name="desktop",
+            channel=Channel.NIGHTLY,
+        )
+
+        external_configs = ConfigCollection(
+            [
+                Config(
+                    slug="dummy-experiment",
+                    spec=spec,
+                    last_modified=datetime.datetime(2021, 2, 15, tzinfo=pytz.UTC),
+                )
+            ]
+        )
+
+        analysis_configuration = spec.resolve(dummy_experiment, external_configs)
+
+        summary = analysis_configuration.metrics[AnalysisPeriod.WEEK][0]
+
+        with pytest.raises(
+            ValueError,
+            match="Covariate adjustment must be done using pre-treatment analysis period",
+        ):
+            Summary.from_config(summary, 7).statistic
