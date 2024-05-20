@@ -205,6 +205,13 @@ class Analysis:
         else:
             return "_".join([normalized_slug, window_period, str(window_index)])
 
+    def _check_if_table_exists(self, table_name: str) -> bool:
+        matching_tables = self.bigquery.tables_matching_regex(table_name)
+        if len(matching_tables) > 1:
+            raise ValueError("multiple matching tables found")
+
+        return len(matching_tables) == 1
+
     def _publish_view(self, window_period: AnalysisPeriod, table_prefix=None, analysis_basis=None):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
@@ -503,6 +510,17 @@ class Analysis:
         covariate_table_name = self._table_name(
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
         )
+
+        if not self._check_if_table_exists(covariate_table_name):
+            logger.error(
+                (
+                    f"Covariate adjustment table {covariate_table_name} does not exist"
+                    "falling back to unadjusted inferences"
+                )
+            )
+            return self._create_subset_metric_table_query_univariate(
+                metrics_table_name, segment, metric, analysis_basis
+            )
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
         from_expression = dedent(

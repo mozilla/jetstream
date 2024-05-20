@@ -381,6 +381,10 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
+    )
+
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -443,6 +447,10 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
+    )
+
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -505,6 +513,10 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
+    )
+
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -636,7 +648,12 @@ def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
         )
 
 
-def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(experiments):
+def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
+    experiments, monkeypatch
+):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
+    )
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -684,6 +701,9 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
+    )
 
     summary = MagicMock()
     summary.statistic.params = {
@@ -727,6 +747,9 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
 def test_create_subset_metric_table_query_use_covariate_implicit_metric(experiments, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
     )
 
     summary = MagicMock()
@@ -793,6 +816,9 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
 def test_create_subset_metric_table_query_complete_covariate(experiments, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._check_if_table_exists", MagicMock(return_value=True)
     )
 
     summary = MagicMock()
