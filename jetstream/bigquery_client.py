@@ -11,6 +11,7 @@ import google.cloud.bigquery.table
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
+from google.cloud.exceptions import NotFound
 from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
@@ -55,6 +56,14 @@ class BigQueryClient:
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.time()))
+
+    def check_if_table_exists(self, table_name: str) -> bool:
+        table_ref = self.client.dataset(self.dataset).table(table_name)
+        try:
+            self.client.get_table(table_ref)
+            return True
+        except NotFound:
+            return False
 
     def load_table_from_json(
         self, results: Iterable[Dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
