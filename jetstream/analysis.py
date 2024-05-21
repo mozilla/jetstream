@@ -504,7 +504,7 @@ class Analysis:
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
         )
 
-        if not self.bigquery.check_if_table_exists(covariate_table_name):
+        if not self.bigquery.table_exists(covariate_table_name):
             logger.error(
                 (
                     f"Covariate adjustment table {covariate_table_name} does not exist, "
