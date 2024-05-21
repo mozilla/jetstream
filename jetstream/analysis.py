@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
+from functools import cache
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Optional
@@ -379,6 +380,20 @@ class Analysis:
 
         return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
 
+    def get_contradictory_branch_cols(self, metrics_table_name: str) -> list[str]:
+        query = dedent(
+            f"""
+            SELECT column_name AS col
+            FROM `{self.project}.{self.dataset}.INFORMATION_SCHEMA.COLUMNS`
+            WHERE table_name = '{metrics_table_name}'
+            AND REGEXP_CONTAINS(column_name,"has_contradictory_branch")
+        """
+        )
+
+        results = self.bigquery.execute(query).to_dataframe()
+
+        return results.col.to_list()
+
     @dask.delayed
     def subset_metric_table(
         self,
@@ -388,9 +403,11 @@ class Analysis:
         analysis_basis: AnalysisBasis,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
+        
+        contradictory_cols = self.get_contradictory_branch_cols(metrics_table_name)
 
         query = self._create_subset_metric_table_query(
-            metrics_table_name, segment, metric, analysis_basis
+            metrics_table_name, segment, metric, analysis_basis, contradictory_cols
         )
 
         results = self.bigquery.execute(query).to_dataframe()
@@ -399,7 +416,7 @@ class Analysis:
 
     @staticmethod
     def _create_subset_metric_table_query(
-        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis, contradictory_cols: list[str]
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis-"""
         metric_names = []
@@ -416,8 +433,22 @@ class Analysis:
 
         query = dedent(
             f"""
+        WITH non_dupes AS (
+            SELECT 
+                client_id, COUNT(*) AS n_rows
+            FROM {metrics_table_name}
+            GROUP BY 1
+            HAVING n_rows = 1
+        ), cleaned AS (
+            SELECT *
+            FROM {metrics_table_name}
+            INNER JOIN non_dupes
+            USING(client_id)            
+            WHERE num_enrollment_events = 1  
+        )
+
         SELECT branch, {', '.join(metric_names + empty_metric_names)}
-        FROM {metrics_table_name}
+        FROM cleaned
         WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
         """
         )
@@ -440,6 +471,14 @@ class Analysis:
             AND {segment} = TRUE"""
             )
             query += segment_filter
+
+        for col in contradictory_cols:
+            col_filter = dedent(
+                f"""
+            AND {col} IS false
+                """
+            )
+            query += col_filter
 
         return query
 
