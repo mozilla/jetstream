@@ -439,7 +439,7 @@ class LinearModelMean(Statistic):
             if covariate_period not in preenrollment_periods:
                 raise ValueError(
                     "Covariate adjustment must be done using a pre-treatment analysis "
-                    f"period (one of: {preenrollment_periods}"
+                    f"period (one of: {[p.value for p in preenrollment_periods]}"
                 )
 
     def transform(
