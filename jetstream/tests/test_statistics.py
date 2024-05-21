@@ -68,7 +68,7 @@ class TestStatistics:
         assert treatment_result.lower and treatment_result.upper
 
     @pytest.mark.parametrize(
-        [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS28]
+        [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
     )
     def test_linear_model_mean_covariate(self, period: AnalysisPeriod):
         stat = LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
