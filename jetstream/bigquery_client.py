@@ -57,13 +57,13 @@ class BigQueryClient:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.time()))
 
-    def check_if_table_exists(self, table_name: str) -> bool:
+    def table_exists(self, table_name: str) -> bool:
         table_ref = self.client.dataset(self.dataset).table(table_name)
         try:
             self.client.get_table(table_ref)
         except NotFound:
             return False
-        
+
         return True
 
     def load_table_from_json(

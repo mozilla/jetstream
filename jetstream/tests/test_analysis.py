@@ -385,7 +385,7 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
@@ -430,7 +430,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=False),
     )
 
@@ -496,7 +496,7 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
@@ -563,7 +563,7 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
@@ -702,7 +702,7 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
     experiments, monkeypatch
 ):
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
     metric = Metric(
@@ -753,7 +753,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
@@ -801,7 +801,7 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(experime
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
@@ -871,7 +871,7 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.check_if_table_exists",
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
         MagicMock(return_value=True),
     )
 
