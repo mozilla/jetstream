@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
+from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
@@ -66,10 +67,11 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower and treatment_result.upper
 
-    def test_linear_model_mean_covariate(self):
-        stat = LinearModelMean(
-            covariate_adjustment={"metric": "value", "period": "preenrollment_week"}
-        )
+    @pytest.mark.parametrize(
+        [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS28]
+    )
+    def test_linear_model_mean_covariate(self, period: AnalysisPeriod):
+        stat = LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
         np.random.seed(42)
         control_mean, treatment_effect = 2, 1
         rel_diff = treatment_effect / control_mean
@@ -112,14 +114,17 @@ class TestStatistics:
         assert rel_results.lower > rel_results_unadj.lower
         assert rel_results.upper < rel_results_unadj.upper
 
-    def test_linear_model_mean_covariate_bad_period(self):
+    @pytest.mark.parametrize(
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK]
+    )
+    def test_linear_model_mean_covariate_bad_period(self, period: AnalysisPeriod):
         with pytest.raises(
             ValueError,
             match=re.escape(
                 "Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])"  # noqa: E501
             ),
         ):
-            LinearModelMean(covariate_adjustment={"metric": "value", "period": "overall"})
+            LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
 
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
