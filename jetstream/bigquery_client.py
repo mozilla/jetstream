@@ -61,9 +61,10 @@ class BigQueryClient:
         table_ref = self.client.dataset(self.dataset).table(table_name)
         try:
             self.client.get_table(table_ref)
-            return True
         except NotFound:
             return False
+        
+        return True
 
     def load_table_from_json(
         self, results: Iterable[Dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
