@@ -432,12 +432,14 @@ class LinearModelMean(Statistic):
     def check(self, attribute, value):
         if value is not None:
             covariate_period = parser_metric.AnalysisPeriod(value["period"])
-            if covariate_period not in (
+            preenrollment_periods = [
                 parser_metric.AnalysisPeriod.PREENROLLMENT_WEEK,
                 parser_metric.AnalysisPeriod.PREENROLLMENT_DAYS_28,
-            ):
+            ]
+            if covariate_period not in preenrollment_periods:
                 raise ValueError(
-                    "Covariate adjustment must be done using pre-treatment analysis period"
+                    "Covariate adjustment must be done using a pre-treatment analysis "
+                    f"period (one of: {preenrollment_periods}"
                 )
 
     def transform(

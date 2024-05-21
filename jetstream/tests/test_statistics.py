@@ -114,7 +114,7 @@ class TestStatistics:
     def test_linear_model_mean_covariate_bad_period(self):
         with pytest.raises(
             ValueError,
-            match="Covariate adjustment must be done using pre-treatment analysis period",
+            match="Covariate adjustment must be done using a pre-treatment analysis period (one of preenrollment_week, preenrollment_days28)",  # noqa: E501
         ):
             LinearModelMean(covariate_adjustment={"metric": "value", "period": "overall"})
 
