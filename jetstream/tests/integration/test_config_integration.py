@@ -4,6 +4,7 @@ from textwrap import dedent
 
 import pytest
 import pytz
+import re
 import toml
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Config, ConfigCollection, DefaultConfig, Outcome
@@ -356,6 +357,8 @@ class TestConfigIntegration:
 
         with pytest.raises(
             ValueError,
-            match="Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])",  # noqa: E501",
+            match=re.escape(
+                "Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])"
+            ),  # noqa: E501",
         ):
             Summary.from_config(summary, 7).statistic

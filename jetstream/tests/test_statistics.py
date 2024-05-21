@@ -6,6 +6,7 @@ import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
+import re
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
@@ -114,7 +115,9 @@ class TestStatistics:
     def test_linear_model_mean_covariate_bad_period(self):
         with pytest.raises(
             ValueError,
-            match="Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])",  # noqa: E501
+            match=re.escape(
+                "Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])"  # noqa: E501
+            ),
         ):
             LinearModelMean(covariate_adjustment={"metric": "value", "period": "overall"})
 
