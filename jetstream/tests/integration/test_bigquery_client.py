@@ -34,9 +34,9 @@ class TestBigQueryClient:
         assert client.tables_matching_regex("nothing") == []
 
     def test_check_if_table_exists(self, client, temporary_dataset):
-        assert client.check_if_table_exists("dummy_table") == False
+        assert client.check_if_table_exists("dummy_table") is False
         client.client.create_table(f"{temporary_dataset}.dummy_table")
-        assert client.check_if_table_exists("dummy_table") == True
+        assert client.check_if_table_exists("dummy_table") is True
 
     def test_touch_tables(self, client, temporary_dataset):
         client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
