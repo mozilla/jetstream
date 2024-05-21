@@ -356,6 +356,6 @@ class TestConfigIntegration:
 
         with pytest.raises(
             ValueError,
-            match="Covariate adjustment must be done using a pre-treatment analysis period (one of preenrollment_week, preenrollment_days28)",  # noqa: E501",
+            match="Covariate adjustment must be done using a pre-treatment analysis period (one of ['preenrollment_week', 'preenrollment_days28'])",  # noqa: E501",
         ):
             Summary.from_config(summary, 7).statistic
