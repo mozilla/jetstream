@@ -1,9 +1,10 @@
 import datetime as dt
 import json
+import logging
 import re
 from datetime import timedelta
 from textwrap import dedent
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
@@ -25,6 +26,16 @@ from jetstream.errors import (
 )
 from jetstream.experimenter import ExperimentV1
 from jetstream.metric import Metric
+
+logger = logging.getLogger(__name__)
+
+
+def _empty_analysis(experiments):
+    x = experiments[0]
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+    return Analysis("spam", "eggs", config)
 
 
 def test_get_timelimits_if_ready(experiments):
@@ -346,7 +357,7 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
         assert called == 2
 
 
-def test_create_subset_metric_table_query_basic():
+def test_create_subset_metric_table_query_univariate_basic(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -362,14 +373,101 @@ def test_create_subset_metric_table_query_basic():
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_segment():
+def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_covariate_missing_table_fallback(
+    experiments, monkeypatch, caplog
+):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=False),
+    )
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
+    )
+
+    assert expected_query == actual_query
+
+    # test that logging message was generated
+    assert (
+        "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"
+        in caplog.text
+    )
+
+
+def test_create_subset_metric_table_query_univariate_segment(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -386,14 +484,58 @@ def test_create_subset_metric_table_query_segment():
     AND mysegment = TRUE"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_exposures():
+def test_create_subset_metric_table_query_covariate_segment(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL
+    AND during.mysegment = TRUE"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+        "test_experiment_enrollments_1",
+        "mysegment",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_univariate_exposures(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -409,14 +551,57 @@ def test_create_subset_metric_table_query_exposures():
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
         "test_experiment_exposures_1", "all", metric, AnalysisBasis.EXPOSURES
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_depends_on():
+def test_create_subset_metric_table_query_covariate_exposures(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.EXPOSURES,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        "metric_name",
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_univariate_depends_on(experiments):
     upstream_1_metric = Metric(
         name="upstream_1",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -450,14 +635,57 @@ def test_create_subset_metric_table_query_depends_on():
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = Analysis._create_subset_metric_table_query(
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_unsupported_analysis_basis():
+def test_create_subset_metric_table_query_covariate_depends_on(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    upstream_1_metric = Metric(
+        name="upstream_1",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    upstream_1 = Summary(upstream_1_metric, None, None)
+
+    upstream_2_metric = Metric(
+        name="upstream_2",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    upstream_2 = Summary(upstream_2_metric, None, None)
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        depends_on=[upstream_1, upstream_2],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"metrics with dependencies are not currently supported for covariate adjustment",
+    ):
+        _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+            "test_experiment_enrollments_1",
+            "all",
+            metric,
+            AnalysisBasis.ENROLLMENTS,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            "metric_name",
+        )
+
+
+def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(experiments):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -465,6 +693,253 @@ def test_create_subset_metric_table_query_unsupported_analysis_basis():
         analysis_bases=[AnalysisBasis.EXPOSURES],
     )
     with pytest.raises(ValueError):
-        Analysis._create_subset_metric_table_query(
+        _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
             "test_experiment_exposures_1", "all", metric, "non-basis"
         )
+
+
+def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
+    experiments, monkeypatch
+):
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.EXPOSURES],
+    )
+    with pytest.raises(ValueError):
+        _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+            "test_experiment_exposures_1",
+            "all",
+            metric,
+            "non-basis",
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            "metric_name",
+        )
+
+
+def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch):
+    wrong_method = Mock(side_effect=Exception("the wrong query builder was called"))
+    right_method = Mock()
+
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_week"}
+    }
+
+    # all is correct and the function should call the covariate builder
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate", wrong_method
+    )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate", right_method
+    )
+
+    _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.OVERALL,
+    )
+
+
+def test_create_subset_metric_table_query_use_covariate_explicit_metric(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_week"}
+    }
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.my_metric AS my_metric_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.OVERALL,
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_use_covariate_implicit_metric(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {"covariate_adjustment": {"period": "preenrollment_week"}}
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.metric_name AS metric_name_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.OVERALL,
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatch):
+    wrong_method = Mock(side_effect=Exception("the wrong query builder was called"))
+    right_method = Mock()
+
+    summary = MagicMock()
+    summary.statistic.params = dict()
+
+    # no configured covariate_adjustment parameter, use univariate
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate", wrong_method
+    )
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate", right_method
+    )
+
+    _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.OVERALL,
+    )
+
+
+def test_create_subset_metric_table_query_complete_covariate(experiments, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_days28"}
+    }
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT
+        during.branch,
+        during.metric_name,
+        pre.my_metric AS my_metric_pre
+    FROM (
+        test_experiment_enrollments_1 during
+        LEFT JOIN table_pre pre
+        USING (client_id, branch)
+    )
+    WHERE during.metric_name IS NOT NULL AND
+    during.enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_subset_metric_table_query_complete_univariate(experiments, monkeypatch):
+    summary = MagicMock()
+    summary.statistic.params = dict()
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM test_experiment_enrollments_1
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+    )
+
+    assert expected_query == actual_query

@@ -13,6 +13,7 @@ import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
 import mozanalysis.bayesian_stats.binary
 import mozanalysis.frequentist_stats.bootstrap
+import mozanalysis.frequentist_stats.linear_models
 import mozanalysis.metrics
 import numpy as np
 from google.cloud import bigquery
@@ -419,6 +420,60 @@ class BootstrapMean(Statistic):
             statistic_name="mean",
             reference_branch=reference_branch,
             ci_width=self.confidence_interval,
+        )
+
+
+@attr.s(auto_attribs=True)
+class LinearModelMean(Statistic):
+    drop_highest: float = attr.field(default=0.005, validator=attr.validators.instance_of(float))
+    # currently used keys are "metric" as the name of the metric
+    # and "period" as the (preenrollment) period to pull from
+    covariate_adjustment: dict[str, str] | None = attr.field(default=None)
+
+    @covariate_adjustment.validator
+    def check(self, attribute, value):
+        if value is not None:
+            covariate_period = parser_metric.AnalysisPeriod(value["period"])
+            preenrollment_periods = [
+                parser_metric.AnalysisPeriod.PREENROLLMENT_WEEK,
+                parser_metric.AnalysisPeriod.PREENROLLMENT_DAYS_28,
+            ]
+            if covariate_period not in preenrollment_periods:
+                raise ValueError(
+                    "Covariate adjustment must be done using a pre-treatment analysis "
+                    f"period (one of: {[p.value for p in preenrollment_periods]})"
+                )
+
+    def transform(
+        self,
+        df: DataFrame,
+        metric: str,
+        reference_branch: str,
+        experiment: Experiment,
+        analysis_basis: AnalysisBasis,
+        segment: str,
+    ) -> StatisticResultCollection:
+
+        if self.covariate_adjustment is not None:
+            covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
+        else:
+            covariate_col_label = None
+
+        ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
+            df,
+            col_label=metric,
+            ref_branch_label=reference_branch,
+            covariate_col_label=covariate_col_label,
+            threshold_quantile=1 - self.drop_highest,
+            alphas=[0.05],
+        )
+
+        return flatten_simple_compare_branches_result(
+            ma_result=ma_result,
+            metric_name=metric,
+            statistic_name="mean_lm",
+            reference_branch=reference_branch,
+            ci_width=0.95,
         )
 
 

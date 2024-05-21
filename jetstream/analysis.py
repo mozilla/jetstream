@@ -384,24 +384,64 @@ class Analysis:
         self,
         metrics_table_name: str,
         segment: str,
-        metric: Metric,
+        summary: metric.Summary,
         analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
 
         query = self._create_subset_metric_table_query(
-            metrics_table_name, segment, metric, analysis_basis
+            metrics_table_name, segment, summary, analysis_basis, period
         )
 
         results = self.bigquery.execute(query).to_dataframe()
 
         return results
 
-    @staticmethod
     def _create_subset_metric_table_query(
-        metrics_table_name: str, segment: str, metric: Metric, analysis_basis: AnalysisBasis
+        self,
+        metrics_table_name: str,
+        segment: str,
+        summary: metric.Summary,
+        analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
     ) -> str:
-        """Creates a SQL query string to pull a single metric for a segment/analysis-"""
+        query = ""
+        if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
+            covariate_metric_name = covariate_params.get("metric", summary.metric.name)
+            covariate_period = AnalysisPeriod(covariate_params["period"])
+            if covariate_period != period:
+                # when we configure a metric, all statistics are applied to all periods
+                # however, to perform covariate adjustment we must use data from a different
+                # period. So the metric will be configured with analysis periods like
+                # [preenrollment_week, weekly, overall] but covariate adjustment should
+                # only be applied on weekly and overall when using preenrollment_week
+                # as the covariate.
+                query = self._create_subset_metric_table_query_covariate(
+                    metrics_table_name,
+                    segment,
+                    summary.metric,
+                    analysis_basis,
+                    covariate_period,
+                    covariate_metric_name,
+                )
+
+        if not query:
+            query = self._create_subset_metric_table_query_univariate(
+                metrics_table_name, segment, summary.metric, analysis_basis
+            )
+
+        return query
+
+    def _create_subset_metric_table_query_univariate(
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis,
+    ) -> str:
+        """Creates a SQL query string to pull a single metric for a segment/analysis"""
+
         metric_names = []
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
@@ -438,6 +478,81 @@ class Analysis:
             segment_filter = dedent(
                 f"""
             AND {segment} = TRUE"""
+            )
+            query += segment_filter
+
+        return query
+
+    def _create_subset_metric_table_query_covariate(
+        self,
+        metrics_table_name: str,
+        segment: str,
+        metric: Metric,
+        analysis_basis: AnalysisBasis,
+        covariate_period: AnalysisPeriod,
+        covariate_metric_name: str,
+    ) -> str:
+        """Creates a SQL query string to pull a during-experiment metric and join on a
+        pre-enrollment covariate for a segment/analysis"""
+
+        if metric.depends_on:
+            raise ValueError(
+                "metrics with dependencies are not currently supported for covariate adjustment"
+            )
+
+        covariate_table_name = self._table_name(
+            covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS
+        )
+
+        if not self.bigquery.table_exists(covariate_table_name):
+            logger.error(
+                (
+                    f"Covariate adjustment table {covariate_table_name} does not exist, "
+                    "falling back to unadjusted inferences"
+                )
+            )
+            return self._create_subset_metric_table_query_univariate(
+                metrics_table_name, segment, metric, analysis_basis
+            )
+
+        preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
+        from_expression = dedent(
+            f"""{metrics_table_name} during
+            LEFT JOIN {covariate_table_name} pre
+            USING (client_id, branch)"""
+        )
+
+        query = dedent(
+            f"""
+        SELECT
+            during.branch,
+            during.{metric.name},
+            {preenrollment_metric_select}
+        FROM (
+            {from_expression}
+        )
+        WHERE during.{metric.name} IS NOT NULL AND
+        """
+        )
+
+        if analysis_basis == AnalysisBasis.ENROLLMENTS:
+            basis_filter = """during.enrollment_date IS NOT NULL"""
+        elif analysis_basis == AnalysisBasis.EXPOSURES:
+            basis_filter = (
+                """during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
+            )
+        else:
+            raise ValueError(
+                f"AnalysisBasis {analysis_basis} not valid"
+                + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+            )
+
+        query += basis_filter
+
+        if segment != "all":
+            segment_filter = dedent(
+                f"""
+            AND during.{segment} = TRUE"""
             )
             query += segment_filter
 
@@ -746,15 +861,15 @@ class Analysis:
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
-                    for m in self.config.metrics[period]:
+                    for summary in self.config.metrics[period]:
                         if (
-                            m.metric.analysis_bases != analysis_basis
-                            and analysis_basis not in m.metric.analysis_bases
+                            summary.metric.analysis_bases != analysis_basis
+                            and analysis_basis not in summary.metric.analysis_bases
                         ):
                             continue
 
                         segment_data = self.subset_metric_table(
-                            metrics_table, segment, m.metric, analysis_basis
+                            metrics_table, segment, summary, analysis_basis, period
                         )
 
                         analysis_length_dates = 1
@@ -764,7 +879,7 @@ class Analysis:
                             analysis_length_dates = 7
 
                         segment_results.__root__ += self.calculate_statistics(
-                            m,
+                            summary,
                             segment_data,
                             segment,
                             analysis_basis,

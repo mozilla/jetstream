@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import re
 from pathlib import Path
 
 import jsonschema
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
+from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
@@ -17,6 +19,7 @@ from jetstream.statistics import (
     Deciles,
     EmpiricalCDF,
     KernelDensityEstimate,
+    LinearModelMean,
     PerClientDAUImpact,
     PopulationRatio,
     StatisticResult,
@@ -47,6 +50,82 @@ class TestStatistics:
         control_result = [r for r in branch_results if r.branch == "control"][0]
         assert treatment_result.point < control_result.point
         assert treatment_result.lower and treatment_result.upper
+
+    def test_linear_model_mean(self):
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+        )
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point < control_result.point
+        assert treatment_result.lower and treatment_result.upper
+
+    @pytest.mark.parametrize(
+        "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
+    )
+    def test_linear_model_mean_covariate(self, period: AnalysisPeriod):
+        stat = LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
+        np.random.seed(42)
+        control_mean, treatment_effect = 2, 1
+        rel_diff = treatment_effect / control_mean
+        y_c = np.random.normal(loc=control_mean, scale=1, size=200)
+        te = np.random.normal(loc=treatment_effect, scale=1, size=200)
+        y_t = y_c + te
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 100 + ["control"] * 100,
+                "value": np.concatenate([y_t[:100], y_c[100:]]),
+                "value_pre": y_c + np.random.normal(scale=1, size=200),
+            }
+        )
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).__root__
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
+        control_result = [r for r in branch_results if r.branch == "control"][0]
+        assert treatment_result.point > control_result.point
+        assert treatment_result.lower and treatment_result.upper
+
+        rel_results = [r for r in results if r.comparison == "relative_uplift"][0]
+
+        stat_unadj = LinearModelMean()
+        results_unadj = stat_unadj.transform(
+            test_data.drop(columns=["value_pre"]),
+            "value",
+            "control",
+            None,
+            AnalysisBasis.ENROLLMENTS,
+            "all",
+        ).__root__
+        rel_results_unadj = [r for r in results_unadj if r.comparison == "relative_uplift"][0]
+        # test that point estimate after adjustment is closer to truth
+        assert np.abs(rel_results.point - rel_diff) < np.abs(rel_results_unadj.point - rel_diff)
+        # test that confidence intervals are tighter
+        assert rel_results.lower > rel_results_unadj.lower
+        assert rel_results.upper < rel_results_unadj.upper
+
+    @pytest.mark.parametrize(
+        "period",
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK],
+    )
+    def test_linear_model_mean_covariate_bad_period(self, period: AnalysisPeriod):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])"  # noqa: E501
+            ),
+        ):
+            LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
 
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
