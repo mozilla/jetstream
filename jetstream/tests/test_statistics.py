@@ -1,12 +1,12 @@
 import datetime as dt
 import json
+import re
 from pathlib import Path
 
 import jsonschema
 import numpy as np
 import pandas as pd
 import pytest
-import re
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis

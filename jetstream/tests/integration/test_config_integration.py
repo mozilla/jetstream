@@ -1,10 +1,10 @@
 import datetime
+import re
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
 import pytz
-import re
 import toml
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Config, ConfigCollection, DefaultConfig, Outcome
