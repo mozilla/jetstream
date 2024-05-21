@@ -426,7 +426,9 @@ class BootstrapMean(Statistic):
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
     drop_highest: float = attr.field(default=0.005, validator=attr.validators.instance_of(float))
-    covariate_adjustment: dict[str, dict[str, str]] | None = attr.field(default=None)
+    # currently used keys are "metric" as the name of the metric
+    # and "period" as the (preenrollment) period to pull from
+    covariate_adjustment: dict[str, str] | None = attr.field(default=None)
 
     @covariate_adjustment.validator
     def check(self, attribute, value):
