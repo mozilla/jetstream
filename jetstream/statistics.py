@@ -913,7 +913,7 @@ class EmpiricalCDF(Statistic):
         return StatisticResultCollection.parse_obj(results)
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True)
 class PopulationRatio(Statistic):
     numerator: str
     denominator: str

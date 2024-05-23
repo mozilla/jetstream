@@ -11,6 +11,7 @@ from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
+from unittest.mock import MagicMock
 
 from jetstream.statistics import (
     Binomial,
@@ -126,6 +127,25 @@ class TestStatistics:
             ),
         ):
             LinearModelMean(covariate_adjustment={"metric": "value", "period": period.value})
+
+    @pytest.mark.parametrize(
+        "period",
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK],
+    )
+    def test_linear_model_mean_transform_good_period(self, period: AnalysisPeriod, monkeypatch):
+        stat = LinearModelMean(
+            covariate_adjustment={"metric": "value", "period": "preenrollment_week"}, period=period
+        )
+        m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
+
+        monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
+        monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
+
+        stat.transform(None, None, None, None, None, None)
+
+        print(m1.call_args)
+
+        raise ValueError
 
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
