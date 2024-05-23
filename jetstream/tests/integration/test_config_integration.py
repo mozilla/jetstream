@@ -301,8 +301,8 @@ class TestConfigIntegration:
 
         jetstream_statistic = Summary.from_config(summary, 7, period).statistic
 
-        assert isinstance(jetstream_statistic, LinearModelMean) # make mypy happy
-        
+        assert isinstance(jetstream_statistic, LinearModelMean)  # make mypy happy
+
         assert jetstream_statistic.covariate_adjustment == {
             "metric": "bogus_metric",
             "period": "preenrollment_week",
