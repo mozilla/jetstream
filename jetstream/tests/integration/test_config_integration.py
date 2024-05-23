@@ -14,7 +14,7 @@ from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
-from jetstream.statistics import Summary
+from jetstream.statistics import Summary, LinearModelMean
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -301,6 +301,8 @@ class TestConfigIntegration:
 
         jetstream_statistic = Summary.from_config(summary, 7, period).statistic
 
+        assert isinstance(jetstream_statistic, LinearModelMean) # make mypy happy
+        
         assert jetstream_statistic.covariate_adjustment == {
             "metric": "bogus_metric",
             "period": "preenrollment_week",

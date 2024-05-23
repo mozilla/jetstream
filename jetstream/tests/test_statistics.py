@@ -141,12 +141,12 @@ class TestStatistics:
         monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
         monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
 
-        stat.transform(None, None, None, None, None, None)
+        stat.transform(None, "", "", None, None, "")
 
         m1.assert_called_with(
             None,
-            col_label=None,
-            ref_branch_label=None,
+            col_label="",
+            ref_branch_label="",
             covariate_col_label="value_pre",
             threshold_quantile=0.995,
             alphas=[0.05],
