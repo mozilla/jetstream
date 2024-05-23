@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import re
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import jsonschema
 import numpy as np
@@ -11,7 +12,6 @@ from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod
 from mozanalysis.bayesian_stats.bayesian_bootstrap import get_bootstrap_samples
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
-from unittest.mock import MagicMock
 
 from jetstream.statistics import (
     Binomial,
@@ -143,9 +143,35 @@ class TestStatistics:
 
         stat.transform(None, None, None, None, None, None)
 
-        print(m1.call_args)
+        m1.assert_called_with(
+            None,
+            col_label=None,
+            ref_branch_label=None,
+            covariate_col_label="value_pre",
+            threshold_quantile=0.995,
+            alphas=[0.05],
+        )
 
-        raise ValueError
+    def test_linear_model_mean_transform_bad_period(self, monkeypatch):
+        stat = LinearModelMean(
+            covariate_adjustment={"metric": "value", "period": "preenrollment_week"},
+            period=AnalysisPeriod.PREENROLLMENT_WEEK,
+        )
+        m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
+
+        monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
+        monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
+
+        stat.transform(None, None, None, None, None, None)
+
+        m1.assert_called_with(
+            None,
+            col_label=None,
+            ref_branch_label=None,
+            covariate_col_label=None,
+            threshold_quantile=0.995,
+            alphas=[0.05],
+        )
 
     def test_per_client_dau_impact(self):
         stat = PerClientDAUImpact()
