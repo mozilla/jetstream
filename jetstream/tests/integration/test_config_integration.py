@@ -14,7 +14,7 @@ from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
-from jetstream.statistics import Summary, LinearModelMean
+from jetstream.statistics import LinearModelMean, Summary
 
 TEST_DIR = Path(__file__).parent.parent
 
