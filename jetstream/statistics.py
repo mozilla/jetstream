@@ -47,6 +47,7 @@ class Summary:
         cls,
         summary_config: parser_metric.Summary,
         analysis_period_length: Optional[int],
+        period: parser_metric.AnalysisPeriod,
     ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
@@ -210,6 +211,7 @@ class Statistic(ABC):
     returns a table representing a summary of the aggregates with respect to the branches
     of the experiment.
     """
+    period: parser_metric.AnalysisPeriod | None = attr.field(default = None)
 
     @classmethod
     def name(cls):
@@ -454,10 +456,12 @@ class LinearModelMean(Statistic):
         segment: str,
     ) -> StatisticResultCollection:
 
+        covariate_col_label = None
         if self.covariate_adjustment is not None:
-            covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
-        else:
-            covariate_col_label = None
+            # should be guaranteed to exist by the validator above
+            covariate_period = AnalysisPeriod(covariate_adjustment["period"])
+            if covariate_period != self.period: 
+                covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
 
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
             df,
