@@ -68,6 +68,7 @@ class Summary:
             raise ValueError(f"Statistic '{summary_config.statistic.name}' does not exist.")
 
         stats_params = copy.deepcopy(summary_config.statistic.params)
+        stats_params["period"] = period
 
         pre_treatments = []
         for pre_treatment_conf in summary_config.pre_treatments:
@@ -211,7 +212,8 @@ class Statistic(ABC):
     returns a table representing a summary of the aggregates with respect to the branches
     of the experiment.
     """
-    period: parser_metric.AnalysisPeriod | None = attr.field(default = None)
+
+    period: parser_metric.AnalysisPeriod | None = attr.field(default=None)
 
     @classmethod
     def name(cls):
@@ -458,9 +460,8 @@ class LinearModelMean(Statistic):
 
         covariate_col_label = None
         if self.covariate_adjustment is not None:
-            # should be guaranteed to exist by the validator above
-            covariate_period = AnalysisPeriod(covariate_adjustment["period"])
-            if covariate_period != self.period: 
+            covariate_period = parser_metric.AnalysisPeriod(self.covariate_adjustment["period"])
+            if covariate_period != self.period:
                 covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
 
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(

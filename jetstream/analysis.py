@@ -328,7 +328,7 @@ class Analysis:
         Run statistics on metric.
         """
         return (
-            Summary.from_config(metric, analysis_length_dates, AnalysisPeriod)
+            Summary.from_config(metric, analysis_length_dates, period)
             .run(
                 segment_data,
                 self.config.experiment,
