@@ -885,6 +885,7 @@ class Analysis:
                             segment,
                             analysis_basis,
                             analysis_length_dates,
+                            period
                         ).dict()["__root__"]
 
                     segment_results.__root__ += self.counts(
