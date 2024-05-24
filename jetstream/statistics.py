@@ -47,6 +47,7 @@ class Summary:
         cls,
         summary_config: parser_metric.Summary,
         analysis_period_length: Optional[int],
+        period: parser_metric.AnalysisPeriod,
     ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
         metric = Metric.from_metric_config(summary_config.metric)
@@ -67,6 +68,7 @@ class Summary:
             raise ValueError(f"Statistic '{summary_config.statistic.name}' does not exist.")
 
         stats_params = copy.deepcopy(summary_config.statistic.params)
+        stats_params["period"] = period
 
         pre_treatments = []
         for pre_treatment_conf in summary_config.pre_treatments:
@@ -210,6 +212,8 @@ class Statistic(ABC):
     returns a table representing a summary of the aggregates with respect to the branches
     of the experiment.
     """
+
+    period: parser_metric.AnalysisPeriod | None = attr.field(default=None)
 
     @classmethod
     def name(cls):
@@ -454,10 +458,11 @@ class LinearModelMean(Statistic):
         segment: str,
     ) -> StatisticResultCollection:
 
+        covariate_col_label = None
         if self.covariate_adjustment is not None:
-            covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
-        else:
-            covariate_col_label = None
+            covariate_period = parser_metric.AnalysisPeriod(self.covariate_adjustment["period"])
+            if covariate_period != self.period:
+                covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
 
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
             df,
@@ -908,7 +913,7 @@ class EmpiricalCDF(Statistic):
         return StatisticResultCollection.parse_obj(results)
 
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, kw_only=True)
 class PopulationRatio(Statistic):
     numerator: str
     denominator: str

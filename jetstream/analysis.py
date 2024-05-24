@@ -322,12 +322,13 @@ class Analysis:
         segment: str,
         analysis_basis: AnalysisBasis,
         analysis_length_dates: int,
+        period: AnalysisPeriod,
     ) -> StatisticResultCollection:
         """
         Run statistics on metric.
         """
         return (
-            Summary.from_config(metric, analysis_length_dates)
+            Summary.from_config(metric, analysis_length_dates, period)
             .run(
                 segment_data,
                 self.config.experiment,
@@ -884,6 +885,7 @@ class Analysis:
                             segment,
                             analysis_basis,
                             analysis_length_dates,
+                            period,
                         ).dict()["__root__"]
 
                     segment_results.__root__ += self.counts(

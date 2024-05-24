@@ -14,7 +14,7 @@ from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
-from jetstream.statistics import Summary
+from jetstream.statistics import LinearModelMean, Summary
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -233,7 +233,11 @@ class TestConfigIntegration:
         with pytest.raises(DryRunFailedError):
             validate(extern)
 
-    def test_linear_models_covariate_parsing(self):
+    @pytest.mark.parametrize(
+        "period",
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK],
+    )
+    def test_linear_models_covariate_parsing(self, period: AnalysisPeriod):
         config = dedent(
             """\
             [metrics]
@@ -295,14 +299,22 @@ class TestConfigIntegration:
         assert covariate_params["metric"] == "bogus_metric"
         assert AnalysisPeriod(covariate_params["period"]) == AnalysisPeriod.PREENROLLMENT_WEEK
 
-        jetstream_statistic = Summary.from_config(summary, 7).statistic
+        jetstream_statistic = Summary.from_config(summary, 7, period).statistic
+
+        assert isinstance(jetstream_statistic, LinearModelMean)  # make mypy happy
 
         assert jetstream_statistic.covariate_adjustment == {
             "metric": "bogus_metric",
             "period": "preenrollment_week",
         }
 
-    def test_linear_models_covariate_parsing_bad_period(self):
+        assert jetstream_statistic.period == period
+
+    @pytest.mark.parametrize(
+        "period",
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK],
+    )
+    def test_linear_models_covariate_parsing_bad_period(self, period: AnalysisPeriod):
         config = dedent(
             """\
             [metrics]
@@ -361,4 +373,4 @@ class TestConfigIntegration:
                 "Covariate adjustment must be done using a pre-treatment analysis period (one of: ['preenrollment_week', 'preenrollment_days28'])"  # noqa: E501
             ),
         ):
-            Summary.from_config(summary, 7).statistic
+            Summary.from_config(summary, 7, period).statistic
