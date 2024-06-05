@@ -205,13 +205,23 @@ class TestStatistics:
             test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
 
-        difference = [r for r in result if r.comparison == "difference"][0]
+        abs_difference = [r for r in result if r.comparison == "difference"][0]
         # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
         # at these small sample sizes, mozanalysis's bootstrap can be quite variable
         # so use a large tolerance
-        assert np.abs(difference.point - 10) < 1.0
-        assert np.abs(difference.lower - 7.155) < 1.0
-        assert np.abs(difference.upper - 12.844) < 1.0
+        assert np.abs(abs_difference.point - 10) < 1.0
+        assert np.abs(abs_difference.lower - 7.155) < 1.0
+        assert np.abs(abs_difference.upper - 12.844) < 1.0
+
+        rel_difference = [r for r in result if r.comparison == "relative_uplift"][0]
+
+        # analytically, we should see a point estimate of 222%, with 95% CI of (108%,398%)
+        # at these small sample sizes, mozanalysis's bootstrap can be quite variable
+        # so use a large tolerance
+
+        assert np.isclose(rel_difference.point, 2.22, atol=0.25)
+        assert np.isclose(rel_difference.lower, 1.08, atol=0.25)
+        assert np.isclose(rel_difference.upper, 3.98, atol=0.25)
 
     def test_binomial(self):
         stat = Binomial()
