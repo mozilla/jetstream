@@ -510,18 +510,35 @@ class PerClientDAUImpact(BootstrapMean):
 
         results = []
         for branch in experiment.branches:
-            branch_data = [
+            # for absolute differences we report the absolute difference in per-user
+            # sum(DAU) scaled by total user enrollment. The interpretation here is the
+            # DAU gain achieved if we deploy this branch to the same population as the
+            # experiment
+            branch_data_abs = [
                 x
                 for x in bootstrap_results.__root__
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
-            for d in branch_data:
+            for d in branch_data_abs:
                 d.point = d.point * num_enrolled_clients
                 d.upper = d.upper * num_enrolled_clients
                 d.lower = d.lower * num_enrolled_clients
                 d.statistic = "per_client_dau_impact"
 
                 results.append(d)
+
+            # for relative differences we simply report the relative difference in
+            # per-user sum(DAU)
+            branch_data_rel = [
+                x
+                for x in bootstrap_results.__root__
+                if x.branch == branch.slug and x.comparison == "relative_uplift"
+            ]
+            for d in branch_data_rel:
+                d.statistic = "per_client_dau_impact"
+
+                results.append(d)
+
         return StatisticResultCollection.parse_obj(results)
 
 
