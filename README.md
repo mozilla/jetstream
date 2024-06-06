@@ -23,7 +23,8 @@ To run integration tests, run `tox -e py310-integration`.
 # Create and activate a python virtual environment.
 python3 -m venv venv/
 source venv/bin/activate
-pip install -r requirements.txt
+# --no-deps to workaround https://github.com/pypa/pip/issues/9644
+pip install --no-deps -r requirements.txt
 pip install -e .
 ```
 
@@ -37,7 +38,7 @@ Jetstream uses pip-tools to manage dependencies, along with a script that runs t
 
 `./script/update_deps`
 
-Be sure to run `pip install -r requirements.txt` and reinstall jetstream (`pip install -e .`) afterwards, and **test** functionality!
+Be sure to run `pip install --no-deps -r requirements.txt` and reinstall jetstream (`pip install -e .`) afterwards, and **test** functionality!
 
 ### Update a single dependency
 
@@ -49,7 +50,7 @@ Be sure to run `pip install -r requirements.txt` and reinstall jetstream (`pip i
   - (*Note*: this is the last line of `script/update_deps`)
 
 3. Install dependencies
-- `pip install -r requirements.txt`
+- `pip install --no-deps -r requirements.txt`
 - `pip install -e .`
 
 4. Test!
