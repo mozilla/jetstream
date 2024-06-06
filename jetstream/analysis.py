@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 DASK_DASHBOARD_ADDRESS = "127.0.0.1:8782"
 DASK_N_PROCESSES = int(os.getenv("JETSTREAM_PROCESSES", 0)) or None  # Defaults to number of CPUs
-COST_PER_BYTE = 1 / 1024 / 1024 / 1024 / 1024 * 5
+COST_PER_SLOT_MS = 1 / 1000 / 60 / 60 * 0.06
 
 _dask_cluster = None
 
@@ -307,7 +307,7 @@ class Analysis:
 
             results = self.bigquery.execute(metrics_sql, res_table_name)
             logger.info(
-                f"Metric query cost: {results.total_bytes_billed * COST_PER_BYTE}",
+                f"Metric query cost: {results.slot_millis * COST_PER_SLOT_MS}",
             )
             self._write_sql_output(res_table_name, metrics_sql)
             self._publish_view(period, analysis_basis=analysis_basis.value)
@@ -959,7 +959,7 @@ class Analysis:
                 google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
             )
             logger.info(
-                "Enrollment query cost: " + f"{results.total_bytes_billed * COST_PER_BYTE}",
+                "Enrollment query cost: " + f"{results.slot_millis * COST_PER_SLOT_MS}",
             )
         except Conflict:
             pass
