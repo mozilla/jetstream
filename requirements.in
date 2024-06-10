@@ -207,7 +207,7 @@ numpy==1.26.4
     #   scikit-learn
     #   scipy
     #   statsmodels
-packaging==24.0
+packaging==24.1
     # via
     #   black
     #   dask
