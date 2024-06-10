@@ -1874,9 +1874,9 @@ types-toml==0.10.8.20240310 \
     --hash=sha256:3d41501302972436a6b8b239c850b26689657e25281b48ff0ec06345b8830331 \
     --hash=sha256:627b47775d25fa29977d9c70dc0cbab3f314f32c8d8d0c012f2ef5de7aaec05d
     # via -r requirements.in
-typing-extensions==4.12.1 \
-    --hash=sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a \
-    --hash=sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1
+typing-extensions==4.12.2 \
+    --hash=sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d \
+    --hash=sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8
     # via
     #   -r requirements.in
     #   black
