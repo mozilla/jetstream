@@ -10,7 +10,7 @@ test_dependencies = [
     "coverage",
     "isort",
     "jsonschema",
-    "pytest<8.0",  # pytest >= 8 is incompatible with pytest-black
+    "pytest<9.0",  # pytest >= 8 is incompatible with pytest-black
     "pytest-black",
     "pytest-cov",
     "pytest-flake8",
