@@ -59,7 +59,7 @@ exceptiongroup==1.2.1
     # via
     #   cattrs
     #   pytest
-faker==25.5.0
+faker==25.8.0
     # via polyfactory
 flake8==7.0.0
     # via pytest-flake8
