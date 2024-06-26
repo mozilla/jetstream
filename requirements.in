@@ -73,7 +73,7 @@ gitpython==3.1.43
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-google-api-core[grpc]==2.19.0
+google-api-core[grpc]==2.19.1
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
@@ -92,7 +92,7 @@ google-auth==2.30.0
     #   google-cloud-storage
 google-cloud-artifact-registry==1.11.3
     # via mozilla-jetstream
-google-cloud-bigquery==3.24.0
+google-cloud-bigquery==3.25.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -123,7 +123,7 @@ googleapis-common-protos[grpc]==1.63.1
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
-grpc-google-iam-v1==0.13.0
+grpc-google-iam-v1==0.13.1
     # via google-cloud-artifact-registry
 grpcio==1.64.1
     # via
@@ -278,7 +278,7 @@ pycodestyle==2.11.1
     # via flake8
 pycparser==2.22
     # via cffi
-pydantic==1.10.16
+pydantic==1.10.17
     # via mozilla-nimbus-schemas
 pyflakes==3.2.0
     # via flake8
@@ -388,7 +388,7 @@ types-pytz==2024.1.0.20240417
     # via mozilla-jetstream
 types-pyyaml==6.0.12.20240311
     # via mozilla-jetstream
-types-requests==2.32.0.20240602
+types-requests==2.32.0.20240622
     # via mozilla-jetstream
 types-six==1.16.21.20240513
     # via mozilla-jetstream
