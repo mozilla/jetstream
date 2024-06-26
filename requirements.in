@@ -244,7 +244,7 @@ polars==0.20.31
     # via marginaleffects
 polyfactory==2.16.0
     # via mozilla-nimbus-schemas
-proto-plus==1.23.0
+proto-plus==1.24.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
