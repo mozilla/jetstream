@@ -248,7 +248,7 @@ pluggy==1.5.0
     # via pytest
 polars==1.0.0
     # via marginaleffects
-polyfactory==2.16.0
+polyfactory==2.16.1
     # via mozilla-nimbus-schemas
 proto-plus==1.24.0
     # via
