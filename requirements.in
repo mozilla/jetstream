@@ -335,7 +335,7 @@ rpds-py==0.18.1
     #   referencing
 rsa==4.9
     # via google-auth
-scikit-learn==1.5.0
+scikit-learn==1.5.1
     # via mozilla-jetstream
 scipy==1.14.0
     # via
