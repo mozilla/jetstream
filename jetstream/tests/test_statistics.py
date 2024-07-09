@@ -150,6 +150,7 @@ class TestStatistics:
             covariate_col_label="value_pre",
             threshold_quantile=0.995,
             alphas=[0.05],
+            interactive=False,
         )
 
     def test_linear_model_mean_transform_bad_period(self, monkeypatch):
@@ -171,6 +172,7 @@ class TestStatistics:
             covariate_col_label=None,
             threshold_quantile=0.995,
             alphas=[0.05],
+            interactive=False,
         )
 
     def test_per_client_dau_impact(self):

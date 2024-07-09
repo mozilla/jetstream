@@ -471,6 +471,7 @@ class LinearModelMean(Statistic):
             covariate_col_label=covariate_col_label,
             threshold_quantile=1 - self.drop_highest,
             alphas=[0.05],
+            interactive=False,
         )
 
         return flatten_simple_compare_branches_result(
