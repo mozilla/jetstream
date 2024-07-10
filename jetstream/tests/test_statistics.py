@@ -36,6 +36,17 @@ def wine():
     )
 
 
+class SAME_DF:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+
+    def __eq__(self, other):
+        return isinstance(other, pd.DataFrame) and other.equals(self.df)
+
+    def __repr__(self):
+        return repr(self.df)
+
+
 class TestStatistics:
     def test_bootstrap_means(self):
         stat = BootstrapMean(num_samples=10)
@@ -141,10 +152,11 @@ class TestStatistics:
         monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
         monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
 
-        stat.transform(None, "", "", None, None, "")
+        df = pd.DataFrame({"value_pre": [0, 1]})
+        stat.transform(df, "", "", None, None, "")
 
         m1.assert_called_with(
-            None,
+            SAME_DF(df),
             col_label="",
             ref_branch_label="",
             covariate_col_label="value_pre",
@@ -153,10 +165,60 @@ class TestStatistics:
             interactive=False,
         )
 
-    def test_linear_model_mean_transform_bad_period(self, monkeypatch):
+    @pytest.mark.parametrize(
+        "period",
+        [AnalysisPeriod.OVERALL, AnalysisPeriod.DAY, AnalysisPeriod.DAYS_28, AnalysisPeriod.WEEK],
+    )
+    def test_linear_model_mean_transform_missing_covariate_column(
+        self, period: AnalysisPeriod, monkeypatch
+    ):
+        stat = LinearModelMean(
+            covariate_adjustment={"metric": "value", "period": "preenrollment_week"}, period=period
+        )
+        m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
+
+        monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
+        monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
+
+        df = pd.DataFrame({"any_column": [0, 1]})
+        stat.transform(df, "", "", None, None, "")
+
+        m1.assert_called_with(
+            SAME_DF(df),
+            col_label="",
+            ref_branch_label="",
+            covariate_col_label=None,
+            threshold_quantile=0.995,
+            alphas=[0.05],
+            interactive=False,
+        )
+
+    def test_linear_model_mean_transform_same_period(self, monkeypatch):
         stat = LinearModelMean(
             covariate_adjustment={"metric": "value", "period": "preenrollment_week"},
             period=AnalysisPeriod.PREENROLLMENT_WEEK,
+        )
+        m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
+
+        monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
+        monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
+
+        stat.transform(None, None, None, None, None, None)
+
+        m1.assert_called_with(
+            None,
+            col_label=None,
+            ref_branch_label=None,
+            covariate_col_label=None,
+            threshold_quantile=0.995,
+            alphas=[0.05],
+            interactive=False,
+        )
+
+    def test_linear_model_mean_transform_other_preenrollment_period(self, monkeypatch):
+        stat = LinearModelMean(
+            covariate_adjustment={"metric": "value", "period": "preenrollment_week"},
+            period=AnalysisPeriod.PREENROLLMENT_DAYS_28,
         )
         m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
 
