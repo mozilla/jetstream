@@ -471,7 +471,16 @@ class LinearModelMean(Statistic):
                 covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
 
         if covariate_col_label and covariate_col_label not in df.columns:
-            logger.warning(f"Falling back to unadjusted inferences for {metric}")
+            logger.warning(
+                f"Falling back to unadjusted inferences for {metric}",
+                extra={
+                    "experiment": experiment.normandy_slug,
+                    "metric": metric,
+                    "statistic": self.name(),
+                    "analysis_basis": analysis_basis.value,
+                    "segment": segment,
+                },
+            )
             covariate_col_label = None
 
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
