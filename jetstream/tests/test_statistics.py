@@ -37,7 +37,7 @@ def wine():
 
 
 class SAME_DF:
-    # Needed in order for `Mock.assert_called_with` to compare dataframe arguments 
+    # Needed in order for `Mock.assert_called_with` to compare dataframe arguments
     # for equality. See https://stackoverflow.com/questions/44640717/python-unit-test-mock-valueerror-the-truth-value-of-a-dataframe-is-ambiguous # noqa: E501
     # for more information
     def __init__(self, df: pd.DataFrame):
@@ -179,12 +179,14 @@ class TestStatistics:
             covariate_adjustment={"metric": "value", "period": "preenrollment_week"}, period=period
         )
         m1, m2 = MagicMock(return_value=True), MagicMock(return_value=True)
+        experiment = MagicMock(Experiment)
+        experiment.normandy_slug = "slug"
 
         monkeypatch.setattr("mozanalysis.frequentist_stats.linear_models.compare_branches_lm", m1)
         monkeypatch.setattr("jetstream.statistics.flatten_simple_compare_branches_result", m2)
 
         df = pd.DataFrame({"any_column": [0, 1]})
-        stat.transform(df, "", "", None, None, "")
+        stat.transform(df, "", "", experiment, AnalysisBasis.ENROLLMENTS, "")
 
         m1.assert_called_with(
             SAME_DF(df),
