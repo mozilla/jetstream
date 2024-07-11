@@ -37,6 +37,9 @@ def wine():
 
 
 class SAME_DF:
+    # Needed in order for `Mock.assert_called_with` to compare dataframe arguments 
+    # for equality. See https://stackoverflow.com/questions/44640717/python-unit-test-mock-valueerror-the-truth-value-of-a-dataframe-is-ambiguous # noqa: E501
+    # for more information
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
