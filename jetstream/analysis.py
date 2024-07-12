@@ -506,11 +506,15 @@ class Analysis:
         )
 
         if not self.bigquery.table_exists(covariate_table_name):
-            logger.error(
-                (
-                    f"Covariate adjustment table {covariate_table_name} does not exist, "
-                    "falling back to unadjusted inferences"
-                )
+            normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+            logger.warning(
+                f"Covariate adjustment table {covariate_table_name} does not exist, falling back to unadjusted inferences",  # noqa:E501
+                extra={
+                    "experiment": normalized_slug,
+                    "metric": metric,
+                    "analysis_basis": analysis_basis.value,
+                    "segment": segment,
+                },
             )
             return self._create_subset_metric_table_query_univariate(
                 metrics_table_name, segment, metric, analysis_basis
