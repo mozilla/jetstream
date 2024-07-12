@@ -461,8 +461,27 @@ class LinearModelMean(Statistic):
         covariate_col_label = None
         if self.covariate_adjustment is not None:
             covariate_period = parser_metric.AnalysisPeriod(self.covariate_adjustment["period"])
-            if covariate_period != self.period:
+            # we cannot apply covariate adjustment if the adjusting period is the current period
+            # or if the current period is itself a pre-enrollment period (e.g., cannot adjust
+            # preenrollment_week using preenrollment_days28)
+            if (covariate_period != self.period) and self.period not in (
+                parser_metric.AnalysisPeriod.PREENROLLMENT_WEEK,
+                parser_metric.AnalysisPeriod.PREENROLLMENT_DAYS_28,
+            ):
                 covariate_col_label = f"{self.covariate_adjustment.get('metric', metric)}_pre"
+
+        if covariate_col_label and covariate_col_label not in df.columns:
+            logger.warning(
+                f"Falling back to unadjusted inferences for {metric}",
+                extra={
+                    "experiment": experiment.normandy_slug,
+                    "metric": metric,
+                    "statistic": self.name(),
+                    "analysis_basis": analysis_basis.value,
+                    "segment": segment,
+                },
+            )
+            covariate_col_label = None
 
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
             df,
