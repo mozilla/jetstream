@@ -506,7 +506,7 @@ class Analysis:
         )
 
         if not self.bigquery.table_exists(covariate_table_name):
-            logger.error(
+            logger.warning(
                 (
                     f"Covariate adjustment table {covariate_table_name} does not exist, "
                     "falling back to unadjusted inferences"
