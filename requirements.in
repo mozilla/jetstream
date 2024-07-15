@@ -83,7 +83,7 @@ google-api-core[grpc]==2.19.1
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.31.0
+google-auth==2.32.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
