@@ -25,17 +25,14 @@ jobs:
           python3.10 -m venv venv/
           venv/bin/pip install --no-deps --progress-bar off --upgrade -r requirements.txt
     - run:
+        name: ruff lint
+        command: venv/bin/ruff check jetstream
+    - run:
+        name: ruff format
+        command: venv/bin/ruff format --check jetstream
+    - run:
         name: PyTest
-        command: venv/bin/pytest --black --ignore=jetstream/tests/integration/
-    - run:
-        name: flake8
-        command: venv/bin/flake8 jetstream
-    - run:
-        name: isort
-        command: venv/bin/isort --check jetstream
-    - run:
-        name: Mypy
-        command: venv/bin/mypy jetstream
+        command: venv/bin/pytest --ruff --ruff-format --ignore=jetstream/tests/integration/
     - save_cache:
         paths:
         - venv/
@@ -68,7 +65,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY_INTEGRATION_TEST" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          venv/bin/pytest --black --integration jetstream/tests/integration/
+          venv/bin/pytest --ruff --ruff-format --integration jetstream/tests/integration/
   deploy:
     docker:
       - image: python:3.10
@@ -77,11 +74,11 @@ jobs:
       - run:
           name: Install deployment tools
           command: |
-            pip install --upgrade setuptools wheel twine
+            pip install -r requirements.txt
       - run:
           name: Create the distribution files
           command: |
-            python setup.py sdist bdist_wheel
+            python -m build --sdist
       - run:
           name: Upload to PyPI
           command: |

@@ -35,7 +35,7 @@ def sampled_enrollment_query(
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
 
     if enrollments_query_type == EnrollmentsQueryType.NORMANDY:
-        enrollments_sql = """
+        enrollments_sql = f"""
         (SELECT
             e.client_id,
             "control" AS branch,
@@ -45,34 +45,27 @@ def sampled_enrollment_query(
             `moz-fx-data-shared-prod.telemetry.events` e
         WHERE
             client_id IS NOT NULL AND
-            e.submission_date BETWEEN '{first_enrollment_date}' AND '{last_enrollment_date}'
+            e.submission_date BETWEEN '{time_limits.first_enrollment_date}'
+                AND '{time_limits.last_enrollment_date}'
             AND sample_id < {population_sample_size}
         GROUP BY e.client_id, branch)
-            """.format(
-            first_enrollment_date=time_limits.first_enrollment_date,
-            last_enrollment_date=time_limits.last_enrollment_date,
-            population_sample_size=population_sample_size,
-        )
+            """
     elif enrollments_query_type == EnrollmentsQueryType.GLEAN_EVENT:
-        enrollments_sql = """
+        enrollments_sql = f"""
             (SELECT events.client_info.client_id AS client_id,
                 "control" AS branch,
                 DATE(MIN(events.submission_timestamp)) AS enrollment_date,
                 COUNT(events.submission_timestamp) AS num_enrollment_events
-            FROM `moz-fx-data-shared-prod.{dataset}.events` events,
+            FROM `moz-fx-data-shared-prod.{exp.app_id}.events` events,
             UNNEST(events.events) AS e
             WHERE
                 events.client_info.client_id IS NOT NULL AND
                 DATE(events.submission_timestamp)
-                BETWEEN '{first_enrollment_date}' AND '{last_enrollment_date}'
+                BETWEEN '{time_limits.first_enrollment_date}'
+                    AND '{time_limits.last_enrollment_date}'
                 AND sample_id < {population_sample_size}
             GROUP BY client_id, branch)
-            """.format(
-            first_enrollment_date=time_limits.first_enrollment_date,
-            last_enrollment_date=time_limits.last_enrollment_date,
-            dataset=exp.app_id,
-            population_sample_size=population_sample_size,
-        )
+            """
     elif enrollments_query_type == EnrollmentsQueryType.FENIX_FALLBACK:
         enrollments_sql = """
         (SELECT

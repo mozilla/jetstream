@@ -13,7 +13,7 @@ from jetstream.config import ConfigLoader
 
 
 class TestCliIntegration:
-    @pytest.fixture
+    @pytest.fixture()
     def runner(self):
         return CliRunner()
 
@@ -60,7 +60,7 @@ class TestCliIntegration:
             found_dns_lookup = False
             for overall_metric in config.metrics[AnalysisPeriod.OVERALL]:
                 if overall_metric.metric.name == "time_to_response_start_ms":
-                    assert False
+                    pytest.fail("Invalid metric, should not have been found.")
 
                 if overall_metric.metric.name == "dns_lookup_time":
                     found_dns_lookup = True

@@ -25,7 +25,7 @@ class ExperimentMetadata(Metadata):
     def from_config(
         cls,
         config: AnalysisConfiguration,
-        analysis_start_time: dt.datetime = None,
+        analysis_start_time: dt.datetime | None = None,
         config_loader=ConfigLoader,
     ) -> "ExperimentMetadata":
         all_metrics = [
@@ -111,7 +111,7 @@ def export_metadata(
     config: AnalysisConfiguration,
     bucket_name: str,
     project_id: str,
-    analysis_start_time: dt.datetime = None,
+    analysis_start_time: dt.datetime | None = None,
 ):
     """Export experiment metadata to GCS."""
     if config.experiment.normandy_slug is None:

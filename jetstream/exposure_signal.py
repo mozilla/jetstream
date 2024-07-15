@@ -66,7 +66,7 @@ class ExposureSignal(exposure_signal.ExposureSignal):
                 return time_limits.analysis_windows[0].end + num_dates_enrollment
         except Exception:
             if not isinstance(window_limit, int) and window_limit is not None:
-                raise ValueError(f"Invalid window limit: {window_limit}")
+                raise ValueError(f"Invalid window limit: {window_limit}") from None
             return window_limit
 
     @classmethod

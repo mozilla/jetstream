@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from distributed.diagnostics.plugin import SchedulerPlugin
 from distributed.scheduler import Scheduler
@@ -12,10 +11,10 @@ class TaskMonitoringPlugin(SchedulerPlugin):
     def __init__(
         self,
         scheduler: Scheduler,
-        project_id: Optional[str],
-        dataset_id: Optional[str],
-        table_id: Optional[str],
-        experiment: Optional[str],
+        project_id: str | None,
+        dataset_id: str | None,
+        table_id: str | None,
+        experiment: str | None,
     ) -> None:
         SchedulerPlugin.__init__(self)
         self.project_id = project_id
@@ -23,7 +22,7 @@ class TaskMonitoringPlugin(SchedulerPlugin):
         self.table_id = table_id
         self.experiment = experiment
         self.scheduler = scheduler
-        self.cache: List[Dict] = []
+        self.cache: list[dict] = []
 
     def transition(self, key, start, finish, *args, **kwargs):
         """Called by the scheduler every time a task changes status."""
@@ -45,7 +44,7 @@ class TaskMonitoringPlugin(SchedulerPlugin):
         self.cache = [(task.key, task.state) for task in tasks]
         self._write_to_bigquery(results)
 
-    def _write_to_bigquery(self, results: List[Dict]):
+    def _write_to_bigquery(self, results: list[dict]):
         """Write resource usage results to BigQuery."""
         try:
             if self.project_id and results != []:

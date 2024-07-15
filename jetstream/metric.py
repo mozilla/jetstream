@@ -1,11 +1,11 @@
-from typing import List, Optional
-
 import attr
 import mozanalysis.experiment
 import mozanalysis.metrics
 from metric_config_parser import data_source
 from metric_config_parser import metric as parser_metric
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
+
+DEFAULT_ANALYSIS_BASES = [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
 
 
 class Metric(parser_metric.Metric):
@@ -38,10 +38,7 @@ class Metric(parser_metric.Metric):
     def from_mozanalysis_metric(
         cls,
         mozanalysis_metric: mozanalysis.metrics.Metric,
-        analysis_bases: Optional[List[AnalysisBasis]] = [
-            AnalysisBasis.ENROLLMENTS,
-            AnalysisBasis.EXPOSURES,
-        ],
+        analysis_bases: list[AnalysisBasis] | None = DEFAULT_ANALYSIS_BASES,
     ) -> "Metric":
         return cls(
             name=mozanalysis_metric.name,
@@ -57,7 +54,7 @@ class Metric(parser_metric.Metric):
             friendly_name=mozanalysis_metric.friendly_name,
             description=mozanalysis_metric.description,
             bigger_is_better=mozanalysis_metric.bigger_is_better,
-            analysis_bases=analysis_bases or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
+            analysis_bases=analysis_bases or DEFAULT_ANALYSIS_BASES,
         )
 
     @classmethod

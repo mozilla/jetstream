@@ -5,7 +5,7 @@ import pytest
 from jetstream import pre_treatment
 
 
-@pytest.fixture
+@pytest.fixture()
 def example_data():
     return pd.DataFrame([{"a": 1, "b": 2}, {"a": 3, "b": 4}, {"a": 5, "b": 7}])
 

@@ -1,6 +1,5 @@
 import logging
 from enum import Enum
-from typing import Optional
 
 import attr
 import dask.distributed
@@ -19,11 +18,11 @@ class LOG_SOURCE(str, Enum):
 class LogConfiguration:
     """Configuration for setting up logging."""
 
-    log_project_id: Optional[str]
-    log_dataset_id: Optional[str]
-    log_table_id: Optional[str]
-    task_profiling_log_table_id: Optional[str]
-    task_monitoring_log_table_id: Optional[str]
+    log_project_id: str | None
+    log_dataset_id: str | None
+    log_table_id: str | None
+    task_profiling_log_table_id: str | None
+    task_monitoring_log_table_id: str | None
     log_to_bigquery: bool = False
     capacity: int = 50
     log_level: int = logging.WARNING

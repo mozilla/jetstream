@@ -69,8 +69,10 @@ class TestConfigLoader:
         assert ConfigLoader.get_data_source(metric.data_source.name, platform) is not None
 
     def test_get_nonexisting_data_source(self):
-        with pytest.raises(Exception):
-            ConfigLoader.get_data_source("non_existing", "foo") is None
+        with pytest.raises(
+            Exception, match="Could not find definition for data source non_existing"
+        ):
+            ConfigLoader.get_data_source("non_existing", "foo")
 
 
 class TestGeneratePlatformConfig:
@@ -81,7 +83,7 @@ class TestGeneratePlatformConfig:
     config_file = "default_metrics.toml"
 
     @pytest.mark.parametrize(
-        "test_input,expected",
+        ("test_input", "expected"),
         [
             (
                 {
@@ -91,23 +93,6 @@ class TestGeneratePlatformConfig:
                             "app_id": "firefox-desktop",
                         }
                     }
-                },
-                {
-                    "firefox_desktop": Platform(
-                        enrollments_query_type=EnrollmentsQueryType.NORMANDY,
-                        app_id="firefox-desktop",
-                        app_name="firefox_desktop",
-                    )
-                },
-            ),
-            (
-                {
-                    "platform": {
-                        "firefox_desktop": {
-                            "enrollments_query_type": "normandy",
-                            "app_id": "firefox-desktop",
-                        }
-                    },
                 },
                 {
                     "firefox_desktop": Platform(
@@ -168,22 +153,6 @@ class TestGeneratePlatformConfig:
                 "platform": {
                     "firefox_desktop": {
                         "enrollments_query_type": "glean-event",
-                    },
-                }
-            },
-            {
-                "platform": {
-                    "firefox_desktop": {
-                        "enrollments_query_type": "N7",
-                        "app_id": "firefox-desktop",
-                    },
-                }
-            },
-            {
-                "platform": {
-                    "firefox_desktop": {
-                        "enrollments_query_type": "N7",
-                        "app_id": "firefox-desktop",
                     },
                 }
             },

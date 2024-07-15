@@ -8,7 +8,7 @@ from jetstream.logging import LogConfiguration
 
 class TestLoggingIntegration:
     @pytest.fixture(autouse=True)
-    def logging_table_setup(self, client, temporary_dataset, project_id):
+    def _logging_table_setup(self, client, temporary_dataset, project_id):
         schema = [
             bigquery.SchemaField("timestamp", "TIMESTAMP"),
             bigquery.SchemaField("experiment", "STRING"),
@@ -71,34 +71,30 @@ class TestLoggingIntegration:
         result = list(
             client.client.query(f"SELECT * FROM {project_id}.{temporary_dataset}.logs").result()
         )
-        assert any([r.message == "Write warning to Bigquery" for r in result])
+        assert any(r.message == "Write warning to Bigquery" for r in result)
         assert (
-            any([r.message == "Do not write to BigQuery" and r.log_level == "WARN" for r in result])
+            any(r.message == "Do not write to BigQuery" and r.log_level == "WARN" for r in result)
             is False
         )
         assert any(
-            [
-                r.message == "Write error to BigQuery"
-                and r.experiment == "test_experiment"
-                and r.metric == "test_metric"
-                and r.statistic == "test_statistic"
-                and r.log_level == "ERROR"
-                and r.segment == "all"
-                and r.analysis_basis == "enrollments"
-                and r.source == "jetstream"
-                for r in result
-            ]
+            r.message == "Write error to BigQuery"
+            and r.experiment == "test_experiment"
+            and r.metric == "test_metric"
+            and r.statistic == "test_statistic"
+            and r.log_level == "ERROR"
+            and r.segment == "all"
+            and r.analysis_basis == "enrollments"
+            and r.source == "jetstream"
+            for r in result
         )
         assert any(
-            [
-                r.message == "Write exception to BigQuery"
-                and r.experiment == "test_experiment"
-                and r.metric == "test_metric"
-                and r.statistic == "test_statistic"
-                and r.log_level == "ERROR"
-                and r.segment == "test_segment"
-                and r.analysis_basis == "exposures"
-                and "Exception('Some exception')" in r.exception
-                for r in result
-            ]
+            r.message == "Write exception to BigQuery"
+            and r.experiment == "test_experiment"
+            and r.metric == "test_metric"
+            and r.statistic == "test_statistic"
+            and r.log_level == "ERROR"
+            and r.segment == "test_segment"
+            and r.analysis_basis == "exposures"
+            and "Exception('Some exception')" in r.exception
+            for r in result
         )

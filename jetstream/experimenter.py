@@ -1,6 +1,6 @@
 import datetime as dt
 import logging
-from typing import Iterable, List, Optional, Union
+from collections.abc import Iterable
 
 import attr
 import cattr
@@ -20,7 +20,7 @@ class Variant:
     ratio: int
 
 
-def _coerce_none_to_zero(x: Optional[int]) -> int:
+def _coerce_none_to_zero(x: int | None) -> int:
     return 0 if x is None else x
 
 
@@ -36,16 +36,16 @@ class ExperimentV1:
     slug: str  # experimenter slug
     type: str
     status: str
-    start_date: Optional[dt.datetime]
-    end_date: Optional[dt.datetime]
-    proposed_enrollment: Optional[int] = attr.ib(converter=_coerce_none_to_zero)
-    variants: List[Variant]
-    normandy_slug: Optional[str] = None
-    is_high_population: Optional[bool] = None
-    outcomes: Optional[List[Outcome]] = None
+    start_date: dt.datetime | None
+    end_date: dt.datetime | None
+    proposed_enrollment: int | None = attr.ib(converter=_coerce_none_to_zero)
+    variants: list[Variant]
+    normandy_slug: str | None = None
+    is_high_population: bool | None = None
+    outcomes: list[Outcome] | None = None
 
     @staticmethod
-    def _unix_millis_to_datetime(num: Optional[float]) -> Optional[dt.datetime]:
+    def _unix_millis_to_datetime(num: float | None) -> dt.datetime | None:
         if num is None:
             return None
         return dt.datetime.fromtimestamp(num / 1e3, pytz.utc)
@@ -92,17 +92,17 @@ class ExperimentV6:
     """Represents a v6 experiment from Experimenter."""
 
     slug: str  # Normandy slug
-    branches: List[experiment.Branch]
-    startDate: Optional[dt.datetime]
-    endDate: Optional[dt.datetime]
+    branches: list[experiment.Branch]
+    startDate: dt.datetime | None
+    endDate: dt.datetime | None
     proposedEnrollment: int
     bucketConfig: experiment.BucketConfig
-    referenceBranch: Optional[str]
-    _appName: Optional[str] = None
-    _appId: Optional[str] = None
-    outcomes: Optional[List[Outcome]] = None
-    enrollmentEndDate: Optional[dt.datetime] = None
-    isEnrollmentPaused: Optional[bool] = None
+    referenceBranch: str | None
+    _appName: str | None = None
+    _appId: str | None = None
+    outcomes: list[Outcome] | None = None
+    enrollmentEndDate: dt.datetime | None = None
+    isEnrollmentPaused: bool | None = None
     isRollout: bool = False
 
     @property
@@ -174,7 +174,7 @@ class ExperimentV6:
 
 @attr.s(auto_attribs=True)
 class ExperimentCollection:
-    experiments: List[experiment.Experiment] = attr.Factory(list)
+    experiments: list[experiment.Experiment] = attr.Factory(list)
 
     MAX_RETRIES = 3
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
@@ -242,7 +242,7 @@ class ExperimentCollection:
 
         return cls(nimbus_experiments + legacy_experiments + draft_experiments)
 
-    def of_type(self, type_or_types: Union[str, Iterable[str]]) -> "ExperimentCollection":
+    def of_type(self, type_or_types: str | Iterable[str]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
             type_or_types = (type_or_types,)
         cls = type(self)

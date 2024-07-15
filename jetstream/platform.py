@@ -1,5 +1,6 @@
+from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Any, Dict, MutableMapping
+from typing import Any
 
 import attr
 import toml
@@ -37,9 +38,8 @@ class Platform:
     def _check_value_not_null(self, attribute, value):
         if not value and str(value).lower() == "none":
             raise PlatformConfigurationException(
-                "'%s' attribute requires a value, please double check \
-                    platform configuration file. Value provided: %s"
-                % (attribute.name, str(value))
+                f"'{attribute.name}' attribute requires a value, please double check \
+                    platform configuration file. Value provided: {value}"
             )
 
     def validate_enrollments_query_type(self, attribute, value):
@@ -47,12 +47,8 @@ class Platform:
 
         if value not in iter(EnrollmentsQueryType):
             raise PlatformConfigurationException(
-                "Invalid value provided for %s, value provided: %s. Valid options are: %s"
-                % (
-                    attribute.name,
-                    value,
-                    iter(EnrollmentsQueryType),
-                )
+                f"Invalid value provided for {attribute.name}, value provided: {value}. \
+                    Valid options are: {iter(EnrollmentsQueryType)}"
             )
 
         return value
@@ -74,12 +70,12 @@ class Platform:
         return config
 
 
-def _generate_platform_config(config: MutableMapping[str, Any]) -> Dict[str, Platform]:
+def _generate_platform_config(config: MutableMapping[str, Any]) -> dict[str, Platform]:
     """
     Takes platform configuration and generates platform object map
     """
 
-    processed_config = dict()
+    processed_config = {}
 
     for platform, platform_config in config["platform"].items():
         processed_config[platform] = {

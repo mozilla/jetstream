@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 from threading import Lock, Thread
 from time import sleep
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import attr
 from distributed.client import Client
@@ -19,8 +19,8 @@ class ResourceUsage:
     """Recorded resource usages."""
 
     worker_address: str
-    memory_usage: List[float]
-    cpu_usage: List[float]
+    memory_usage: list[float]
+    cpu_usage: list[float]
 
 
 # See https://github.com/itamarst/dask-memusage/blob/22f1e44c6c3b32bd3125cd1f3fd1b512c568717f/
@@ -37,14 +37,14 @@ def _process_cpu():
     return sum([p.cpu_percent(interval=0.01) for p in [proc]])
 
 
-class WorkerResourceUsage(object):
+class WorkerResourceUsage:
     """Track memory usage for each worker."""
 
     def __init__(self, scheduler_address: str, update_freq: float):
         self._scheduler_address = scheduler_address
         self._lock = Lock()
-        self._worker_memory: Dict[str, Any] = defaultdict(list)
-        self._worker_cpu: Dict[str, Any] = defaultdict(list)
+        self._worker_memory: dict[str, Any] = defaultdict(list)
+        self._worker_cpu: dict[str, Any] = defaultdict(list)
         self.update_freq = update_freq
 
     def start(self):
@@ -103,14 +103,14 @@ class ResourceProfilingPlugin(SchedulerPlugin):
     def __init__(
         self,
         scheduler: Scheduler,
-        project_id: Optional[str],
-        dataset_id: Optional[str],
-        table_id: Optional[str],
-        experiment: Optional[str],
+        project_id: str | None,
+        dataset_id: str | None,
+        table_id: str | None,
+        experiment: str | None,
         update_freq: float = 10000.0,  # fetch resource usage every 10 seconds
     ):
         SchedulerPlugin.__init__(self)
-        self.results: List[Dict] = []
+        self.results: list[dict] = []
         self.memory_usage = None
         self.scheduler = scheduler
         self.project_id = project_id

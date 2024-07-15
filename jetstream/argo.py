@@ -5,7 +5,7 @@ import re
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import attr
 import google.auth
@@ -19,7 +19,7 @@ from .util import retry_get
 logger = logging.getLogger(__name__)
 
 
-def apply_parameters(manifest: Dict[Any, Any], parameters: Dict[str, Any]) -> Dict[Any, Any]:
+def apply_parameters(manifest: dict[Any, Any], parameters: dict[str, Any]) -> dict[Any, Any]:
     """Apply custom parameters to the workflow manifest."""
     # Currently, there is no option for providing custom parameters for workflows.
     # apply_parameters works around this limitation by modifying the parsed manifest
@@ -47,10 +47,10 @@ def submit_workflow(
     zone: str,
     cluster_id: str,
     workflow_file: Path,
-    parameters: Dict[str, Any],
+    parameters: dict[str, Any],
     monitor_status: bool = False,
-    cluster_ip: Optional[str] = None,
-    cluster_cert: Optional[str] = None,
+    cluster_ip: str | None = None,
+    cluster_cert: str | None = None,
 ) -> bool:
     """Submit a workflow to Argo and return success."""
     api = ArgoApi(project_id, zone, cluster_id, cluster_ip, cluster_cert)
@@ -146,8 +146,8 @@ class ArgoApi:
     project_id: str
     zone: str
     cluster_id: str
-    cluster_ip: Optional[str]
-    cluster_cert: Optional[str]
+    cluster_ip: str | None
+    cluster_cert: str | None
 
     def _get_config(self) -> Configuration:
         """Get the Kubernetes cluster config."""
@@ -189,12 +189,12 @@ class ArgoApi:
         so it shouldn't be reused for any other services."""
         session = requests.Session()
         session.verify = config.ssl_ca_cert
-        headers: CaseInsensitiveDict[Union[str, bytes]] = CaseInsensitiveDict()
+        headers: CaseInsensitiveDict[str | bytes] = CaseInsensitiveDict()
         headers["Authorization"] = f"{config.authorization_key_prefix} {config.authorization_key}"
         session.headers = headers
         return session
 
-    def create_workflow(self, namespace: str, manifest: str) -> Dict[str, Any]:
+    def create_workflow(self, namespace: str, manifest: str) -> dict[str, Any]:
         """Submit a new Argo workflow via the Kubernetes API."""
         config = self._get_config()
         session = self._session_for_config(config)
@@ -204,7 +204,7 @@ class ArgoApi:
         )
         return response.json()
 
-    def get_workflow(self, namespace: str, name: str) -> Dict[str, Any]:
+    def get_workflow(self, namespace: str, name: str) -> dict[str, Any]:
         """Fetch the workflow status from the Argo Kubernetes API."""
         config = self._get_config()
         session = self._session_for_config(config)

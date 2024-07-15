@@ -1,6 +1,5 @@
 import datetime
 from logging.handlers import BufferingHandler
-from typing import Optional
 
 from google.cloud import bigquery
 
@@ -14,7 +13,7 @@ class BigQueryLogHandler(BufferingHandler):
         dataset_id: str,
         table_id: str,
         source: str,
-        client: Optional[bigquery.Client] = None,
+        client: bigquery.Client | None = None,
         capacity=50,
     ):
         self.project_id = project_id

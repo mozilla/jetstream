@@ -1,23 +1,15 @@
 import logging
 import os
 import sys
+from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, time, timedelta
 from functools import partial
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
     Protocol,
     TextIO,
-    Tuple,
-    Type,
-    Union,
 )
 
 import attr
@@ -60,6 +52,15 @@ LOOKER_PREVIEW_URL = (
     "https://mozilla.cloud.looker.com/dashboards/experimentation::jetstream_preview"
 )
 
+ALL_PERIODS = [
+    AnalysisPeriod.DAY,
+    AnalysisPeriod.WEEK,
+    AnalysisPeriod.DAYS_28,
+    AnalysisPeriod.OVERALL,
+    AnalysisPeriod.PREENROLLMENT_WEEK,
+    AnalysisPeriod.PREENROLLMENT_DAYS_28,
+]
+
 
 @attr.s
 class AllType:
@@ -78,8 +79,8 @@ class ExecutorStrategy(Protocol):
 
     def execute(
         self,
-        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
+        worklist: Iterable[tuple[AnalysisConfiguration, datetime]],
+        configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = None,
     ) -> bool: ...
 
 
@@ -92,33 +93,26 @@ class ArgoExecutorStrategy:
     zone: str
     cluster_id: str
     monitor_status: bool
-    bucket: Optional[str] = None
-    cluster_ip: Optional[str] = None
-    cluster_cert: Optional[str] = None
+    bucket: str | None = None
+    cluster_ip: str | None = None
+    cluster_cert: str | None = None
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
-    analysis_periods: List[AnalysisPeriod] = [
-        AnalysisPeriod.DAY,
-        AnalysisPeriod.WEEK,
-        AnalysisPeriod.DAYS_28,
-        AnalysisPeriod.OVERALL,
-        AnalysisPeriod.PREENROLLMENT_WEEK,
-        AnalysisPeriod.PREENROLLMENT_DAYS_28,
-    ]
+    analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
-    image_version: Optional[str] = None
+    image_version: str | None = None
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
 
     def execute(
         self,
-        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
+        worklist: Iterable[tuple[AnalysisConfiguration, datetime]],
+        configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = None,
     ):
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
-        experiments_config: Dict[str, List[str]] = {}
+        experiments_config: dict[str, list[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
@@ -202,25 +196,18 @@ class SerialExecutorStrategy:
 
     project_id: str
     dataset_id: str
-    bucket: Optional[str] = None
-    log_config: Optional[LogConfiguration] = None
-    analysis_class: Type = Analysis
+    bucket: str | None = None
+    log_config: LogConfiguration | None = None
+    analysis_class: type = Analysis
     experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: _ConfigLoader = ConfigLoader
-    analysis_periods: List[AnalysisPeriod] = [
-        AnalysisPeriod.DAY,
-        AnalysisPeriod.WEEK,
-        AnalysisPeriod.DAYS_28,
-        AnalysisPeriod.OVERALL,
-        AnalysisPeriod.PREENROLLMENT_WEEK,
-        AnalysisPeriod.PREENROLLMENT_DAYS_28,
-    ]
-    sql_output_dir: Optional[str] = None
+    analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
+    sql_output_dir: str | None = None
 
     def execute(
         self,
-        worklist: Iterable[Tuple[AnalysisConfiguration, datetime]],
-        configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = None,
+        worklist: Iterable[tuple[AnalysisConfiguration, datetime]],
+        configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = None,
     ):
         failed = False
         for config, date in worklist:
@@ -291,12 +278,12 @@ class AnalysisExecutor:
     project_id: str
     dataset_id: str
     bucket: str
-    date: Union[datetime, AllType]
-    experiment_slugs: Union[Iterable[str], AllType]
-    configuration_map: Optional[Mapping[str, Union[TextIO, AnalysisSpec]]] = attr.ib(None)
+    date: datetime | AllType
+    experiment_slugs: Iterable[str] | AllType
+    configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = attr.ib(None)
     recreate_enrollments: bool = False
-    sql_output_dir: Optional[str] = None
-    log_config: Optional[LogConfiguration] = None
+    sql_output_dir: str | None = None
+    log_config: LogConfiguration | None = None
 
     @staticmethod
     def _today() -> datetime:
@@ -314,7 +301,7 @@ class AnalysisExecutor:
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
-        today: Optional[datetime] = None,
+        today: datetime | None = None,
     ) -> bool:
         """Execute analyses."""
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
@@ -358,9 +345,9 @@ class AnalysisExecutor:
 
     def _experiments_to_configs(
         self,
-        experiments: List[Experiment],
+        experiments: list[Experiment],
         config_getter: _ConfigLoader = ConfigLoader,
-    ) -> List[AnalysisConfiguration]:
+    ) -> list[AnalysisConfiguration]:
         """Convert mozanalysis experiments to analysis configs."""
         configs = []
         client = BigQueryClient(self.project_id, self.dataset_id)
@@ -412,7 +399,7 @@ class AnalysisExecutor:
             [], ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
-    ) -> List[AnalysisConfiguration]:
+    ) -> list[AnalysisConfiguration]:
         """Fetch configs of experiments that are to be analysed."""
         experiments = experiment_getter()
         run_configs = []
@@ -434,12 +421,12 @@ class AnalysisExecutor:
             launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
 
             for config in launched_configs:
-                if config.experiment.normandy_slug is not None:
+                if config.experiment.normandy_slug is not None and (
                     # get end_date from external config
-                    if config.experiment.end_date is None or (
-                        config.experiment.end_date and config.experiment.end_date >= self.date
-                    ):
-                        run_configs.append(config)
+                    config.experiment.end_date is None
+                    or (config.experiment.end_date and config.experiment.end_date >= self.date)
+                ):
+                    run_configs.append(config)
         else:
             existing_experiments = []
 
@@ -734,14 +721,7 @@ image_version_option = click.option(
 
 
 def analysis_periods_option(
-    default=[
-        AnalysisPeriod.DAY,
-        AnalysisPeriod.WEEK,
-        AnalysisPeriod.DAYS_28,
-        AnalysisPeriod.OVERALL,
-        AnalysisPeriod.PREENROLLMENT_WEEK,
-        AnalysisPeriod.PREENROLLMENT_DAYS_28,
-    ]
+    default=ALL_PERIODS,
 ):
     return click.option(
         "--analysis_periods",
@@ -1187,7 +1167,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
 
         print(f"Evaluating {config_file}...")
 
-        if "functions.toml" == config_file.name:
+        if config_file.name == "functions.toml":
             FunctionsSpec.from_dict(toml.load(config_file))
             print(f"{config_file} OK")
             continue
@@ -1399,7 +1379,7 @@ def preview(
             private_config_repos, is_private=True
         )
 
-        experiment: Optional[Experiment] = None
+        experiment: Experiment | None = None
         if experimenter_experiments.experiments != []:
             experiment = experimenter_experiments.experiments[0]
 
@@ -1488,7 +1468,7 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
+            experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
         )
 
         # run preview analysis
@@ -1516,12 +1496,14 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
+                    experiment_getter=lambda exp=experiment: ExperimentCollection(
+                        experiments=[exp]
+                    ),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
-                experiment_getter=lambda: ExperimentCollection(experiments=[experiment]),
+                experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
             )
 
         click.echo(

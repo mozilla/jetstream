@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 import attr
 import pytz
@@ -15,7 +14,7 @@ class ArtifactManager:
     project: str
     dataset: str
     image: str
-    _client: Optional[artifactregistry.ArtifactRegistryClient] = None
+    _client: artifactregistry.ArtifactRegistryClient | None = None
 
     @property
     def client(self):
@@ -23,7 +22,7 @@ class ArtifactManager:
         return self._client
 
     @property
-    def images(self) -> List[artifactregistry.DockerImage]:
+    def images(self) -> list[artifactregistry.DockerImage]:
         """Images available in the artifact registry."""
         # list all docker images that are in artifact registry
         request = artifactregistry.ListDockerImagesRequest(

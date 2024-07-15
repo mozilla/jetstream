@@ -18,13 +18,13 @@ def pytest_runtest_setup(item):
         pytest.skip("Skipping integration test")
 
 
-@pytest.fixture
+@pytest.fixture()
 def project_id():
     """Provide a BigQuery project ID."""
     return "jetstream-integration-test"
 
 
-@pytest.fixture
+@pytest.fixture()
 def temporary_dataset(project_id):
     """Fixture for creating a random temporary BigQuery dataset."""
     # generate a random test dataset to avoid conflicts when running tests in parallel
@@ -39,13 +39,13 @@ def temporary_dataset(project_id):
     client.delete_dataset(test_dataset, delete_contents=True, not_found_ok=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def client(project_id, temporary_dataset):
     """Provide a BigQuery client."""
     return BigQueryClient(project_id, temporary_dataset)
 
 
-@pytest.fixture
+@pytest.fixture()
 def static_dataset(project_id):
     """Dataset with static test data."""
     bigquery_client = bigquery.Client(project_id)
