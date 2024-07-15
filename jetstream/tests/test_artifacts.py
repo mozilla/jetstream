@@ -32,10 +32,9 @@ class TestArtifactManager:
         artifact_client = MagicMock()
         artifact_client.list_docker_images.return_value = docker_images
 
-        artifact_manager = ArtifactManager(
-            "moz-fx-data-experiments", "mozanalysis", "not-existing", artifact_client
-        )
-        with pytest.raises(ValueError):
+        proj = "moz-fx-data-experiments"
+        artifact_manager = ArtifactManager(proj, "mozanalysis", "not-existing", artifact_client)
+        with pytest.raises(ValueError, match=f"No jetstream docker image available in {proj}"):
             artifact_manager.latest_image()
 
     def test_image_for_date(self, docker_images):

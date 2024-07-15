@@ -18,7 +18,7 @@ def pytest_addoption(parser):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def experiments():
     return [
         Experiment(
@@ -172,7 +172,7 @@ def experiments():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def fenix_experiments():
     return [
         Experiment(
@@ -206,7 +206,7 @@ def fenix_experiments():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def firefox_ios_experiments():
     return [
         Experiment(
@@ -226,7 +226,7 @@ def firefox_ios_experiments():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def klar_android_experiments():
     return [
         Experiment(
@@ -246,7 +246,7 @@ def klar_android_experiments():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def focus_android_experiments():
     return [
         Experiment(
@@ -266,7 +266,7 @@ def focus_android_experiments():
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def docker_images():
     return [
         artifactregistry.DockerImage(

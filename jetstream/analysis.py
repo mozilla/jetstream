@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Optional
+from typing import Any
 
 import attr
 import dask
@@ -58,8 +58,8 @@ class Analysis:
     project: str
     dataset: str
     config: AnalysisConfiguration
-    log_config: Optional[LogConfiguration] = None
-    start_time: Optional[datetime] = None
+    log_config: LogConfiguration | None = None
+    start_time: datetime | None = None
     analysis_periods: list[AnalysisPeriod] = [
         AnalysisPeriod.DAY,
         AnalysisPeriod.WEEK,
@@ -68,7 +68,7 @@ class Analysis:
         AnalysisPeriod.PREENROLLMENT_WEEK,
         AnalysisPeriod.PREENROLLMENT_DAYS_28,
     ]
-    sql_output_dir: Optional[str] = None
+    sql_output_dir: str | None = None
 
     @property
     def bigquery(self):
@@ -76,7 +76,7 @@ class Analysis:
 
     def _get_timelimits_if_ready(
         self, period: AnalysisPeriod, current_date: datetime
-    ) -> Optional[TimeLimits]:
+    ) -> TimeLimits | None:
         """
         Returns a TimeLimits instance if experiment is due for analysis.
         Otherwise returns None.
@@ -186,7 +186,7 @@ class Analysis:
             (Path(self.sql_output_dir) / destination).write_text(sql)
 
     def _table_name(
-        self, window_period: str, window_index: int, analysis_basis: Optional[AnalysisBasis] = None
+        self, window_period: str, window_index: int, analysis_basis: AnalysisBasis | None = None
     ) -> str:
         """
         Returns the Bigquery table name for statistics and metrics result tables.
@@ -563,7 +563,7 @@ class Analysis:
 
         return query
 
-    def check_runnable(self, current_date: Optional[datetime] = None) -> bool:
+    def check_runnable(self, current_date: datetime | None = None) -> bool:
         if self.config.experiment.normandy_slug is None:
             # some experiments do not have a normandy slug
             raise errors.NoSlugException()

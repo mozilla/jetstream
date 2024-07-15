@@ -267,7 +267,7 @@ def test_validation_working_while_enrolling(experiments):
     try:
         Analysis("test", "test", config).validate()
     except Exception as e:
-        assert False, f"Raised {e}"
+        pytest.fail(f"Raised {e}")
 
 
 def test_run_when_enrolling_complete(experiments, monkeypatch):
@@ -285,10 +285,10 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
     for experiment in fenix_experiments:
         called = 0
 
-        def dry_run_query(query):
+        def dry_run_query(query, exp=experiment):
             nonlocal called
             called = called + 1
-            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id)
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id)
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla")
 
@@ -304,10 +304,10 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
     for experiment in firefox_ios_experiments:
         called = 0
 
-        def dry_run_query(query):
+        def dry_run_query(query, exp=experiment):
             nonlocal called
             called = called + 1
-            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_ios")
 
@@ -323,10 +323,10 @@ def test_focus_android_experiments_use_right_datasets(focus_android_experiments,
     for experiment in focus_android_experiments:
         called = 0
 
-        def dry_run_query(query):
+        def dry_run_query(query, exp=experiment):
             nonlocal called
             called = called + 1
-            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_focus")
 
@@ -342,10 +342,10 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
     for experiment in klar_android_experiments:
         called = 0
 
-        def dry_run_query(query):
+        def dry_run_query(query, exp=experiment):
             nonlocal called
             called = called + 1
-            dataset = re.sub(r"[^A-Za-z0-9_]", "_", experiment.app_id).lower()
+            dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_klar")
 
@@ -692,9 +692,14 @@ def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
         select_expression="test",
         analysis_bases=[AnalysisBasis.EXPOSURES],
     )
-    with pytest.raises(ValueError):
+    analysis_basis = "non-basis"
+    error_str = (
+        f"AnalysisBasis {analysis_basis} not valid"
+        + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+    )
+    with pytest.raises(ValueError, match=re.escape(error_str)):
         _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-            "test_experiment_exposures_1", "all", metric, "non-basis"
+            "test_experiment_exposures_1", "all", metric, analysis_basis
         )
 
 
@@ -711,12 +716,17 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
         select_expression="test",
         analysis_bases=[AnalysisBasis.EXPOSURES],
     )
-    with pytest.raises(ValueError):
+    analysis_basis = "non-basis"
+    error_str = (
+        f"AnalysisBasis {analysis_basis} not valid"
+        + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
+    )
+    with pytest.raises(ValueError, match=re.escape(error_str)):
         _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
             "test_experiment_exposures_1",
             "all",
             metric,
-            "non-basis",
+            analysis_basis,
             AnalysisPeriod.PREENROLLMENT_WEEK,
             "metric_name",
         )
@@ -847,7 +857,7 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
     right_method = Mock()
 
     summary = MagicMock()
-    summary.statistic.params = dict()
+    summary.statistic.params = {}
 
     # no configured covariate_adjustment parameter, use univariate
     monkeypatch.setattr(
@@ -916,7 +926,7 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
 
 def test_create_subset_metric_table_query_complete_univariate(experiments, monkeypatch):
     summary = MagicMock()
-    summary.statistic.params = dict()
+    summary.statistic.params = {}
 
     metric = Metric(
         name="metric_name",

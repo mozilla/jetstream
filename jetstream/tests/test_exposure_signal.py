@@ -27,7 +27,7 @@ class TestExposureSignal:
         assert exposure_signal.window_start == 12
 
     def test_invalid_window(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="'invalid' is not a valid AnalysisWindow"):
             ExposureSignal(
                 name="ad_exposure",
                 data_source=ConfigLoader.get_data_source("search_clients_daily", "firefox_desktop"),
@@ -61,7 +61,7 @@ class TestExposureSignal:
         assert exposure_signal._window_limit_to_int("analysis_window_end", time_limits) == 5
         assert exposure_signal._window_limit_to_int("analysis_window_start", time_limits) == 3
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="Invalid window limit: invalid"):
             exposure_signal._window_limit_to_int("invalid", time_limits)
 
     def test_exposure_signal_to_mozanalysis(self):

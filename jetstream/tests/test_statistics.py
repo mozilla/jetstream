@@ -61,10 +61,11 @@ class TestStatistics:
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point < control_result.point
-        assert treatment_result.lower and treatment_result.upper
+        assert treatment_result.lower
+        assert treatment_result.upper
 
     def test_linear_model_mean(self):
         stat = LinearModelMean()
@@ -77,10 +78,11 @@ class TestStatistics:
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point < control_result.point
-        assert treatment_result.lower and treatment_result.upper
+        assert treatment_result.lower
+        assert treatment_result.upper
 
     @pytest.mark.parametrize(
         "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
@@ -106,12 +108,13 @@ class TestStatistics:
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point > control_result.point
-        assert treatment_result.lower and treatment_result.upper
+        assert treatment_result.lower
+        assert treatment_result.upper
 
-        rel_results = [r for r in results if r.comparison == "relative_uplift"][0]
+        rel_results = next(r for r in results if r.comparison == "relative_uplift")
 
         stat_unadj = LinearModelMean()
         results_unadj = stat_unadj.transform(
@@ -122,7 +125,7 @@ class TestStatistics:
             AnalysisBasis.ENROLLMENTS,
             "all",
         ).__root__
-        rel_results_unadj = [r for r in results_unadj if r.comparison == "relative_uplift"][0]
+        rel_results_unadj = next(r for r in results_unadj if r.comparison == "relative_uplift")
         # test that point estimate after adjustment is closer to truth
         assert np.abs(rel_results.point - rel_diff) < np.abs(rel_results_unadj.point - rel_diff)
         # test that confidence intervals are tighter
@@ -274,7 +277,7 @@ class TestStatistics:
             test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
 
-        abs_difference = [r for r in result if r.comparison == "difference"][0]
+        abs_difference = next(r for r in result if r.comparison == "difference")
         # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
         # at these small sample sizes, mozanalysis's bootstrap can be quite variable
         # so use a large tolerance
@@ -282,7 +285,7 @@ class TestStatistics:
         assert np.abs(abs_difference.lower - 7.155) < 1.0
         assert np.abs(abs_difference.upper - 12.844) < 1.0
 
-        rel_difference = [r for r in result if r.comparison == "relative_uplift"][0]
+        rel_difference = next(r for r in result if r.comparison == "relative_uplift")
 
         # analytically, we should see a point estimate of 222%, with 95% CI of (108%,398%)
         # at these small sample sizes, mozanalysis's bootstrap can be quite variable
@@ -304,14 +307,15 @@ class TestStatistics:
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).__root__
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point < control_result.point
         assert treatment_result.point - 0.7 < 1e-5
 
-        difference = [r for r in results if r.comparison == "difference"][0]
+        difference = next(r for r in results if r.comparison == "difference")
         assert difference.point - 0.2 < 1e-5
-        assert difference.lower and difference.upper
+        assert difference.lower
+        assert difference.upper
 
     def test_binomial_pairwise_branch_comparisons(self, experiments):
         stat = Binomial()
@@ -331,19 +335,20 @@ class TestStatistics:
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point < control_result.point
         assert treatment_result.point - 0.7 < 1e-5
 
-        difference = [r for r in results if r.comparison == "difference"][0]
+        difference = next(r for r in results if r.comparison == "difference")
         assert difference.point - 0.2 < 1e-5
-        assert difference.lower and difference.upper
+        assert difference.lower
+        assert difference.upper
 
         # there should only be 15 results (would be 21 without removing dupes)
         assert len(results) == 15
 
-        comparison_branches = set((r.comparison_to_branch, r.branch, r.comparison) for r in results)
+        comparison_branches = {(r.comparison_to_branch, r.branch, r.comparison) for r in results}
         all_comparisons = [
             (None, "control", None),
             (None, "foo", None),
@@ -526,7 +531,7 @@ class TestStatistics:
     def test_statistic_result_rejects_invalid_types(self):
         args = {"metric": "foo", "statistic": "bar", "branch": "baz"}
         StatisticResult(**args)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="value is not a valid float"):
             StatisticResult(point=[3], **args)
 
     def test_type_conversions(self):
@@ -538,7 +543,7 @@ class TestStatistics:
     def test_mozanalysis_nan(self):
         df = pd.array([1, 2, np.nan], dtype="Int64")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="'data' contains null values"):
             get_bootstrap_samples(df)
 
     def test_population_ratio(self):
@@ -546,7 +551,7 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {
                 "branch": ["treatment"] * 10 + ["control"] * 10,
-                "ad_click": [x for x in range(10, 0, -1)] * 2,
+                "ad_click": list(range(10, 0, -1)) * 2,
                 "sap": [10 * x for x in range(10, 0, -1)] * 2,
                 "ad_ratio": np.nan,
             }
@@ -556,8 +561,8 @@ class TestStatistics:
         ).__root__
 
         branch_results = [r for r in results if r.comparison is None]
-        treatment_result = [r for r in branch_results if r.branch == "treatment"][0]
-        control_result = [r for r in branch_results if r.branch == "control"][0]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
         assert treatment_result.point == pytest.approx(control_result.point, rel=1e-5)
         assert treatment_result.point == pytest.approx(0.1, rel=1e-5)
         assert control_result.point == pytest.approx(0.1, rel=1e-5)
@@ -567,8 +572,10 @@ class TestStatistics:
         test_data = pd.DataFrame(
             {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
         )
-
-        with pytest.raises(Exception):
+        error_str = (
+            "None of [Index(['non_existing', 'non_existing'], dtype='object')] are in the [columns]"
+        )
+        with pytest.raises(Exception, match=re.escape(error_str)):
             stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
 
 

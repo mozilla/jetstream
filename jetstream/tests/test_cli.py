@@ -97,7 +97,7 @@ def cli_experiments_enrollment_incomplete():
 
 
 class TestCli:
-    @pytest.fixture
+    @pytest.fixture()
     def runner(self):
         return CliRunner()
 
@@ -260,7 +260,9 @@ class DummyExecutorStrategy:
     dataset_id: str
     return_value: bool = True
 
-    def execute(self, worklist, configuration_map={}):
+    def execute(self, worklist, configuration_map=None):
+        if configuration_map is None:
+            configuration_map = {}
         self.worklist = worklist
         return self.return_value
 
@@ -365,9 +367,7 @@ class TestAnalysisExecutor:
         )
         assert success
         assert len(strategy.worklist) == 366
-        assert set(w[0].experiment.normandy_slug for w in strategy.worklist) == {
-            "my_cool_experiment"
-        }
+        assert {w[0].experiment.normandy_slug for w in strategy.worklist} == {"my_cool_experiment"}
 
     def test_post_facto_rerun_includes_overall_date(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
@@ -397,7 +397,7 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
         strategy = DummyExecutorStrategy("project", "dataset")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Declining to re-run all experiments for all time."):
             executor.execute(
                 experiment_getter=cli_experiments,
                 config_getter=ConfigLoader,
@@ -420,9 +420,7 @@ class TestAnalysisExecutor:
             strategy=strategy,
             today=dt.datetime(2020, 12, 31, tzinfo=UTC),
         )
-        assert set(w[0].experiment.normandy_slug for w in strategy.worklist) == {
-            "my_cool_experiment"
-        }
+        assert {w[0].experiment.normandy_slug for w in strategy.worklist} == {"my_cool_experiment"}
 
     def test_experiments_to_analyze(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
@@ -433,7 +431,7 @@ class TestAnalysisExecutor:
             experiment_slugs=["bogus_experiment", "my_cool_experiment"],
         )
         result = executor._experiment_configs_to_analyse(cli_experiments, ConfigLoader)
-        assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
+        assert {e.experiment.normandy_slug for e in result} == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_end_date_override(self, bq_client_mock):
         executor = cli.AnalysisExecutor(
@@ -466,7 +464,7 @@ class TestAnalysisExecutor:
         config_loader = _ConfigLoader()
         config_loader.config_collection = external_configs
         result = executor._experiment_configs_to_analyse(cli_experiments, config_loader)
-        assert set(e.experiment.normandy_slug for e in result) == {"my_cool_experiment"}
+        assert {e.experiment.normandy_slug for e in result} == {"my_cool_experiment"}
 
     def test_experiments_to_analyze_all(self):
         executor = cli.AnalysisExecutor(
@@ -477,7 +475,7 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Declining to re-run all experiments for all time."):
             executor._experiment_configs_to_analyse(cli_experiments)
 
     def test_experiments_to_analyze_specific_date(self):

@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 import attr
 import numpy as np
@@ -31,7 +31,7 @@ class PreTreatment(ABC):
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]):
+    def from_dict(cls, config_dict: dict[str, Any]):
         """Create a class instance with the specified config parameters."""
         return cls(**config_dict)  # type: ignore
 
@@ -108,7 +108,7 @@ class NormalizeOverAnalysisPeriod(PreTreatment):
 
 @attr.s(auto_attribs=True)
 class Log(PreTreatment):
-    base: Optional[float] = 10.0
+    base: float | None = 10.0
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
         # Silence divide-by-zero and domain warnings

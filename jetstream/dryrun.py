@@ -41,23 +41,20 @@ def dry_run_query(sql: str) -> None:
             data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
         )
         response = r.json()
-    except Exception as e:
+    except Exception:
         # This may be a JSONDecode exception or something else.
         # If we got a HTTP exception, that's probably the most interesting thing to raise.
         try:
             r.raise_for_status()
         except requests.exceptions.RequestException as request_exception:
             e = request_exception
-        raise DryRunFailedError(e, sql)
+        raise DryRunFailedError(e, sql) from e
 
     if response["valid"]:
         logger.info("Dry run OK")
         return
 
-    if "errors" in response and len(response["errors"]) == 1:
-        error = response["errors"][0]
-    else:
-        error = None
+    error = response["errors"][0] if "errors" in response and len(response["errors"]) == 1 else None
 
     if (
         error

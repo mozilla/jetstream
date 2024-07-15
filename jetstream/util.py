@@ -5,7 +5,7 @@ import time
 from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from requests import Session
 
@@ -33,9 +33,7 @@ def inclusive_date_range(start_date, end_date):
         yield start_date + timedelta(n)
 
 
-def retry_get(
-    session: Session, url: str, max_retries: int, user_agent: Optional[str] = None
-) -> Any:
+def retry_get(session: Session, url: str, max_retries: int, user_agent: str | None = None) -> Any:
     for _i in range(max_retries):
         try:
             if user_agent:

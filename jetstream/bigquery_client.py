@@ -1,6 +1,7 @@
 import time
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any
 
 import attr
 import google.cloud.bigquery
@@ -22,16 +23,19 @@ from . import bq_normalize_name
 class BigQueryClient:
     project: str
     dataset: str
-    _client: Optional[google.cloud.bigquery.client.Client] = None
-    _storage_client: Optional[BigQueryReadClient] = None
+    _client: google.cloud.bigquery.client.Client | None = None
+    _storage_client: BigQueryReadClient | None = None
 
     @property
     def client(self):
         self._client = self._client or google.cloud.bigquery.client.Client(self.project)
         return self._client
 
-    def table_to_dataframe(self, table: str, nan_columns: List[str] = []) -> pd.DataFrame:
+    def table_to_dataframe(self, table: str, nan_columns: list[str] | None = None) -> pd.DataFrame:
         """Return all rows of the specified table as a dataframe."""
+        if nan_columns is None:
+            nan_columns = []
+
         self._storage_client = self._storage_client or BigQueryReadClient()
 
         table_ref = self.client.get_table(f"{self.project}.{self.dataset}.{table}")
@@ -67,7 +71,7 @@ class BigQueryClient:
         return True
 
     def load_table_from_json(
-        self, results: Iterable[Dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
+        self, results: Iterable[dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
     ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
@@ -82,14 +86,14 @@ class BigQueryClient:
     def execute(
         self,
         query: str,
-        destination_table: Optional[str] = None,
-        write_disposition: Optional[google.cloud.bigquery.job.WriteDisposition] = None,
+        destination_table: str | None = None,
+        write_disposition: google.cloud.bigquery.job.WriteDisposition | None = None,
     ) -> google.cloud.bigquery.job.QueryJob:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
             default_project=self.project,
         )
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if destination_table:
             kwargs["destination"] = dataset.table(destination_table)
             kwargs["write_disposition"] = google.cloud.bigquery.job.WriteDisposition.WRITE_TRUNCATE
@@ -144,7 +148,7 @@ class BigQueryClient:
         self.client.delete_table(table_id, not_found_ok=True)
 
     def delete_experiment_tables(
-        self, slug: str, analysis_periods: List[AnalysisPeriod], delete_enrollments: bool = False
+        self, slug: str, analysis_periods: list[AnalysisPeriod], delete_enrollments: bool = False
     ):
         """Delete all tables associated with the specified experiment slug."""
         normalized_slug = bq_normalize_name(slug)
@@ -163,7 +167,7 @@ class BigQueryClient:
         for existing_table in existing_tables:
             self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
 
-    def experiment_table_first_updated(self, slug: str) -> Optional[datetime]:
+    def experiment_table_first_updated(self, slug: str) -> datetime | None:
         """Get the timestamp for when an experiment related table was updated last."""
         if slug is None:
             return None

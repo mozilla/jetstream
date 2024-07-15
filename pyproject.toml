@@ -1,6 +1,105 @@
-[tool.black]
-line-length = 100
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "pytest-runner", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
+[project]
+name= "mozilla-jetstream"
+dynamic = ["version"]
+authors=[{name = "Mozilla Corporation", email="fx-data-dev@mozilla.org"}]
+description="Runs a thing that analyzes experiments"
+readme = "README.md"
+requires-python=">=3.10"
+dependencies=[
+    "attrs",
+    "cattrs",
+    "Click",
+    "dask[distributed]",
+    "db-dtypes",
+    "GitPython",
+    "google-cloud-artifact-registry",
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "google-cloud-container",
+    "google-cloud-storage",
+    "grpcio",  # https://github.com/googleapis/google-cloud-python/issues/6259
+    "jinja2",
+    "mozanalysis",
+    "mozilla-metric-config-parser",
+    "mozilla-nimbus-schemas",
+    "pyarrow",
+    "pytz",
+    "PyYAML",
+    "requests",
+    "smart_open[gcs]",
+    "statsmodels",
+    "scikit-learn",
+    "toml",
+]
+
+[project.scripts]
+jetstream = "jetstream.cli:cli"
+
+[project.urls]
+Repository = "https://github.com/mozilla/jetstream"
+Documentation = "https://experimenter.info/deep-dives/jetstream/overview"
+
+[project.optional-dependencies]
+testing = [
+    "coverage",
+    "jsonschema",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-ruff",
+    "ruff",
+    "tox",
+    "types-futures",
+    "types-pkg-resources",
+    "types-protobuf",
+    "types-pytz",
+    "types-PyYAML",
+    "types-requests",
+    "types-six",
+    "types-toml",
+]
+
+[tool.setuptools]
+packages = [
+    "jetstream",
+    "jetstream.tests",
+    "jetstream.tests.integration",
+    "jetstream.logging",
+    "jetstream.workflows",
+    "jetstream.diagnostics"
+]
+
+[tool]
+[tool.setuptools.package-data]
+jetstream = ["../platform_config.toml"]
+"jetstream.tests" = ["data/*"]
+"jetstream.workflows" = ["*.yaml"]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+line-length=100
+exclude = [".git","__pycache__"]
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore= ["E741", "RUF005", "RUF012", "SIM105"]
+select = [
+    "E", # pycodestyle
+    "W", # pycodestyle
+    "F", # Pyflakes
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "I", # isort
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "Q", # flake8-quotes
+    "UP", # pyupgrade
+    "PT", # flake8-pytest-style
+    "RUF", # Ruff-specific rules
+]

@@ -20,7 +20,6 @@ which produce concrete mozanalysis classes when resolved.
 
 import copy
 import datetime as dt
-from typing import List, Optional, Union
 
 from google.cloud import bigquery
 from metric_config_parser.analysis import AnalysisSpec
@@ -48,7 +47,7 @@ class _ConfigLoader:
     Config objects are converted into jetstream native types.
     """
 
-    config_collection: Optional[ConfigCollection] = None
+    config_collection: ConfigCollection | None = None
 
     @property
     def configs(self) -> ConfigCollection:
@@ -62,7 +61,7 @@ class _ConfigLoader:
         return self._configs
 
     def with_configs_from(
-        self, repo_urls: Optional[List[str]], is_private: bool = False
+        self, repo_urls: list[str] | None, is_private: bool = False
     ) -> "_ConfigLoader":
         """Load configs from another repository and merge with default configs."""
         if not repo_urls:
@@ -78,7 +77,7 @@ class _ConfigLoader:
             self.config_collection = config_collection
         return self
 
-    def updated_configs(self, bq_project: str, bq_dataset: str) -> List[Config]:
+    def updated_configs(self, bq_project: str, bq_dataset: str) -> list[Config]:
         """
         Return external configs that have been updated/added and
         with associated BigQuery tables being out of date.
@@ -122,7 +121,7 @@ class _ConfigLoader:
 
         return updated_configs
 
-    def updated_defaults(self, bq_project: str, bq_dataset: str) -> List[str]:
+    def updated_defaults(self, bq_project: str, bq_dataset: str) -> list[str]:
         """
         Return experiment slugs that are linked to default configs that have
         been updated/added or updated.
@@ -178,7 +177,7 @@ class _ConfigLoader:
 
         return list(set(updated_experiments))
 
-    def spec_for_experiment(self, slug: str) -> Optional[AnalysisSpec]:
+    def spec_for_experiment(self, slug: str) -> AnalysisSpec | None:
         """Return the spec for a specific experiment."""
         for config in self.configs.configs:
             if config.slug == slug:
@@ -186,7 +185,7 @@ class _ConfigLoader:
 
         return None
 
-    def get_outcome(self, outcome_slug: str, app_name: str) -> Optional[Outcome]:
+    def get_outcome(self, outcome_slug: str, app_name: str) -> Outcome | None:
         """Return the outcome matching the specified slug."""
         for outcome in self.configs.outcomes:
             if outcome.slug == outcome_slug and app_name == outcome.platform:
@@ -194,7 +193,7 @@ class _ConfigLoader:
 
         return None
 
-    def get_data_source(self, data_source_slug: str, app_name: str) -> Optional[DataSource]:
+    def get_data_source(self, data_source_slug: str, app_name: str) -> DataSource | None:
         """Return the data source matching the specified slug."""
         data_source_definition = self.configs.get_data_source_definition(data_source_slug, app_name)
         if data_source_definition is None:
@@ -218,17 +217,15 @@ ConfigLoader = _ConfigLoader()
 
 
 def validate(
-    config: Union[Outcome, Config, DefaultConfig, DefinitionConfig],
-    experiment: Optional[Experiment] = None,
+    config: Outcome | Config | DefaultConfig | DefinitionConfig,
+    experiment: Experiment | None = None,
     config_getter: _ConfigLoader = ConfigLoader,
 ):
     """Validate and dry run a config."""
     from jetstream.analysis import Analysis
     from jetstream.platform import PLATFORM_CONFIGS
 
-    if isinstance(config, Config) and not (
-        isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig)
-    ):
+    if isinstance(config, Config) and not isinstance(config, DefaultConfig | DefinitionConfig):
         config.validate(config_getter.configs, experiment)
         resolved_config = config.spec.resolve(experiment, config_getter.configs)
     elif isinstance(config, Outcome):
@@ -254,7 +251,7 @@ def validate(
         spec.merge_outcome(config.spec)
         spec.merge_parameters(config.spec.parameters)
         resolved_config = spec.resolve(dummy_experiment, config_getter.configs)
-    elif isinstance(config, DefaultConfig) or isinstance(config, DefinitionConfig):
+    elif isinstance(config, DefaultConfig | DefinitionConfig):
         config.validate(config_getter.configs)
 
         if config.slug in PLATFORM_CONFIGS:

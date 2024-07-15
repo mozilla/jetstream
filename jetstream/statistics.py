@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
@@ -46,7 +46,7 @@ class Summary:
     def from_config(
         cls,
         summary_config: parser_metric.Summary,
-        analysis_period_length: Optional[int],
+        analysis_period_length: int | None,
         period: parser_metric.AnalysisPeriod,
     ) -> "Summary":
         """Create a Jetstream-native Summary representation."""
@@ -145,7 +145,7 @@ class StatisticResult(StatisticSchema):
         if v is not None and not isinstance(v, numbers.Number):
             if math.isnan(v):
                 return None
-            raise ValueError(f"Expected a number for {field.name}; got {repr(v)}")
+            raise ValueError(f"Expected a number for {field.name}; got {v!r}")
         return v
 
     @validator("parameter")
@@ -238,7 +238,7 @@ class Statistic(ABC):
         # add results to a dict to ensure uniqueness
         # keyed by result metadata, so at most one
         # result per unique metadata
-        results = dict()
+        results = {}
 
         if metric in df:
             branch_list = df.branch.unique()
@@ -311,7 +311,7 @@ class Statistic(ABC):
 
 def _extract_ci(
     series: Series, quantile: float, threshold: float = 1e-5
-) -> Tuple[Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None]:
     # floating point arithmetic was a mistake
     lower_index, upper_index = None, None
     low_quantile, high_quantile = quantile, 1 - quantile
@@ -457,7 +457,6 @@ class LinearModelMean(Statistic):
         analysis_basis: AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-
         covariate_col_label = None
         if self.covariate_adjustment is not None:
             covariate_period = parser_metric.AnalysisPeriod(self.covariate_adjustment["period"])
@@ -787,7 +786,7 @@ class Sum(Statistic):
 class MakeGridResult:
     grid: np.ndarray
     geometric: bool
-    message: Optional[str]
+    message: str | None
 
 
 def _make_grid(values: Series, size: int, attempt_geometric: bool) -> MakeGridResult:
@@ -863,7 +862,7 @@ class KernelDensityEstimate(Statistic):
                         segment=segment,
                     )
                 )
-            for x, y in zip(grid.grid, result):
+            for x, y in zip(grid.grid, result, strict=False):
                 results.append(
                     StatisticResult(
                         metric=metric,
@@ -930,7 +929,7 @@ class EmpiricalCDF(Statistic):
                     )
                 )
             cdf = f(grid.grid)
-            for x, y in zip(grid.grid, cdf):
+            for x, y in zip(grid.grid, cdf, strict=False):
                 results.append(
                     StatisticResult(
                         metric=metric,

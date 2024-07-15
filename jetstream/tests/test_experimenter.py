@@ -356,7 +356,7 @@ FIREFOX_IOS_EXPERIMENT_FIXTURE = """
       "nimbusValidation"
    ]
 }
-"""  # noqa:E501
+"""
 
 KLAR_ANDROID_EXPERIMENT_FIXTURE = """
 {
@@ -399,7 +399,7 @@ KLAR_ANDROID_EXPERIMENT_FIXTURE = """
       "nimbusValidation"
    ]
 }
-"""  # noqa:E501
+"""
 
 FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
 {
@@ -442,10 +442,10 @@ FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
       "nimbusValidation"
    ]
 }
-"""  # noqa:E501
+"""
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_session():
     def experimenter_fixtures(url):
         mocked_value = MagicMock()
@@ -463,7 +463,7 @@ def mock_session():
     return session
 
 
-@pytest.fixture
+@pytest.fixture()
 def experiment_collection(mock_session):
     return ExperimentCollection.from_experimenter(mock_session)
 
@@ -487,7 +487,7 @@ def test_started_since(experiment_collection):
 
 
 def test_normandy_experiment_slug(experiment_collection):
-    normandy_slugs = list(map(lambda e: e.normandy_slug, experiment_collection.experiments))
+    normandy_slugs = [e.normandy_slug for e in experiment_collection.experiments]
     assert "addon-activity-stream-search-topsites-release-69-1576277" in normandy_slugs
     assert None in normandy_slugs
     assert "pref-doh-us-engagement-study-v2-release-69-71-bug-1590831" in normandy_slugs

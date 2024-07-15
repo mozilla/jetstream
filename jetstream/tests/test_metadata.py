@@ -42,7 +42,7 @@ def test_metadata_from_config(mock_get, experiments):
     config = spec.resolve(experiments[4], ConfigLoader.configs)
     metadata = ExperimentMetadata.from_config(config)
 
-    assert StatisticResult.SCHEMA_VERSION == metadata.schema_version
+    assert metadata.schema_version == StatisticResult.SCHEMA_VERSION
     assert "view_about_logins" in metadata.metrics
     assert metadata.metrics["view_about_logins"].bigger_is_better
     assert metadata.metrics["view_about_logins"].description != ""

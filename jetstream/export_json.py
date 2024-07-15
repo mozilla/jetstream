@@ -2,7 +2,6 @@ import logging
 import random
 import string
 from datetime import datetime, timedelta
-from typing import Optional
 
 import google.cloud.bigquery as bigquery
 import google.cloud.storage as storage
@@ -21,7 +20,7 @@ SKIP_ERROR_TYPES = ["EndedException", "EnrollmentNotCompleteException"]
 
 
 def _get_statistics_tables_last_modified(
-    client: bigquery.Client, bq_dataset: str, experiment_slug: Optional[str]
+    client: bigquery.Client, bq_dataset: str, experiment_slug: str | None
 ) -> dict[str, datetime]:
     """Returns statistics table names and their last modified timestamp as datetime object."""
     experiment_table = "%"
@@ -140,7 +139,7 @@ def _convert_ndjson_to_json(
 
 
 def export_statistics_tables(
-    project_id: str, dataset_id: str, bucket: str, experiment_slug: Optional[str] = None
+    project_id: str, dataset_id: str, bucket: str, experiment_slug: str | None = None
 ):
     """Export statistics tables that have been modified or added to GCS as JSON."""
     bigquery_client = bigquery.Client(project_id)
@@ -164,7 +163,7 @@ def _get_experiment_logs_as_json(
     dataset: str,
     table: str,
     experiment_slug: str,
-    min_timestamp: datetime = None,
+    min_timestamp: datetime | None = None,
 ):
     """Retrieve records from a single table as JSON."""
 
@@ -219,9 +218,9 @@ def export_experiment_logs(
     log_project: str,
     log_dataset: str,
     log_table: str = "logs",
-    analysis_start_time: datetime = None,
-    enrollment_end: datetime = None,
-    log_config: Optional[LogConfiguration] = None,
+    analysis_start_time: datetime | None = None,
+    enrollment_end: datetime | None = None,
+    log_config: LogConfiguration | None = None,
 ):
     """Export experiment logs to GCS."""
 
