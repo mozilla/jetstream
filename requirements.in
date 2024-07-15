@@ -65,7 +65,7 @@ flake8==7.1.0
     # via pytest-flake8
 fonttools==4.53.1
     # via matplotlib
-formulaic==1.0.1
+formulaic==1.0.2
     # via mozanalysis
 fsspec==2024.6.1
     # via dask
