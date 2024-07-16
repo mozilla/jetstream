@@ -74,7 +74,7 @@ jobs:
       - run:
           name: Install deployment tools
           command: |
-            pip install -r requirements.txt
+            pip install --upgrade setuptools wheel twine
       - run:
           name: Create the distribution files
           command: |
