@@ -86,7 +86,10 @@ jobs:
             #   https://app.circleci.com/settings/project/github/mozilla/jetstream/environment-variables
             # For more on twine, see:
             #   https://twine.readthedocs.io/en/latest/
-            twine upload --skip-existing dist/*
+            # twine upload --skip-existing dist/*
+            echo
+            echo "done (skipped upload)"
+            echo
 
 workflows:
   version: 2.1
@@ -107,8 +110,9 @@ workflows:
     jobs:
       - deploy:
           filters:
-            tags:
-              only: /[0-9]{4}.[0-9]{1,2}.[0-9]+/  # Calver: YYYY.M.MINOR
+            # tags:
+            #   only: /[0-9]{4}.[0-9]{1,2}.[0-9]+/  # Calver: YYYY.M.MINOR
             branches:
               # Ignore all branches; this workflow should only run for tags.
-              ignore: /.*/
+              # ignore: /.*/
+              only: fix-deploy

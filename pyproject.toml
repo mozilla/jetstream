@@ -79,7 +79,7 @@ jetstream = ["../platform_config.toml"]
 "jetstream.tests" = ["data/*"]
 "jetstream.workflows" = ["*.yaml"]
 
-[tool.setuptools_scm]
+# [tool.setuptools_scm]
 
 [tool.ruff]
 line-length=100
