@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8", "pytest-runner", "setuptools_scm"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name= "mozilla-jetstream"
-dynamic = ["version"]
+# This project does not issue regular releases, only when there
+# are changes that would be meaningful to our (few) dependents.
+version="2023.8.2"
 authors=[{name = "Mozilla Corporation", email="fx-data-dev@mozilla.org"}]
 description="Runs a thing that analyzes experiments"
 readme = "README.md"
@@ -30,9 +32,9 @@ dependencies=[
     "pytz",
     "PyYAML",
     "requests",
+    "scikit-learn",
     "smart_open[gcs]",
     "statsmodels",
-    "scikit-learn",
     "toml",
 ]
 
@@ -66,11 +68,11 @@ testing = [
 [tool.setuptools]
 packages = [
     "jetstream",
+    "jetstream.diagnostics",
+    "jetstream.logging",
     "jetstream.tests",
     "jetstream.tests.integration",
-    "jetstream.logging",
     "jetstream.workflows",
-    "jetstream.diagnostics"
 ]
 
 [tool]
@@ -79,7 +81,7 @@ jetstream = ["../platform_config.toml"]
 "jetstream.tests" = ["data/*"]
 "jetstream.workflows" = ["*.yaml"]
 
-[tool.setuptools_scm]
+# [tool.setuptools_scm]
 
 [tool.ruff]
 line-length=100
