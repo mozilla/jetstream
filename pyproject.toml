@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8", "pytest-runner", "setuptools_scm"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name= "mozilla-jetstream"
-dynamic = ["version"]
+version="2023.8.2"
 authors=[{name = "Mozilla Corporation", email="fx-data-dev@mozilla.org"}]
 description="Runs a thing that analyzes experiments"
 readme = "README.md"
