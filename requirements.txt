@@ -1487,9 +1487,9 @@ pytest-cov==5.0.0 \
     --hash=sha256:4f0764a1219df53214206bf1feea4633c3b558a2925c8b59f144f682861ce652 \
     --hash=sha256:5837b58e9f6ebd335b0f8060eecce69b662415b16dc503883a02f45dfeb14857
     # via -r requirements.in
-pytest-ruff==0.4.0 \
-    --hash=sha256:551876108991f3dd43d719988f8224a29c6fc6d50e2284ba1ffd389c0bd3610c \
-    --hash=sha256:e421d3096618a0878616f2db9716526454a8348eb9db6cfe4ba926793066ae20
+pytest-ruff==0.4.1 \
+    --hash=sha256:2c9a30f15f384c229c881b52ec86cfaf1e79d39530dd7dd5f2d6aebe278f7eb7 \
+    --hash=sha256:69acd5b2ba68d65998c730b5b4d656788193190e45f61a53aa66ef8b390634a4
     # via -r requirements.in
 python-dateutil==2.9.0.post0 \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
