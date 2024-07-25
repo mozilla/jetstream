@@ -56,7 +56,9 @@ class _ConfigLoader:
             return configs
 
         if self.config_collection is None:
-            self.config_collection = ConfigCollection.from_github_repos([METRIC_HUB_REPO, CONFIGS])
+            self.config_collection = ConfigCollection.from_github_repos(
+                [METRIC_HUB_REPO, CONFIGS]
+            )
         self._configs = self.config_collection
         return self._configs
 
@@ -64,6 +66,7 @@ class _ConfigLoader:
         self, repo_urls: list[str] | None, is_private: bool = False
     ) -> "_ConfigLoader":
         """Load configs from another repository and merge with default configs."""
+        print(f"Loading configs from repo {repo_urls}, {is_private}")
         if not repo_urls:
             return self
 
@@ -193,11 +196,17 @@ class _ConfigLoader:
 
         return None
 
-    def get_data_source(self, data_source_slug: str, app_name: str) -> DataSource | None:
+    def get_data_source(
+        self, data_source_slug: str, app_name: str
+    ) -> DataSource | None:
         """Return the data source matching the specified slug."""
-        data_source_definition = self.configs.get_data_source_definition(data_source_slug, app_name)
+        data_source_definition = self.configs.get_data_source_definition(
+            data_source_slug, app_name
+        )
         if data_source_definition is None:
-            raise Exception(f"Could not find definition for data source {data_source_slug}")
+            raise Exception(
+                f"Could not find definition for data source {data_source_slug}"
+            )
 
         return DataSource(
             name=data_source_definition.name,
@@ -225,7 +234,9 @@ def validate(
     from jetstream.analysis import Analysis
     from jetstream.platform import PLATFORM_CONFIGS
 
-    if isinstance(config, Config) and not isinstance(config, DefaultConfig | DefinitionConfig):
+    if isinstance(config, Config) and not isinstance(
+        config, DefaultConfig | DefinitionConfig
+    ):
         config.validate(config_getter.configs, experiment)
         resolved_config = config.spec.resolve(experiment, config_getter.configs)
     elif isinstance(config, Outcome):
@@ -247,7 +258,9 @@ def validate(
             outcomes=[],
         )
 
-        spec = AnalysisSpec.default_for_experiment(dummy_experiment, config_getter.configs)
+        spec = AnalysisSpec.default_for_experiment(
+            dummy_experiment, config_getter.configs
+        )
         spec.merge_outcome(config.spec)
         spec.merge_parameters(config.spec.parameters)
         resolved_config = spec.resolve(dummy_experiment, config_getter.configs)
@@ -277,7 +290,9 @@ def validate(
             outcomes=[],
         )
 
-        spec = AnalysisSpec.default_for_experiment(dummy_experiment, config_getter.configs)
+        spec = AnalysisSpec.default_for_experiment(
+            dummy_experiment, config_getter.configs
+        )
         spec.merge(config.spec)
         resolved_config = spec.resolve(dummy_experiment, config_getter.configs)
     else:

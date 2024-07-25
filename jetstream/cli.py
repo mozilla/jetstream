@@ -38,6 +38,7 @@ from .dryrun import DryRunFailedError
 from .errors import ExplicitSkipException, ValidationException
 from .experimenter import ExperimentCollection
 from .export_json import export_experiment_logs, export_statistics_tables
+from .inflight import InflightAnalysis
 from .logging import LOG_SOURCE, LogConfiguration
 from .metadata import export_metadata
 from .platform import PLATFORM_CONFIGS
@@ -96,7 +97,9 @@ class ArgoExecutorStrategy:
     bucket: str | None = None
     cluster_ip: str | None = None
     cluster_cert: str | None = None
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[[], ExperimentCollection] = (
+        ExperimentCollection.from_experimenter
+    )
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
@@ -110,7 +113,9 @@ class ArgoExecutorStrategy:
         configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = None,
     ):
         if configuration_map is not None:
-            raise Exception("Custom configurations are not supported when running with Argo")
+            raise Exception(
+                "Custom configurations are not supported when running with Argo"
+            )
 
         experiments_config: dict[str, list[str]] = {}
         for config, date in worklist:
@@ -132,7 +137,9 @@ class ArgoExecutorStrategy:
                 "slug": slug,
                 "dates": dates,
                 "image_hash": (
-                    image_version if image_version else artifact_manager.image_for_slug(slug)
+                    image_version
+                    if image_version
+                    else artifact_manager.image_for_slug(slug)
                 ),
             }
             for slug, dates in experiments_config.items()
@@ -199,7 +206,9 @@ class SerialExecutorStrategy:
     bucket: str | None = None
     log_config: LogConfiguration | None = None
     analysis_class: type = Analysis
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[[], ExperimentCollection] = (
+        ExperimentCollection.from_experimenter
+    )
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
@@ -212,7 +221,10 @@ class SerialExecutorStrategy:
         failed = False
         for config, date in worklist:
             try:
-                if config.experiment.is_private or config.experiment.dataset_id is not None:
+                if (
+                    config.experiment.is_private
+                    or config.experiment.dataset_id is not None
+                ):
                     # private experiments must override the dataset and set it to a private dataset
                     dataset_id = config.experiment.dataset_id
                 else:
@@ -232,18 +244,24 @@ class SerialExecutorStrategy:
 
                 # export metadata to GCS
                 if self.bucket:
-                    export_metadata(config, self.bucket, self.project_id, analysis.start_time)
+                    export_metadata(
+                        config, self.bucket, self.project_id, analysis.start_time
+                    )
             except ValidationException as e:
                 # log custom Jetstream exceptions but let the workflow succeed;
                 # this prevents Argo from retrying the analysis unnecessarily
                 # when it is already clear that it won't succeed
                 logger.exception(
-                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                    str(e),
+                    exc_info=e,
+                    extra={"experiment": config.experiment.normandy_slug},
                 )
             except Exception as e:
                 failed = True
                 logger.exception(
-                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                    str(e),
+                    exc_info=e,
+                    extra={"experiment": config.experiment.normandy_slug},
                 )
             finally:
                 # export experiment log from BigQuery to GCS
@@ -304,7 +322,11 @@ class AnalysisExecutor:
         today: datetime | None = None,
     ) -> bool:
         """Execute analyses."""
-        run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
+        print("getting configs")
+        print(self.project_id, self.dataset_id)
+        run_configs = self._experiment_configs_to_analyse(
+            experiment_getter, config_getter
+        )
         worklist = []
 
         for config in run_configs:
@@ -340,7 +362,9 @@ class AnalysisExecutor:
 
         client = BigQueryClient(project=self.project_id, dataset=dataset_id)
         normalized_slug = bq_normalize_name(config.experiment.normandy_slug)
-        enrollments_table = f"{self.project_id}.{dataset_id}.enrollments_{normalized_slug}"
+        enrollments_table = (
+            f"{self.project_id}.{dataset_id}.enrollments_{normalized_slug}"
+        )
         client.delete_table(enrollments_table)
 
     def _experiments_to_configs(
@@ -354,19 +378,29 @@ class AnalysisExecutor:
 
         def _load_experiment_config(experiment_config):
             # get first updated timestamp for experiment
-            first_updated = client.experiment_table_first_updated(experiment_config.normandy_slug)
+            first_updated = client.experiment_table_first_updated(
+                experiment_config.normandy_slug
+            )
 
             # get the configs that were the most recent when the experiment was last updated
             config_collection = config_getter.configs.as_of(first_updated)
-            spec = AnalysisSpec.default_for_experiment(experiment_config, config_collection)
+            spec = AnalysisSpec.default_for_experiment(
+                experiment_config, config_collection
+            )
 
-            if self.configuration_map and experiment_config.normandy_slug in self.configuration_map:
+            if (
+                self.configuration_map
+                and experiment_config.normandy_slug in self.configuration_map
+            ):
                 if isinstance(
-                    self.configuration_map[experiment_config.normandy_slug], AnalysisSpec
+                    self.configuration_map[experiment_config.normandy_slug],
+                    AnalysisSpec,
                 ):
                     spec.merge(self.configuration_map[experiment_config.normandy_slug])
                 else:
-                    config_dict = toml.load(self.configuration_map[experiment_config.normandy_slug])
+                    config_dict = toml.load(
+                        self.configuration_map[experiment_config.normandy_slug]
+                    )
                     spec.merge(AnalysisSpec.from_dict(config_dict))
             else:
                 if external_spec := config_collection.spec_for_experiment(
@@ -381,14 +415,18 @@ class AnalysisExecutor:
             # errors without failing, and continue execution for successful experiments
             results = []
             for experiment in experiments:
-                results.append(pool.apply_async(_load_experiment_config, args=(experiment,)))
+                results.append(
+                    pool.apply_async(_load_experiment_config, args=(experiment,))
+                )
 
             for result in results:
                 try:
                     configs.append(result.get())
                 except ValueError as e:
                     logger.exception(
-                        str(e), exc_info=e, extra={"experiment": experiment.normandy_slug}
+                        str(e),
+                        exc_info=e,
+                        extra={"experiment": experiment.normandy_slug},
                     )
 
         return configs
@@ -418,13 +456,18 @@ class AnalysisExecutor:
                 if not e.is_rollout
             ]
 
-            launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
+            launched_configs = self._experiments_to_configs(
+                launched_experiments, config_getter
+            )
 
             for config in launched_configs:
                 if config.experiment.normandy_slug is not None and (
                     # get end_date from external config
                     config.experiment.end_date is None
-                    or (config.experiment.end_date and config.experiment.end_date >= self.date)
+                    or (
+                        config.experiment.end_date
+                        and config.experiment.end_date >= self.date
+                    )
                 ):
                     run_configs.append(config)
         else:
@@ -439,7 +482,9 @@ class AnalysisExecutor:
                         extra={"experiment": slug},
                     )
 
-            run_configs = self._experiments_to_configs(existing_experiments, config_getter)
+            run_configs = self._experiments_to_configs(
+                existing_experiments, config_getter
+            )
 
         # filter out experiments that are always getting skipped
         non_skipped_configs = []
@@ -462,7 +507,9 @@ class AnalysisExecutor:
         ] = ExperimentCollection.from_experimenter,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
-        run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
+        run_configs = self._experiment_configs_to_analyse(
+            experiment_getter, config_getter
+        )
         for config in run_configs:
             try:
                 analysis = Analysis(
@@ -503,7 +550,9 @@ class AnalysisExecutor:
                     analysis.ensure_enrollments(end_date)
             except Exception as e:
                 logger.exception(
-                    str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
+                    str(e),
+                    exc_info=e,
+                    extra={"experiment": config.experiment.normandy_slug},
                 )
                 raise e
 
@@ -608,7 +657,11 @@ def project_id_option(default="moz-fx-data-experiments"):
 
 def dataset_id_option(default="mozanalysis"):
     return click.option(
-        "--dataset_id", "--dataset-id", default=default, help="Dataset to write to", required=True
+        "--dataset_id",
+        "--dataset-id",
+        default=default,
+        help="Dataset to write to",
+        required=True,
     )
 
 
@@ -936,7 +989,11 @@ def rerun(
         client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
 
     strategy = SerialExecutorStrategy(
-        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+        project_id,
+        dataset_id,
+        bucket,
+        ctx.obj["log_config"],
+        analysis_periods=analysis_periods,
     )
 
     if argo:
@@ -986,7 +1043,12 @@ def rerun(
     default=8,
 )
 def rerun_skip(
-    experiment_slug, project_id, dataset_id, config_repos, private_config_repos, parallelism
+    experiment_slug,
+    project_id,
+    dataset_id,
+    config_repos,
+    private_config_repos,
+    parallelism,
 ):
     """Skip rerun for experiments and mark them as up to date."""
     if not experiment_slug:
@@ -995,7 +1057,9 @@ def rerun_skip(
             private_config_repos, is_private=True
         )
         updated_configs = ConfigLoader.updated_configs(project_id, dataset_id)
-        experiments_with_updated_defaults = ConfigLoader.updated_defaults(project_id, dataset_id)
+        experiments_with_updated_defaults = ConfigLoader.updated_defaults(
+            project_id, dataset_id
+        )
         experiment_slug = set(
             experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
         )
@@ -1030,7 +1094,14 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 @date_option
 @click.pass_context
 def export_experiment_logs_to_json(
-    ctx, log_project_id, log_dataset_id, log_table_id, bucket, experiment_slug, project_id, date
+    ctx,
+    log_project_id,
+    log_dataset_id,
+    log_table_id,
+    bucket,
+    experiment_slug,
+    project_id,
+    date,
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
     if bucket is None:
@@ -1090,7 +1161,11 @@ def rerun_config_changed(
     """Rerun all available analyses for experiments with new or updated config files."""
 
     strategy = SerialExecutorStrategy(
-        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+        project_id,
+        dataset_id,
+        bucket,
+        ctx.obj["log_config"],
+        analysis_periods=analysis_periods,
     )
 
     # get experiment-specific external configs
@@ -1098,7 +1173,9 @@ def rerun_config_changed(
         private_config_repos, is_private=True
     )
     updated_configs = ConfigLoader.updated_configs(project_id, dataset_id)
-    experiments_with_updated_defaults = ConfigLoader.updated_defaults(project_id, dataset_id)
+    experiments_with_updated_defaults = ConfigLoader.updated_defaults(
+        project_id, dataset_id
+    )
     experiment_slugs = set(
         experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
     )
@@ -1152,7 +1229,9 @@ def rerun_config_changed(
     is_flag=True,
     default=False,
 )
-def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
+def validate_config(
+    path: Iterable[os.PathLike], config_repos, private_config_repos, is_private
+):
     """Validate config files."""
     dirty = False
     collection = ExperimentCollection.from_experimenter()
@@ -1175,9 +1254,9 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
         call = partial(
             validate,
             config=entity,
-            config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
-                private_config_repos, is_private=True
-            ),
+            config_getter=ConfigLoader.with_configs_from(
+                config_repos
+            ).with_configs_from(private_config_repos, is_private=True),
         )
         if (
             isinstance(entity, Config)
@@ -1191,9 +1270,9 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             call = partial(
                 validate,
                 config=entity,
-                config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
-                    private_config_repos, is_private=True
-                ),
+                config_getter=ConfigLoader.with_configs_from(
+                    config_repos
+                ).with_configs_from(private_config_repos, is_private=True),
                 experiment=experiments[0],
             )
         try:
@@ -1345,7 +1424,9 @@ def preview(
         )
 
     if start_date is None and end_date is None:
-        yesterday_midnight = datetime.combine(datetime.today() - timedelta(days=1), time.min)
+        yesterday_midnight = datetime.combine(
+            datetime.today() - timedelta(days=1), time.min
+        )
         end_date = yesterday_midnight
         start_date = end_date - timedelta(days=num_days)
     elif start_date is None:
@@ -1392,7 +1473,9 @@ def preview(
             start_date=start_date - timedelta(days=3),  # subtract enrollment days
             end_date=end_date,
             proposed_enrollment=enrollment_period,
-            branches=experiment.branches if experiment else [Branch(slug="control", ratio=1)],
+            branches=(
+                experiment.branches if experiment else [Branch(slug="control", ratio=1)]
+            ),
             reference_branch=experiment.reference_branch if experiment else "control",
             is_high_population=False,
             app_name=platform,
@@ -1414,7 +1497,9 @@ def preview(
             )
 
             # update dates
-            spec.experiment.start_date = (start_date - timedelta(days=3)).strftime("%Y-%m-%d")
+            spec.experiment.start_date = (start_date - timedelta(days=3)).strftime(
+                "%Y-%m-%d"
+            )
             spec.experiment.end_date = end_date.strftime("%Y-%m-%d")
             spec.experiment.enrollment_period = enrollment_period
 
@@ -1426,7 +1511,9 @@ def preview(
                     ds = summary.metric.data_source
 
                     if ds.name in spec.data_sources.definitions:
-                        spec.data_sources.definitions[ds.name].experiments_column_type = "none"
+                        spec.data_sources.definitions[
+                            ds.name
+                        ].experiments_column_type = "none"
                     else:
                         spec.data_sources.definitions[ds.name] = DataSourceDefinition(
                             name=ds.name,
@@ -1465,15 +1552,18 @@ def preview(
             recreate_enrollments=True,
             log_config=log_config,
         ).ensure_enrollments(
-            config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
-                private_config_repos, is_private=True
+            config_getter=ConfigLoader.with_configs_from(
+                config_repos
+            ).with_configs_from(private_config_repos, is_private=True),
+            experiment_getter=lambda exp=experiment: ExperimentCollection(
+                experiments=[exp]
             ),
-            experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
         )
 
         # run preview analysis
         for date in [
-            start_date + timedelta(days=d) for d in range(0, (end_date - start_date).days + 1)
+            start_date + timedelta(days=d)
+            for d in range(0, (end_date - start_date).days + 1)
         ]:
             click.echo(f"Generate preview for {date}")
             analysis_executor = AnalysisExecutor(
@@ -1500,13 +1590,181 @@ def preview(
                         experiments=[exp]
                     ),
                 ),
-                config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
-                    private_config_repos, is_private=True
+                config_getter=ConfigLoader.with_configs_from(
+                    config_repos
+                ).with_configs_from(private_config_repos, is_private=True),
+                experiment_getter=lambda exp=experiment: ExperimentCollection(
+                    experiments=[exp]
                 ),
-                experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
             )
 
         click.echo(
             "A preview is available at: "
             + f"{LOOKER_PREVIEW_URL}?Project='{project_id}'&Dataset='{dataset_id}'&Slug='{table}'"
         )
+
+
+# class InflightAnalysisExecutor(AnalysisExecutor):
+#     def execute(
+#         self,
+#         strategy: ExecutorStrategy,
+#         *,
+#         experiment_getter: Callable[
+#             [], ExperimentCollection
+#         ] = ExperimentCollection.from_experimenter,
+#         config_getter: _ConfigLoader = ConfigLoader,
+#         today: datetime | None = None,
+#     ) -> bool:
+
+#         run_configs = self._experiment_configs_to_analyse(
+#             experiment_getter, config_getter
+#         )
+#         assert len(run_configs) == 1, "expected to run for one experiment"
+#         run_config = run_configs[0]
+#         worklist = [(run_config, None)]
+
+#         return strategy.execute(worklist, self.configuration_map)
+
+
+@attr.s(auto_attribs=True)
+class InflightExecutorStrategy:
+    project_id: str
+    dataset_id: str
+    bucket: str | None = None
+    log_config: LogConfiguration | None = None
+    analysis_class: type = Analysis
+    experiment_getter: Callable[[], ExperimentCollection] = (
+        ExperimentCollection.from_experimenter
+    )
+    config_getter: _ConfigLoader = ConfigLoader
+    analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
+    sql_output_dir: str | None = None
+
+    def execute(
+        self,
+        worklist: Iterable[tuple[AnalysisConfiguration, datetime]],
+        configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = None,
+    ):
+        failed = False
+        config, date = worklist[0]  # don't care about days after the first
+        if config.experiment.is_private or config.experiment.dataset_id is not None:
+            # private experiments must override the dataset and set it to a private dataset
+            dataset_id = config.experiment.dataset_id
+        else:
+            dataset_id = self.dataset_id
+
+        try:
+            analysis = self.analysis_class(
+                self.project_id,
+                dataset_id,
+                config,
+                self.log_config,
+                None,
+                self.analysis_periods,
+                self.sql_output_dir,
+            )
+            analysis.run(date)
+        except ValidationException as e:
+            # log custom Jetstream exceptions but let the workflow succeed;
+            # this prevents Argo from retrying the analysis unnecessarily
+            # when it is already clear that it won't succeed
+            logger.exception(
+                str(e),
+                exc_info=e,
+                extra={"experiment": config.experiment.normandy_slug},
+            )
+        except Exception as e:
+            failed = True
+            logger.exception(
+                str(e),
+                exc_info=e,
+                extra={"experiment": config.experiment.normandy_slug},
+            )
+        finally:
+            # export experiment log from BigQuery to GCS
+            if self.log_config is None:
+                log_project = self.project_id
+                log_dataset = self.dataset_id
+                log_table = "logs"
+            else:
+                log_project = self.log_config.log_project_id or self.project_id
+                log_dataset = self.log_config.log_dataset_id or self.dataset_id
+                log_table = self.log_config.log_table_id or "logs"
+
+            if self.bucket:
+                export_experiment_logs(
+                    self.project_id,
+                    self.bucket,
+                    config.experiment.normandy_slug,
+                    log_project,
+                    log_dataset,
+                    log_table,
+                    analysis.start_time,
+                    config.experiment.enrollment_end_date,
+                    self.log_config,
+                )
+        return not failed
+
+
+@cli.command()
+@project_id_option()
+@dataset_id_option()
+@experiment_slug_option
+@config_file_option
+@bucket_option
+@sql_output_dir_option
+@config_repos_option
+@private_config_repos_option
+@click.pass_context
+def inflight(
+    ctx,
+    project_id,
+    dataset_id,
+    experiment_slug,
+    config_file,
+    bucket,
+    sql_output_dir,
+    config_repos,
+    private_config_repos,
+):
+    """Builds and deploys inflight monitoring views"""
+    if len(experiment_slug) > 1 and config_file:
+        raise ValueError(
+            "Cannot process multiple experiments with custom configs. "
+            "Trigger separate runs for experiments with custom configs"
+        )
+    elif len(experiment_slug) > 1:
+        raise ValueError("Currently only works for one experiment")
+
+    elif not experiment_slug:
+        raise ValueError("expected an experiment slug")
+
+    analysis_executor = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=experiment_slug,
+        configuration_map=(
+            {experiment_slug[0]: config_file} if experiment_slug and config_file else {}
+        ),
+        recreate_enrollments=False,
+        sql_output_dir=sql_output_dir,
+    )
+
+    success = analysis_executor.execute(
+        strategy=InflightExecutorStrategy(
+            project_id,
+            dataset_id,
+            bucket=bucket,
+            log_config=ctx.obj["log_config"],
+            analysis_class=InflightAnalysis,
+            analysis_periods=AnalysisPeriod.INFLIGHT,
+            sql_output_dir=sql_output_dir,
+        ),
+        config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
+            private_config_repos, is_private=True
+        ),
+    )
+
+    sys.exit(0 if success else 1)
