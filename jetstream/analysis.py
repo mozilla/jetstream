@@ -458,7 +458,7 @@ class Analysis:
         query = dedent(
             f"""
         SELECT branch, {', '.join(metric_names + empty_metric_names)}
-        FROM {metrics_table_name}
+        FROM `{metrics_table_name}`
         WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
         """
         )
@@ -522,8 +522,8 @@ class Analysis:
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
         from_expression = dedent(
-            f"""{metrics_table_name} during
-            LEFT JOIN {covariate_table_name} pre
+            f"""`{metrics_table_name}` during
+            LEFT JOIN `{covariate_table_name}` pre
             USING (client_id, branch)"""
         )
 
