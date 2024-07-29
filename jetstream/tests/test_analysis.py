@@ -56,8 +56,14 @@ def test_get_timelimits_if_ready(experiments):
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(7)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.WEEK, date) is None
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.PREENROLLMENT_WEEK, date) is None
-    assert analysis._get_timelimits_if_ready(AnalysisPeriod.PREENROLLMENT_DAYS_28, date) is None
+    assert (
+        analysis._get_timelimits_if_ready(AnalysisPeriod.PREENROLLMENT_WEEK, date)
+        is None
+    )
+    assert (
+        analysis._get_timelimits_if_ready(AnalysisPeriod.PREENROLLMENT_DAYS_28, date)
+        is None
+    )
 
     date = dt.datetime(2019, 12, 1, tzinfo=pytz.utc) + timedelta(8)
     assert analysis._get_timelimits_if_ready(AnalysisPeriod.DAY, date)
@@ -115,7 +121,9 @@ def test_regression_20200320():
     config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
     analysis = Analysis("test", "test", config)
     with pytest.raises(NoEnrollmentPeriodException):
-        analysis.run(current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True)
+        analysis.run(
+            current_date=dt.datetime(2020, 3, 19, tzinfo=pytz.utc), dry_run=True
+        )
 
 
 def test_regression_20200316(monkeypatch):
@@ -293,14 +301,16 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
             assert query.count(dataset) == query.count("org_mozilla")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+        config = AnalysisSpec.default_for_experiment(
             experiment, ConfigLoader.configs
-        )
+        ).resolve(experiment, ConfigLoader.configs)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
 
-def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, monkeypatch):
+def test_firefox_ios_experiments_use_right_datasets(
+    firefox_ios_experiments, monkeypatch
+):
     for experiment in firefox_ios_experiments:
         called = 0
 
@@ -312,14 +322,16 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
             assert query.count(dataset) == query.count("org_mozilla_ios")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+        config = AnalysisSpec.default_for_experiment(
             experiment, ConfigLoader.configs
-        )
+        ).resolve(experiment, ConfigLoader.configs)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
 
-def test_focus_android_experiments_use_right_datasets(focus_android_experiments, monkeypatch):
+def test_focus_android_experiments_use_right_datasets(
+    focus_android_experiments, monkeypatch
+):
     for experiment in focus_android_experiments:
         called = 0
 
@@ -331,14 +343,16 @@ def test_focus_android_experiments_use_right_datasets(focus_android_experiments,
             assert query.count(dataset) == query.count("org_mozilla_focus")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+        config = AnalysisSpec.default_for_experiment(
             experiment, ConfigLoader.configs
-        )
+        ).resolve(experiment, ConfigLoader.configs)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
 
-def test_klar_android_experiments_use_right_datasets(klar_android_experiments, monkeypatch):
+def test_klar_android_experiments_use_right_datasets(
+    klar_android_experiments, monkeypatch
+):
     for experiment in klar_android_experiments:
         called = 0
 
@@ -350,9 +364,9 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
             assert query.count(dataset) == query.count("org_mozilla_klar")
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
-        config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
+        config = AnalysisSpec.default_for_experiment(
             experiment, ConfigLoader.configs
-        )
+        ).resolve(experiment, ConfigLoader.configs)
         Analysis("spam", "eggs", config).validate()
         assert called == 2
 
@@ -368,12 +382,14 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM test_experiment_enrollments_1
+    FROM `test_experiment_enrollments_1`
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
@@ -403,15 +419,17 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
         during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
         metric,
@@ -444,12 +462,14 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM test_experiment_enrollments_1
+    FROM `test_experiment_enrollments_1`
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
         metric,
@@ -478,13 +498,15 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM test_experiment_enrollments_1
+    FROM `test_experiment_enrollments_1`
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
     AND mysegment = TRUE"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
     )
 
@@ -514,8 +536,8 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
         during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
@@ -523,7 +545,9 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
     AND during.mysegment = TRUE"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "mysegment",
         metric,
@@ -546,12 +570,14 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM test_experiment_exposures_1
+    FROM `test_experiment_exposures_1`
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_univariate(
         "test_experiment_exposures_1", "all", metric, AnalysisBasis.EXPOSURES
     )
 
@@ -581,15 +607,17 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
         during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
         metric,
@@ -630,19 +658,23 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
     expected_query = dedent(
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
-    FROM test_experiment_enrollments_1
+    FROM `test_experiment_enrollments_1`
     WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
+    actual_query = _empty_analysis(
+        experiments
+    )._create_subset_metric_table_query_univariate(
         "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_covariate_depends_on(experiments, monkeypatch):
+def test_create_subset_metric_table_query_covariate_depends_on(
+    experiments, monkeypatch
+):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -685,7 +717,9 @@ def test_create_subset_metric_table_query_covariate_depends_on(experiments, monk
         )
 
 
-def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(experiments):
+def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
+    experiments,
+):
     metric = Metric(
         name="metric_name",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
@@ -743,10 +777,12 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
 
     # all is correct and the function should call the covariate builder
     monkeypatch.setattr(
-        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate", wrong_method
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate",
+        wrong_method,
     )
     monkeypatch.setattr(
-        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate", right_method
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate",
+        right_method,
     )
 
     _empty_analysis(experiments)._create_subset_metric_table_query(
@@ -758,7 +794,9 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
     )
 
 
-def test_create_subset_metric_table_query_use_covariate_explicit_metric(experiments, monkeypatch):
+def test_create_subset_metric_table_query_use_covariate_explicit_metric(
+    experiments, monkeypatch
+):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -787,8 +825,8 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
         during.metric_name,
         pre.my_metric AS my_metric_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
@@ -806,7 +844,9 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_use_covariate_implicit_metric(experiments, monkeypatch):
+def test_create_subset_metric_table_query_use_covariate_implicit_metric(
+    experiments, monkeypatch
+):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -816,7 +856,9 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(experime
     )
 
     summary = MagicMock()
-    summary.statistic.params = {"covariate_adjustment": {"period": "preenrollment_week"}}
+    summary.statistic.params = {
+        "covariate_adjustment": {"period": "preenrollment_week"}
+    }
 
     metric = Metric(
         name="metric_name",
@@ -833,8 +875,8 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(experime
         during.metric_name,
         pre.metric_name AS metric_name_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
@@ -861,10 +903,12 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
 
     # no configured covariate_adjustment parameter, use univariate
     monkeypatch.setattr(
-        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate", wrong_method
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_covariate",
+        wrong_method,
     )
     monkeypatch.setattr(
-        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate", right_method
+        "jetstream.analysis.Analysis._create_subset_metric_table_query_univariate",
+        right_method,
     )
 
     _empty_analysis(experiments)._create_subset_metric_table_query(
@@ -887,7 +931,10 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
 
     summary = MagicMock()
     summary.statistic.params = {
-        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_days28"}
+        "covariate_adjustment": {
+            "metric": "my_metric",
+            "period": "preenrollment_days28",
+        }
     }
 
     metric = Metric(
@@ -905,8 +952,8 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
         during.metric_name,
         pre.my_metric AS my_metric_pre
     FROM (
-        test_experiment_enrollments_1 during
-        LEFT JOIN table_pre pre
+        `test_experiment_enrollments_1` during
+        LEFT JOIN `table_pre` pre
         USING (client_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
@@ -939,7 +986,7 @@ def test_create_subset_metric_table_query_complete_univariate(experiments, monke
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM test_experiment_enrollments_1
+    FROM `test_experiment_enrollments_1`
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
