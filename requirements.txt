@@ -1891,9 +1891,9 @@ types-pytz==2024.1.0.20240417 \
     --hash=sha256:6810c8a1f68f21fdf0f4f374a432487c77645a0ac0b31de4bf4690cf21ad3981 \
     --hash=sha256:8335d443310e2db7b74e007414e74c4f53b67452c0cb0d228ca359ccfba59659
     # via -r requirements.in
-types-pyyaml==6.0.12.20240311 \
-    --hash=sha256:a9e0f0f88dc835739b0c1ca51ee90d04ca2a897a71af79de9aec5f38cb0a5342 \
-    --hash=sha256:b845b06a1c7e54b8e5b4c683043de0d9caf205e7434b3edc678ff2411979b8f6
+types-pyyaml==6.0.12.20240724 \
+    --hash=sha256:cf7b31ae67e0c5b2919c703d2affc415485099d3fe6666a6912f040fd05cb67f \
+    --hash=sha256:e5becec598f3aa3a2ddf671de4a75fa1c6856fbf73b2840286c9d50fae2d5d48
     # via -r requirements.in
 types-requests==2.32.0.20240712 \
     --hash=sha256:90c079ff05e549f6bf50e02e910210b98b8ff1ebdd18e19c873cd237737c1358 \
