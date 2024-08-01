@@ -299,7 +299,7 @@ pytest==8.2.2
     #   pytest-ruff
 pytest-cov==5.0.0
     # via mozilla-jetstream
-pytest-ruff==0.4.0
+pytest-ruff==0.4.1
     # via mozilla-jetstream
 python-dateutil==2.9.0.post0
     # via
