@@ -250,7 +250,7 @@ pluggy==1.5.0
     # via
     #   pytest
     #   tox
-polars==1.3.0
+polars==1.4.1
     # via marginaleffects
 polyfactory==2.16.2
     # via mozilla-nimbus-schemas
