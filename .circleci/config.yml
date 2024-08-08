@@ -31,6 +31,9 @@ jobs:
         name: ruff format
         command: venv/bin/ruff format --check jetstream
     - run:
+        name: Mypy
+        command: venv/bin/mypy --check jetstream
+    - run:
         name: PyTest
         command: venv/bin/pytest --ruff --ruff-format --ignore=jetstream/tests/integration/
     - save_cache:
