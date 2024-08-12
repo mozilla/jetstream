@@ -22,7 +22,7 @@ cattrs==23.2.3
     #   mozilla-metric-config-parser
 certifi==2024.7.4
     # via requests
-cffi==1.16.0
+cffi==1.17.0
     # via cryptography
 chardet==5.2.0
     # via tox
