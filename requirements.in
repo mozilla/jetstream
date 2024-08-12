@@ -4,7 +4,7 @@
 #
 #    update_deps
 #
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   cattrs
     #   jsonschema
