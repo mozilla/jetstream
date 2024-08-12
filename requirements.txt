@@ -1871,9 +1871,9 @@ tornado==6.4.1 \
     # via
     #   -r requirements.in
     #   distributed
-tox==4.16.0 \
-    --hash=sha256:43499656f9949edb681c0f907f86fbfee98677af9919d8b11ae5ad77cb800748 \
-    --hash=sha256:61e101061b977b46cf00093d4319438055290ad0009f84497a07bf2d2d7a06d0
+tox==4.17.1 \
+    --hash=sha256:2974597c0353577126ab014f52d1a399fb761049e165ff34427f84e8cfe6c990 \
+    --hash=sha256:2c41565a571e34480bd401d668a4899806169a4633e972ac296c54406d2ded8a
     # via -r requirements.in
 types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
