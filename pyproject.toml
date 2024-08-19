@@ -56,11 +56,11 @@ testing = [
     "ruff",
     "tox",
     "types-futures",
-    "types-pkg-resources",
     "types-protobuf",
     "types-pytz",
     "types-PyYAML",
     "types-requests",
+    "types-setuptools",
     "types-six",
     "types-toml",
 ]
