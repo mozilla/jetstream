@@ -12,7 +12,7 @@ attrs==24.2.0
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==5.4.0
+cachetools==5.5.0
     # via
     #   google-auth
     #   tox
