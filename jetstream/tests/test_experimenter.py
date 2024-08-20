@@ -445,7 +445,7 @@ FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_session():
     def experimenter_fixtures(url):
         mocked_value = MagicMock()
@@ -463,7 +463,7 @@ def mock_session():
     return session
 
 
-@pytest.fixture()
+@pytest.fixture
 def experiment_collection(mock_session):
     return ExperimentCollection.from_experimenter(mock_session)
 

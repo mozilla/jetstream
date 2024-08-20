@@ -97,7 +97,7 @@ def cli_experiments_enrollment_incomplete():
 
 
 class TestCli:
-    @pytest.fixture()
+    @pytest.fixture
     def runner(self):
         return CliRunner()
 
