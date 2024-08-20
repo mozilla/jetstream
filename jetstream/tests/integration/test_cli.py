@@ -13,7 +13,7 @@ from jetstream.config import ConfigLoader
 
 
 class TestCliIntegration:
-    @pytest.fixture()
+    @pytest.fixture
     def runner(self):
         return CliRunner()
 

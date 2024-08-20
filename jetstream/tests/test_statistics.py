@@ -29,7 +29,7 @@ from jetstream.statistics import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def wine():
     return pd.read_csv(Path(__file__).parent / "data/wine.data").rename(
         columns={"cultivar": "branch"}
