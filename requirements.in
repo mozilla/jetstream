@@ -340,7 +340,7 @@ ruff==0.6.1
     #   pytest-ruff
 scikit-learn==1.5.1
     # via mozilla-jetstream
-scipy==1.14.0
+scipy==1.14.1
     # via
     #   formulaic
     #   marginaleffects
