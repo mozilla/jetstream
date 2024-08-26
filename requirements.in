@@ -288,7 +288,7 @@ pycparser==2.22
     # via cffi
 pydantic==1.10.17
     # via mozilla-nimbus-schemas
-pyparsing==3.1.2
+pyparsing==3.1.4
     # via matplotlib
 pyproject-api==1.7.1
     # via tox
