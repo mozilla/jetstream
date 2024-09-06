@@ -269,6 +269,8 @@ def test_export_metadata(mock_storage_client, experiments):
                 }
             },
             "outcomes": {},
+            "version_info": null,
+            "version_date": null,
             "schema_version":"""
         + str(StatisticResult.SCHEMA_VERSION)
         + """
