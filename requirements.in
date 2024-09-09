@@ -239,7 +239,7 @@ patsy==0.5.6
     #   statsmodels
 pillow==10.4.0
     # via matplotlib
-platformdirs==4.2.2
+platformdirs==4.3.2
     # via
     #   tox
     #   virtualenv
