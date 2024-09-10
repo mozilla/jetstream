@@ -112,7 +112,7 @@ class TestBigQueryClient:
 
         table = "statistics_test_experiment_week_1"
 
-        client.load_table_from_json(test_data.dict()["__root__"], table, job_config)
+        client.load_table_from_json(test_data.model_dump(warnings=False), table, job_config)
 
         table_ref = client.client.get_table(f"{temporary_dataset}.{table}")
         rows = client.client.list_rows(table_ref)

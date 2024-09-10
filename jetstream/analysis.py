@@ -375,10 +375,10 @@ class Analysis:
                 analysis_basis=analysis_basis,
             )
             for b in self.config.experiment.branches
-            if b.slug not in {c.branch for c in counts.__root__}
+            if b.slug not in {c.branch for c in counts.root}
         ]
 
-        return StatisticResultCollection.parse_obj(counts.__root__ + other_counts)
+        return StatisticResultCollection.model_validate(counts.root + other_counts)
 
     @dask.delayed
     def subset_metric_table(
@@ -511,7 +511,7 @@ class Analysis:
                 f"Covariate adjustment table {covariate_table_name} does not exist, falling back to unadjusted inferences",  # noqa:E501
                 extra={
                     "experiment": normalized_slug,
-                    "metric": metric,
+                    "metric": metric.name,
                     "analysis_basis": analysis_basis.value,
                     "segment": segment,
                 },
@@ -726,7 +726,7 @@ class Analysis:
                 job_config=job_config,
             )
         except google.api_core.exceptions.BadRequest as e:
-            # There was a mismatch between the segment_results __root__ dict
+            # There was a mismatch between the segment_results root dict
             # structure and the schema expected by bigquery. This error is
             # rather opaque, so we will do some extra manual logging to help
             # debugging these cases before re-raising the original exception.
@@ -814,7 +814,7 @@ class Analysis:
                 logger.info(f"Skipping {period};")
                 continue
 
-            segment_results = StatisticResultCollection.parse_obj([])
+            segment_results = StatisticResultCollection.model_validate([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
             if time_limits is None:
@@ -883,23 +883,23 @@ class Analysis:
                         elif period.value == AnalysisPeriod.WEEK:
                             analysis_length_dates = 7
 
-                        segment_results.__root__ += self.calculate_statistics(
+                        segment_results.root += self.calculate_statistics(
                             summary,
                             segment_data,
                             segment,
                             analysis_basis,
                             analysis_length_dates,
                             period,
-                        ).dict()["__root__"]
+                        ).model_dump(warnings=False)
 
-                    segment_results.__root__ += self.counts(
+                    segment_results.root += self.counts(
                         segment_data, segment, analysis_basis
-                    ).dict()["__root__"]
+                    ).model_dump(warnings=False)
 
             results.append(
                 self.save_statistics(
                     period,
-                    segment_results.dict()["__root__"],
+                    segment_results.model_dump(warnings=False),
                     self._table_name(period.value, len(time_limits.analysis_windows)),
                 )
             )

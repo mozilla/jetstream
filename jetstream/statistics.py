@@ -7,7 +7,7 @@ import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from inspect import isabstract
-from typing import Any
+from typing import Any, ClassVar
 
 import attr
 import mozanalysis.bayesian_stats.bayesian_bootstrap
@@ -23,7 +23,7 @@ from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from mozilla_nimbus_schemas.jetstream import Statistic as StatisticSchema
 from mozilla_nimbus_schemas.jetstream import Statistics as StatisticsSchema
 from pandas import DataFrame, Series
-from pydantic import Field, validator
+from pydantic import ConfigDict, Field, field_validator
 from sklearn.neighbors import KernelDensity
 from statsmodels.distributions.empirical_distribution import ECDF
 
@@ -116,8 +116,9 @@ class StatisticResult(StatisticSchema):
     to metric data.
     """
 
-    _schema_version = 4
-    _bq_schema = (
+    # ClassVars are automatically ignored in instances
+    SCHEMA_VERSION: ClassVar[int] = 4
+    bq_schema: ClassVar[tuple] = (
         bigquery.SchemaField("metric", "STRING"),
         bigquery.SchemaField("statistic", "STRING"),
         bigquery.SchemaField("parameter", "NUMERIC"),
@@ -137,18 +138,19 @@ class StatisticResult(StatisticSchema):
     # it on the Jetstream side
     window_index: str = Field(default=None, exclude=True)
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True, coerce_numbers_to_str=True)
 
-    @validator("ci_width", "point", "lower", "upper", allow_reuse=True)
-    def check_number_fields(cls, v, values, field):
+    @field_validator("ci_width", "point", "lower", "upper")
+    @classmethod
+    def check_number_fields(cls, v, field):
         if v is not None and not isinstance(v, numbers.Number):
             if math.isnan(v):
                 return None
             raise ValueError(f"Expected a number for {field.name}; got {v!r}")
         return v
 
-    @validator("parameter")
+    @field_validator("parameter")
+    @classmethod
     def normalize_decimal(cls, v):
         if isinstance(v, Decimal):
             return str(round(v, 6).normalize())
@@ -156,31 +158,12 @@ class StatisticResult(StatisticSchema):
             return str(round(v, 6))
         return v
 
-    @validator("*")
+    @field_validator("*")
+    @classmethod
     def suppress_infinites(cls, v):
         if not isinstance(v, float) or math.isfinite(v):
             return v
         return None
-
-    # we want a class method that is also a property
-    # - this is supported in python 3.9 and 3.10 but
-    #   is *deprecated in python 3.11*
-    # - mypy does not support this stacking of decorators
-    #   so we ignore it here
-    @classmethod  # type: ignore[misc]
-    @property
-    def bq_schema(cls) -> tuple:
-        return cls._bq_schema
-
-    # we want a class method that is also a property
-    # - this is supported in python 3.9 and 3.10 but
-    #   is *deprecated in python 3.11*
-    # - mypy does not support this stacking of decorators
-    #   so we ignore it here
-    @classmethod  # type: ignore[misc]
-    @property
-    def SCHEMA_VERSION(cls) -> int:
-        return cls._schema_version
 
 
 class StatisticResultCollection(StatisticsSchema):
@@ -188,17 +171,17 @@ class StatisticResultCollection(StatisticsSchema):
     Represents a set of statistics result data.
     """
 
-    __root__: list[StatisticResult] = []
+    root: list[StatisticResult] = []
 
     def set_segment(self, segment: str) -> "StatisticResultCollection":
         """Sets the `segment` field in-place on all children."""
-        for result in self.__root__:
+        for result in self.root:
             result.segment = segment
         return self
 
     def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
-        for result in self.__root__:
+        for result in self.root:
             result.analysis_basis = analysis_basis.value
         return self
 
@@ -252,7 +235,7 @@ class Statistic(ABC):
                         experiment,
                         analysis_basis,
                         segment,
-                    ).__root__:
+                    ).root:
                         results[
                             (
                                 x.metric,
@@ -265,7 +248,9 @@ class Statistic(ABC):
                                 x.segment,
                                 x.analysis_basis,
                             )
-                        ] = json.dumps(x.json())
+                        ] = json.dumps(x.model_dump_json(warnings=False))
+                        # note for above: warnings=False is intended to suppress warnings
+                        # of str coerced to numbers,  but may also suppress others
 
                 except Exception as e:
                     logger.exception(
@@ -285,8 +270,8 @@ class Statistic(ABC):
                     )
 
         # parse stringified json results as list of StatisticResults to be returned
-        statistic_result_collection = StatisticResultCollection.parse_obj(
-            [StatisticResult.parse_raw(json.loads(r)) for r in results.values()]
+        statistic_result_collection = StatisticResultCollection.model_validate(
+            [StatisticResult.model_validate_json(json.loads(r)) for r in results.values()]
         )
 
         return statistic_result_collection
@@ -388,7 +373,7 @@ def flatten_simple_compare_branches_result(
             )
         )
 
-    return StatisticResultCollection.parse_obj(statlist)
+    return StatisticResultCollection.model_validate(statlist)
 
 
 @attr.s(auto_attribs=True)
@@ -535,7 +520,7 @@ class PerClientDAUImpact(BootstrapMean):
             # experiment
             branch_data_abs = [
                 x
-                for x in bootstrap_results.__root__
+                for x in bootstrap_results.root
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data_abs:
@@ -550,7 +535,7 @@ class PerClientDAUImpact(BootstrapMean):
             # per-user sum(DAU)
             branch_data_rel = [
                 x
-                for x in bootstrap_results.__root__
+                for x in bootstrap_results.root
                 if x.branch == branch.slug and x.comparison == "relative_uplift"
             ]
             for d in branch_data_rel:
@@ -558,7 +543,7 @@ class PerClientDAUImpact(BootstrapMean):
 
                 results.append(d)
 
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection.model_validate(results)
 
 
 @attr.s(auto_attribs=True)
@@ -608,7 +593,7 @@ class Deciles(Statistic):
         analysis_basis: AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        stats_results = StatisticResultCollection.parse_obj([])
+        stats_results = StatisticResultCollection.model_validate([])
 
         critical_point = (1 - self.confidence_interval) / 2
         summary_quantiles = (critical_point, 1 - critical_point)
@@ -625,7 +610,7 @@ class Deciles(Statistic):
         for branch, branch_result in ma_result["individual"].items():
             for param, decile_result in branch_result.iterrows():
                 lower, upper = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.root.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -644,7 +629,7 @@ class Deciles(Statistic):
             abs_uplift = branch_result["abs_uplift"]
             for param, decile_result in abs_uplift.iterrows():
                 lower_abs, upper_abs = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.root.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -664,7 +649,7 @@ class Deciles(Statistic):
             rel_uplift = branch_result["rel_uplift"]
             for param, decile_result in rel_uplift.iterrows():
                 lower_rel, upper_rel = _extract_ci(decile_result, critical_point)
-                stats_results.__root__.append(
+                stats_results.root.append(
                     StatisticResult(
                         metric=metric,
                         statistic="deciles",
@@ -730,7 +715,7 @@ class Count(Statistic):
                     segment=segment,
                 )
             )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection.model_validate(results)
 
 
 class Sum(Statistic):
@@ -779,7 +764,7 @@ class Sum(Statistic):
                     segment=segment,
                 )
             )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection.model_validate(results)
 
 
 @attr.s(auto_attribs=True)
@@ -879,7 +864,7 @@ class KernelDensityEstimate(Statistic):
                         segment=segment,
                     )
                 )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection.model_validate(results)
 
 
 @attr.s(auto_attribs=True)
@@ -946,7 +931,7 @@ class EmpiricalCDF(Statistic):
                         segment=segment,
                     )
                 )
-        return StatisticResultCollection.parse_obj(results)
+        return StatisticResultCollection.model_validate(results)
 
 
 @attr.s(auto_attribs=True, kw_only=True)

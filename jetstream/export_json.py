@@ -185,7 +185,7 @@ def _get_experiment_logs_as_json(
 
     # convert results to JSON
     records = [dict(row) for row in results]
-    records_json = AnalysisErrors.parse_obj(records).json()
+    records_json = AnalysisErrors.model_validate(records).model_dump_json()
 
     return records_json, len(records)
 
