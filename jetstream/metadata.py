@@ -7,6 +7,7 @@ from mozilla_nimbus_schemas.jetstream import ExternalConfig as ExternalConfigMet
 from mozilla_nimbus_schemas.jetstream import Metadata
 from mozilla_nimbus_schemas.jetstream import Metric as MetricsMetadata
 from mozilla_nimbus_schemas.jetstream import Outcome as OutcomeMetadata
+from pydantic import field_serializer
 
 from jetstream import bq_normalize_name
 from jetstream.config import METRIC_HUB_REPO, ConfigLoader
@@ -15,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 class ExperimentMetadata(Metadata):
-    class Config:
-        json_encoders = {
-            dt.date: lambda d: d.strftime("%Y-%m-%d"),
-            dt.datetime: lambda dt: str(dt),
-        }
+    @field_serializer("*")
+    def serialize_dates(self, val):
+        if isinstance(val, dt.datetime):
+            return str(val)
+        if isinstance(val, dt.date):
+            return val.strftime("%Y-%m-%d")
+        return val
 
     @classmethod
     def from_config(
@@ -132,6 +135,6 @@ def export_metadata(
     logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
 
     blob.upload_from_string(
-        data=metadata.json(),
+        data=metadata.model_dump_json(),
         content_type="application/json",
     )

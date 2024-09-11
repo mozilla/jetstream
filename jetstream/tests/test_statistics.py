@@ -58,7 +58,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")
@@ -75,7 +75,7 @@ class TestStatistics:
 
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")
@@ -105,7 +105,7 @@ class TestStatistics:
 
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")
@@ -124,7 +124,7 @@ class TestStatistics:
             None,
             AnalysisBasis.ENROLLMENTS,
             "all",
-        ).__root__
+        ).root
         rel_results_unadj = next(r for r in results_unadj if r.comparison == "relative_uplift")
         # test that point estimate after adjustment is closer to truth
         assert np.abs(rel_results.point - rel_diff) < np.abs(rel_results_unadj.point - rel_diff)
@@ -275,7 +275,7 @@ class TestStatistics:
         )
         result = stat.transform(
             test_data, "value", "control", experiment, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         abs_difference = next(r for r in result if r.comparison == "difference")
         # analytically, we should see a point estimate of 10, with 95% CI of (7.155,12.844)
@@ -305,7 +305,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")
         control_result = next(r for r in branch_results if r.branch == "control")
@@ -332,7 +332,7 @@ class TestStatistics:
         )
         results = stat.apply(
             test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")
@@ -398,7 +398,7 @@ class TestStatistics:
             stat = stat_class()
             results = stat.apply(
                 test_data, "value", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
-            ).__root__
+            ).root
             assert len(results) == expected_count
 
     def test_count(self):
@@ -408,7 +408,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "identity", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert all(r.metric == "identity" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [20]
         assert [r.point for r in results if r.branch == "control"] == [10]
@@ -425,7 +425,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert all(r.metric == "value" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [5]
         assert [r.point for r in results if r.branch == "control"] == [5]
@@ -442,7 +442,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert all(r.metric == "value" for r in results)
         assert [r.point for r in results if r.branch == "treatment"] == [15]
         assert [r.point for r in results if r.branch == "control"] == [5]
@@ -488,7 +488,7 @@ class TestStatistics:
     def test_kde(self, wine):
         stat = KernelDensityEstimate()
         results = sorted(
-            stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__,
+            stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").root,
             key=lambda res: (res.branch, res.parameter),
         )
 
@@ -501,29 +501,29 @@ class TestStatistics:
         wine = wine.copy()
         wine.loc[0, "ash"] = 0
         stat = KernelDensityEstimate(log_space=True)
-        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").__root__
+        results = stat.transform(wine, "ash", "*", None, AnalysisBasis.ENROLLMENTS, "all").root
         for r in results:
             assert isinstance(r.point, float)
-        df = pd.DataFrame([r.dict() for r in results])
+        df = pd.DataFrame([r.model_dump(warnings=False) for r in results])
         assert float(df["parameter"].min()) == 0.0
 
     def test_ecdf(self, wine, experiments):
         stat = EmpiricalCDF()
         results = stat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert len(results) > 0
 
         logstat = EmpiricalCDF(log_space=True)
         results = logstat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert len(results) > 0
 
         wine["ash"] = -wine["ash"]
         results = logstat.transform(
             wine, "ash", "*", experiments[0], AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
         assert len(results) > 0
 
         assert stat.name() == "empirical_cdf"
@@ -531,7 +531,7 @@ class TestStatistics:
     def test_statistic_result_rejects_invalid_types(self):
         args = {"metric": "foo", "statistic": "bar", "branch": "baz"}
         StatisticResult(**args)
-        with pytest.raises(ValueError, match="value is not a valid float"):
+        with pytest.raises(ValueError, match="Input should be a valid number"):
             StatisticResult(point=[3], **args)
 
     def test_type_conversions(self):
@@ -558,7 +558,7 @@ class TestStatistics:
         )
         results = stat.transform(
             test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all"
-        ).__root__
+        ).root
 
         branch_results = [r for r in results if r.comparison is None]
         treatment_result = next(r for r in branch_results if r.branch == "treatment")

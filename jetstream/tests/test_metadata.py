@@ -75,7 +75,7 @@ def test_metadata_reference_branch(mock_get, experiments):
 
     assert metadata.external_config.reference_branch == "a"
     assert (
-        metadata.external_config.url
+        str(metadata.external_config.url)
         == METRIC_HUB_REPO + "/blob/main/jetstream/normandy-test-slug.toml"
     )
 
@@ -277,11 +277,11 @@ def test_export_metadata(mock_storage_client, experiments):
         }
     """
     )
-    # NOTE: pydantic orders the .json() output by the order in
+    # NOTE: pydantic orders the serialized json output by the order in
     # which parameters are defined in the schema class, so the
     # `expected` order needs to match that ordering
     mock_blob.upload_from_string.assert_called_once_with(
-        data=json.dumps(expected), content_type="application/json"
+        data=json.dumps(expected, separators=(",", ":")), content_type="application/json"
     )
 
 
@@ -396,4 +396,4 @@ def test_metadata_schema(experiments):
     config = spec.resolve(experiments[5], loader.configs)
     metadata = ExperimentMetadata.from_config(config, dt.datetime.now(), config_loader=loader)
 
-    jsonschema.validate(json.loads(metadata.json()), schema)
+    jsonschema.validate(json.loads(metadata.model_dump_json(warnings=False)), schema)
