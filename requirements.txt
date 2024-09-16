@@ -2000,9 +2000,9 @@ types-protobuf==5.27.0.20240907 \
     --hash=sha256:5443270534cc8072909ef7ad9e1421ccff924ca658749a6396c0c43d64c32676 \
     --hash=sha256:bb6f90f66b18d4d1c75667b6586334b0573a6fcee5eb0142a7348a765a7cbadc
     # via -r requirements.in
-types-pytz==2024.1.0.20240417 \
-    --hash=sha256:6810c8a1f68f21fdf0f4f374a432487c77645a0ac0b31de4bf4690cf21ad3981 \
-    --hash=sha256:8335d443310e2db7b74e007414e74c4f53b67452c0cb0d228ca359ccfba59659
+types-pytz==2024.2.0.20240913 \
+    --hash=sha256:4433b5df4a6fc587bbed41716d86a5ba5d832b4378e506f40d34bc9c81df2c24 \
+    --hash=sha256:a1eebf57ebc6e127a99d2fa2ba0a88d2b173784ef9b3defcc2004ab6855a44df
     # via -r requirements.in
 types-pyyaml==6.0.12.20240808 \
     --hash=sha256:b8f76ddbd7f65440a8bda5526a9607e4c7a322dc2f8e1a8c405644f9a6f4b9af \
