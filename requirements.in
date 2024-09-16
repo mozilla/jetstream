@@ -364,7 +364,7 @@ smmap==5.0.1
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
-statsmodels==0.14.2
+statsmodels==0.14.3
     # via
     #   mozanalysis
     #   mozilla-jetstream
