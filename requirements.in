@@ -145,7 +145,7 @@ grpcio==1.66.1
     #   mozilla-jetstream
 grpcio-status==1.66.1
     # via google-api-core
-idna==3.8
+idna==3.10
     # via requests
 importlib-metadata==8.4.0
     # via dask
