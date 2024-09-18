@@ -649,3 +649,13 @@ def test_ended_after_or_live(experiment_collection):
     assert isinstance(recent, ExperimentCollection)
     assert len(recent.experiments) > 0
     assert all((e.status == "Live" or e.end_date >= date) for e in recent.experiments)
+
+
+def test_of_type(experiment_collection):
+    v6_experiments = experiment_collection.of_type("v6")
+    for experiment in v6_experiments.experiments:
+        assert experiment.type == "v6"
+
+    v1_experiments = experiment_collection.of_type("v1")
+    for experiment in v1_experiments.experiments:
+        assert experiment.type == "v1"
