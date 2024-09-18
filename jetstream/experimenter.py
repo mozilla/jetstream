@@ -180,11 +180,11 @@ class ExperimentCollection:
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
 
     # for nimbus experiments
-    EXPERIMENTER_API_URL_V6 = "https://experimenter.services.mozilla.com/api/v6/experiments/"
+    EXPERIMENTER_API_URL_V8 = "https://experimenter.services.mozilla.com/api/v8/experiments/"
 
     # experiments that are in draft state
-    EXPERIMENTER_API_URL_V6_DRAFTS = (
-        "https://experimenter.services.mozilla.com/api/v6/draft-experiments/"
+    EXPERIMENTER_API_URL_V8_DRAFTS = (
+        "https://experimenter.services.mozilla.com/api/v8/draft-experiments/"
     )
 
     # user agent sent to the Experimenter API
@@ -212,7 +212,7 @@ class ExperimentCollection:
                     )
 
         nimbus_experiments_json = retry_get(
-            session, cls.EXPERIMENTER_API_URL_V6, cls.MAX_RETRIES, cls.USER_AGENT
+            session, cls.EXPERIMENTER_API_URL_V8, cls.MAX_RETRIES, cls.USER_AGENT
         )
         nimbus_experiments = []
 
@@ -228,7 +228,7 @@ class ExperimentCollection:
         if with_draft_experiments:
             # draft experiments are mainly used to compute previews
             draft_experiments_json = retry_get(
-                session, cls.EXPERIMENTER_API_URL_V6_DRAFTS, cls.MAX_RETRIES, cls.USER_AGENT
+                session, cls.EXPERIMENTER_API_URL_V8_DRAFTS, cls.MAX_RETRIES, cls.USER_AGENT
             )
 
             for draft_experiment in draft_experiments_json:

@@ -451,7 +451,7 @@ def mock_session():
         mocked_value = MagicMock()
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
-        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V6:
+        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V8:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
         else:
             raise Exception("Invalid Experimenter API call.")
@@ -471,7 +471,7 @@ def experiment_collection(mock_session):
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
-    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V8)
     assert len(collection.experiments) == 6
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
@@ -649,3 +649,13 @@ def test_ended_after_or_live(experiment_collection):
     assert isinstance(recent, ExperimentCollection)
     assert len(recent.experiments) > 0
     assert all((e.status == "Live" or e.end_date >= date) for e in recent.experiments)
+
+
+def test_of_type(experiment_collection):
+    v6_experiments = experiment_collection.of_type("v6")
+    for experiment in v6_experiments.experiments:
+        assert experiment.type == "v6"
+
+    v1_experiments = experiment_collection.of_type("v1")
+    for experiment in v1_experiments.experiments:
+        assert experiment.type == "v1"
