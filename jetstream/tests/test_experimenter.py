@@ -451,7 +451,7 @@ def mock_session():
         mocked_value = MagicMock()
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
-        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V6:
+        elif url == ExperimentCollection.EXPERIMENTER_API_URL_V8:
             mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
         else:
             raise Exception("Invalid Experimenter API call.")
@@ -471,7 +471,7 @@ def experiment_collection(mock_session):
 def test_from_experimenter(mock_session):
     collection = ExperimentCollection.from_experimenter(mock_session)
     mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V1)
-    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V6)
+    mock_session.get.assert_any_call(ExperimentCollection.EXPERIMENTER_API_URL_V8)
     assert len(collection.experiments) == 6
     assert isinstance(collection.experiments[0], Experiment)
     assert isinstance(collection.experiments[0].branches[0], Branch)
