@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import pytz
 import toml
-from metric_config_parser import AnalysisUnit, segment
+from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
@@ -383,17 +383,15 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
-def test_create_subset_metric_table_query_covariate_basic(
-    randomization_unit, expected_id, monkeypatch
-):
+def test_create_subset_metric_table_query_covariate_basic(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -410,7 +408,7 @@ def test_create_subset_metric_table_query_covariate_basic(
     )
 
     expected_query = dedent(
-        f"""
+        """
         SELECT
             during.branch,
             during.metric_name,
@@ -418,7 +416,7 @@ def test_create_subset_metric_table_query_covariate_basic(
         FROM (
             `test_experiment_enrollments_1` during
             LEFT JOIN `table_pre` pre
-            USING ({expected_id}, branch)
+            USING (analysis_id, branch)
         )
         WHERE during.metric_name IS NOT NULL AND
         during.enrollment_date IS NOT NULL"""
@@ -528,17 +526,15 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
-def test_create_subset_metric_table_query_covariate_segment(
-    randomization_unit, expected_id, monkeypatch
-):
+def test_create_subset_metric_table_query_covariate_segment(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -555,7 +551,7 @@ def test_create_subset_metric_table_query_covariate_segment(
     )
 
     expected_query = dedent(
-        f"""
+        """
     SELECT
         during.branch,
         during.metric_name,
@@ -563,7 +559,7 @@ def test_create_subset_metric_table_query_covariate_segment(
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING ({expected_id}, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL
@@ -629,17 +625,15 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
-def test_create_subset_metric_table_query_covariate_exposures(
-    randomization_unit, expected_id, monkeypatch
-):
+def test_create_subset_metric_table_query_covariate_exposures(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -656,7 +650,7 @@ def test_create_subset_metric_table_query_covariate_exposures(
     )
 
     expected_query = dedent(
-        f"""
+        """
     SELECT
         during.branch,
         during.metric_name,
@@ -664,7 +658,7 @@ def test_create_subset_metric_table_query_covariate_exposures(
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING ({expected_id}, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
@@ -867,16 +861,16 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
 def test_create_subset_metric_table_query_use_covariate_explicit_metric(
-    randomization_unit, expected_id, monkeypatch
+    randomization_unit, monkeypatch
 ):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -900,7 +894,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
     summary.metric = metric
 
     expected_query = dedent(
-        f"""
+        """
     SELECT
         during.branch,
         during.metric_name,
@@ -908,7 +902,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING ({expected_id}, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
@@ -949,16 +943,16 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
 def test_create_subset_metric_table_query_use_covariate_implicit_metric(
-    randomization_unit, expected_id, monkeypatch
+    randomization_unit, monkeypatch
 ):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -980,7 +974,7 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(
     summary.metric = metric
 
     expected_query = dedent(
-        f"""
+        """
     SELECT
         during.branch,
         during.metric_name,
@@ -988,7 +982,7 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING ({expected_id}, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
@@ -1055,17 +1049,15 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "expected_id"),
+    ("randomization_unit"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NIMBUS, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
-        (RandomizationUnit.USER_ID, AnalysisUnit.CLIENT.value),
+        RandomizationUnit.GROUP_ID,
+        RandomizationUnit.NIMBUS,
+        RandomizationUnit.NORMANDY,
+        RandomizationUnit.USER_ID,
     ],
 )
-def test_create_subset_metric_table_query_complete_covariate(
-    randomization_unit, expected_id, monkeypatch
-):
+def test_create_subset_metric_table_query_complete_covariate(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -1091,7 +1083,7 @@ def test_create_subset_metric_table_query_complete_covariate(
     summary.metric = metric
 
     expected_query = dedent(
-        f"""
+        """
     SELECT
         during.branch,
         during.metric_name,
@@ -1099,7 +1091,7 @@ def test_create_subset_metric_table_query_complete_covariate(
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING ({expected_id}, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""

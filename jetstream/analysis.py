@@ -524,7 +524,7 @@ class Analysis:
         from_expression = dedent(
             f"""`{metrics_table_name}` during
             LEFT JOIN `{covariate_table_name}` pre
-            USING ({self.config.experiment.analysis_unit.value}, branch)"""
+            USING (analysis_id, branch)"""
         )
 
         query = dedent(
@@ -682,15 +682,15 @@ class Analysis:
         # "cannot query over table without filter over columns"
         metrics_sql = metrics_sql.replace(
             "WITH analysis_windows AS (",
-            f"""WITH enrollments_table AS (
-                SELECT '00000' AS {self.config.experiment.analysis_unit.value},
+            """WITH enrollments_table AS (
+                SELECT '00000' AS analysis_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
                     DATE('2020-01-01') AS exposure_date,
                     1 AS num_enrollment_events,
                     1 AS num_exposure_events
                 UNION ALL
-                SELECT '00000' AS {self.config.experiment.analysis_unit.value},
+                SELECT '00000' AS analysis_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
                     DATE('2020-01-01') AS exposure_date,

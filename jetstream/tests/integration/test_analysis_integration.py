@@ -152,7 +152,7 @@ class TestAnalysisIntegration:
         b_value = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else "b"
         expected_metrics_results = [
             {
-                f"{analysis_unit}": f"bbb{b_value}",
+                "analysis_id": f"bbb{b_value}",
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -160,7 +160,7 @@ class TestAnalysisIntegration:
                 "analysis_window_end": 6,
             },
             {
-                f"{analysis_unit}": f"aaa{a_value}",
+                "analysis_id": f"aaa{a_value}",
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -280,7 +280,7 @@ class TestAnalysisIntegration:
         b_value = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else "b"
         expected_metrics_results = [
             {
-                f"{analysis_unit}": f"bbb{b_value}",
+                "analysis_id": f"bbb{b_value}",
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -289,7 +289,7 @@ class TestAnalysisIntegration:
                 "active_hours": 0.2,
             },
             {
-                f"{analysis_unit}": f"aaa{a_value}",
+                "analysis_id": f"aaa{a_value}",
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -379,7 +379,7 @@ class TestAnalysisIntegration:
         b_value = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else "b"
         expected_metrics_results = [
             {
-                f"{analysis_unit}": f"bbb{b_value}",
+                "analysis_id": f"bbb{b_value}",
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -387,7 +387,7 @@ class TestAnalysisIntegration:
                 "analysis_window_end": 6,
             },
             {
-                f"{analysis_unit}": f"aaa{a_value}",
+                "analysis_id": f"aaa{a_value}",
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -519,7 +519,7 @@ class TestAnalysisIntegration:
         b_value = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else "b"
         expected_metrics_results = [
             {
-                f"{analysis_unit}": f"bbb{b_value}",
+                "analysis_id": f"bbb{b_value}",
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -529,7 +529,7 @@ class TestAnalysisIntegration:
                 "active_hours": pytest.approx(0.3, rel=1e-5),
             },
             {
-                f"{analysis_unit}": f"aaa{a_value}",
+                "analysis_id": f"aaa{a_value}",
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -736,7 +736,7 @@ class TestAnalysisIntegration:
         b_value = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else "b"
         expected_metrics_results = [
             {
-                f"{analysis_unit}": f"bbb{b_value}",
+                "analysis_id": f"bbb{b_value}",
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -745,7 +745,7 @@ class TestAnalysisIntegration:
                 "regular_user_v3": True,
             },
             {
-                f"{analysis_unit}": f"aaa{a_value}",
+                "analysis_id": f"aaa{a_value}",
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
