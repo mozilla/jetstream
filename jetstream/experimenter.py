@@ -30,8 +30,8 @@ class Outcome:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class ExperimentV1:
-    """Experimenter v1 experiment."""
+class LegacyExperiment:
+    """Experimenter Legacy (Normandy) experiment (v1 API)."""
 
     slug: str  # experimenter slug
     type: str
@@ -51,7 +51,7 @@ class ExperimentV1:
         return dt.datetime.fromtimestamp(num / 1e3, pytz.utc)
 
     @classmethod
-    def from_dict(cls, d) -> "ExperimentV1":
+    def from_dict(cls, d) -> "LegacyExperiment":
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime,
@@ -88,8 +88,8 @@ class ExperimentV1:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class ExperimentV6:
-    """Represents a v6 experiment from Experimenter."""
+class NimbusExperiment:
+    """Represents a Nimbus experiment from Experimenter (v8 API)."""
 
     slug: str  # Normandy slug
     branches: list[experiment.Branch]
@@ -114,7 +114,7 @@ class ExperimentV6:
         return self._appId or "firefox-desktop"
 
     @classmethod
-    def from_dict(cls, d) -> "ExperimentV6":
+    def from_dict(cls, d) -> "NimbusExperiment":
         converter = cattr.Converter()
         converter.register_structure_hook(
             dt.datetime,
@@ -144,7 +144,7 @@ class ExperimentV6:
         return experiment.Experiment(
             normandy_slug=self.slug,
             experimenter_slug=None,
-            type="v6",
+            type="v6",  # currently using v8 API, but attribute remains from v6 API
             status=(
                 "Live"
                 if (
@@ -204,7 +204,7 @@ class ExperimentCollection:
             if legacy_experiment["type"] != "rapid":
                 try:
                     legacy_experiments.append(
-                        ExperimentV1.from_dict(legacy_experiment).to_experiment()
+                        LegacyExperiment.from_dict(legacy_experiment).to_experiment()
                     )
                 except Exception as e:
                     logger.exception(
@@ -218,7 +218,9 @@ class ExperimentCollection:
 
         for nimbus_experiment in nimbus_experiments_json:
             try:
-                nimbus_experiments.append(ExperimentV6.from_dict(nimbus_experiment).to_experiment())
+                nimbus_experiments.append(
+                    NimbusExperiment.from_dict(nimbus_experiment).to_experiment()
+                )
             except Exception as e:
                 logger.exception(
                     str(e), exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
@@ -234,7 +236,7 @@ class ExperimentCollection:
             for draft_experiment in draft_experiments_json:
                 try:
                     draft_experiments.append(
-                        ExperimentV6.from_dict(draft_experiment).to_experiment()
+                        NimbusExperiment.from_dict(draft_experiment).to_experiment()
                     )
                 except Exception as e:
                     print(f"Error converting draft experiment {draft_experiment['slug']}")
