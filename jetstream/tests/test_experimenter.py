@@ -11,13 +11,13 @@ from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 
 from jetstream.experimenter import (
     ExperimentCollection,
-    ExperimentV1,
-    ExperimentV6,
+    LegacyExperiment,
+    NimbusExperiment,
     Outcome,
     Variant,
 )
 
-EXPERIMENTER_FIXTURE_V1 = r"""
+LEGACY_EXPERIMENTER_FIXTURE = r"""
 [
   {
     "experiment_url": "https://experimenter.services.mozilla.com/experiments/search-topsites/",
@@ -173,7 +173,7 @@ EXPERIMENTER_FIXTURE_V1 = r"""
 ]
 """  # noqa
 
-EXPERIMENTER_FIXTURE_V6 = r"""
+NIMBUS_EXPERIMENTER_FIXTURE = r"""
 [
 {
   "schemaVersion": "1",
@@ -450,9 +450,9 @@ def mock_session():
     def experimenter_fixtures(url):
         mocked_value = MagicMock()
         if url == ExperimentCollection.EXPERIMENTER_API_URL_V1:
-            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V1)
+            mocked_value.json.return_value = json.loads(LEGACY_EXPERIMENTER_FIXTURE)
         elif url == ExperimentCollection.EXPERIMENTER_API_URL_V8:
-            mocked_value.json.return_value = json.loads(EXPERIMENTER_FIXTURE_V6)
+            mocked_value.json.return_value = json.loads(NIMBUS_EXPERIMENTER_FIXTURE)
         else:
             raise Exception("Invalid Experimenter API call.")
 
@@ -512,8 +512,8 @@ def test_with_slug(experiment_collection):
     assert len(experiments.experiments) == 0
 
 
-def test_convert_experiment_v1_to_experiment():
-    experiment_v1 = ExperimentV1(
+def test_convert_legacy_experiment_to_experiment():
+    legacy_experiment = LegacyExperiment(
         slug="test-slug",
         normandy_slug="test_slug",
         status="Live",
@@ -527,7 +527,7 @@ def test_convert_experiment_v1_to_experiment():
         ],
     )
 
-    experiment = experiment_v1.to_experiment()
+    experiment = legacy_experiment.to_experiment()
 
     assert experiment.experimenter_slug == "test-slug"
     assert experiment.normandy_slug == "test_slug"
@@ -536,8 +536,8 @@ def test_convert_experiment_v1_to_experiment():
     assert experiment.is_high_population is False
 
 
-def test_convert_experiment_v6_to_experiment():
-    experiment_v6 = ExperimentV6(
+def test_convert_nimbus_experiment_to_experiment():
+    nimbus_experiment = NimbusExperiment(
         slug="test_slug",
         startDate=dt.datetime(2019, 1, 1),
         endDate=dt.datetime(2019, 1, 10),
@@ -554,7 +554,7 @@ def test_convert_experiment_v6_to_experiment():
         ),
     )
 
-    experiment = experiment_v6.to_experiment()
+    experiment = nimbus_experiment.to_experiment()
 
     assert experiment.experimenter_slug is None
     assert experiment.normandy_slug == "test_slug"
@@ -569,12 +569,12 @@ def test_convert_experiment_v6_to_experiment():
 
 def test_fixture_validates():
     schema = json.loads((Path(__file__).parent / "data/NimbusExperiment_v1.0.json").read_text())
-    experiments = json.loads(EXPERIMENTER_FIXTURE_V6)
+    experiments = json.loads(NIMBUS_EXPERIMENTER_FIXTURE)
     [jsonschema.validate(e, schema) for e in experiments if e["slug"]]
 
 
-def test_experiment_v6_status():
-    experiment_live = ExperimentV6(
+def test_nimbus_experiment_status():
+    experiment_live = NimbusExperiment(
         slug="test_slug",
         startDate=dt.datetime(2019, 1, 1),
         endDate=dt.datetime.now() + timedelta(days=1),
@@ -592,7 +592,7 @@ def test_experiment_v6_status():
 
     assert experiment_live.to_experiment().status == "Live"
 
-    experiment_complete = ExperimentV6(
+    experiment_complete = NimbusExperiment(
         slug="test_slug",
         startDate=dt.datetime(2019, 1, 1),
         endDate=dt.datetime.now() - timedelta(minutes=1),
@@ -612,7 +612,7 @@ def test_experiment_v6_status():
 
 
 def test_app_name():
-    x = ExperimentV6.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
+    x = NimbusExperiment.from_dict(json.loads(FENIX_EXPERIMENT_FIXTURE))
     assert x.appName == "fenix"
     assert x.appId == "org.mozilla.fenix"
     assert Outcome(slug="default-browser") in x.outcomes
@@ -620,7 +620,7 @@ def test_app_name():
 
 
 def test_ios_app_name():
-    x = ExperimentV6.from_dict(json.loads(FIREFOX_IOS_EXPERIMENT_FIXTURE))
+    x = NimbusExperiment.from_dict(json.loads(FIREFOX_IOS_EXPERIMENT_FIXTURE))
     assert x.appName == "firefox_ios"
     assert x.appId == "org.mozilla.ios.FirefoxBeta"
     assert x.outcomes == []
@@ -628,7 +628,7 @@ def test_ios_app_name():
 
 
 def test_klar_android_app_name():
-    x = ExperimentV6.from_dict(json.loads(KLAR_ANDROID_EXPERIMENT_FIXTURE))
+    x = NimbusExperiment.from_dict(json.loads(KLAR_ANDROID_EXPERIMENT_FIXTURE))
     assert x.appName == "klar_android"
     assert x.appId == "org.mozilla.klar"
     assert x.outcomes == []
@@ -636,7 +636,7 @@ def test_klar_android_app_name():
 
 
 def test_focus_android_app_name():
-    x = ExperimentV6.from_dict(json.loads(FOCUS_ANDROID_EXPERIMENT_FIXTURE))
+    x = NimbusExperiment.from_dict(json.loads(FOCUS_ANDROID_EXPERIMENT_FIXTURE))
     assert x.appName == "focus_android"
     assert x.appId == "org.mozilla.focus"
     assert x.outcomes == []
@@ -652,10 +652,10 @@ def test_ended_after_or_live(experiment_collection):
 
 
 def test_of_type(experiment_collection):
-    v6_experiments = experiment_collection.of_type("v6")
-    for experiment in v6_experiments.experiments:
+    nimbus_experiments = experiment_collection.of_type("v6")
+    for experiment in nimbus_experiments.experiments:
         assert experiment.type == "v6"
 
-    v1_experiments = experiment_collection.of_type("v1")
-    for experiment in v1_experiments.experiments:
+    legacy_experiments = experiment_collection.of_type("v1")
+    for experiment in legacy_experiments.experiments:
         assert experiment.type == "v1"

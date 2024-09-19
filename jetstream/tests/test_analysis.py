@@ -24,7 +24,7 @@ from jetstream.errors import (
     HighPopulationException,
     NoEnrollmentPeriodException,
 )
-from jetstream.experimenter import ExperimentV1
+from jetstream.experimenter import LegacyExperiment
 from jetstream.metric import Metric
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ def test_regression_20200320():
           ]
         }
     """  # noqa
-    experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
+    experiment = LegacyExperiment.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
     analysis = Analysis("test", "test", config)
     with pytest.raises(NoEnrollmentPeriodException):
@@ -172,7 +172,7 @@ def test_regression_20200316(monkeypatch):
       ]
     }
     """
-    experiment = ExperimentV1.from_dict(json.loads(experiment_json)).to_experiment()
+    experiment = LegacyExperiment.from_dict(json.loads(experiment_json)).to_experiment()
     config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
 
     monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
