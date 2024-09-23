@@ -225,7 +225,7 @@ packaging==24.1
     #   pytest
     #   statsmodels
     #   tox
-pandas==2.2.2
+pandas==2.2.3
     # via
     #   db-dtypes
     #   formulaic
