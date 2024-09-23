@@ -27,9 +27,9 @@ cachetools==5.5.0 \
     #   -r requirements.in
     #   google-auth
     #   tox
-cattrs==24.1.0 \
-    --hash=sha256:043bb8af72596432a7df63abcff0055ac0f198a4d2e95af8db5a936a7074a761 \
-    --hash=sha256:8274f18b253bf7674a43da851e3096370d67088165d23138b04a1c04c8eaf48e
+cattrs==24.1.2 \
+    --hash=sha256:67c7495b760168d931a10233f979b28dc04daf853b30752246f4f8471c6d68d0 \
+    --hash=sha256:8028cfe1ff5382df59dd36474a86e02d817b06eaf8af84555441bac915d2ef85
     # via
     #   -r requirements.in
     #   mozilla-metric-config-parser
