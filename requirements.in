@@ -68,7 +68,7 @@ exceptiongroup==1.2.2
     #   pytest
 faker==28.4.1
     # via polyfactory
-filelock==3.16.0
+filelock==3.16.1
     # via
     #   tox
     #   virtualenv
