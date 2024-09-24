@@ -382,15 +382,7 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     assert expected_query == actual_query
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_covariate_basic(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -525,15 +517,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     assert expected_query == actual_query
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_covariate_segment(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -624,15 +608,7 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
     assert expected_query == actual_query
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_covariate_exposures(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
@@ -860,15 +836,7 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
     )
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_use_covariate_explicit_metric(
     randomization_unit, monkeypatch
 ):
@@ -942,15 +910,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
     assert expected_query == actual_query
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_use_covariate_implicit_metric(
     randomization_unit, monkeypatch
 ):
@@ -1048,15 +1008,7 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
     )
 
 
-@pytest.mark.parametrize(
-    ("randomization_unit"),
-    [
-        RandomizationUnit.GROUP_ID,
-        RandomizationUnit.NIMBUS,
-        RandomizationUnit.NORMANDY,
-        RandomizationUnit.USER_ID,
-    ],
-)
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
 def test_create_subset_metric_table_query_complete_covariate(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
