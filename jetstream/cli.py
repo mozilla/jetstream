@@ -1319,7 +1319,7 @@ def ensure_enrollments(
     type=int,
     required=False,
     default=3,
-    help="Numer of days used as enrollment period when generating population.",
+    help="Number of days used as enrollment period when generating population.",
 )
 def preview(
     project_id,
@@ -1346,12 +1346,12 @@ def preview(
 
     if start_date is None and end_date is None:
         yesterday_midnight = datetime.combine(datetime.today() - timedelta(days=1), time.min)
-        end_date = yesterday_midnight
-        start_date = end_date - timedelta(days=num_days)
+        end_date = yesterday_midnight.replace(tzinfo=pytz.utc)
+        start_date = (end_date - timedelta(days=num_days)).replace(tzinfo=pytz.utc)
     elif start_date is None:
-        start_date = end_date - timedelta(days=num_days)
+        start_date = (end_date - timedelta(days=num_days)).replace(tzinfo=pytz.utc)
     else:
-        end_date = start_date + timedelta(days=num_days)
+        end_date = (start_date + timedelta(days=num_days)).replace(tzinfo=pytz.utc)
 
     # At least one of `--slug` and `--config-file` is required. If slug is not
     # given, find it from the config file.
