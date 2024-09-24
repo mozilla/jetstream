@@ -12,7 +12,9 @@ import toml
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
+from mozilla_nimbus_schemas.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
@@ -31,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 def _empty_analysis(experiments):
-    x = experiments[0]
+    x: Experiment = experiments[0]
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
         x, ConfigLoader.configs
     )
@@ -380,7 +382,8 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_covariate_basic(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -398,20 +401,43 @@ def test_create_subset_metric_table_query_covariate_basic(experiments, monkeypat
 
     expected_query = dedent(
         """
-    SELECT
-        during.branch,
-        during.metric_name,
-        pre.metric_name AS metric_name_pre
-    FROM (
-        `test_experiment_enrollments_1` during
-        LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
-    )
-    WHERE during.metric_name IS NOT NULL AND
-    during.enrollment_date IS NOT NULL"""
+        SELECT
+            during.branch,
+            during.metric_name,
+            pre.metric_name AS metric_name_pre
+        FROM (
+            `test_experiment_enrollments_1` during
+            LEFT JOIN `table_pre` pre
+            USING (analysis_id, branch)
+        )
+        WHERE during.metric_name IS NOT NULL AND
+        during.enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
         metric,
@@ -491,7 +517,8 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_covariate_segment(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_covariate_segment(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -516,14 +543,37 @@ def test_create_subset_metric_table_query_covariate_segment(experiments, monkeyp
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL
     AND during.mysegment = TRUE"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "mysegment",
         metric,
@@ -558,7 +608,8 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_covariate_exposures(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_covariate_exposures(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -583,13 +634,36 @@ def test_create_subset_metric_table_query_covariate_exposures(experiments, monke
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL AND during.exposure_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_covariate(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query_covariate(
         "test_experiment_enrollments_1",
         "all",
         metric,
@@ -762,7 +836,10 @@ def test_create_subset_metric_table_query_use_covariate(experiments, monkeypatch
     )
 
 
-def test_create_subset_metric_table_query_use_covariate_explicit_metric(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_use_covariate_explicit_metric(
+    randomization_unit, monkeypatch
+):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -793,13 +870,36 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query(
         "test_experiment_enrollments_1",
         "all",
         summary,
@@ -810,7 +910,10 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(experime
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_use_covariate_implicit_metric(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_use_covariate_implicit_metric(
+    randomization_unit, monkeypatch
+):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -839,13 +942,36 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(experime
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query(
         "test_experiment_enrollments_1",
         "all",
         summary,
@@ -882,7 +1008,8 @@ def test_create_subset_metric_table_query_use_univariate(experiments, monkeypatc
     )
 
 
-def test_create_subset_metric_table_query_complete_covariate(experiments, monkeypatch):
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_complete_covariate(randomization_unit, monkeypatch):
     monkeypatch.setattr(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
@@ -916,13 +1043,36 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
     FROM (
         `test_experiment_enrollments_1` during
         LEFT JOIN `table_pre` pre
-        USING (client_id, branch)
+        USING (analysis_id, branch)
     )
     WHERE during.metric_name IS NOT NULL AND
     during.enrollment_date IS NOT NULL"""
     )
 
-    actual_query = _empty_analysis(experiments)._create_subset_metric_table_query(
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query(
         "test_experiment_enrollments_1",
         "all",
         summary,
@@ -933,7 +1083,7 @@ def test_create_subset_metric_table_query_complete_covariate(experiments, monkey
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_complete_univariate(experiments, monkeypatch):
+def test_create_subset_metric_table_query_complete_univariate(experiments):
     summary = MagicMock()
     summary.statistic.params = {}
 

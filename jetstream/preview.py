@@ -31,6 +31,7 @@ def sampled_enrollment_query(
         experiment_slug=config.experiment.normandy_slug,
         start_date=start_date,
         app_id=analysis._app_id_to_bigquery_dataset(config.experiment.app_id),
+        analysis_unit=config.experiment.analysis_unit,
     )
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
 

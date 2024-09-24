@@ -2,19 +2,22 @@ import datetime
 import datetime as dt
 import json
 from pathlib import Path
+from typing import Literal
 
 import dask
 import jsonschema
 import mozanalysis
 import pytest
 import pytz
+from metric_config_parser import AnalysisUnit
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
-from metric_config_parser.experiment import Branch, Experiment
+from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
 from metric_config_parser.segment import Segment, SegmentDataSource
 from metric_config_parser.statistic import Statistic
 from mozanalysis.metrics import agg_sum
+from mozilla_nimbus_schemas.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.analysis import Analysis
@@ -26,6 +29,18 @@ from jetstream.metric import Metric
 TEST_DIR = Path(__file__).parent.parent
 
 
+def _analysis_id_from_unit(analysis_unit: AnalysisUnit, a_or_b: Literal["a", "b"]):
+    last_char = "0" if analysis_unit == AnalysisUnit.PROFILE_GROUP.value else a_or_b
+    return a_or_b + a_or_b + a_or_b + last_char
+
+
+@pytest.mark.parametrize(
+    "randomization_unit, analysis_unit",
+    [
+        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
+        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
+    ],
+)
 class TestAnalysisIntegration:
     def analysis_mock_run(
         self, monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config=None
@@ -79,7 +94,16 @@ class TestAnalysisIntegration:
         analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc))
         analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
 
-    def test_metrics(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
+    def test_metrics(
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
+    ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
             type="rollout",
@@ -94,6 +118,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -127,7 +157,7 @@ class TestAnalysisIntegration:
 
         expected_metrics_results = [
             {
-                "client_id": "bbbb",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -135,7 +165,7 @@ class TestAnalysisIntegration:
                 "analysis_window_end": 6,
             },
             {
-                "client_id": "aaaa",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -191,7 +221,14 @@ class TestAnalysisIntegration:
         )
 
     def test_metrics_preenrollment(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -207,6 +244,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -240,7 +283,7 @@ class TestAnalysisIntegration:
 
         expected_metrics_results = [
             {
-                "client_id": "bbbb",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -249,7 +292,7 @@ class TestAnalysisIntegration:
                 "active_hours": 0.2,
             },
             {
-                "client_id": "aaaa",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -266,7 +309,14 @@ class TestAnalysisIntegration:
                 assert row[k] == v
 
     def test_metrics_with_exposure(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -282,6 +332,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -324,7 +380,7 @@ class TestAnalysisIntegration:
 
         expected_metrics_results = [
             {
-                "client_id": "bbbb",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -332,7 +388,7 @@ class TestAnalysisIntegration:
                 "analysis_window_end": 6,
             },
             {
-                "client_id": "aaaa",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -368,7 +424,14 @@ class TestAnalysisIntegration:
         )
 
     def test_metrics_with_depends_on(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -384,6 +447,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -449,7 +518,7 @@ class TestAnalysisIntegration:
 
         expected_metrics_results = [
             {
-                "client_id": "bbbb",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -459,7 +528,7 @@ class TestAnalysisIntegration:
                 "active_hours": pytest.approx(0.3, rel=1e-5),
             },
             {
-                "client_id": "aaaa",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -513,7 +582,14 @@ class TestAnalysisIntegration:
         assert (ratio_by_branch.loc["branch2", "point"] == 0.5).all()
 
     def test_no_enrollments(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment-2",
@@ -529,6 +605,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -580,7 +662,14 @@ class TestAnalysisIntegration:
         )
 
     def test_with_segments(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -596,6 +685,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -638,7 +733,7 @@ class TestAnalysisIntegration:
 
         expected_metrics_results = [
             {
-                "client_id": "bbbb",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
                 "branch": "branch2",
                 "enrollment_date": datetime.date(2020, 4, 3),
                 "num_enrollment_events": 1,
@@ -647,7 +742,7 @@ class TestAnalysisIntegration:
                 "regular_user_v3": True,
             },
             {
-                "client_id": "aaaa",
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
                 "branch": "branch1",
                 "enrollment_date": datetime.date(2020, 4, 2),
                 "num_enrollment_events": 1,
@@ -734,7 +829,16 @@ class TestAnalysisIntegration:
         assert count_by_branch.loc["branch1", "point"] == 0.0
         assert count_by_branch.loc["branch2", "point"] == 1.0
 
-    def test_logging(self, monkeypatch, client, project_id, static_dataset, temporary_dataset):
+    def test_logging(
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
+    ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
             type="rollout",
@@ -749,6 +853,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -756,12 +866,14 @@ class TestAnalysisIntegration:
         test_clients_daily = DataSource(
             name="clients_daily",
             from_expression=f"`{project_id}.test_data.clients_daily`",
+            analysis_units=[AnalysisUnit.CLIENT, AnalysisUnit.PROFILE_GROUP],
         )
 
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
             select_expression=agg_sum("active_hours_sum"),
+            analysis_units=[AnalysisUnit.CLIENT, AnalysisUnit.PROFILE_GROUP],
         )
 
         stat = Statistic(name="bootstrap_mean", params={"confidence_interval": 10})
@@ -869,7 +981,14 @@ class TestAnalysisIntegration:
     # assert len(task_monitoring_logs) > 0
 
     def test_statistics_export(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -885,6 +1004,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
@@ -932,7 +1057,14 @@ class TestAnalysisIntegration:
         jsonschema.validate(statistics_export_data, schema)
 
     def test_subset_metric_table(
-        self, monkeypatch, client, project_id, static_dataset, temporary_dataset
+        self,
+        monkeypatch,
+        client,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -948,6 +1080,12 @@ class TestAnalysisIntegration:
             is_high_population=False,
             app_name="firefox_desktop",
             app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
         )
 
         config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)

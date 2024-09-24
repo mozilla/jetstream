@@ -524,7 +524,7 @@ class Analysis:
         from_expression = dedent(
             f"""`{metrics_table_name}` during
             LEFT JOIN `{covariate_table_name}` pre
-            USING (client_id, branch)"""
+            USING (analysis_id, branch)"""
         )
 
         query = dedent(
@@ -631,6 +631,7 @@ class Analysis:
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
+            analysis_unit=self.config.experiment.analysis_unit,
         )
 
         metrics = set()
@@ -682,14 +683,14 @@ class Analysis:
         metrics_sql = metrics_sql.replace(
             "WITH analysis_windows AS (",
             """WITH enrollments_table AS (
-                SELECT '00000' AS client_id,
+                SELECT '00000' AS analysis_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
                     DATE('2020-01-01') AS exposure_date,
                     1 AS num_enrollment_events,
                     1 AS num_exposure_events
                 UNION ALL
-                SELECT '00000' AS client_id,
+                SELECT '00000' AS analysis_id,
                     'test' AS branch,
                     DATE('2020-01-01') AS enrollment_date,
                     DATE('2020-01-01') AS exposure_date,
@@ -835,6 +836,7 @@ class Analysis:
                 experiment_slug=self.config.experiment.normandy_slug,
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
                 app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
+                analysis_unit=self.config.experiment.analysis_unit,
             )
 
             analysis_bases = []
@@ -913,6 +915,7 @@ class Analysis:
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
+            analysis_unit=self.config.experiment.analysis_unit,
         )
 
         exposure_signal = None
