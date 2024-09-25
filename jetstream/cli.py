@@ -806,7 +806,7 @@ def run(
         ),
     )
 
-    sys.exit(0 if success else 1)
+    sys.exit(not success)
 
 
 @cli.command()
@@ -1138,7 +1138,7 @@ def rerun_config_changed(
     )
 
     if return_status:
-        sys.exit(0 if success else 1)
+        sys.exit(not success)
 
 
 @cli.command("validate_config")
@@ -1207,7 +1207,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             dirty = True
         except ExplicitSkipException:
             print("Found an explicit skip directive; will ignore this experiment.")
-    sys.exit(1 if dirty else 0)
+    sys.exit(dirty)
 
 
 @cli.command()
