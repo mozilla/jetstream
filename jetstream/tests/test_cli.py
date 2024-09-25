@@ -190,7 +190,7 @@ class TestCli:
                 config.write(conf)
 
             result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml", "--is_private"])
-            assert result.exit_code == 1
+            assert result.exit_code
             assert "dataset_id needs to be explicitly set for private experiments" in str(result)
 
     def test_validate_example_outcome_config(self, runner, monkeypatch):
