@@ -135,13 +135,18 @@ class BigQueryClient:
 
         Useful to prevent tables that we _didn't_ already touch from causing an experiment to look
         perpetually stale."""
-        normalized_slug = bq_normalize_name(normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
-        tables = self.tables_matching_regex(table_name_re)
+        tables = self.tables_matching_label(normandy_slug)
+        if not tables or len(tables) < 1:
+            normalized_slug = bq_normalize_name(normandy_slug)
+            analysis_periods = "|".join([p.value for p in AnalysisPeriod])
+            table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
+            tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
-            self.add_labels_to_table(table, {"last_updated": timestamp})
+            self.add_labels_to_table(
+                table,
+                {"last_updated": timestamp, "experiment_slug": normandy_slug},
+            )
 
     def delete_table(self, table_id: str) -> None:
         """Delete the table."""

@@ -43,6 +43,7 @@ class TestBigQueryClient:
         client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_week_0")
         client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_day_12")
         client.client.create_table(f"{temporary_dataset}.test_foo_bar_day")
+        client.client.create_table(f"{temporary_dataset}.test_experiment_similar_slug_day_1")
 
         client.touch_tables("test-experiment")
 
@@ -51,15 +52,22 @@ class TestBigQueryClient:
         )
         assert enrollment_table.labels
         assert enrollment_table.labels["last_updated"]
+        assert enrollment_table.labels["experiment_slug"] == "test-experiment"
 
         stats_table = client.client.get_table(
             f"{temporary_dataset}.statistics_test_experiment_day_12"
         )
         assert stats_table.labels
         assert stats_table.labels["last_updated"]
+        assert stats_table.labels["experiment_slug"] == "test-experiment"
 
         unrelated_table = client.client.get_table(f"{temporary_dataset}.test_foo_bar_day")
         assert unrelated_table.labels == {}
+
+        unrelated_table_2 = client.client.get_table(
+            f"{temporary_dataset}.test_experiment_similar_slug_day_1"
+        )
+        assert unrelated_table_2.labels == {}
 
     def test_load_table_from_json(self, client, temporary_dataset):
         t0 = StatisticResult(
