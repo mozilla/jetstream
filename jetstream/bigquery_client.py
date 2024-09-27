@@ -71,23 +71,28 @@ class BigQueryClient:
         return True
 
     def load_table_from_json(
-        self, results: Iterable[dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
+        self,
+        results: Iterable[dict],
+        table: str,
+        job_config: google.cloud.bigquery.LoadJobConfig,
+        experiment_slug: str | None = None,
     ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
         # add a label with the current timestamp to the table
-        self.add_labels_to_table(
-            table,
-            {"last_updated": self._current_timestamp_label()},
-        )
+        labels = {"last_updated": self._current_timestamp_label()}
+        if experiment_slug:
+            labels["experiment_slug"] = experiment_slug
+        self.add_labels_to_table(table, labels)
 
     def execute(
         self,
         query: str,
         destination_table: str | None = None,
         write_disposition: google.cloud.bigquery.job.WriteDisposition | None = None,
+        experiment_slug: str | None = None,
     ) -> google.cloud.bigquery.job.QueryJob:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
@@ -108,12 +113,39 @@ class BigQueryClient:
 
         if destination_table:
             # add a label with the current timestamp to the table
-            self.add_labels_to_table(
-                destination_table,
-                {"last_updated": self._current_timestamp_label()},
-            )
+            labels = {"last_updated": self._current_timestamp_label()}
+            if experiment_slug:
+                labels["experiment_slug"] = experiment_slug
+            self.add_labels_to_table(destination_table, labels)
 
         return job
+
+    def tables_matching_label(self, label_value: str, label_key: str = "experiment_slug"):
+        """Returns a list of tables matching the specified label.
+
+        We query TABLE_OPTIONS instead of using the Python SDK because the SDK
+        does not appear to have a method for getting all tables with a given
+        label, instead requiring that we get each table and check its labels
+        individually (something like `client.get_table(table).labels.get` for
+        each table in the dataset). This would be much less efficient than the
+        convoluted query below.
+        """
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name
+            FROM
+                {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE
+                option_name = 'labels'
+                AND COALESCE(REGEXP_EXTRACT(
+                    option_value,
+                    '.*STRUCT\\(\"{label_key}\", \"([^\"]+)\"\\).*'
+                ), '') = '{label_value}'
+            """
+        )
+        result = list(job.result())
+        return [row.table_name for row in result]
 
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
