@@ -41,7 +41,7 @@ class TestConfigIntegration:
 
         # table created after config loaded
         client.client.create_table(f"{temporary_dataset}.statistics_new_table_day1")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "statistics_new_table_day1",
             {"last_updated": client._current_timestamp_label()},
         )
@@ -61,12 +61,12 @@ class TestConfigIntegration:
         )
 
         client.client.create_table(f"{temporary_dataset}.old_table_day1")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "old_table_day1",
             {"last_updated": client._current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.old_table_day2")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "old_table_day2",
             {"last_updated": client._current_timestamp_label()},
         )
@@ -80,12 +80,12 @@ class TestConfigIntegration:
 
     def test_updated_config_while_analysis_active(self, client, temporary_dataset, project_id):
         client.client.create_table(f"{temporary_dataset}.active_table_day0")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "active_table_day0",
             {"last_updated": client._current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.active_table_day1")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "active_table_day1",
             {"last_updated": client._current_timestamp_label()},
         )
@@ -97,12 +97,12 @@ class TestConfigIntegration:
         )
 
         client.client.create_table(f"{temporary_dataset}.active_table_day2")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "active_table_day2",
             {"last_updated": client._current_timestamp_label()},
         )
         client.client.create_table(f"{temporary_dataset}.active_table_weekly")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "active_table_weekly",
             {"last_updated": client._current_timestamp_label()},
         )

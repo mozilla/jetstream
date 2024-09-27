@@ -49,13 +49,19 @@ class BigQueryClient:
 
         return df
 
-    def add_labels_to_table(self, table_name: str, labels: Mapping[str, str]) -> None:
-        """Adds the provided labels to the table."""
+    def add_metadata_to_table(
+        self, table_name: str, labels: Mapping[str, str], description: str | None = None
+    ) -> None:
+        """Adds the provided labels/description to the table."""
         table_ref = self.client.dataset(self.dataset).table(table_name)
         table = self.client.get_table(table_ref)
         table.labels = labels
+        updated_fields = ["labels"]
+        if description:
+            table.description = description
+            updated_fields.append("description")
 
-        self.client.update_table(table, ["labels"])
+        self.client.update_table(table, updated_fields)
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
@@ -82,10 +88,9 @@ class BigQueryClient:
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
         # add a label with the current timestamp to the table
-        labels = {"last_updated": self._current_timestamp_label()}
-        if experiment_slug:
-            labels["experiment_slug"] = experiment_slug
-        self.add_labels_to_table(table, labels)
+        self.add_metadata_to_table(
+            table, {"last_updated": self._current_timestamp_label()}, description=experiment_slug
+        )
 
     def execute(
         self,
@@ -113,22 +118,23 @@ class BigQueryClient:
 
         if destination_table:
             # add a label with the current timestamp to the table
-            labels = {"last_updated": self._current_timestamp_label()}
-            if experiment_slug:
-                labels["experiment_slug"] = experiment_slug
-            self.add_labels_to_table(destination_table, labels)
+            self.add_metadata_to_table(
+                destination_table,
+                {"last_updated": self._current_timestamp_label()},
+                description=experiment_slug,
+            )
 
         return job
 
-    def tables_matching_label(self, label_value: str, label_key: str = "experiment_slug"):
-        """Returns a list of tables matching the specified label.
+    def tables_matching_description(self, description: str):
+        """Returns a list of tables matching the specified description.
 
         We query TABLE_OPTIONS instead of using the Python SDK because the SDK
         does not appear to have a method for getting all tables with a given
-        label, instead requiring that we get each table and check its labels
-        individually (something like `client.get_table(table).labels.get` for
+        description, instead requiring that we get each table and check its description
+        individually (something like `client.get_table(table).description.get` for
         each table in the dataset). This would be much less efficient than the
-        convoluted query below.
+        query below, even if it would be a bit clearer.
         """
         job = self.client.query(
             rf"""
@@ -137,11 +143,8 @@ class BigQueryClient:
             FROM
                 {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
             WHERE
-                option_name = 'labels'
-                AND COALESCE(REGEXP_EXTRACT(
-                    option_value,
-                    '.*STRUCT\\(\"{label_key}\", \"([^\"]+)\"\\).*'
-                ), '') = '{label_value}'
+                option_name = 'description'
+                AND COALESCE(option_value, '') = '{description}'
             """
         )
         result = list(job.result())
@@ -173,7 +176,7 @@ class BigQueryClient:
         tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
-            self.add_labels_to_table(table, {"last_updated": timestamp})
+            self.add_metadata_to_table(table, {"last_updated": timestamp})
 
     def delete_table(self, table_id: str) -> None:
         """Delete the table."""

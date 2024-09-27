@@ -743,7 +743,7 @@ class Analysis:
             ve = ValueError(error_msg)
             raise ve from e
 
-        self.bigquery.add_labels_to_table(
+        self.bigquery.add_metadata_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
 
