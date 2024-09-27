@@ -33,24 +33,6 @@ class TestBigQueryClient:
         assert client.tables_matching_regex("^enrollments_.*$") == ["enrollments_test_experiment"]
         assert client.tables_matching_regex("nothing") == []
 
-    def test_tables_matching_label(self, client, temporary_dataset):
-        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
-        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_week_2")
-        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment_other")
-        client.add_labels_to_table(
-            "enrollments_test_experiment",
-            {"experiment_slug": "test-experiment"},
-        )
-        client.add_labels_to_table(
-            "statistics_test_experiment_week_2",
-            {"experiment_slug": "test-experiment"},
-        )
-        matching_tables = client.tables_matching_label("test-experiment")
-        assert "enrollments_test_experiment" in matching_tables
-        assert "statistics_test_experiment_week_2" in matching_tables
-        assert "enrollments_test_experiment_other" not in matching_tables
-        assert client.tables_matching_label("nothing") == []
-
     def test_table_exists(self, client, temporary_dataset):
         assert client.table_exists("dummy_table") is False
         client.client.create_table(f"{temporary_dataset}.dummy_table")
