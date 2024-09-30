@@ -53,8 +53,7 @@ class BigQueryClient:
         self, table_name: str, labels: Mapping[str, str], description: str | None = None
     ) -> None:
         """Adds the provided labels/description to the table."""
-        table_ref = self.client.dataset(self.dataset).table(table_name)
-        table = self.client.get_table(table_ref)
+        table = self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
         table.labels = labels
         updated_fields = ["labels"]
         if description:
@@ -68,9 +67,8 @@ class BigQueryClient:
         return str(int(time.time()))
 
     def table_exists(self, table_name: str) -> bool:
-        table_ref = self.client.dataset(self.dataset).table(table_name)
         try:
-            self.client.get_table(table_ref)
+            self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
         except NotFound:
             return False
 
@@ -144,9 +142,10 @@ class BigQueryClient:
                 {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
             WHERE
                 option_name = 'description'
-                AND COALESCE(option_value, '') = '{description}'
+                AND COALESCE(option_value, '') = '"{description}"'
             """
         )
+        print(job.query)
         result = list(job.result())
         return [row.table_name for row in result]
 

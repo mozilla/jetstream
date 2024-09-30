@@ -56,6 +56,7 @@ class TestBigQueryClient:
         assert "enrollments_test_experiment" in matching_tables
         assert "statistics_test_experiment_week_2" in matching_tables
         assert "enrollments_test_experiment_other" not in matching_tables
+        assert len(matching_tables) == 2
         assert client.tables_matching_description("nothing") == []
 
     def test_table_exists(self, client, temporary_dataset):
@@ -129,7 +130,7 @@ class TestBigQueryClient:
             segment="all",
             analysis_basis=AnalysisBasis.EXPOSURES,
         )
-        test_data = StatisticResultCollection.parse_obj([t0, t1, t2])
+        test_data = StatisticResultCollection.model_validate([t0, t1, t2])
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
