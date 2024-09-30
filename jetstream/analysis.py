@@ -305,7 +305,9 @@ class Analysis:
                 exposure_signal,
             )
 
-            results = self.bigquery.execute(metrics_sql, res_table_name)
+            results = self.bigquery.execute(
+                metrics_sql, res_table_name, experiment_slug=self.config.experiment.normandy_slug
+            )
             logger.info(
                 f"Metric query cost: {results.slot_millis * COST_PER_SLOT_MS}",
             )
@@ -725,6 +727,7 @@ class Analysis:
                 segment_results,
                 f"statistics_{metrics_table}",
                 job_config=job_config,
+                experiment_slug=self.config.experiment.normandy_slug,
             )
         except google.api_core.exceptions.BadRequest as e:
             # There was a mismatch between the segment_results root dict
@@ -740,7 +743,7 @@ class Analysis:
             ve = ValueError(error_msg)
             raise ve from e
 
-        self.bigquery.add_labels_to_table(
+        self.bigquery.add_metadata_to_table(
             f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
 
@@ -964,6 +967,7 @@ class Analysis:
                 enrollments_sql,
                 enrollments_table,
                 google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
+                experiment_slug=self.config.experiment.normandy_slug,
             )
             logger.info(
                 "Enrollment query cost: " + f"{results.slot_millis * COST_PER_SLOT_MS}",

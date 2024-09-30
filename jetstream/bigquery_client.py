@@ -49,38 +49,45 @@ class BigQueryClient:
 
         return df
 
-    def add_labels_to_table(self, table_name: str, labels: Mapping[str, str]) -> None:
-        """Adds the provided labels to the table."""
-        table_ref = self.client.dataset(self.dataset).table(table_name)
-        table = self.client.get_table(table_ref)
+    def add_metadata_to_table(
+        self, table_name: str, labels: Mapping[str, str], description: str | None = None
+    ) -> None:
+        """Adds the provided labels/description to the table."""
+        table = self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
         table.labels = labels
+        updated_fields = ["labels"]
+        if description:
+            table.description = description
+            updated_fields.append("description")
 
-        self.client.update_table(table, ["labels"])
+        self.client.update_table(table, updated_fields)
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.time()))
 
     def table_exists(self, table_name: str) -> bool:
-        table_ref = self.client.dataset(self.dataset).table(table_name)
         try:
-            self.client.get_table(table_ref)
+            self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
         except NotFound:
             return False
 
         return True
 
     def load_table_from_json(
-        self, results: Iterable[dict], table: str, job_config: google.cloud.bigquery.LoadJobConfig
+        self,
+        results: Iterable[dict],
+        table: str,
+        job_config: google.cloud.bigquery.LoadJobConfig,
+        experiment_slug: str | None = None,
     ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
         # add a label with the current timestamp to the table
-        self.add_labels_to_table(
-            table,
-            {"last_updated": self._current_timestamp_label()},
+        self.add_metadata_to_table(
+            table, {"last_updated": self._current_timestamp_label()}, description=experiment_slug
         )
 
     def execute(
@@ -88,6 +95,7 @@ class BigQueryClient:
         query: str,
         destination_table: str | None = None,
         write_disposition: google.cloud.bigquery.job.WriteDisposition | None = None,
+        experiment_slug: str | None = None,
     ) -> google.cloud.bigquery.job.QueryJob:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
@@ -108,12 +116,38 @@ class BigQueryClient:
 
         if destination_table:
             # add a label with the current timestamp to the table
-            self.add_labels_to_table(
+            self.add_metadata_to_table(
                 destination_table,
                 {"last_updated": self._current_timestamp_label()},
+                description=experiment_slug,
             )
 
         return job
+
+    def tables_matching_description(self, description: str):
+        """Returns a list of tables matching the specified description.
+
+        We query TABLE_OPTIONS instead of using the Python SDK because the SDK
+        does not appear to have a method for getting all tables with a given
+        description, instead requiring that we get each table and check its description
+        individually (something like `client.get_table(table).description.get` for
+        each table in the dataset). This would be much less efficient than the
+        query below, even if it would be a bit clearer.
+        """
+        job = self.client.query(
+            rf"""
+            SELECT
+                table_name
+            FROM
+                {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
+            WHERE
+                option_name = 'description'
+                AND COALESCE(option_value, '') = '"{description}"'
+            """
+        )
+        print(job.query)
+        result = list(job.result())
+        return [row.table_name for row in result]
 
     def tables_matching_regex(self, regex: str):
         """Returns a list of tables with names matching the specified pattern."""
@@ -141,7 +175,7 @@ class BigQueryClient:
         tables = self.tables_matching_regex(table_name_re)
         timestamp = self._current_timestamp_label()
         for table in tables:
-            self.add_labels_to_table(table, {"last_updated": timestamp})
+            self.add_metadata_to_table(table, {"last_updated": timestamp})
 
     def delete_table(self, table_id: str) -> None:
         """Delete the table."""

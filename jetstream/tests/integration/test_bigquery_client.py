@@ -14,14 +14,14 @@ class TestBigQueryClient:
 
         # table created after config loaded
         client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "enrollments_test_experiment",
             {"last_updated": str(int(earliest_timestamp.timestamp()))},
         )
 
         later_timestamp = datetime(2022, 1, 1, 9, 0, 0, 0, tzinfo=pytz.utc)
         client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_day_1")
-        client.add_labels_to_table(
+        client.add_metadata_to_table(
             "statistics_test_experiment_day_1",
             {"last_updated": str(int(later_timestamp.timestamp()))},
         )
@@ -32,6 +32,32 @@ class TestBigQueryClient:
         client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
         assert client.tables_matching_regex("^enrollments_.*$") == ["enrollments_test_experiment"]
         assert client.tables_matching_regex("nothing") == []
+
+    def test_tables_matching_description(self, client, temporary_dataset):
+        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
+        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_week_2")
+        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment_other")
+        client.add_metadata_to_table(
+            "enrollments_test_experiment",
+            {"test": ""},
+            description="test-experiment",
+        )
+        client.add_metadata_to_table(
+            "statistics_test_experiment_week_2",
+            {"test": ""},
+            description="test-experiment",
+        )
+        client.add_metadata_to_table(
+            "enrollments_test_experiment_other",
+            {"test": ""},
+            description="test-experiment-other",
+        )
+        matching_tables = client.tables_matching_description("test-experiment")
+        assert "enrollments_test_experiment" in matching_tables
+        assert "statistics_test_experiment_week_2" in matching_tables
+        assert "enrollments_test_experiment_other" not in matching_tables
+        assert len(matching_tables) == 2
+        assert client.tables_matching_description("nothing") == []
 
     def test_table_exists(self, client, temporary_dataset):
         assert client.table_exists("dummy_table") is False
@@ -104,7 +130,7 @@ class TestBigQueryClient:
             segment="all",
             analysis_basis=AnalysisBasis.EXPOSURES,
         )
-        test_data = StatisticResultCollection.parse_obj([t0, t1, t2])
+        test_data = StatisticResultCollection.model_validate([t0, t1, t2])
 
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
