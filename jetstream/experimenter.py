@@ -30,6 +30,11 @@ class Outcome:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class Segment:
+    slug: str
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class LegacyExperiment:
     """Experimenter Legacy (Normandy) experiment (v1 API)."""
 
@@ -101,6 +106,7 @@ class NimbusExperiment:
     _appName: str | None = None
     _appId: str | None = None
     outcomes: list[Outcome] | None = None
+    segments: list[Segment] | None = None
     enrollmentEndDate: dt.datetime | None = None
     isEnrollmentPaused: bool | None = None
     isRollout: bool = False
@@ -163,6 +169,7 @@ class NimbusExperiment:
             app_name=self.appName,
             app_id=self.appId,
             outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
+            segments=[s.slug for s in self.segments] if self.segments else [],
             enrollment_end_date=(
                 pytz.utc.localize(self.enrollmentEndDate) if self.enrollmentEndDate else None
             ),

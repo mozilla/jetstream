@@ -1398,6 +1398,7 @@ def preview(
             app_name=platform,
             app_id=PLATFORM_CONFIGS[platform].app_id,
             outcomes=experiment.outcomes if experiment else [],
+            segments=experiment.segments if experiment else [],
             enrollment_end_date=None,
         )
 

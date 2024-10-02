@@ -14,6 +14,7 @@ from jetstream.experimenter import (
     LegacyExperiment,
     NimbusExperiment,
     Outcome,
+    Segment,
     Variant,
 )
 
@@ -295,6 +296,9 @@ FENIX_EXPERIMENT_FIXTURE = """
     "slug": "default-browser",
     "priority": "primary"
   }],
+  "segments": [{
+    "slug": "regular_users_v3"
+  }],
   "branches": [
     {
       "slug": "control",
@@ -336,6 +340,7 @@ FIREFOX_IOS_EXPERIMENT_FIXTURE = """
    },
    "probeSets":[],
    "outcomes":[],
+   "segments":[],
    "branches":[
       {
          "slug":"a1",
@@ -379,6 +384,7 @@ KLAR_ANDROID_EXPERIMENT_FIXTURE = """
    },
    "probeSets":[],
    "outcomes":[],
+   "segments":[],
    "branches":[
       {
          "slug":"a1",
@@ -422,6 +428,7 @@ FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
    },
    "probeSets":[],
    "outcomes":[],
+   "segments":[],
    "branches":[
       {
          "slug":"a1",
@@ -564,6 +571,7 @@ def test_convert_nimbus_experiment_to_experiment():
     assert experiment.reference_branch == "control"
     assert experiment.is_high_population is False
     assert experiment.outcomes == []
+    assert experiment.segments == []
     assert experiment.is_enrollment_paused is True
 
 
@@ -617,6 +625,8 @@ def test_app_name():
     assert x.appId == "org.mozilla.fenix"
     assert Outcome(slug="default-browser") in x.outcomes
     assert "default-browser" in x.to_experiment().outcomes
+    assert Segment(slug="regular_users_v3") in x.segments
+    assert "regular_users_v3" in x.to_experiment().segments
 
 
 def test_ios_app_name():
@@ -625,6 +635,8 @@ def test_ios_app_name():
     assert x.appId == "org.mozilla.ios.FirefoxBeta"
     assert x.outcomes == []
     assert x.to_experiment().outcomes == []
+    assert x.segments == []
+    assert x.to_experiment().segments == []
 
 
 def test_klar_android_app_name():
@@ -633,6 +645,8 @@ def test_klar_android_app_name():
     assert x.appId == "org.mozilla.klar"
     assert x.outcomes == []
     assert x.to_experiment().outcomes == []
+    assert x.segments == []
+    assert x.to_experiment().segments == []
 
 
 def test_focus_android_app_name():
@@ -641,6 +655,8 @@ def test_focus_android_app_name():
     assert x.appId == "org.mozilla.focus"
     assert x.outcomes == []
     assert x.to_experiment().outcomes == []
+    assert x.segments == []
+    assert x.to_experiment().segments == []
 
 
 def test_ended_after_or_live(experiment_collection):
