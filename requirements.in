@@ -358,7 +358,7 @@ six==1.16.0
     # via
     #   patsy
     #   python-dateutil
-smart-open[gcs]==7.0.4
+smart-open[gcs]==7.0.5
     # via mozilla-jetstream
 smmap==5.0.1
     # via gitdb
