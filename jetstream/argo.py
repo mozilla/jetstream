@@ -67,6 +67,7 @@ def submit_workflow(
             "To connect to Argo dashboard forward port by running: "
             + f"gcloud container clusters get-credentials jetstream --region={zone} && "
             + "kubectl -n argo exec $(kubectl get pod -n argo -l 'app=argo-server' "
+            + "--field-selector=status.phase=Running "
             + "-o jsonpath='{.items[0].metadata.name}') -- argo auth token \n\n"
             + "Copy the Bearer token.\n"
         )
