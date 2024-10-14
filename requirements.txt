@@ -218,9 +218,9 @@ click==8.1.7 \
     #   dask
     #   distributed
     #   mozilla-metric-config-parser
-cloudpickle==3.0.0 \
-    --hash=sha256:246ee7d0c295602a036e86369c77fecda4ab17b506496730f2f576d9016fd9c7 \
-    --hash=sha256:996d9a482c6fb4f33c1a35335cf8afd065d2a56e973270364840712d9131a882
+cloudpickle==3.1.0 \
+    --hash=sha256:81a929b6e3c7335c863c771d673d105f02efdb89dfaba0c90495d1c64796601b \
+    --hash=sha256:fe11acda67f61aaaec473e3afe030feb131d78a43461b718185363384f1ba12e
     # via
     #   -r requirements.in
     #   dask
