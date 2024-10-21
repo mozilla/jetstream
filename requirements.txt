@@ -2022,9 +2022,9 @@ tornado==6.4.1 \
     # via
     #   -r requirements.in
     #   distributed
-tox==4.21.2 \
-    --hash=sha256:13d996adcd792e7c82994b0e116d85efd84f0c6d185254d83d156f73f86b2038 \
-    --hash=sha256:49381ff102296753e378fa5ff30e42a35e695f149b4dbf8a2c49d15fdb5797b2
+tox==4.23.0 \
+    --hash=sha256:46da40afb660e46238c251280eb910bdaf00b390c7557c8e4bb611f422e9db12 \
+    --hash=sha256:a6bd7d54231d755348d3c3a7b450b5bf6563833716d1299a1619587a1b77a3bf
     # via -r requirements.in
 types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
