@@ -426,7 +426,7 @@ urllib3==2.2.3
     #   distributed
     #   requests
     #   types-requests
-virtualenv==20.26.6
+virtualenv==20.27.0
     # via tox
 wrapt==1.16.0
     # via
