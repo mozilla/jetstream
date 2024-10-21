@@ -2046,9 +2046,9 @@ types-requests==2.32.0.20240914 \
     --hash=sha256:2850e178db3919d9bf809e434eef65ba49d0e7e33ac92d588f4a5e295fffd405 \
     --hash=sha256:59c2f673eb55f32a99b2894faf6020e1a9f4a402ad0f192bfee0b64469054310
     # via -r requirements.in
-types-setuptools==75.1.0.20240917 \
-    --hash=sha256:06f78307e68d1bbde6938072c57b81cf8a99bc84bd6dc7e4c5014730b097dc0c \
-    --hash=sha256:12f12a165e7ed383f31def705e5c0fa1c26215dd466b0af34bd042f7d5331f55
+types-setuptools==75.2.0.20241019 \
+    --hash=sha256:2e48ff3acd4919471e80d5e3f049cce5c177e108d5d36d2d4cee3fa4d4104258 \
+    --hash=sha256:86ea31b5f6df2c6b8f2dc8ae3f72b213607f62549b6fa2ed5866e5299f968694
     # via -r requirements.in
 types-six==1.16.21.20240513 \
     --hash=sha256:af2a105be6d504339bfed81319cc8e8697865f0ee5c6baa63658f127b33b9e63 \
