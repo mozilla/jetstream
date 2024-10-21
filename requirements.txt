@@ -513,9 +513,9 @@ formulaic==1.0.2 \
     # via
     #   -r requirements.in
     #   mozanalysis
-fsspec==2024.9.0 \
-    --hash=sha256:4b0afb90c2f21832df142f292649035d80b421f60a9e1c027802e5a0da2b04e8 \
-    --hash=sha256:a0947d552d8a6efa72cc2c730b12c41d043509156966cca4fb157b0f2a0c574b
+fsspec==2024.10.0 \
+    --hash=sha256:03b9a6785766a4de40368b88906366755e2819e758b83705c88cd7cb5fe81871 \
+    --hash=sha256:eda2d8a4116d4f2429db8550f2457da57279247dd930bb12f821b58391359493
     # via
     #   -r requirements.in
     #   dask
