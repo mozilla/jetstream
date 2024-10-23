@@ -138,7 +138,7 @@ class ArgoExecutorStrategy:
             for slug, dates in experiments_config.items()
         ]
         analysis_period_default = (
-            self.analysis_periods[0] if self.analysis_periods != [] else "days28"
+            self.analysis_periods[0] if self.analysis_periods != [] else AnalysisPeriod.DAYS_28
         )
 
         # generate and submit the Argo workflow to the cluster
