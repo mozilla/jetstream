@@ -75,13 +75,16 @@ The idea of this component is to define dependencies between analysis periods so
 
 #### Questions
 * should this be configurable? if so, configured by experiment, app, etc.?
+  * not likely to be something that changes regularly, so we won't worry about configuration (unless it's an easy add-on)
 * caveats to computing multi-day analysis from daily?
+  * this will require a separate aggregation method(s) to convert daily aggregations to multi-day
 
 #### Pros / Cons
 
 * **+** Guarantee that pre-enrollment analysis periods exist when needed
 * **+** Save re-querying (potentially large) telemetry tables for the same information twice (by computing multi-day periods from daily results)
 * **+** Help to prevent loss of fidelity from rerunning an experiment after clients have been shredded (by computing multi-day periods from daily results)
+* **-** More complex logic that extends total time for analysis
 
 
 ### Cache Intermediate Data
@@ -105,3 +108,4 @@ In addition to potentially using the daily results as a cache for larger analysi
 * **+** Reduce complexity of metric query joins
 * **-** More total tables / storage needed
 * **-** Additional tables for shredder
+* **-** Increased complexity of logic in jetstream
