@@ -35,13 +35,14 @@ There are many improvements we would like to make to analysis that could be enab
 
 ## Description of Solution
 
-The chosen solution involves a few primary components that will each contribute to some or all of the decision drivers.
+The chosen solution involves a few primary components that will each contribute to some or all of the decision drivers. Implementation will be phased by these components, and after each phase we will measure the performance and costs in order to determine how and whether to proceed with further optimizations.
 
 ### Discrete Metric Execution
 
 For each metric (parallel execution):
-* query metric from telemetry (we can aggregate all metrics for a given data source)
+* query metric from telemetry (we can query all metrics for a given data source at one time)
 * write to metric table with results (delete existing **column data** first (currently we delete and re-write the entire table with one query))
+  * Note: we will need to ensure this increase in table writes is not cost-prohibitive
 * compute statistics for the metric
 * write to statistics table with results (behavior unchanged)
 
@@ -99,7 +100,9 @@ In addition to potentially using the daily results as a cache for larger analysi
   * metrics data sources (filtered to experiment dates + existing filters)
     * this seems potentially huge
     * data sources are user-defined (so this may be ill-advised)
-  * if we do both of the above could we potentially cluster on analysis window index (or date) to improve join performance?
+  * if we do both of the above could we potentially cluster on analysis window index (or date) to improve join performance
+
+**Decision**: We will do the other optimizations first and re-evaluate whether the complexity of additional caching is worthwhile.
 
 #### Pros / Cons
 
