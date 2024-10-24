@@ -100,6 +100,7 @@ class ArgoExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
+    statistics_only: bool = False
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
@@ -183,6 +184,7 @@ class ArgoExecutorStrategy:
                     else analysis_period_default.value
                 ),
                 "image": self.image,
+                "statistics_only": self.statistics_only,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -203,6 +205,7 @@ class SerialExecutorStrategy:
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
+    statistics_only: bool = False
 
     def execute(
         self,
@@ -228,7 +231,7 @@ class SerialExecutorStrategy:
                     self.analysis_periods,
                     self.sql_output_dir,
                 )
-                analysis.run(date)
+                analysis.run(date, statistics_only=self.statistics_only)
 
                 # export metadata to GCS
                 if self.bucket:
@@ -744,6 +747,15 @@ sql_output_dir_option = click.option(
     metavar="OUTDIR",
 )
 
+statistics_only_option = click.option(
+    "--statistics-only",
+    "--stats-only",
+    "--skip-metrics",
+    help="Skip the metrics queries and only calculate statistics (metrics tables must exist!).",
+    type=bool,
+    default=False,
+)
+
 
 @cli.command()
 @project_id_option()
@@ -757,6 +769,7 @@ sql_output_dir_option = click.option(
 @private_config_repos_option
 @analysis_periods_option()
 @sql_output_dir_option
+@statistics_only_option
 @click.pass_context
 def run(
     ctx,
@@ -771,6 +784,7 @@ def run(
     private_config_repos,
     analysis_periods,
     sql_output_dir,
+    statistics_only,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -800,6 +814,7 @@ def run(
             ctx.obj["log_config"],
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
+            statistics_only=statistics_only,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -831,6 +846,7 @@ def run(
 @private_config_repos_option
 @image_option
 @image_version_option
+@statistics_only_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -849,6 +865,7 @@ def run_argo(
     analysis_periods,
     image,
     image_version,
+    statistics_only,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -863,6 +880,7 @@ def run_argo(
         analysis_periods=analysis_periods,
         image=image,
         image_version=image_version,
+        statistics_only=statistics_only,
     )
 
     AnalysisExecutor(
@@ -899,6 +917,7 @@ def run_argo(
 @image_option
 @image_version_option
 @analysis_periods_option()
+@statistics_only_option
 @click.pass_context
 def rerun(
     ctx,
@@ -920,6 +939,7 @@ def rerun(
     analysis_periods,
     image,
     image_version,
+    statistics_only,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -936,7 +956,12 @@ def rerun(
         client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
 
     strategy = SerialExecutorStrategy(
-        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+        project_id,
+        dataset_id,
+        bucket,
+        ctx.obj["log_config"],
+        analysis_periods=analysis_periods,
+        statistics_only=statistics_only,
     )
 
     if argo:
@@ -952,6 +977,7 @@ def rerun(
             analysis_periods=analysis_periods,
             image=image,
             image_version=image_version,
+            statistics_only=statistics_only,
         )
 
     success = AnalysisExecutor(
@@ -1014,7 +1040,7 @@ def rerun_skip(
 def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
     """Export all tables as JSON to a GCS bucket."""
     if bucket is None:
-        logger.warn("No bucket specified. Analysis results won't be exported to GCS.")
+        logger.warning("No bucket specified. Analysis results won't be exported to GCS.")
     else:
         for slug in experiment_slug:
             export_statistics_tables(project_id, dataset_id, bucket, slug)
@@ -1034,7 +1060,7 @@ def export_experiment_logs_to_json(
 ):
     """Export all error logs for this experiment as JSON to a GCS bucket."""
     if bucket is None:
-        logger.warn("No bucket specified. Logs results won't be exported to GCS.")
+        logger.warning("No bucket specified. Experiment logs won't be exported to GCS.")
     else:
         for slug in experiment_slug:
             export_experiment_logs(
@@ -1088,6 +1114,8 @@ def rerun_config_changed(
     image_version,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
+    # TODO: make this smarter: figure out if we need to rerun metrics or just statistics,
+    #       and which metrics to rerun (pending future functionality)
 
     strategy = SerialExecutorStrategy(
         project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods

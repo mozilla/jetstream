@@ -243,7 +243,7 @@ class Analysis:
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
         dry_run: bool,
-    ):
+    ) -> str:
         """
         Calculate metrics for a specific experiment.
         Returns the BigQuery table results are written to.
@@ -749,7 +749,9 @@ class Analysis:
 
         self._publish_view(period, table_prefix="statistics")
 
-    def run(self, current_date: datetime, dry_run: bool = False) -> None:
+    def run(
+        self, current_date: datetime, dry_run: bool = False, statistics_only: bool = False
+    ) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
         """
@@ -855,19 +857,28 @@ class Analysis:
 
             for analysis_basis in analysis_bases:
                 metrics_table = self.calculate_metrics(
-                    exp, time_limits, period, analysis_basis, dry_run
+                    exp, time_limits, period, analysis_basis, dry_run or statistics_only
                 )
 
                 if dry_run:
                     results.append(metrics_table)
 
-                if dry_run:
                     logger.info(
                         "Not calculating statistics %s (%s); dry run",
                         self.config.experiment.normandy_slug,
                         period.value,
                     )
                     continue
+
+                if statistics_only and not self.bigquery.table_exists(metrics_table):
+                    logger.warning(
+                        f"Cannot compute only statistics for period {period.value}; "
+                        "metrics table does not exist!",
+                        extra={
+                            "experiment": self.config.experiment.normandy_slug,
+                            "analysis_basis": analysis_basis.value,
+                        },
+                    )
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
