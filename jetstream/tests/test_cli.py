@@ -578,7 +578,7 @@ class TestSerialExecutorStrategy:
             ],
             None,
         )
-        fake_analysis().run.assert_called_once_with(run_date)
+        fake_analysis().run.assert_called_once_with(run_date, statistics_only=False)
 
 
 class TestArgoExecutorStrategy:
@@ -643,6 +643,7 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_week": "preenrollment_week",
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "jetstream",
+                    "statistics_only": False,
                 },
                 monitor_status=False,
                 cluster_ip=None,
@@ -707,6 +708,7 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_week": "preenrollment_week",
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "unrelated",
+                    "statistics_only": False,
                 },
                 monitor_status=False,
                 cluster_ip=None,
