@@ -4,7 +4,6 @@ from typing import Any
 
 import attr
 import numpy as np
-import pandas as pd
 from pandas import DataFrame
 
 
@@ -47,8 +46,8 @@ class RemoveIndefinites(PreTreatment):
     """Removes null and infinite values."""
 
     def apply(self, df: DataFrame, col: str) -> DataFrame:
-        with pd.option_context("mode.use_inf_as_na", True):
-            return df.dropna(subset=[col])
+        df[col] = df[col].replace(np.inf, np.nan)
+        return df.dropna(subset=[col])
 
 
 @attr.s(auto_attribs=True)
