@@ -575,9 +575,9 @@ google-cloud-bigquery-storage==2.27.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-container==2.52.0 \
-    --hash=sha256:7a2fac7680a6a5bb2776b494a1fd1e2e64e4935643b2a01fb93bb8d1bb73b0ef \
-    --hash=sha256:a62ede7256cf113bbb134685c703ea2dc4cbf60e08875e23dc4369c46743adaa
+google-cloud-container==2.53.0 \
+    --hash=sha256:be0bdca70f03ac1c116e9564cb0a4d6191976a0a4d855d813bdf824add4b1550 \
+    --hash=sha256:dea106f5f3317f932530402122c634e6dd851621910d9709af4e1e2ff622989b
     # via -r requirements.in
 google-cloud-core==2.4.1 \
     --hash=sha256:9b7749272a812bde58fff28868d0c5e2f585b82f37e09a1f6ed2d4d10f134073 \
