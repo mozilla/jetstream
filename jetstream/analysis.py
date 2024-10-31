@@ -870,15 +870,22 @@ class Analysis:
                     )
                     continue
 
-                if statistics_only and not self.bigquery.table_exists(metrics_table):
-                    logger.warning(
-                        f"Cannot compute only statistics for period {period.value}; "
-                        "metrics table does not exist!",
-                        extra={
-                            "experiment": self.config.experiment.normandy_slug,
-                            "analysis_basis": analysis_basis.value,
-                        },
+                if statistics_only:
+                    metrics_table_name = self._table_name(
+                        period.value,
+                        len(time_limits.analysis_windows),
+                        analysis_basis=analysis_basis,
                     )
+                    if not self.bigquery.table_exists(metrics_table_name):
+                        logger.warning(
+                            f"Cannot compute only statistics for period {period.value}; "
+                            "metrics table does not exist!",
+                            extra={
+                                "experiment": self.config.experiment.normandy_slug,
+                                "analysis_basis": analysis_basis.value,
+                            },
+                        )
+                        continue
 
                 segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                 for segment in segment_labels:
