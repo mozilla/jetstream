@@ -752,7 +752,7 @@ statistics_only_option = click.option(
     "--stats-only",
     "--skip-metrics",
     help="Skip the metrics queries and only calculate statistics (metrics tables must exist!).",
-    is_flag=True,
+    type=bool,
     default=False,
 )
 
