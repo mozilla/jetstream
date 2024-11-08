@@ -66,7 +66,7 @@ exceptiongroup==1.2.2
     # via
     #   cattrs
     #   pytest
-faker==30.8.0
+faker==30.8.2
     # via polyfactory
 filelock==3.16.1
     # via
@@ -84,7 +84,7 @@ gitpython==3.1.43
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-google-api-core[grpc]==2.21.0
+google-api-core[grpc]==2.22.0
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
@@ -92,7 +92,7 @@ google-api-core[grpc]==2.21.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.35.0
+google-auth==2.36.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
@@ -101,7 +101,7 @@ google-auth==2.35.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.11.5
+google-cloud-artifact-registry==1.13.0
     # via mozilla-jetstream
 google-cloud-bigquery==3.26.0
     # via
@@ -111,7 +111,7 @@ google-cloud-bigquery-storage==2.27.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.52.0
+google-cloud-container==2.53.0
     # via mozilla-jetstream
 google-cloud-core==2.4.1
     # via
@@ -136,14 +136,14 @@ googleapis-common-protos[grpc]==1.65.0
     #   grpcio-status
 grpc-google-iam-v1==0.13.1
     # via google-cloud-artifact-registry
-grpcio==1.67.0
+grpcio==1.67.1
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.67.0
+grpcio-status==1.67.1
     # via google-api-core
 idna==3.10
     # via requests
@@ -182,21 +182,21 @@ matplotlib==3.9.2
     # via
     #   mozanalysis
     #   plotnine
-mizani==0.11.4
+mizani==0.13.0
     # via plotnine
 mozanalysis==2024.9.5
     # via mozilla-jetstream
-mozilla-metric-config-parser==2024.10.1
+mozilla-metric-config-parser==2024.10.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
-mozilla-nimbus-schemas==2024.10.1
+mozilla-nimbus-schemas==2024.11.3
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
 msgpack==1.1.0
     # via distributed
-mypy==1.12.1
+mypy==1.13.0
     # via mozilla-jetstream
 mypy-extensions==1.0.0
     # via mypy
@@ -216,7 +216,7 @@ numpy==1.26.4
     #   scikit-learn
     #   scipy
     #   statsmodels
-packaging==24.1
+packaging==24.2
     # via
     #   dask
     #   db-dtypes
@@ -247,23 +247,23 @@ platformdirs==4.3.6
     # via
     #   tox
     #   virtualenv
-plotnine==0.13.6
+plotnine==0.14.1
     # via marginaleffects
 pluggy==1.5.0
     # via
     #   pytest
     #   tox
-polars==1.10.0
+polars==1.12.0
     # via marginaleffects
-polyfactory==2.17.0
+polyfactory==2.18.0
     # via mozilla-nimbus-schemas
-proto-plus==1.24.0
+proto-plus==1.25.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==5.28.2
+protobuf==5.28.3
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
@@ -302,7 +302,7 @@ pytest==8.3.3
     #   mozilla-jetstream
     #   pytest-cov
     #   pytest-ruff
-pytest-cov==5.0.0
+pytest-cov==6.0.0
     # via mozilla-jetstream
 pytest-ruff==0.4.1
     # via mozilla-jetstream
@@ -333,13 +333,13 @@ requests==2.32.3
     #   google-cloud-storage
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-rpds-py==0.20.0
+rpds-py==0.21.0
     # via
     #   jsonschema
     #   referencing
 rsa==4.9
     # via google-auth
-ruff==0.7.0
+ruff==0.7.3
     # via
     #   mozilla-jetstream
     #   pytest-ruff
@@ -397,7 +397,7 @@ tox==4.23.2
     # via mozilla-jetstream
 types-futures==3.3.8
     # via mozilla-jetstream
-types-protobuf==5.28.0.20240924
+types-protobuf==5.28.3.20241030
     # via mozilla-jetstream
 types-pytz==2024.2.0.20241003
     # via mozilla-jetstream
@@ -405,9 +405,9 @@ types-pyyaml==6.0.12.20240917
     # via mozilla-jetstream
 types-requests==2.32.0.20241016
     # via mozilla-jetstream
-types-setuptools==75.2.0.20241019
+types-setuptools==75.3.0.20241107
     # via mozilla-jetstream
-types-six==1.16.21.20241009
+types-six==1.16.21.20241105
     # via mozilla-jetstream
 types-toml==0.10.8.20240310
     # via mozilla-jetstream
@@ -429,7 +429,7 @@ urllib3==2.2.3
     #   distributed
     #   requests
     #   types-requests
-virtualenv==20.27.0
+virtualenv==20.27.1
     # via tox
 wrapt==1.16.0
     # via
