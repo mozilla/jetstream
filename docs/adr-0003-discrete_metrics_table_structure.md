@@ -66,7 +66,7 @@ For each option, we will use the following scenario as an example for describing
   * If table does not exist:
     * Create table with schema: `<client columns> | metric_slug | metric_value`
   * If table exists:
-    * Drop rows where `metric_slug` matches a metric in the query
+    * If there are already records with `metric_slug`, delete them
     * Add rows for each result in the form of `metric_slug | metric_value`
 * Metric is removed:
   * Compare metric columns to new set of metrics to determine that we have an extra one in the results
@@ -86,14 +86,16 @@ For each option, we will use the following scenario as an example for describing
 #### Pros / Cons
 
 * **+** Low complexity of logic
+* **+** Only need to process new data for INSERTs
 * **-** This breaks backwards compatibility with the current tables schemas (mitigated by view schema remaining the same)
 * **-** Redundancy in table for repeated client info columns
+* **-** Added cost for reruns (DELETE statements in BigQuery require reprocessing all data)
   
 
 ### 3. Table per Metric
 
 * This option is almost identical to the [Row per Metric](#2.-Row-per-Metric) option, however instead of adding rows to an existing table, we will create a new table for each metric
-* The `metric_slug` column from Option 2 is not necessary, so we can retain the current column-named-with-metric-slug, but each table will only ever 
+* The `metric_slug` column from Option 2 is not necessary, so we can retain the current column-named-with-metric-slug, but each table will only ever have one of these metric columns.
 
 #### Pros / Cons
 
