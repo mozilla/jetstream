@@ -1261,9 +1261,9 @@ partd==1.4.2 \
     # via
     #   -r requirements.in
     #   dask
-patsy==0.5.6 \
-    --hash=sha256:19056886fd8fa71863fa32f0eb090267f21fb74be00f19f5c70b2e9d76c883c6 \
-    --hash=sha256:95c6d47a7222535f84bff7f63d7303f2e297747a598db89cf5c67f0c0c7d2cdb
+patsy==1.0.1 \
+    --hash=sha256:751fb38f9e97e62312e921a1954b81e1bb2bcda4f5eeabaf94db251ee791509c \
+    --hash=sha256:e786a9391eec818c054e359b737bbce692f051aee4c661f4141cc88fb459c0c4
     # via
     #   -r requirements.in
     #   marginaleffects
@@ -1912,7 +1912,6 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   -r requirements.in
-    #   patsy
     #   python-dateutil
 smart-open[gcs]==7.0.5 \
     --hash=sha256:8523ed805c12dff3eaa50e9c903a6cb0ae78800626631c5fe7ea073439847b89 \
