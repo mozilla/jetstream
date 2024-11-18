@@ -379,7 +379,7 @@ toml==0.10.2
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-tomli==2.0.2
+tomli==2.1.0
     # via
     #   coverage
     #   mypy
