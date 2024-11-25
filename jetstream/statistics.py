@@ -136,7 +136,7 @@ class StatisticResult(StatisticSchema):
     # override the behavior of window_index because this is not
     # a field in the bigquery schema, and so we need to exclude
     # it on the Jetstream side
-    window_index: str = Field(default=None, exclude=True)
+    window_index: str | None = Field(default=None, exclude=True)
 
     model_config = ConfigDict(use_enum_values=True, coerce_numbers_to_str=True)
 
