@@ -27,12 +27,20 @@ pip install -e .
 
   - To run integration tests, run `tox -e py310-integration`.
 
-### Linting
+### Linting / Formatting
 
-`ruff check jetstream`
+We use `ruff` for linting and formatting:
+- **lint**: `ruff check jetstream`
+- **format**: `ruff format --check jetstream`
 
-`ruff` can also fix lint issues:
-- `ruff format jetstream`
+`ruff` can also fix (some) issues:
+- **lint**: `ruff check jetstream --fix`
+- **format**: `ruff format jetstream`
+
+We also use `mypy`:
+- `mypy -p jetstream`
+
+You can also run `tox py310-format` to run all the ruff and mypy checks.
 
 
 ## Dependencies
