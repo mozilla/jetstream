@@ -263,7 +263,7 @@ proto-plus==1.25.0
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==5.28.3
+protobuf==5.29.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
