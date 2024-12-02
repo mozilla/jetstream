@@ -178,7 +178,7 @@ marginaleffects==0.0.12
     # via mozanalysis
 markupsafe==3.0.2
     # via jinja2
-matplotlib==3.9.2
+matplotlib==3.9.3
     # via
     #   mozanalysis
     #   plotnine
