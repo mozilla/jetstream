@@ -356,7 +356,7 @@ scipy==1.14.1
     #   statsmodels
 secretstorage==3.3.3
     # via mozanalysis
-six==1.16.0
+six==1.17.0
     # via python-dateutil
 smart-open[gcs]==7.0.5
     # via mozilla-jetstream
