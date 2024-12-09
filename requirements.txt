@@ -2045,9 +2045,9 @@ types-setuptools==75.5.0.20241122 \
     --hash=sha256:196aaf1811cbc1c77ac1d4c4879d5308b6fdf426e56b73baadbca2a1827dadef \
     --hash=sha256:d69c445f7bdd5e49d1b2441aadcee1388febcc9ad9d9d5fd33648b555e0b1c31
     # via -r requirements.in
-types-six==1.16.21.20241105 \
-    --hash=sha256:8b4b29e5c8fe7f1131be8f3cb7cedbcd8bb889707336f32c3fb332c9b1c71991 \
-    --hash=sha256:ce3534c38079ec3242f4a20376283eb265a3837f80592b0ecacb14bd41acc29e
+types-six==1.17.0.20241205 \
+    --hash=sha256:1f662347a8f3b2bf30517d629d82f591420df29811794b0bf3804e14d716f6e0 \
+    --hash=sha256:a4947c2bdcd9ab69d44466a533a15839ff48ddc27223615cb8145d73ab805bc2
     # via -r requirements.in
 types-toml==0.10.8.20240310 \
     --hash=sha256:3d41501302972436a6b8b239c850b26689657e25281b48ff0ec06345b8830331 \
