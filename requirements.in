@@ -333,7 +333,7 @@ requests==2.32.3
     #   google-cloud-storage
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-rpds-py==0.21.0
+rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
