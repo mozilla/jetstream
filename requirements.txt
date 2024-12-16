@@ -1000,9 +1000,9 @@ matplotlib==3.9.2 \
     #   -r requirements.in
     #   mozanalysis
     #   plotnine
-mizani==0.13.0 \
-    --hash=sha256:3d658df352a1c6342eb56b146ae242ab916bd717ecd75ffb14961559ccbc9cb8 \
-    --hash=sha256:741d3ce79f1ee0bfa039bc6d84a395ae5024177893697973667b9ce73470c50e
+mizani==0.13.1 \
+    --hash=sha256:7da0dcacd43fbcc01c279ea06a76f1f064ae90dbb387c4a985ba24a92d3c7d7a \
+    --hash=sha256:e3247ea12c746c8104767d7e42a2d16473173c7bc314f298d8294a58f4653353
     # via
     #   -r requirements.in
     #   plotnine
