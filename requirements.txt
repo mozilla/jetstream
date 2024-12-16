@@ -503,9 +503,9 @@ fonttools==4.55.0 \
     # via
     #   -r requirements.in
     #   matplotlib
-formulaic==1.0.2 \
-    --hash=sha256:663328b038a0eb7644f59400615da7abf2672b0e11124b3bef3307afc441d97c \
-    --hash=sha256:6eb65bedd1903c5381d8f2ae7a55b6ba13cb77d57bbaf6e4278f3b2c38e3660e
+formulaic==1.1.0 \
+    --hash=sha256:2c7907b4692091dd5615c78f2be30398abb28a046633b8c2760550f8c32b8be7 \
+    --hash=sha256:35c0eb8fadebc6656ec685a68a3266d755227a80a05ece711897409913f5e3c6
     # via
     #   -r requirements.in
     #   mozanalysis
