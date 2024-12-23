@@ -76,7 +76,7 @@ fonttools==4.55.0
     # via matplotlib
 formulaic==1.0.2
     # via mozanalysis
-fsspec==2024.10.0
+fsspec==2024.12.0
     # via dask
 gitdb==4.0.11
     # via gitpython
