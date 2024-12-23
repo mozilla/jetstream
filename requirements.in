@@ -273,7 +273,7 @@ protobuf==5.28.3
     #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
-psutil==6.1.0
+psutil==6.1.1
     # via distributed
 pyarrow==14.0.2
     # via
