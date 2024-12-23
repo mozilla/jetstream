@@ -422,7 +422,7 @@ typing-extensions==4.12.2
     #   tox
 tzdata==2024.2
     # via pandas
-urllib3==2.2.3
+urllib3==2.3.0
     # via
     #   distributed
     #   requests
