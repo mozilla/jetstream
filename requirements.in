@@ -289,7 +289,7 @@ pyasn1-modules==0.4.1
     # via google-auth
 pycparser==2.22
     # via cffi
-pydantic==2.10.4
+pydantic==2.10.5
     # via mozilla-nimbus-schemas
 pydantic-core==2.27.2
     # via pydantic
