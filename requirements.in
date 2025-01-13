@@ -403,7 +403,7 @@ types-pyyaml==6.0.12.20241230
     # via mozilla-jetstream
 types-requests==2.32.0.20241016
     # via mozilla-jetstream
-types-setuptools==75.6.0.20241223
+types-setuptools==75.8.0.20250110
     # via mozilla-jetstream
 types-six==1.17.0.20241205
     # via mozilla-jetstream
