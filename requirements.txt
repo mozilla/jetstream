@@ -423,9 +423,9 @@ exceptiongroup==1.2.2 \
     #   -r requirements.in
     #   cattrs
     #   pytest
-faker==33.1.3 \
-    --hash=sha256:35ecdc26b02810f7d2f506d714946195d775b732bda51f6acb7d5d0366782dea \
-    --hash=sha256:5d10521c29ab3e488de1bb177f6818c6accedba4bcbd11775afe4f0a50c8634f
+faker==33.3.1 \
+    --hash=sha256:49dde3b06a5602177bc2ad013149b6f60a290b7154539180d37b6f876ae79b20 \
+    --hash=sha256:ac4cf2f967ce02c898efa50651c43180bd658a7707cfd676fcc5410ad1482c03
     # via
     #   -r requirements.in
     #   polyfactory
