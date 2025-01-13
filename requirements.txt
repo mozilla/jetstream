@@ -1437,9 +1437,9 @@ pycparser==2.22 \
     # via
     #   -r requirements.in
     #   cffi
-pydantic==2.10.4 \
-    --hash=sha256:597e135ea68be3a37552fb524bc7d0d66dcf93d395acd93a00682f1efcb8ee3d \
-    --hash=sha256:82f12e9723da6de4fe2ba888b5971157b3be7ad914267dea8f05f82b28254f06
+pydantic==2.10.5 \
+    --hash=sha256:278b38dbbaec562011d659ee05f63346951b3a248a6f3642e1bc68894ea2b4ff \
+    --hash=sha256:4dd4e322dbe55472cb7ca7e73f4b63574eecccf2835ffa2af9021ce113c83c53
     # via
     #   -r requirements.in
     #   mozilla-nimbus-schemas
