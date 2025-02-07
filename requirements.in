@@ -343,7 +343,7 @@ ruff==0.8.5
     # via
     #   mozilla-jetstream
     #   pytest-ruff
-scikit-learn==1.6.0
+scikit-learn==1.6.1
     # via mozilla-jetstream
 scipy==1.15.1
     # via
