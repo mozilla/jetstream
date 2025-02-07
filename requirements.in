@@ -255,7 +255,7 @@ pluggy==1.5.0
     #   tox
 polars==1.19.0
     # via marginaleffects
-polyfactory==2.18.1
+polyfactory==2.19.0
     # via mozilla-nimbus-schemas
 proto-plus==1.25.0
     # via
