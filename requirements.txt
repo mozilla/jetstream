@@ -1318,9 +1318,9 @@ polars==1.18.0 \
     # via
     #   -r requirements.in
     #   marginaleffects
-polyfactory==2.18.1 \
-    --hash=sha256:17c9db18afe4fb8d7dd8e5ba296e69da0fcf7d0f3b63d1840eb10d135aed5aad \
-    --hash=sha256:1a2b0715e08bfe9f14abc838fc013ab8772cb90e66f2e601e15e1127f0bc1b18
+polyfactory==2.19.0 \
+    --hash=sha256:0137f5eaf1bc31c62c16ccbab9467e96a7352748ca426ef363bd081c149a3e3f \
+    --hash=sha256:6d4273fb1f23e1fccc7aa7c64e28ddc3c20105cc499df32ebc478465daa7fa72
     # via
     #   -r requirements.in
     #   mozilla-nimbus-schemas
