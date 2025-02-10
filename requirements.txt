@@ -400,9 +400,9 @@ dask[distributed]==2024.12.1 \
     # via
     #   -r requirements.in
     #   distributed
-db-dtypes==1.3.1 \
-    --hash=sha256:a058f05dab100891f3e76a7a3db9ad0f107f18dd3d1bdd13680749a2f07eae77 \
-    --hash=sha256:fbc9d1740d94aaf2b5ae24601cfc875a69b4635bb9d049e3c3036e9f10203af8
+db-dtypes==1.4.1 \
+    --hash=sha256:36403e252c03c4a5073f67e4315015c7d1f57b2614f56d2037587e0743670fb8 \
+    --hash=sha256:84076e2f952174da3eea16c2692409a0d3ef88d27b68c24ee0c9262513fa26d4
     # via -r requirements.in
 distlib==0.3.9 \
     --hash=sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87 \
