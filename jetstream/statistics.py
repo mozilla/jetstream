@@ -40,7 +40,7 @@ class Summary:
 
     metric: Metric
     statistic: "Statistic"
-    pre_treatments: list[PreTreatment] = attr.Factory(list)
+    pre_treatments: list[PreTreatment] = attr.ib(default=attr.Factory(list))
 
     @classmethod
     def from_config(
@@ -196,7 +196,7 @@ class Statistic(ABC):
     of the experiment.
     """
 
-    period: parser_metric.AnalysisPeriod | None = attr.field(default=None)
+    period: parser_metric.AnalysisPeriod | None = None
 
     @classmethod
     def name(cls):
@@ -414,10 +414,10 @@ class BootstrapMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
-    drop_highest: float = attr.field(default=0.005, validator=attr.validators.instance_of(float))
+    drop_highest: float = attr.ib(default=0.005, validator=attr.validators.instance_of(float))
     # currently used keys are "metric" as the name of the metric
     # and "period" as the (preenrollment) period to pull from
-    covariate_adjustment: dict[str, str] | None = attr.field(default=None)
+    covariate_adjustment: dict[str, str] | None = None
 
     @covariate_adjustment.validator
     def check(self, attribute, value):

@@ -60,14 +60,18 @@ class Analysis:
     config: AnalysisConfiguration
     log_config: LogConfiguration | None = None
     start_time: datetime | None = None
-    analysis_periods: list[AnalysisPeriod] = [
-        AnalysisPeriod.DAY,
-        AnalysisPeriod.WEEK,
-        AnalysisPeriod.DAYS_28,
-        AnalysisPeriod.OVERALL,
-        AnalysisPeriod.PREENROLLMENT_WEEK,
-        AnalysisPeriod.PREENROLLMENT_DAYS_28,
-    ]
+    analysis_periods: list[AnalysisPeriod] = attr.ib(
+        default=attr.Factory(
+            [
+                AnalysisPeriod.DAY,
+                AnalysisPeriod.WEEK,
+                AnalysisPeriod.DAYS_28,
+                AnalysisPeriod.OVERALL,
+                AnalysisPeriod.PREENROLLMENT_WEEK,
+                AnalysisPeriod.PREENROLLMENT_DAYS_28,
+            ]
+        )
+    )
     sql_output_dir: str | None = None
 
     @property
@@ -459,9 +463,9 @@ class Analysis:
 
         query = dedent(
             f"""
-        SELECT branch, {', '.join(metric_names + empty_metric_names)}
+        SELECT branch, {", ".join(metric_names + empty_metric_names)}
         FROM `{metrics_table_name}`
-        WHERE {' IS NOT NULL AND '.join(metric_names + [''])[:-1]}
+        WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
         """
         )
 

@@ -181,7 +181,7 @@ class NimbusExperiment:
 
 @attr.s(auto_attribs=True)
 class ExperimentCollection:
-    experiments: list[experiment.Experiment] = attr.Factory(list)
+    experiments: list[experiment.Experiment] = attr.ib(default=attr.Factory(list))
 
     MAX_RETRIES = 3
     EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"

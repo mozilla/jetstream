@@ -35,7 +35,7 @@ def _analysis_id_from_unit(analysis_unit: AnalysisUnit, a_or_b: Literal["a", "b"
 
 
 @pytest.mark.parametrize(
-    "randomization_unit, analysis_unit",
+    ("randomization_unit", "analysis_unit"),
     [
         (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
         (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
@@ -482,7 +482,7 @@ class TestAnalysisIntegration:
         test_active_hours_doubled = Metric(
             name="active_hours_doubled",
             data_source=test_clients_daily,
-            select_expression=f'{agg_sum("active_hours_sum")} * 2',
+            select_expression=f"{agg_sum('active_hours_sum')} * 2",
             analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
         )
 
