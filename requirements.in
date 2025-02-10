@@ -136,7 +136,7 @@ googleapis-common-protos[grpc]==1.66.0
     #   grpcio-status
 grpc-google-iam-v1==0.14.0
     # via google-cloud-artifact-registry
-grpcio==1.68.1
+grpcio==1.69.0
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -253,9 +253,9 @@ pluggy==1.5.0
     # via
     #   pytest
     #   tox
-polars==1.18.0
+polars==1.19.0
     # via marginaleffects
-polyfactory==2.18.1
+polyfactory==2.19.0
     # via mozilla-nimbus-schemas
 proto-plus==1.25.0
     # via
@@ -343,9 +343,9 @@ ruff==0.9.5
     # via
     #   mozilla-jetstream
     #   pytest-ruff
-scikit-learn==1.6.0
+scikit-learn==1.6.1
     # via mozilla-jetstream
-scipy==1.15.0
+scipy==1.15.1
     # via
     #   formulaic
     #   marginaleffects
@@ -427,9 +427,9 @@ urllib3==2.3.0
     #   distributed
     #   requests
     #   types-requests
-virtualenv==20.28.1
+virtualenv==20.29.1
     # via tox
-wrapt==1.17.0
+wrapt==1.17.1
     # via
     #   formulaic
     #   smart-open

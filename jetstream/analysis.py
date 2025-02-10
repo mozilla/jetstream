@@ -61,16 +61,14 @@ class Analysis:
     log_config: LogConfiguration | None = None
     start_time: datetime | None = None
     analysis_periods: list[AnalysisPeriod] = attr.ib(
-        default=attr.Factory(
-            [
-                AnalysisPeriod.DAY,
-                AnalysisPeriod.WEEK,
-                AnalysisPeriod.DAYS_28,
-                AnalysisPeriod.OVERALL,
-                AnalysisPeriod.PREENROLLMENT_WEEK,
-                AnalysisPeriod.PREENROLLMENT_DAYS_28,
-            ]
-        )
+        default=[
+            AnalysisPeriod.DAY,
+            AnalysisPeriod.WEEK,
+            AnalysisPeriod.DAYS_28,
+            AnalysisPeriod.OVERALL,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+            AnalysisPeriod.PREENROLLMENT_DAYS_28,
+        ]
     )
     sql_output_dir: str | None = None
 
