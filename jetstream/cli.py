@@ -1229,7 +1229,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
         except DryRunFailedError as e:
             print("Error evaluating SQL:")
             for i, line in enumerate(e.sql.split("\n")):
-                print(f"{i+1: 4d} {line.rstrip()}")
+                print(f"{i + 1: 4d} {line.rstrip()}")
             print("")
             print(str(e))
             dirty = True
