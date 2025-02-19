@@ -35,64 +35,6 @@ class Segment:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
-class LegacyExperiment:
-    """Experimenter Legacy (Normandy) experiment (v1 API)."""
-
-    slug: str  # experimenter slug
-    type: str
-    status: str
-    start_date: dt.datetime | None
-    end_date: dt.datetime | None
-    proposed_enrollment: int | None = attr.ib(converter=_coerce_none_to_zero)
-    variants: list[Variant]
-    normandy_slug: str | None = None
-    is_high_population: bool | None = None
-    outcomes: list[Outcome] | None = None
-
-    @staticmethod
-    def _unix_millis_to_datetime(num: float | None) -> dt.datetime | None:
-        if num is None:
-            return None
-        return dt.datetime.fromtimestamp(num / 1e3, pytz.utc)
-
-    @classmethod
-    def from_dict(cls, d) -> "LegacyExperiment":
-        converter = cattr.Converter()
-        converter.register_structure_hook(
-            dt.datetime,
-            lambda num, _: cls._unix_millis_to_datetime(num),
-        )
-        return converter.structure(d, cls)
-
-    def to_experiment(self) -> experiment.Experiment:
-        """Convert to Experiment."""
-        branches = [
-            experiment.Branch(slug=variant.slug, ratio=variant.ratio) for variant in self.variants
-        ]
-        control_slug = None
-
-        control_slugs = [variant.slug for variant in self.variants if variant.is_control]
-        if len(control_slugs) == 1:
-            control_slug = control_slugs[0]
-
-        return experiment.Experiment(
-            normandy_slug=self.normandy_slug,
-            experimenter_slug=self.slug,
-            type=self.type,
-            status=self.status,
-            start_date=self.start_date,
-            end_date=self.end_date,
-            proposed_enrollment=self.proposed_enrollment,
-            branches=branches,
-            reference_branch=control_slug,
-            is_high_population=self.is_high_population or False,
-            app_name="firefox_desktop",
-            app_id="firefox-desktop",
-            outcomes=[o.slug for o in self.outcomes] if self.outcomes else [],
-        )
-
-
-@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class NimbusExperiment:
     """Represents a Nimbus experiment from Experimenter (v8 API)."""
 
@@ -184,8 +126,6 @@ class ExperimentCollection:
     experiments: list[experiment.Experiment] = attr.ib(default=attr.Factory(list))
 
     MAX_RETRIES = 3
-    EXPERIMENTER_API_URL_V1 = "https://experimenter.services.mozilla.com/api/v1/experiments/"
-
     # for nimbus experiments
     EXPERIMENTER_API_URL_V8 = "https://experimenter.services.mozilla.com/api/v8/experiments/"
 
@@ -202,21 +142,6 @@ class ExperimentCollection:
         cls, session: requests.Session = None, with_draft_experiments=False
     ) -> "ExperimentCollection":
         session = session or requests.Session()
-        legacy_experiments_json = retry_get(
-            session, cls.EXPERIMENTER_API_URL_V1, cls.MAX_RETRIES, cls.USER_AGENT
-        )
-        legacy_experiments = []
-
-        for legacy_experiment in legacy_experiments_json:
-            if legacy_experiment["type"] != "rapid":
-                try:
-                    legacy_experiments.append(
-                        LegacyExperiment.from_dict(legacy_experiment).to_experiment()
-                    )
-                except Exception as e:
-                    logger.exception(
-                        str(e), exc_info=e, extra={"experiment": legacy_experiment["slug"]}
-                    )
 
         nimbus_experiments_json = retry_get(
             session, cls.EXPERIMENTER_API_URL_V8, cls.MAX_RETRIES, cls.USER_AGENT
@@ -249,7 +174,7 @@ class ExperimentCollection:
                     print(f"Error converting draft experiment {draft_experiment['slug']}")
                     print(str(e))
 
-        return cls(nimbus_experiments + legacy_experiments + draft_experiments)
+        return cls(nimbus_experiments + draft_experiments)
 
     def of_type(self, type_or_types: str | Iterable[str]) -> "ExperimentCollection":
         if isinstance(type_or_types, str):
