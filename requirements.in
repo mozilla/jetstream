@@ -143,7 +143,7 @@ grpcio==1.69.0
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.68.1
+grpcio-status==1.69.0
     # via google-api-core
 idna==3.10
     # via requests
