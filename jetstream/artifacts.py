@@ -1,7 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import attr
-import pytz
 from google.cloud import artifactregistry
 
 from jetstream.bigquery_client import BigQueryClient
@@ -60,17 +59,25 @@ class ArtifactManager:
 
         # filter for the most recent jetstream image
         for image in self.images:
-            updated_timestamp = image.update_time
+            # A note on the type ignore comments:
+            # - mypy and the DockerImage docs both indicate that `update_time`
+            #   should be Timestamp type, but when we run the tests, they appear
+            #   to be DatetimeWithNanoseconds instead. This code comparing
+            #   `update_time` with datetime objects has been working, so
+            #   we ignore mypy here due to the conflicting errors.
+            updated_timestamp = image.update_time  # type: ignore
 
             if (latest_updated is None and image.update_time <= date) or (  # type: ignore
                 latest_updated
-                and latest_updated.update_time < updated_timestamp
-                and image.update_time <= date
+                and latest_updated.update_time < updated_timestamp  # type: ignore
+                and image.update_time <= date  # type: ignore
             ):
                 latest_updated = image
 
             # keep track of the earliest image available
-            if earliest_uploaded is None or image.update_time <= earliest_uploaded.update_time:
+            if (
+                earliest_uploaded is None or image.update_time <= earliest_uploaded.update_time  # type: ignore
+            ):
                 earliest_uploaded = image
 
         if latest_updated:
@@ -84,4 +91,4 @@ class ArtifactManager:
 
     def latest_image(self) -> str:
         """Return the latest docker image hash."""
-        return self._image_for_date(date=pytz.UTC.localize(datetime.utcnow()))
+        return self._image_for_date(date=datetime.now(timezone.utc))

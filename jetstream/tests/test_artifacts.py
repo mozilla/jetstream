@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -44,7 +44,7 @@ class TestArtifactManager:
         artifact_manager = ArtifactManager(
             "moz-fx-data-experiments", "mozanalysis", "jetstream", artifact_client
         )
-        image = artifact_manager._image_for_date(date=pytz.UTC.localize(datetime.utcnow()))
+        image = artifact_manager._image_for_date(date=datetime.now(timezone.utc))
         assert image == "xxxxx"
 
         image = artifact_manager._image_for_date(date=pytz.UTC.localize(datetime(2023, 2, 1)))
