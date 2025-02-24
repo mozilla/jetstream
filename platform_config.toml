@@ -27,6 +27,7 @@ app_id = "org.mozilla.ios.Focus"
 [platform.klar_ios]
 app_id = "org.mozilla.ios.Klar"
 
-[platform.monitor_cirrus]
-app_id = "monitor.cirrus"
-enrollments_query_type = "cirrus"
+# Disabled until web analysis is better understood.
+# [platform.monitor_cirrus]
+# app_id = "monitor.cirrus"
+# enrollments_query_type = "cirrus"
