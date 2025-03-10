@@ -24,6 +24,12 @@ from metric_config_parser.config import (
     entity_from_path,
 )
 from metric_config_parser.data_source import DataSourceDefinition
+from metric_config_parser.errors import (
+    ConfigException,
+    DefinitionNotFound,
+    InvalidConfigurationException,
+    UnexpectedKeyConfigurationException,
+)
 from metric_config_parser.experiment import Branch, Experiment
 from metric_config_parser.function import FunctionsSpec
 from metric_config_parser.metric import AnalysisPeriod
@@ -389,7 +395,13 @@ class AnalysisExecutor:
             for result in results:
                 try:
                     configs.append(result.get())
-                except ValueError as e:
+                except (
+                    ValueError,
+                    ConfigException,
+                    InvalidConfigurationException,
+                    DefinitionNotFound,
+                    UnexpectedKeyConfigurationException,
+                ) as e:
                     logger.exception(
                         str(e), exc_info=e, extra={"experiment": experiment.normandy_slug}
                     )
