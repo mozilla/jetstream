@@ -33,8 +33,9 @@ class TestArtifactManager:
         artifact_client.list_docker_images.return_value = docker_images
 
         proj = "moz-fx-data-experiments"
-        artifact_manager = ArtifactManager(proj, "mozanalysis", "not-existing", artifact_client)
-        with pytest.raises(ValueError, match=f"No jetstream docker image available in {proj}"):
+        image = "not-existing"
+        artifact_manager = ArtifactManager(proj, "mozanalysis", image, artifact_client)
+        with pytest.raises(ValueError, match=f"No `{image}` docker image available in {proj}"):
             artifact_manager.latest_image()
 
     def test_image_for_date(self, docker_images):

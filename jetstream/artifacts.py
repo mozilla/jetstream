@@ -58,25 +58,29 @@ class ArtifactManager:
         earliest_uploaded = None
 
         # filter for the most recent jetstream image
+        image: artifactregistry.DockerImage
         for image in self.images:
             # A note on the type ignore comments:
-            # - mypy and the DockerImage docs both indicate that `update_time`
+            # - mypy and the DockerImage docs both indicate that `upload_time`
             #   should be Timestamp type, but when we run the tests, they appear
             #   to be DatetimeWithNanoseconds instead. This code comparing
-            #   `update_time` with datetime objects has been working, so
+            #   `upload_time` with datetime objects has been working, so
             #   we ignore mypy here due to the conflicting errors.
-            updated_timestamp = image.update_time  # type: ignore
+            if not image:
+                continue
+            upload_time = image.upload_time
 
-            if (latest_updated is None and image.update_time <= date) or (  # type: ignore
+            # img: artifactregistry.DockerImage = image
+            if (latest_updated is None and upload_time <= date) or (  # type: ignore
                 latest_updated
-                and latest_updated.update_time < updated_timestamp  # type: ignore
-                and image.update_time <= date  # type: ignore
+                and latest_updated.upload_time < upload_time  # type: ignore
+                and upload_time <= date  # type: ignore
             ):
                 latest_updated = image
 
             # keep track of the earliest image available
             if (
-                earliest_uploaded is None or image.update_time <= earliest_uploaded.update_time  # type: ignore
+                earliest_uploaded is None or upload_time <= earliest_uploaded.upload_time  # type: ignore
             ):
                 earliest_uploaded = image
 
@@ -87,7 +91,7 @@ class ArtifactManager:
             # return hash of earliest image available if table got created before image got uploaded
             return earliest_uploaded.name.split("sha256:")[1]
         else:
-            raise ValueError(f"No jetstream docker image available in {self.project}")
+            raise ValueError(f"No `{self.image}` docker image available in {self.project}")
 
     def latest_image(self) -> str:
         """Return the latest docker image hash."""
