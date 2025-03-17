@@ -66,7 +66,7 @@ exceptiongroup==1.2.2
     # via
     #   cattrs
     #   pytest
-faker==36.1.1
+faker==37.0.0
     # via polyfactory
 filelock==3.17.0
     # via
