@@ -404,7 +404,7 @@ types-requests==2.32.0.20241016
     # via mozilla-jetstream
 types-setuptools==75.8.0.20250210
     # via mozilla-jetstream
-types-six==1.17.0.20241205
+types-six==1.17.0.20250304
     # via mozilla-jetstream
 types-toml==0.10.8.20240310
     # via mozilla-jetstream
