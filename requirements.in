@@ -190,7 +190,7 @@ mozilla-metric-config-parser==2024.11.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-mozilla-nimbus-schemas==2025.1.1
+mozilla-nimbus-schemas==3000.0.0
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
