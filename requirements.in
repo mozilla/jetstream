@@ -419,7 +419,7 @@ typing-extensions==4.12.2
     #   pydantic-core
     #   referencing
     #   tox
-tzdata==2025.1
+tzdata==2025.2
     # via
     #   faker
     #   pandas
