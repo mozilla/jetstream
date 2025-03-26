@@ -8,7 +8,7 @@ spec:
     secondsAfterSuccess: 432000 # delete workflows automatically after 5 days
   arguments:
     parameters:
-    - name: experiments  # set dynamically when worklfow gets deployed
+    - name: experiments  # set dynamically when workflow gets deployed
     - name: project_id
     - name: dataset_id
     - name: bucket
@@ -16,6 +16,8 @@ spec:
     - name: analysis_periods_week
     - name: analysis_periods_days28
     - name: analysis_periods_overall
+    - name: analysis_periods_preenrollment_week
+    - name: analysis_periods_preenrollment_days28
     - name: image
   templates:
   - name: jetstream
