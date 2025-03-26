@@ -4,20 +4,19 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attr
 import dask
-import google
-import mozanalysis
 import pytz
 from dask.distributed import Client, LocalCluster
+from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
+from google.cloud.bigquery.job import WriteDisposition
 from google.cloud.exceptions import Conflict
-from metric_config_parser import metric
 from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.metric import AnalysisPeriod
-from mozanalysis.experiment import TimeLimits
+from mozanalysis.experiment import Experiment, TimeLimits
 from mozanalysis.utils import add_days
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
@@ -41,6 +40,9 @@ from jetstream.statistics import (
 )
 
 from . import bq_normalize_name
+
+if TYPE_CHECKING:
+    from mozanalysis.metrics import DataSource
 
 logger = logging.getLogger(__name__)
 
@@ -240,10 +242,11 @@ class Analysis:
     @dask.delayed
     def calculate_metrics(
         self,
-        exp: mozanalysis.experiment.Experiment,
+        exp: Experiment,
         time_limits: TimeLimits,
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
+        metric: Metric,
         dry_run: bool,
     ) -> str:
         """
@@ -272,9 +275,8 @@ class Analysis:
             )
         else:
             logger.info(
-                "Executing query for %s (%s)",
-                self.config.experiment.normandy_slug,
-                period.value,
+                f"Executing query for {self.config.experiment.normandy_slug}"
+                f"({period.value}) ({metric.name})"
             )
 
             enrollments_table_name = f"enrollments_{normalized_slug}"
@@ -288,32 +290,47 @@ class Analysis:
                 )
                 exposure_signal = exposure_signal.to_mozanalysis_exposure_signal(last_window_limits)
 
-            # convert metric configurations to mozanalysis metrics
-            metrics = {
-                Metric.from_metric_config(m.metric).to_mozanalysis_metric()
-                for m in self.config.metrics[period]
-                if (
-                    m.metric.analysis_bases == analysis_basis
-                    or analysis_basis in m.metric.analysis_bases
+            if self.bigquery.table_exists(res_table_name):
+                print(
+                    f"Metrics table exists ({res_table_name}), deleting metric '{metric.name}'..."
                 )
-                and m.metric.select_expression is not None
-            }
+                # we need to explicitly delete relevant records from the table
+                self.bigquery.delete_metrics_from_table(res_table_name, [metric.name])
 
-            metrics_sql = exp.build_metrics_query(
-                metrics,
-                last_window_limits,
-                enrollments_table_name,
-                analysis_basis,
-                exposure_signal,
-            )
+            try:
+                metrics_sql = exp.build_metrics_query(
+                    [metric],
+                    last_window_limits,
+                    enrollments_table_name,
+                    analysis_basis,
+                    exposure_signal,
+                    discrete_metrics=True,
+                )
+                print(f"QUERYING METRIC {metric.name}\n{metrics_sql}")
 
-            results = self.bigquery.execute(
-                metrics_sql, res_table_name, experiment_slug=self.config.experiment.normandy_slug
-            )
-            logger.info(
-                f"Metric query cost: {results.slot_millis * COST_PER_SLOT_MS}",
-            )
-            self._write_sql_output(res_table_name, metrics_sql)
+                results = self.bigquery.execute(
+                    metrics_sql,
+                    res_table_name,
+                    write_disposition=WriteDisposition.WRITE_APPEND,
+                    experiment_slug=self.config.experiment.normandy_slug,
+                    cluster_fields=["metric_slug"],
+                )
+                logger.info(
+                    f"Metric {metric.name} ({analysis_basis}) query cost:"
+                    f"{results.slot_millis * COST_PER_SLOT_MS}"
+                )
+                self._write_sql_output(res_table_name, metrics_sql)
+            except ValueError as e:
+                logger.exception(
+                    str(e),
+                    exc_info=e,
+                    extra={
+                        "experiment": self.config.experiment.normandy_slug,
+                        "metric": metric.name,
+                        "analysis_basis": analysis_basis,
+                    },
+                )
+
             self._publish_view(period, analysis_basis=analysis_basis.value)
 
         return res_table_name
@@ -321,7 +338,7 @@ class Analysis:
     @dask.delayed
     def calculate_statistics(
         self,
-        metric: metric.Summary,
+        metric: Summary,
         segment_data: DataFrame,
         segment: str,
         analysis_basis: AnalysisBasis,
@@ -379,7 +396,7 @@ class Analysis:
                 analysis_basis=analysis_basis,
             )
             for b in self.config.experiment.branches
-            if b.slug not in {c.branch for c in counts.root}
+            if b.slug not in {c.branch for c in counts}
         ]
 
         return StatisticResultCollection.model_validate(counts.root + other_counts)
@@ -389,7 +406,7 @@ class Analysis:
         self,
         metrics_table_name: str,
         segment: str,
-        summary: metric.Summary,
+        summary: Summary,
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
     ) -> DataFrame:
@@ -399,7 +416,9 @@ class Analysis:
             metrics_table_name, segment, summary, analysis_basis, period
         )
 
-        results = self.bigquery.execute(query).to_dataframe()
+        results: DataFrame = self.bigquery.execute(query).to_dataframe()
+        # convert incoming FLOAT64 to INT64 where possible
+        results = results.convert_dtypes()
 
         return results
 
@@ -407,7 +426,7 @@ class Analysis:
         self,
         metrics_table_name: str,
         segment: str,
-        summary: metric.Summary,
+        summary: Summary,
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
     ) -> str:
@@ -452,20 +471,13 @@ class Analysis:
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
         empty_metric_names = []
+        # TODO: discrete metrics with depends_on? should be fine but verify
         if metric.depends_on:
             empty_metric_names.append(f"NULL AS {metric.name}")
             for dependency in metric.depends_on:
                 metric_names.append(dependency.metric.name)
         else:
             metric_names.append(metric.name)
-
-        query = dedent(
-            f"""
-        SELECT branch, {", ".join(metric_names + empty_metric_names)}
-        FROM `{metrics_table_name}`
-        WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
-        """
-        )
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
@@ -477,14 +489,33 @@ class Analysis:
                 + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
             )
 
-        query += basis_filter
-
+        segment_filter = ""
         if segment != "all":
             segment_filter = dedent(
                 f"""
             AND {segment} = TRUE"""
             )
-            query += segment_filter
+
+        # All metric values are strings in the table, so we have to finagle that:
+        # - pandas can't convert 'true', 'false' to boolean dtype, but handles '0', '1'
+        # - we will convert the string representations to bool/int/float later
+        query = "\nUNION ALL\n".join(
+            dedent(
+                f"""
+            SELECT branch, CASE metric_value
+                    WHEN 'true' THEN 1
+                    WHEN 'false' THEN 0
+                    ELSE SAFE_CAST(metric_value AS FLOAT64)
+                END AS {metric_name}
+            FROM `{metrics_table_name}`
+            WHERE metric_slug = '{metric_name}'
+            AND metric_value IS NOT NULL
+            AND {basis_filter}
+            {segment_filter}
+            """
+            )
+            for metric_name in metric_names + empty_metric_names
+        )
 
         return query
 
@@ -524,7 +555,20 @@ class Analysis:
                 metrics_table_name, segment, metric, analysis_basis
             )
 
-        preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
+        metrics_select_map = {"during": metric.name, "pre": f"{covariate_metric_name}_pre"}
+        metrics_select = ",\n".join(
+            dedent(
+                f"""
+            CASE {table}.metric_value
+                WHEN 'true' THEN 1
+                WHEN 'false' THEN 0
+                ELSE SAFE_CAST({table}.metric_value AS FLOAT64)
+            END AS {alias}
+            """
+            )
+            for table, alias in metrics_select_map.items()
+        )
+
         from_expression = dedent(
             f"""`{metrics_table_name}` during
             LEFT JOIN `{covariate_table_name}` pre
@@ -535,12 +579,13 @@ class Analysis:
             f"""
         SELECT
             during.branch,
-            during.{metric.name},
-            {preenrollment_metric_select}
+            {metrics_select}
         FROM (
             {from_expression}
         )
-        WHERE during.{metric.name} IS NOT NULL AND
+        WHERE during.metric_slug = '{metric.name}'
+        AND pre.metric_slug = '{covariate_metric_name}'
+        AND during.metric_value IS NOT NULL AND
         """
         )
 
@@ -631,7 +676,7 @@ class Analysis:
             num_dates_enrollment=dates_enrollment,
         )
 
-        exp = mozanalysis.experiment.Experiment(
+        exp = Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
@@ -676,8 +721,9 @@ class Analysis:
         print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
         print(enrollments_sql)
 
+        # TODO: validate discrete_metrics works here
         metrics_sql = exp.build_metrics_query(
-            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS
+            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS, None, True
         )
 
         # enrollments_table doesn't get created when performing a dry run;
@@ -717,21 +763,28 @@ class Analysis:
         period: AnalysisPeriod,
         segment_results: list[dict[str, Any]],
         metrics_table: str,
+        metrics_keys: list[str],
     ):
         """Write statistics to BigQuery."""
         job_config = bigquery.LoadJobConfig()
         job_config.schema = StatisticResult.bq_schema
-        job_config.write_disposition = bigquery.job.WriteDisposition.WRITE_TRUNCATE
+        job_config.write_disposition = WriteDisposition.WRITE_APPEND
+
+        statistics_table = f"statistics_{metrics_table}"
+
+        self.bigquery.delete_metrics_from_table(
+            statistics_table, metrics_keys, metric_column="metric"
+        )
 
         try:
             # wait for the job to complete
             self.bigquery.load_table_from_json(
                 segment_results,
-                f"statistics_{metrics_table}",
+                statistics_table,
                 job_config=job_config,
                 experiment_slug=self.config.experiment.normandy_slug,
             )
-        except google.api_core.exceptions.BadRequest as e:
+        except BadRequest as e:
             # There was a mismatch between the segment_results root dict
             # structure and the schema expected by bigquery. This error is
             # rather opaque, so we will do some extra manual logging to help
@@ -746,7 +799,7 @@ class Analysis:
             raise ve from e
 
         self.bigquery.add_metadata_to_table(
-            f"statistics_{metrics_table}", {"schema_version": StatisticResult.SCHEMA_VERSION}
+            statistics_table, {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
 
         self._publish_view(period, table_prefix="statistics")
@@ -825,6 +878,10 @@ class Analysis:
             segment_results = StatisticResultCollection.model_validate([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
+            # get a set of all metrics, used to delete existing results from stats tables
+            # identity metric is not computed with query, but added later as a count statistic
+            metrics_in_results = {"identity"}
+
             if time_limits is None:
                 logger.info(
                     "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
@@ -839,7 +896,7 @@ class Analysis:
                 )
                 continue
 
-            exp = mozanalysis.experiment.Experiment(
+            exp = Experiment(
                 experiment_slug=self.config.experiment.normandy_slug,
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
                 app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
@@ -858,9 +915,37 @@ class Analysis:
                 continue
 
             for analysis_basis in analysis_bases:
-                metrics_table = self.calculate_metrics(
-                    exp, time_limits, period, analysis_basis, dry_run or statistics_only
-                )
+                # convert metric configurations to mozanalysis metrics
+                metrics: set[Metric] = {
+                    Metric.from_metric_config(m.metric).to_mozanalysis_metric()
+                    for m in self.config.metrics[period]
+                    if (
+                        m.metric.analysis_bases == analysis_basis
+                        or analysis_basis in m.metric.analysis_bases
+                    )
+                    and m.metric.select_expression is not None
+                }
+                # TODO: Consider in the future breaking out sanity metrics as well, and adding
+                #       them to the metrics set (will likely require a refactor in mozanalysis)
+
+                for metric in metrics:
+                    metrics_table = self.calculate_metrics(
+                        exp,
+                        time_limits,
+                        period,
+                        analysis_basis,
+                        metric,
+                        dry_run or statistics_only,
+                    )
+                    metrics_in_results.add(metric.name)
+                    ds: DataSource | None = metric.data_source
+                    if ds is not None:
+                        metrics_in_results.update(
+                            [
+                                m.name
+                                for m in ds.get_sanity_metrics(self.config.experiment.normandy_slug)
+                            ]
+                        )
 
                 if dry_run:
                     results.append(metrics_table)
@@ -898,7 +983,7 @@ class Analysis:
                         ):
                             continue
 
-                        segment_data = self.subset_metric_table(
+                        segment_data: DataFrame = self.subset_metric_table(
                             metrics_table, segment, summary, analysis_basis, period
                         )
 
@@ -926,6 +1011,7 @@ class Analysis:
                     period,
                     segment_results.model_dump(warnings=False),
                     self._table_name(period.value, len(time_limits.analysis_windows)),
+                    list(metrics_in_results),
                 )
             )
 
@@ -934,7 +1020,7 @@ class Analysis:
 
     def enrollments_query(self, time_limits: TimeLimits) -> str:
         """Returns the enrollments SQL query."""
-        exp = mozanalysis.experiment.Experiment(
+        exp = Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
@@ -986,7 +1072,7 @@ class Analysis:
             results = self.bigquery.execute(
                 enrollments_sql,
                 enrollments_table,
-                google.cloud.bigquery.job.WriteDisposition.WRITE_EMPTY,
+                WriteDisposition.WRITE_EMPTY,
                 experiment_slug=self.config.experiment.normandy_slug,
             )
             logger.info(

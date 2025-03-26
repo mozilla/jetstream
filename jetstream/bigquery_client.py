@@ -1,3 +1,4 @@
+import logging
 import time
 from collections.abc import Iterable, Mapping
 from datetime import datetime
@@ -12,11 +13,13 @@ import google.cloud.bigquery.table
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
-from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import BadRequest, NotFound, PreconditionFailed
 from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from . import bq_normalize_name
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -60,7 +63,19 @@ class BigQueryClient:
             table.description = description
             updated_fields.append("description")
 
-        self.client.update_table(table, updated_fields)
+        try:
+            self.client.update_table(table, updated_fields)
+        except PreconditionFailed as e:
+            # log but ignore: this is likely due to concurrent metadata updates
+            logger.exception(
+                "Ignoring PreconditionFailed error because it is likely due to "
+                f"concurrent metadata updates. Error information attached:\n{e}",
+                exc_info=e,
+                extra={
+                    "experiment": description,
+                    "metric": table_name,
+                },
+            )
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
@@ -96,6 +111,7 @@ class BigQueryClient:
         destination_table: str | None = None,
         write_disposition: google.cloud.bigquery.job.WriteDisposition | None = None,
         experiment_slug: str | None = None,
+        cluster_fields: list[str] | None = None,
     ) -> google.cloud.bigquery.job.QueryJob:
         dataset = google.cloud.bigquery.dataset.DatasetReference.from_string(
             self.dataset,
@@ -105,6 +121,8 @@ class BigQueryClient:
         if destination_table:
             kwargs["destination"] = dataset.table(destination_table)
             kwargs["write_disposition"] = google.cloud.bigquery.job.WriteDisposition.WRITE_TRUNCATE
+            if cluster_fields:
+                kwargs["clustering_fields"] = cluster_fields
 
         if write_disposition:
             kwargs["write_disposition"] = write_disposition
@@ -177,9 +195,33 @@ class BigQueryClient:
         for table in tables:
             self.add_metadata_to_table(table, {"last_updated": timestamp})
 
-    def delete_table(self, table_id: str) -> None:
+    def delete_table(self, table_id: str, fully_qualify: bool = False) -> None:
         """Delete the table."""
+        if fully_qualify:
+            table_id = f"{self.project}.{self.dataset}.{table_id}"
         self.client.delete_table(table_id, not_found_ok=True)
+
+    def delete_metrics_from_table(
+        self, table_id: str, metric_slugs: list[str], metric_column: str = "metric_slug"
+    ) -> None:
+        """Delete rows from `table_id` where column `metric_column` in `metric_slugs`."""
+        qualified_table = f"{self.dataset}.{table_id}"
+        delete_stmt = f"""DELETE FROM `{qualified_table}`
+            WHERE {metric_column} IN UNNEST({metric_slugs})
+        """
+
+        try:
+            logger.info(f"DELETING METRICS \n{delete_stmt}")
+            self.execute(delete_stmt)
+        except BadRequest as e:
+            if f"Unrecognized name: {metric_slugs}" in e.message:
+                logger.warning(
+                    f"google.cloud.exceptions.BadRequest: {e.args[0]}."
+                    f"while executing query: {delete_stmt}"
+                    f"Metric(s) {metric_slugs} not found in `{qualified_table}`, nothing to do..."
+                )
+            else:
+                raise e
 
     def delete_experiment_tables(
         self, slug: str, analysis_periods: list[AnalysisPeriod], delete_enrollments: bool = False

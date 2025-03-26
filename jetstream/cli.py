@@ -106,6 +106,7 @@ class ArgoExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
+    metric_slugs: list[str] | None = None
     statistics_only: bool = False
 
     WORKLFOW_DIR = Path(__file__).parent / "workflows"
@@ -120,10 +121,21 @@ class ArgoExecutorStrategy:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: dict[str, list[str]] = {}
+        experiment_metrics_map: dict[str, set[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
             )
+            experiment_metrics_map[config.experiment.normandy_slug] = set()
+            if self.metric_slugs:
+                experiment_metrics_map[config.experiment.normandy_slug] = set(self.metric_slugs)
+            else:
+                # get a set of all metric slugs for the experiment
+                for analysis_period, metrics_list in config.metrics.items():
+                    if analysis_period in self.analysis_periods:
+                        experiment_metrics_map[config.experiment.normandy_slug].update(
+                            {m.metric.name for m in metrics_list}
+                        )
 
         # determine the docker image that was the most recent when enrollments ended for experiments
         artifact_manager = ArtifactManager(
@@ -141,6 +153,7 @@ class ArgoExecutorStrategy:
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
+                "metric_slugs": list(experiment_metrics_map.get(slug) or []),
             }
             for slug, dates in experiments_config.items()
         ]
@@ -212,6 +225,7 @@ class SerialExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
     statistics_only: bool = False
+    metric_slugs: list[str] | None = None
 
     def execute(
         self,
@@ -226,6 +240,13 @@ class SerialExecutorStrategy:
                     dataset_id = config.experiment.dataset_id
                 else:
                     dataset_id = self.dataset_id
+
+                if self.metric_slugs:
+                    # filter metrics to only include those in self.metric_slugs
+                    for period, metrics in config.metrics.items():
+                        config.metrics[period] = [
+                            m for m in metrics if m.metric.name in self.metric_slugs
+                        ]
 
                 # run the analysis
                 analysis = self.analysis_class(
@@ -768,6 +789,15 @@ statistics_only_option = click.option(
     default=False,
 )
 
+metric_option = click.option(
+    "--metric-slug",
+    "--metric_slug",
+    help="Slug of the metric(s) to compute",
+    type=str,
+    required=False,
+    multiple=True,
+)
+
 
 @cli.command()
 @project_id_option()
@@ -782,6 +812,7 @@ statistics_only_option = click.option(
 @analysis_periods_option()
 @sql_output_dir_option
 @statistics_only_option
+@metric_option
 @click.pass_context
 def run(
     ctx,
@@ -797,6 +828,7 @@ def run(
     analysis_periods,
     sql_output_dir,
     statistics_only,
+    metric_slug,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -826,6 +858,7 @@ def run(
             ctx.obj["log_config"],
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
+            metric_slugs=metric_slug if metric_slug else None,
             statistics_only=statistics_only,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
@@ -859,6 +892,7 @@ def run(
 @image_option
 @image_version_option
 @statistics_only_option
+@metric_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -878,6 +912,7 @@ def run_argo(
     image,
     image_version,
     statistics_only,
+    metric_slug,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -893,6 +928,7 @@ def run_argo(
         image=image,
         image_version=image_version,
         statistics_only=statistics_only,
+        metric_slugs=metric_slug if metric_slug else None,
     )
 
     AnalysisExecutor(
@@ -930,6 +966,7 @@ def run_argo(
 @image_version_option
 @analysis_periods_option()
 @statistics_only_option
+@metric_option
 @click.pass_context
 def rerun(
     ctx,
@@ -952,6 +989,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
+    metric_slug,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -974,6 +1012,7 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
+        metric_slugs=metric_slug if metric_slug else None,
     )
 
     if argo:
@@ -990,6 +1029,7 @@ def rerun(
             image=image,
             image_version=image_version,
             statistics_only=statistics_only,
+            metric_slugs=metric_slug if metric_slug else None,
         )
 
     success = AnalysisExecutor(

@@ -34,6 +34,8 @@ spec:
             value: "{{item.dates}}"
           - name: image_hash
             value: "{{item.image_hash}}"
+          - name: metric_slugs
+            value: "{{item.metric_slugs}}"
         withParam: "{{inputs.parameters.experiments}}"  # process these experiments in parallel
         continueOn:
           failed: true
@@ -44,6 +46,7 @@ spec:
         - name: image_hash
         - name: slug
         - name: dates
+        - name: metric_slugs
     steps:
       - - name: ensure-enrollments
           template: ensure-enrollments
@@ -63,6 +66,8 @@ spec:
                 value: "{{item}}"
               - name: image_hash
                 value: "{{inputs.parameters.image_hash}}"
+              - name: metric_slugs
+                value: "{{inputs.parameters.metric_slugs}}"
           withParam: "{{inputs.parameters.dates}}"
 
   - name: ensure-enrollments
@@ -85,12 +90,14 @@ spec:
       - name: image_hash
       - name: date
       - name: slug
+      - name: metric_slug
     container:
       image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@sha256:{{inputs.parameters.image_hash}}
       command: [
         jetstream, --log_to_bigquery, run,
         "--date={{inputs.parameters.date}}",
         "--experiment_slug={{inputs.parameters.slug}}",
+        "--metric-slug={{inputs.parameters.metric_slug}}",
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}",
         "--bucket={{workflow.parameters.bucket}}", 
@@ -137,6 +144,7 @@ spec:
         - name: slug
         - name: date
         - name: image_hash
+        - name: metric_slugs
     steps:
     - - name: analyse-experiment
         template: analyse-experiment  
@@ -148,6 +156,9 @@ spec:
             value: "{{inputs.parameters.date}}"
           - name: image_hash
             value: "{{inputs.parameters.image_hash}}"
+          - name: metric_slug
+            value: "{{item}}"
+        withParam: "{{inputs.parameters.metric_slugs}}"
     - - name: export-statistics
         template: export-statistics
         arguments:
