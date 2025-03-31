@@ -154,7 +154,7 @@ class ArgoExecutorStrategy:
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
-                "metric_slugs": list(experiment_metrics_map.get(slug) or []),
+                "metric_slugs": sorted(list(experiment_metrics_map.get(slug)) or []),
             }
             for slug, dates in experiments_config.items()
         ]

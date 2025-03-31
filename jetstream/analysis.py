@@ -648,6 +648,7 @@ class Analysis:
         return re.sub(r"[^a-zA-Z0-9]", "_", app_id).lower()
 
     def validate(self) -> None:
+        experiment_slug = self.config.experiment.normandy_slug
         self.check_runnable()
         assert self.config.experiment.start_date is not None  # for mypy
 
@@ -667,7 +668,7 @@ class Analysis:
         if analysis_length_dates < 0:
             logging.error(
                 "Proposed enrollment longer than analysis dates length:"
-                + f"{self.config.experiment.normandy_slug}"
+                + f"{experiment_slug}"
             )
             raise Exception("Cannot validate experiment")
 
@@ -680,7 +681,7 @@ class Analysis:
         )
 
         exp = Experiment(
-            experiment_slug=self.config.experiment.normandy_slug,
+            experiment_slug=experiment_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
             analysis_unit=self.config.experiment.analysis_unit,
@@ -716,49 +717,56 @@ class Analysis:
         )
 
         self._write_sql_output(
-            f"enrollments_{bq_normalize_name(self.config.experiment.normandy_slug)}",
+            f"enrollments_{bq_normalize_name(experiment_slug)}",
             enrollments_sql,
         )
 
         dry_run_query(enrollments_sql)
-        print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
+        print(f"Dry running enrollments query for {experiment_slug}:")
         print(enrollments_sql)
 
         # TODO: validate discrete_metrics works here
-        metrics_sql = exp.build_metrics_query(
-            metrics, limits, "enrollments_table", AnalysisBasis.ENROLLMENTS, None, True
-        )
+        for i, metric in enumerate(metrics):
+            metric_sql = exp.build_metrics_query(
+                [metric], limits, "enrollments_table", AnalysisBasis.ENROLLMENTS, None, True
+            )
 
-        # enrollments_table doesn't get created when performing a dry run;
-        # the metrics SQL is modified to include a subquery for a mock enrollments_table
-        # A UNION ALL is required here otherwise the dry run fails with
-        # "cannot query over table without filter over columns"
-        metrics_sql = metrics_sql.replace(
-            "WITH analysis_windows AS (",
-            """WITH enrollments_table AS (
-                SELECT '00000' AS analysis_id,
-                    'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date,
-                    DATE('2020-01-01') AS exposure_date,
-                    1 AS num_enrollment_events,
-                    1 AS num_exposure_events
-                UNION ALL
-                SELECT '00000' AS analysis_id,
-                    'test' AS branch,
-                    DATE('2020-01-01') AS enrollment_date,
-                    DATE('2020-01-01') AS exposure_date,
-                    1 AS num_enrollment_events,
-                    1 AS num_exposure_events
-            ), analysis_windows AS (""",
-        )
+            # enrollments_table doesn't get created when performing a dry run;
+            # the metrics SQL is modified to include a subquery for a mock enrollments_table
+            # A UNION ALL is required here otherwise the dry run fails with
+            # "cannot query over table without filter over columns"
+            metric_sql = metric_sql.replace(
+                "WITH analysis_windows AS (",
+                """WITH enrollments_table AS (
+                    SELECT '00000' AS analysis_id,
+                        'test' AS branch,
+                        DATE('2020-01-01') AS enrollment_date,
+                        DATE('2020-01-01') AS exposure_date,
+                        1 AS num_enrollment_events,
+                        1 AS num_exposure_events
+                    UNION ALL
+                    SELECT '00000' AS analysis_id,
+                        'test' AS branch,
+                        DATE('2020-01-01') AS enrollment_date,
+                        DATE('2020-01-01') AS exposure_date,
+                        1 AS num_enrollment_events,
+                        1 AS num_exposure_events
+                ), analysis_windows AS (""",
+            )
 
-        self._write_sql_output(
-            f"metrics_{bq_normalize_name(self.config.experiment.normandy_slug)}", metrics_sql
-        )
+            self._write_sql_output(
+                f"metric_{bq_normalize_name(experiment_slug)}_{metric.name}",
+                metric_sql,
+            )
 
-        dry_run_query(metrics_sql)
-        print(f"Dry running metrics query for {self.config.experiment.normandy_slug}:")
-        print(metrics_sql)
+            dry_run_query(metric_sql)
+            print(
+                f"Dry running metric [{metric.name}] query for {experiment_slug}"
+                f"({i + 1} of {len(metrics)})"
+            )
+            print(metric_sql)
+
+        logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
 
     @dask.delayed
     def save_statistics(
