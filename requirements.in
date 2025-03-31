@@ -293,7 +293,7 @@ pydantic==2.10.6
     # via mozilla-nimbus-schemas
 pydantic-core==2.27.2
     # via pydantic
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via matplotlib
 pyproject-api==1.9.0
     # via tox
