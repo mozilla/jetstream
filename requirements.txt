@@ -958,8 +958,8 @@ mizani==0.13.1 \
     # via
     #   -r requirements.in
     #   plotnine
-mozanalysis==2025.2.1 \
-    --hash=sha256:55b4bed955859fb30b95576a072261ba58a94913496590d0cb05c01acc479085
+mozanalysis==2025.3.1 \
+    --hash=sha256:a52ccbd9df903d7b8b37baa48b024d5633b6e4087a9a2758620f2894b7b53605
     # via -r requirements.in
 mozilla-metric-config-parser==2024.11.1 \
     --hash=sha256:4f972b669cdaefc1ff5e7372a93bbd23151d7bbdf8f3dbe2b4c3ff4ab61b33bb
