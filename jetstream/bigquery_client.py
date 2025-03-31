@@ -205,7 +205,7 @@ class BigQueryClient:
         self, table_id: str, metric_slugs: list[str], metric_column: str = "metric_slug"
     ) -> None:
         """Delete rows from `table_id` where column `metric_column` in `metric_slugs`."""
-        qualified_table = f"{self.dataset}.{table_id}"
+        qualified_table = f"{self.project}.{self.dataset}.{table_id}"
         delete_stmt = f"""DELETE FROM `{qualified_table}`
             WHERE {metric_column} IN UNNEST({metric_slugs})
         """
