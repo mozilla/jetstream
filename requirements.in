@@ -400,7 +400,7 @@ types-pytz==2025.1.0.20250204
     # via mozilla-jetstream
 types-pyyaml==6.0.12.20241230
     # via mozilla-jetstream
-types-requests==2.32.0.20241016
+types-requests==2.32.0.20250328
     # via mozilla-jetstream
 types-setuptools==75.8.0.20250210
     # via mozilla-jetstream
