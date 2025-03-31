@@ -173,15 +173,23 @@ class StatisticResultCollection(StatisticsSchema):
 
     root: list[StatisticResult] = []
 
+    # Define dunder methods so we can treat the instance like a list
+    # instead of having to access `.root`
+    def __iter__(self):
+        return iter(self.root)
+
+    def __getitem__(self, item):
+        return self.root[item]
+
     def set_segment(self, segment: str) -> "StatisticResultCollection":
         """Sets the `segment` field in-place on all children."""
-        for result in self.root:
+        for result in self:
             result.segment = segment
         return self
 
     def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
-        for result in self.root:
+        for result in self:
             result.analysis_basis = analysis_basis.value
         return self
 

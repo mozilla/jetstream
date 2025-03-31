@@ -971,6 +971,75 @@ def test_create_subset_metric_table_query_complete_covariate(randomization_unit,
         "all",
         summary,
         AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+    )
+
+    assert expected_query == actual_query
+
+
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_covariate_fallback(randomization_unit, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {
+            "metric": "my_metric",
+            "period": "preenrollment_days28",
+        }
+    }
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM `test_experiment_enrollments_1`
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    # covariate statistic should fall back to univariate if current period is preenrollment
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
         AnalysisPeriod.PREENROLLMENT_WEEK,
     )
 

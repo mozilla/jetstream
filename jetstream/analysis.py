@@ -48,6 +48,8 @@ DASK_DASHBOARD_ADDRESS = "127.0.0.1:8782"
 DASK_N_PROCESSES = int(os.getenv("JETSTREAM_PROCESSES", 0)) or None  # Defaults to number of CPUs
 COST_PER_SLOT_MS = 1 / 1000 / 60 / 60 * 0.06
 
+PREENROLLMENT_PERIODS = [AnalysisPeriod.PREENROLLMENT_DAYS_28, AnalysisPeriod.PREENROLLMENT_WEEK]
+
 _dask_cluster = None
 
 
@@ -136,6 +138,10 @@ class Analysis:
             )
 
             if enrollment_end_date != current_date:
+                logger.info(
+                    f"Skipping {period}, enrollment end date ({enrollment_end_date})"
+                    f"is not current date ({current_date})"
+                )
                 return None
 
             if period == AnalysisPeriod.PREENROLLMENT_WEEK:
@@ -145,6 +151,7 @@ class Analysis:
                 analysis_start_days = -7 * 4
                 analysis_length_dates = 28
             else:
+                logger.info(f"Skipping PREENROLLMENT, not week or days28 ({period})")
                 return None
 
             return TimeLimits.for_single_analysis_window(
@@ -411,18 +418,17 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
     ) -> str:
-        query = ""
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
             covariate_metric_name = covariate_params.get("metric", summary.metric.name)
             covariate_period = AnalysisPeriod(covariate_params["period"])
-            if covariate_period != period:
+            if covariate_period != period and period not in PREENROLLMENT_PERIODS:
                 # when we configure a metric, all statistics are applied to all periods
                 # however, to perform covariate adjustment we must use data from a different
                 # period. So the metric will be configured with analysis periods like
                 # [preenrollment_week, weekly, overall] but covariate adjustment should
                 # only be applied on weekly and overall when using preenrollment_week
                 # as the covariate.
-                query = self._create_subset_metric_table_query_covariate(
+                return self._create_subset_metric_table_query_covariate(
                     metrics_table_name,
                     segment,
                     summary.metric,
@@ -431,12 +437,9 @@ class Analysis:
                     covariate_metric_name,
                 )
 
-        if not query:
-            query = self._create_subset_metric_table_query_univariate(
-                metrics_table_name, segment, summary.metric, analysis_basis
-            )
-
-        return query
+        return self._create_subset_metric_table_query_univariate(
+            metrics_table_name, segment, summary.metric, analysis_basis
+        )
 
     def _create_subset_metric_table_query_univariate(
         self,

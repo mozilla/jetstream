@@ -4,6 +4,7 @@ import sys
 from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, time, timedelta
 from functools import partial
+from importlib.metadata import version
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -108,8 +109,8 @@ class ArgoExecutorStrategy:
     image_version: str | None = None
     statistics_only: bool = False
 
-    WORKLFOW_DIR = Path(__file__).parent / "workflows"
-    RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
+    WORKFLOW_DIR = Path(__file__).parent / "workflows"
+    RUN_WORKFLOW = WORKFLOW_DIR / "run.yaml"
 
     def execute(
         self,
@@ -144,6 +145,7 @@ class ArgoExecutorStrategy:
             }
             for slug, dates in experiments_config.items()
         ]
+        logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else AnalysisPeriod.DAYS_28
         )
@@ -588,6 +590,8 @@ def cli(
     log_config.setup_logger()
     ctx.ensure_object(dict)
     ctx.obj["log_config"] = log_config
+
+    logger.info(f"Jetstream version {version('mozilla-jetstream')}")
 
 
 class ClickDate(click.ParamType):
