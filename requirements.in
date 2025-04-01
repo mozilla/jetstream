@@ -370,7 +370,7 @@ statsmodels==0.14.4
     #   plotnine
 tblib==3.0.0
     # via distributed
-threadpoolctl==3.5.0
+threadpoolctl==3.6.0
     # via scikit-learn
 toml==0.10.2
     # via
