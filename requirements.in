@@ -394,7 +394,7 @@ tox==4.24.1
     # via mozilla-jetstream
 types-futures==3.3.8
     # via mozilla-jetstream
-types-protobuf==5.29.1.20250208
+types-protobuf==5.29.1.20250403
     # via mozilla-jetstream
 types-pytz==2025.1.0.20250204
     # via mozilla-jetstream
