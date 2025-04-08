@@ -38,7 +38,7 @@ def sampled_enrollment_query(
     if enrollments_query_type == EnrollmentsQueryType.NORMANDY:
         enrollments_sql = f"""
         (SELECT
-            e.client_id,
+            e.client_id AS analysis_id,
             "control" AS branch,
             MIN(e.submission_date) AS enrollment_date,
             COUNT(e.submission_date) AS num_enrollment_events
@@ -53,24 +53,26 @@ def sampled_enrollment_query(
             """
     elif enrollments_query_type == EnrollmentsQueryType.GLEAN_EVENT:
         enrollments_sql = f"""
-            (SELECT events.client_info.client_id AS client_id,
+            SELECT
+                client_id AS analysis_id,
                 "control" AS branch,
-                DATE(MIN(events.submission_timestamp)) AS enrollment_date,
-                COUNT(events.submission_timestamp) AS num_enrollment_events
-            FROM `moz-fx-data-shared-prod.{exp.app_id}.events` events,
-            UNNEST(events.events) AS e
+                DATE(MIN(submission_timestamp)) AS enrollment_date,
+                COUNT(submission_timestamp) AS num_enrollment_events
+            FROM `moz-fx-data-shared-prod.{exp.app_id}.events_stream`
             WHERE
-                events.client_info.client_id IS NOT NULL AND
-                DATE(events.submission_timestamp)
-                BETWEEN '{time_limits.first_enrollment_date}'
-                    AND '{time_limits.last_enrollment_date}'
+                client_id IS NOT NULL
+                AND DATE(submission_timestamp)
+                    BETWEEN '{time_limits.first_enrollment_date}'
+                        AND '{time_limits.last_enrollment_date}'
+                AND event_category = "nimbus_events"
+                AND event_name = "enrollment"
                 AND sample_id < {population_sample_size}
-            GROUP BY client_id, branch)
+            GROUP BY client_id, branch
             """
     elif enrollments_query_type == EnrollmentsQueryType.FENIX_FALLBACK:
         enrollments_sql = """
         (SELECT
-            b.client_info.client_id AS client_id,
+            b.client_info.client_id AS analysis_id,
             "control" AS branch,
             DATE(MIN(b.submission_timestamp)) AS enrollment_date,
             COUNT(b.submission_date) AS num_enrollment_events
