@@ -521,6 +521,13 @@ class PerClientDAUImpact(BootstrapMean):
         num_enrolled_clients = len(df)
 
         results = []
+        # NOTE: we are intentionally omitting absolute data points from the results
+        # of this statistic in order to avoid potentially misleading experiment owners,
+        # because absolute results are a function of the number of enrollments, and therefore
+        # do not represent useful information outside of the specific experiment context.
+        # One small downside to this decision, at least at the time of writing (April 2025),
+        # is that this might lead to confusion on the Results UI in Experimenter because
+        # absolute data will show as (baseline) for all branches.
         for branch in experiment.branches:
             # for absolute differences we report the absolute difference in per-user
             # sum(DAU) scaled by total user enrollment. The interpretation here is the

@@ -1593,5 +1593,5 @@ def preview(
 
         click.echo(
             "A preview is available at: "
-            + f"{LOOKER_PREVIEW_URL}?Project='{project_id}'&Dataset='{dataset_id}'&Slug='{table}'"
+            + f"{LOOKER_PREVIEW_URL}?Project={project_id}&Dataset={dataset_id}&Slug={table}"
         )
