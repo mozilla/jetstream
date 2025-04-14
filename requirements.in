@@ -129,7 +129,7 @@ google-resumable-media==2.7.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.68.0
+googleapis-common-protos[grpc]==1.70.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1
