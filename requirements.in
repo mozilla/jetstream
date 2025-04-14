@@ -423,7 +423,7 @@ tzdata==2025.1
     # via
     #   faker
     #   pandas
-urllib3==2.3.0
+urllib3==2.4.0
     # via
     #   distributed
     #   requests
