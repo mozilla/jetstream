@@ -107,3 +107,18 @@ def test_delete_experiment_tables():
         delete_enrollments=True,
     )
     assert delete_call.call_count == 0
+
+
+def test_delete_metrics_from_table():
+    mock_client = BigQueryClient("project", "dataset", None, None)
+
+    mock_execute = MagicMock()
+    BigQueryClient.execute = mock_execute
+
+    metrics_to_delete = ["metric_1", "metric_2"]
+    mock_client.delete_metrics_from_table("test_slug_enrollments_week_4", metrics_to_delete)
+
+    delete_stmt = f"""DELETE FROM `project.dataset.test_slug_enrollments_week_4`
+            WHERE metric_slug IN UNNEST({metrics_to_delete})
+        """
+    mock_execute.assert_called_once_with(delete_stmt)

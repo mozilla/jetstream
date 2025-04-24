@@ -158,7 +158,7 @@ class ArgoExecutorStrategy:
             }
             for slug, dates in experiments_config.items()
         ]
-        logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
+        logger.info([{cfg["slug"]: f"{self.image}:{cfg['image_hash']}"} for cfg in experiments_config_list])
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else AnalysisPeriod.DAYS_28
         )
