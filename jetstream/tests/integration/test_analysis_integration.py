@@ -17,7 +17,7 @@ from metric_config_parser.metric import AnalysisPeriod, Summary
 from metric_config_parser.segment import Segment, SegmentDataSource
 from metric_config_parser.statistic import Statistic
 from mozanalysis.metrics import agg_sum
-from mozilla_nimbus_schemas.experiments import RandomizationUnit
+from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.analysis import Analysis

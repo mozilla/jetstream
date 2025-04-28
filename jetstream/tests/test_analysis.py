@@ -13,7 +13,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
-from mozilla_nimbus_schemas.experiments import RandomizationUnit
+from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
