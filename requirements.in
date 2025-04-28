@@ -166,7 +166,7 @@ jsonschema==4.23.0
     # via
     #   mozilla-jetstream
     #   mozilla-nimbus-schemas
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via jsonschema
 kiwisolver==1.4.8
     # via matplotlib
