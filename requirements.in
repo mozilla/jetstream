@@ -198,7 +198,7 @@ msgpack==1.1.0
     # via distributed
 mypy==1.15.0
     # via mozilla-jetstream
-mypy-extensions==1.0.0
+mypy-extensions==1.1.0
     # via mypy
 numpy==1.26.4
     # via
