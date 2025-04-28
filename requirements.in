@@ -186,7 +186,7 @@ mizani==0.13.1
     # via plotnine
 mozanalysis==2025.2.1
     # via mozilla-jetstream
-mozilla-metric-config-parser==2024.11.1
+mozilla-metric-config-parser==2025.4.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
