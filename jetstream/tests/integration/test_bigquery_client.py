@@ -65,10 +65,18 @@ class TestBigQueryClient:
         assert client.table_exists("dummy_table") is True
 
     def test_touch_tables(self, client, temporary_dataset):
-        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
-        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_week_0")
-        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_day_12")
-        client.client.create_table(f"{temporary_dataset}.test_foo_bar_day")
+        for table, experiment in {
+            "enrollments_test_experiment": "test-experiment",
+            "statistics_test_experiment_week_0": "test-experiment",
+            "statistics_test_experiment_day_12": "test-experiment",
+            "test_foo_bar_day": "test-foo-bar",
+        }.items():
+            client.client.create_table(f"{temporary_dataset}.{table}")
+            client.add_metadata_to_table(
+                table,
+                {},
+                description=experiment,
+            )
 
         client.touch_tables("test-experiment")
 

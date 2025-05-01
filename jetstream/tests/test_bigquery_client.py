@@ -46,16 +46,9 @@ def test_delete_experiment_tables():
         calls,
         any_order=True,
     )
-    assert delete_call.call_count == len(calls) * 3
+    assert delete_call.call_count == len(calls)
 
     # recreate-enrollments = False
-    query_result.result.return_value = [
-        MockRow(table_name="test_slug_enrollments_day_1"),
-        MockRow(table_name="test_slug_enrollments_week_4"),
-        MockRow(table_name="test_slug_enrollments_overall_10"),
-        MockRow(table_name="statistics_test_slug_day_33"),
-        MockRow(table_name="statistics_test_slug_week_3"),
-    ]
     delete_call.reset_mock()
     mock_client.delete_experiment_tables(
         "test-slug",
@@ -74,10 +67,11 @@ def test_delete_experiment_tables():
         calls,
         any_order=True,
     )
-    assert delete_call.call_count == len(calls) * 2
+    assert delete_call.call_count == len(calls)
 
     # specific analysis periods
     query_result.result.return_value = [
+        MockRow(table_name="test_slug_enrollments_week_1"),
         MockRow(table_name="test_slug_enrollments_overall_10"),
     ]
     delete_call.reset_mock()
@@ -94,10 +88,11 @@ def test_delete_experiment_tables():
         ],
         any_order=True,
     )
-    assert delete_call.call_count == 1 * 2
+    assert delete_call.call_count == 1
 
-    query_result.result.return_value = []
-
+    query_result.result.return_value = [
+        MockRow(table_name="foo_enrollments_week_1"),
+    ]
     delete_call.reset_mock()
     mock_client.delete_experiment_tables(
         "foo",
