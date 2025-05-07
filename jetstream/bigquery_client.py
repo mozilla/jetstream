@@ -1,3 +1,4 @@
+import re
 import time
 from collections.abc import Iterable, Mapping
 from datetime import datetime
@@ -169,10 +170,7 @@ class BigQueryClient:
 
         Useful to prevent tables that we _didn't_ already touch from causing an experiment to look
         perpetually stale."""
-        normalized_slug = bq_normalize_name(normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
-        tables = self.tables_matching_regex(table_name_re)
+        tables = self.tables_matching_description(normandy_slug)
         timestamp = self._current_timestamp_label()
         for table in tables:
             self.add_metadata_to_table(table, {"last_updated": timestamp})
@@ -185,18 +183,17 @@ class BigQueryClient:
         self, slug: str, analysis_periods: list[AnalysisPeriod], delete_enrollments: bool = False
     ):
         """Delete all tables associated with the specified experiment slug."""
-        normalized_slug = bq_normalize_name(slug)
         analysis_periods_re = "|".join([p.value for p in analysis_periods])
+        analysis_periods_pattern = re.compile(f"_({analysis_periods_re}).*$")
 
-        existing_tables = self.tables_matching_regex(
-            f"^{normalized_slug}_.+_({analysis_periods_re}).*$"
-        )
-        existing_tables += self.tables_matching_regex(
-            f"^statistics_{normalized_slug}_({analysis_periods_re}).*$"
-        )
+        enrollments_table = f"enrollments_{bq_normalize_name(slug)}"
 
-        if delete_enrollments:
-            existing_tables += self.tables_matching_regex(f"^enrollments_{normalized_slug}$")
+        existing_tables = [
+            table_name
+            for table_name in self.tables_matching_description(slug)
+            if (delete_enrollments and table_name == enrollments_table)
+            or analysis_periods_pattern.search(table_name) is not None
+        ]
 
         for existing_table in existing_tables:
             self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
