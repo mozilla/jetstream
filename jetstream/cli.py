@@ -392,7 +392,9 @@ class AnalysisExecutor:
             # errors without failing, and continue execution for successful experiments
             results = {}
             for experiment in experiments:
-                results[experiment.normandy_slug] = pool.apply_async(_load_experiment_config, args=(experiment,))
+                results[experiment.normandy_slug] = pool.apply_async(
+                    _load_experiment_config, args=(experiment,)
+                )
 
             for slug, result in results.items():
                 try:
@@ -404,9 +406,7 @@ class AnalysisExecutor:
                     DefinitionNotFound,
                     UnexpectedKeyConfigurationException,
                 ) as e:
-                    logger.exception(
-                        str(e), exc_info=e, extra={"experiment": slug}
-                    )
+                    logger.exception(str(e), exc_info=e, extra={"experiment": slug})
 
         return configs
 
