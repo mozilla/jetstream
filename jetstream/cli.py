@@ -390,11 +390,11 @@ class AnalysisExecutor:
         with ThreadPool() as pool:
             # this is the same functionality as pool.map except we can catch and log
             # errors without failing, and continue execution for successful experiments
-            results = []
+            results = {}
             for experiment in experiments:
-                results.append(pool.apply_async(_load_experiment_config, args=(experiment,)))
+                results[experiment.normandy_slug] = pool.apply_async(_load_experiment_config, args=(experiment,))
 
-            for result in results:
+            for slug, result in results.items():
                 try:
                     configs.append(result.get())
                 except (
@@ -405,7 +405,7 @@ class AnalysisExecutor:
                     UnexpectedKeyConfigurationException,
                 ) as e:
                     logger.exception(
-                        str(e), exc_info=e, extra={"experiment": experiment.normandy_slug}
+                        str(e), exc_info=e, extra={"experiment": slug}
                     )
 
         return configs
