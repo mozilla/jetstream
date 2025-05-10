@@ -1326,14 +1326,14 @@ pluggy==1.5.0 \
     #   -r requirements.in
     #   pytest
     #   tox
-polars==1.27.1 \
-    --hash=sha256:339e3948748ad6fa7a42e613c3fb165b497ed797e93fce1aa2cddf00fbc16cac \
-    --hash=sha256:4d18a29c65222451818b63cd397b2e95c20412ea0065d735a20a4a79a7b26e8a \
-    --hash=sha256:4f238ee2e3c5660345cb62c0f731bbd6768362db96c058098359ecffa42c3c6c \
-    --hash=sha256:94fcb0216b56cd0594aa777db1760a41ad0dfffed90d2ca446cf9294d2e97f02 \
-    --hash=sha256:a4f832cf478b282d97f8bf86eeae2df66fa1384de1c49bc61f7224a10cc6a5df \
-    --hash=sha256:ba7ad4f8046d00dd97c1369e46a4b7e00ffcff5d38c0f847ee4b9b1bb182fb18 \
-    --hash=sha256:f801e0d9da198eb97cfb4e8af4242b8396878ff67b655c71570b7e333102b72b
+polars==1.29.0 \
+    --hash=sha256:0c105b07b980b77fe88c3200b015bf4695e53185385f0f244c13e2d1027c7bbf \
+    --hash=sha256:14131078e365eae5ccda3e67383cd43c0c0598d7f760bdf1cb4082566c5494ce \
+    --hash=sha256:54f6902da333f99208b8d27765d580ba0299b412787c0564275912122c228e40 \
+    --hash=sha256:7a0ac6a11088279af4d715f4b58068835f551fa5368504a53401743006115e78 \
+    --hash=sha256:d053ee3217df31468caf2f5ddb9fd0f3a94fd42afdf7d9abe23d9d424adca02b \
+    --hash=sha256:d2acb71fce1ff0ea76db5f648abd91a7a6c460fafabce9a2e8175184efa00d02 \
+    --hash=sha256:f5aac4656e58b1e12f9481950981ef68b5b0e53dd4903bd72472efd2d09a74c8
     # via
     #   -r requirements.in
     #   marginaleffects
