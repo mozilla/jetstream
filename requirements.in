@@ -397,7 +397,7 @@ types-futures==3.3.8
     # via mozilla-jetstream
 types-protobuf==6.30.2.20250506
     # via mozilla-jetstream
-types-pytz==2025.2.0.20250326
+types-pytz==2025.2.0.20250516
     # via mozilla-jetstream
 types-pyyaml==6.0.12.20250402
     # via mozilla-jetstream
