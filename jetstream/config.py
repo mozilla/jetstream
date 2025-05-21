@@ -114,8 +114,10 @@ class _ConfigLoader:
                     dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
                 )
                 if table_last_updated < config.last_modified:
-                    updated_configs.append(config)
-                    break
+                    table_desc = client.get_table(f"{bq_dataset}.{row.table_name}").description
+                    if table_desc == config.slug:
+                        updated_configs.append(config)
+                        break
             if not seen:
                 updated_configs.append(config)
 
