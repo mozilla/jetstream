@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, time, timedelta
 from functools import partial
 from importlib.metadata import version
@@ -103,7 +103,7 @@ class ArgoExecutorStrategy:
     bucket: str | None = None
     cluster_ip: str | None = None
     cluster_cert: str | None = None
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
@@ -209,7 +209,7 @@ class SerialExecutorStrategy:
     bucket: str | None = None
     log_config: LogConfiguration | None = None
     analysis_class: type = Analysis
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
@@ -290,7 +290,7 @@ class AnalysisExecutor:
     dataset_id: str
     bucket: str
     date: datetime | AllType
-    experiment_slugs: Iterable[str] | AllType
+    experiment_slugs: Sequence[str] | AllType
     configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = attr.ib(None)
     recreate_enrollments: bool = False
     sql_output_dir: str | None = None
@@ -309,7 +309,7 @@ class AnalysisExecutor:
         strategy: ExecutorStrategy,
         *,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
         today: datetime | None = None,
@@ -413,7 +413,7 @@ class AnalysisExecutor:
     def _experiment_configs_to_analyse(
         self,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
     ) -> list[AnalysisConfiguration]:
@@ -478,7 +478,7 @@ class AnalysisExecutor:
         self,
         config_getter: _ConfigLoader = ConfigLoader,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
