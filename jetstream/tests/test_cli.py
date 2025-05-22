@@ -24,8 +24,8 @@ def cli_experiment_fixture():
     return cli_experiments()
 
 
-def cli_experiments():
-    return experimenter.ExperimentCollection(
+def cli_experiments(slug=None):
+    collection = experimenter.ExperimentCollection(
         [
             Experiment(
                 experimenter_slug=None,
@@ -64,13 +64,18 @@ def cli_experiments():
         ]
     )
 
+    if slug:
+        return collection.with_slug(slug=slug)
+
+    return collection
+
 
 @pytest.fixture(name="cli_experiments_enrollment_incomplete")
 def cli_experiment_enrollment_fixture():
     return cli_experiments_enrollment_incomplete()
 
 
-def cli_experiments_enrollment_incomplete():
+def cli_experiments_enrollment_incomplete(slug=None):
     return experimenter.ExperimentCollection(
         [
             Experiment(
