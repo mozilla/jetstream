@@ -418,7 +418,10 @@ class AnalysisExecutor:
         config_getter: _ConfigLoader = ConfigLoader,
     ) -> list[AnalysisConfiguration]:
         """Fetch configs of experiments that are to be analysed."""
-        experiments = experiment_getter()
+        if not isinstance(self.experiment_slugs, AllType) and len(self.experiment_slugs) == 1:
+            experiments = experiment_getter(slug=self.experiment_slugs[0])
+        else:
+            experiments = experiment_getter()
         run_configs = []
 
         if isinstance(self.experiment_slugs, AllType):
@@ -1513,7 +1516,9 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+            experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                experiments=[exp]
+            ),
         )
 
         # run preview analysis
@@ -1541,14 +1546,16 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda exp=experiment: ExperimentCollection(
+                    experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
                         experiments=[exp]
                     ),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
-                experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+                experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                    experiments=[exp]
+                ),
             )
 
         click.echo(

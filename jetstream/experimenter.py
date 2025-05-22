@@ -139,13 +139,20 @@ class ExperimentCollection:
 
     @classmethod
     def from_experimenter(
-        cls, session: requests.Session = None, with_draft_experiments=False
+        cls,
+        session: requests.Session = None,
+        with_draft_experiments=False,
+        slug=None,
     ) -> "ExperimentCollection":
         session = session or requests.Session()
 
-        nimbus_experiments_json = retry_get(
-            session, cls.EXPERIMENTER_API_URL_V8, cls.MAX_RETRIES, cls.USER_AGENT
-        )
+        url = cls.EXPERIMENTER_API_URL_V8
+        draft_url = cls.EXPERIMENTER_API_URL_V8_DRAFTS
+        if slug:
+            url = url + slug + "/"
+            draft_url = draft_url + slug + "/"
+
+        nimbus_experiments_json = retry_get(session, url, cls.MAX_RETRIES, cls.USER_AGENT)
         nimbus_experiments = []
 
         for nimbus_experiment in nimbus_experiments_json:
@@ -161,9 +168,7 @@ class ExperimentCollection:
         draft_experiments = []
         if with_draft_experiments:
             # draft experiments are mainly used to compute previews
-            draft_experiments_json = retry_get(
-                session, cls.EXPERIMENTER_API_URL_V8_DRAFTS, cls.MAX_RETRIES, cls.USER_AGENT
-            )
+            draft_experiments_json = retry_get(session, draft_url, cls.MAX_RETRIES, cls.USER_AGENT)
 
             for draft_experiment in draft_experiments_json:
                 try:
