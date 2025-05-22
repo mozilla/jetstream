@@ -2055,9 +2055,9 @@ types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
     --hash=sha256:d6e97ec51d56b96debfbf1dea32ebec22c1687f16d2547ea0a34b48db45df205
     # via -r requirements.in
-types-protobuf==6.30.2.20250506 \
-    --hash=sha256:dc9ee544794f00545ea3a3028295a4b111181e510bed17ab88239274655cf512 \
-    --hash=sha256:e5452f088a8d227e7126c859a908c5354611cda9ac90a6cc603d99d4a08f8444
+types-protobuf==6.30.2.20250516 \
+    --hash=sha256:8c226d05b5e8b2623111765fa32d6e648bbc24832b4c2fddf0fa340ba5d5b722 \
+    --hash=sha256:aecd1881770a9bb225ede66872ef7f0da4505edd0b193108edd9892e48d49a41
     # via -r requirements.in
 types-pytz==2025.2.0.20250326 \
     --hash=sha256:3c397fd1b845cd2b3adc9398607764ced9e578a98a5d1fbb4a9bc9253edfb162 \
