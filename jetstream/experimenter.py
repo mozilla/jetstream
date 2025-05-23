@@ -153,6 +153,8 @@ class ExperimentCollection:
             draft_url = draft_url + slug + "/"
 
         nimbus_experiments_json = retry_get(session, url, cls.MAX_RETRIES, cls.USER_AGENT)
+        if slug:
+            nimbus_experiments_json = [nimbus_experiments_json]
         nimbus_experiments = []
 
         for nimbus_experiment in nimbus_experiments_json:
@@ -169,6 +171,8 @@ class ExperimentCollection:
         if with_draft_experiments:
             # draft experiments are mainly used to compute previews
             draft_experiments_json = retry_get(session, draft_url, cls.MAX_RETRIES, cls.USER_AGENT)
+            if slug:
+                draft_experiments_json = [draft_experiments_json]
 
             for draft_experiment in draft_experiments_json:
                 try:
