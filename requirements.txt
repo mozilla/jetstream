@@ -737,9 +737,9 @@ jinja2==3.1.6 \
     #   -r requirements.in
     #   distributed
     #   mozilla-metric-config-parser
-joblib==1.5.0 \
-    --hash=sha256:206144b320246485b712fc8cc51f017de58225fa8b414a1fe1764a7231aca491 \
-    --hash=sha256:d8757f955389a3dd7a23152e43bc297c2e0c2d3060056dad0feefc88a06939b5
+joblib==1.5.1 \
+    --hash=sha256:4719a31f054c7d766948dcd83e9613686b27114f190f717cec7eaa2084f8a74a \
+    --hash=sha256:f4f86e351f39fe3d0d32a9f2c3d8af1ee4cec285aafcb27003dda5205576b444
     # via
     #   -r requirements.in
     #   scikit-learn
