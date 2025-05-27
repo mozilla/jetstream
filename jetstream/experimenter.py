@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 from collections.abc import Iterable
+from urllib.parse import urljoin
 
 import attr
 import cattr
@@ -149,8 +150,8 @@ class ExperimentCollection:
         url = cls.EXPERIMENTER_API_URL_V8
         draft_url = cls.EXPERIMENTER_API_URL_V8_DRAFTS
         if slug:
-            url = url + slug + "/"
-            draft_url = draft_url + slug + "/"
+            url = urljoin(url, slug) + "/"
+            draft_url = urljoin(draft_url, slug) + "/"
 
         nimbus_experiments_json = retry_get(session, url, cls.MAX_RETRIES, cls.USER_AGENT)
         if slug:
