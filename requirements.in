@@ -184,10 +184,10 @@ matplotlib==3.10.3
     #   plotnine
 mizani==0.13.5
     # via plotnine
-mozanalysis==2025.3.1
+mozanalysis==2025.5.2
     # via mozilla-jetstream
     # via -r -
-mozilla-metric-config-parser==2025.5.1
+mozilla-metric-config-parser==2025.5.2
     # via
     #   mozanalysis
     #   mozilla-jetstream

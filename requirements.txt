@@ -962,11 +962,11 @@ mizani==0.13.5 \
     # via
     #   -r requirements.in
     #   plotnine
-mozanalysis==2025.3.1 \
-    --hash=sha256:a52ccbd9df903d7b8b37baa48b024d5633b6e4087a9a2758620f2894b7b53605
+mozanalysis==2025.5.2 \
+    --hash=sha256:26561ff95ba4cdef73bacf6ab9068cb48d43c4bf297a2c141f7660ee767defef
     # via -r requirements.in
-mozilla-metric-config-parser==2025.5.1 \
-    --hash=sha256:058703704d3c9bd1bb238abe387c4b405d1466de615a2150a93bcff75095826a
+mozilla-metric-config-parser==2025.5.2 \
+    --hash=sha256:6af4e72ab8fe8c43e333d2787e3eb4b375fd7d34fcf6c98d5119751d5499f903
     # via
     #   -r requirements.in
     #   mozanalysis

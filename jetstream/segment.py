@@ -19,6 +19,7 @@ class Segment(segment.Segment):
                 client_id_column=self.data_source.client_id_column,
                 submission_date_column=self.data_source.submission_date_column,
                 default_dataset=self.data_source.default_dataset,
+                group_id_column=self.data_source.group_id_column,
             ),
             select_expr=self.select_expression,
             friendly_name=self.friendly_name,

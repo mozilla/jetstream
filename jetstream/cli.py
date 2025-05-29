@@ -1483,6 +1483,7 @@ def preview(
                             friendly_name=ds.friendly_name,
                             description=ds.description,
                             experiments_column_type="none",
+                            group_id_column=ds.group_id_column,
                         )
 
         # log to a table in the temporary dataset, will be displayed on the Looker dashboard
