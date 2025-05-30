@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 from collections.abc import Iterable
+from urllib.parse import urljoin
 
 import attr
 import cattr
@@ -139,13 +140,22 @@ class ExperimentCollection:
 
     @classmethod
     def from_experimenter(
-        cls, session: requests.Session = None, with_draft_experiments=False
+        cls,
+        session: requests.Session = None,
+        with_draft_experiments=False,
+        slug=None,
     ) -> "ExperimentCollection":
         session = session or requests.Session()
 
-        nimbus_experiments_json = retry_get(
-            session, cls.EXPERIMENTER_API_URL_V8, cls.MAX_RETRIES, cls.USER_AGENT
-        )
+        url = cls.EXPERIMENTER_API_URL_V8
+        draft_url = cls.EXPERIMENTER_API_URL_V8_DRAFTS
+        if slug:
+            url = urljoin(url, slug) + "/"
+            draft_url = urljoin(draft_url, slug) + "/"
+
+        nimbus_experiments_json = retry_get(session, url, cls.MAX_RETRIES, cls.USER_AGENT)
+        if slug:
+            nimbus_experiments_json = [nimbus_experiments_json]
         nimbus_experiments = []
 
         for nimbus_experiment in nimbus_experiments_json:
@@ -154,16 +164,21 @@ class ExperimentCollection:
                     NimbusExperiment.from_dict(nimbus_experiment).to_experiment()
                 )
             except Exception as e:
-                logger.exception(
-                    str(e), exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
-                )
+                if "slug" in nimbus_experiment:
+                    logger.exception(
+                        str(e), exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
+                    )
+                elif slug:
+                    logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+                else:
+                    logger.exception(str(e), exc_info=e)
 
         draft_experiments = []
         if with_draft_experiments:
             # draft experiments are mainly used to compute previews
-            draft_experiments_json = retry_get(
-                session, cls.EXPERIMENTER_API_URL_V8_DRAFTS, cls.MAX_RETRIES, cls.USER_AGENT
-            )
+            draft_experiments_json = retry_get(session, draft_url, cls.MAX_RETRIES, cls.USER_AGENT)
+            if slug:
+                draft_experiments_json = [draft_experiments_json]
 
             for draft_experiment in draft_experiments_json:
                 try:
