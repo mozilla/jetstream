@@ -441,7 +441,7 @@ wrapt==1.17.2
     #   smart-open
 zict==3.0.0
     # via distributed
-zipp==3.21.0
+zipp==3.22.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
