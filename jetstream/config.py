@@ -212,6 +212,7 @@ class _ConfigLoader:
                 else data_source_definition.experiments_column_type
             ),
             default_dataset=data_source_definition.default_dataset,
+            group_id_column=data_source_definition.group_id_column,
         )
 
 
