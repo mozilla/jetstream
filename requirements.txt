@@ -2071,9 +2071,9 @@ types-requests==2.32.0.20250328 \
     --hash=sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2 \
     --hash=sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32
     # via -r requirements.in
-types-setuptools==80.4.0.20250511 \
-    --hash=sha256:972d7d947871cf7594263c764a9c2c2f137660c4ac3ad0cec1d4f1254ca8ae6a \
-    --hash=sha256:faa4159c9384e45b3b04218ca43ee3829efb6acc303e0ee561e47b3404423d32
+types-setuptools==80.9.0.20250529 \
+    --hash=sha256:00dfcedd73e333a430e10db096e4d46af93faf9314f832f13b6bbe3d6757e95f \
+    --hash=sha256:79e088ba0cba2186c8d6499cbd3e143abb142d28a44b042c28d3148b1e353c91
     # via -r requirements.in
 types-six==1.17.0.20250403 \
     --hash=sha256:0bbb20fc34a18163afe7cac70b85864bd6937e6d73413c5b8f424def28760ae8 \
@@ -2222,8 +2222,3 @@ zipp==3.21.0 \
     # via
     #   -r requirements.in
     #   importlib-metadata
-
-# WARNING: The following packages were not pinned, but pip requires them to be
-# pinned when the requirements file includes hashes and the requirement is not
-# satisfied by a package already installed. Consider using the --allow-unsafe flag.
-# setuptools
