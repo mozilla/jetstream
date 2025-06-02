@@ -162,7 +162,7 @@ jinja2==3.1.6
     #   mozilla-metric-config-parser
 joblib==1.5.0
     # via scikit-learn
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   mozilla-jetstream
     #   mozilla-nimbus-schemas
