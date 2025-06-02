@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, time, timedelta
 from functools import partial
 from importlib.metadata import version
@@ -103,7 +103,7 @@ class ArgoExecutorStrategy:
     bucket: str | None = None
     cluster_ip: str | None = None
     cluster_cert: str | None = None
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
@@ -209,7 +209,7 @@ class SerialExecutorStrategy:
     bucket: str | None = None
     log_config: LogConfiguration | None = None
     analysis_class: type = Analysis
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
@@ -290,7 +290,7 @@ class AnalysisExecutor:
     dataset_id: str
     bucket: str
     date: datetime | AllType
-    experiment_slugs: Iterable[str] | AllType
+    experiment_slugs: Sequence[str] | AllType
     configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = attr.ib(None)
     recreate_enrollments: bool = False
     sql_output_dir: str | None = None
@@ -309,7 +309,7 @@ class AnalysisExecutor:
         strategy: ExecutorStrategy,
         *,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
         today: datetime | None = None,
@@ -413,12 +413,15 @@ class AnalysisExecutor:
     def _experiment_configs_to_analyse(
         self,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
     ) -> list[AnalysisConfiguration]:
         """Fetch configs of experiments that are to be analysed."""
-        experiments = experiment_getter()
+        if not isinstance(self.experiment_slugs, AllType) and len(self.experiment_slugs) == 1:
+            experiments = experiment_getter(slug=self.experiment_slugs[0])
+        else:
+            experiments = experiment_getter()
         run_configs = []
 
         if isinstance(self.experiment_slugs, AllType):
@@ -475,7 +478,7 @@ class AnalysisExecutor:
         self,
         config_getter: _ConfigLoader = ConfigLoader,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
@@ -1514,7 +1517,9 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+            experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                experiments=[exp]
+            ),
         )
 
         # run preview analysis
@@ -1542,14 +1547,16 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda exp=experiment: ExperimentCollection(
+                    experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
                         experiments=[exp]
                     ),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
-                experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+                experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                    experiments=[exp]
+                ),
             )
 
         click.echo(
