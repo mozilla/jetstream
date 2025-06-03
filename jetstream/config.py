@@ -175,7 +175,9 @@ class _ConfigLoader:
                     dt.datetime.utcfromtimestamp(int(row.last_updated[0]))
                 )
                 if table_last_updated < default_config.last_modified:
-                    updated_experiments.append(row.normandy_slug)
+                    table_desc = client.get_table(f"{bq_dataset}.{row.table_name}").description
+                    if table_desc == row.normandy_slug:
+                        updated_experiments.append(row.normandy_slug)
 
         return list(set(updated_experiments))
 

@@ -215,7 +215,7 @@ class BigQueryClient:
                 ) AS last_updated
             FROM
             {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
-            WHERE option_name = 'labels' AND table_name LIKE "enrollments_{table_prefix}%"
+            WHERE option_name = 'labels' AND table_name = "enrollments_{table_prefix}"
             """
         )
         result = list(job.result())
