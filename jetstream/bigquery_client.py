@@ -9,7 +9,6 @@ import google.cloud.bigquery
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
-import google.cloud.bigquery.table
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
