@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from collections.abc import Iterable, Mapping
@@ -17,6 +18,8 @@ from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from . import bq_normalize_name
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -145,7 +148,7 @@ class BigQueryClient:
                 AND COALESCE(option_value, '') = '"{description}"'
             """
         )
-        print(job.query)
+        logger.info(job.query)
         result = list(job.result())
         return [row.table_name for row in result]
 
@@ -187,15 +190,14 @@ class BigQueryClient:
 
         enrollments_table = f"enrollments_{bq_normalize_name(slug)}"
 
-        existing_tables = [
-            table_name
-            for table_name in self.tables_matching_description(slug)
-            if (delete_enrollments and table_name == enrollments_table)
-            or analysis_periods_pattern.search(table_name) is not None
-        ]
-
-        for existing_table in existing_tables:
-            self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
+        tables = self.tables_matching_description(slug)
+        for table in tables:
+            if (
+                delete_enrollments and table == enrollments_table
+            ) or analysis_periods_pattern.search(table) is not None:
+                fully_qualified_table = f"{self.project}.{self.dataset}.{table}"
+                logger.info(f"Deleting table `{fully_qualified_table}`")
+                self.delete_table(fully_qualified_table)
 
     def experiment_table_first_updated(self, slug: str) -> datetime | None:
         """Get the timestamp for when an experiment related table was updated last."""
