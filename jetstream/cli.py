@@ -1202,7 +1202,6 @@ def rerun_config_changed(
 def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
     """Validate config files."""
     dirty = False
-    collection = ExperimentCollection.from_experimenter()
 
     for config_file in path:
         config_file = Path(config_file)
@@ -1231,7 +1230,8 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             and not isinstance(entity, DefaultConfig)
             and not isinstance(entity, DefinitionConfig)
         ):
-            if (experiments := collection.with_slug(entity.slug).experiments) == []:
+            experiments = ExperimentCollection.from_experimenter(slug=entity.slug).experiments
+            if experiments == []:
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
                 continue

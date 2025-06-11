@@ -164,14 +164,15 @@ class ExperimentCollection:
                     NimbusExperiment.from_dict(nimbus_experiment).to_experiment()
                 )
             except Exception as e:
+                msg = f"{e} (Response object: {nimbus_experiment})"
                 if "slug" in nimbus_experiment:
                     logger.exception(
-                        str(e), exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
+                        msg, exc_info=e, extra={"experiment": nimbus_experiment["slug"]}
                     )
                 elif slug:
-                    logger.exception(str(e), exc_info=e, extra={"experiment": slug})
+                    logger.exception(msg, exc_info=e, extra={"experiment": slug})
                 else:
-                    logger.exception(str(e), exc_info=e)
+                    logger.exception(msg, exc_info=e)
 
         draft_experiments = []
         if with_draft_experiments:
@@ -186,7 +187,7 @@ class ExperimentCollection:
                         NimbusExperiment.from_dict(draft_experiment).to_experiment()
                     )
                 except Exception as e:
-                    print(f"Error converting draft experiment {draft_experiment['slug']}")
+                    print(f"Error converting draft experiment {draft_experiment}")
                     print(str(e))
 
         return cls(nimbus_experiments + draft_experiments)
