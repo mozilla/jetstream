@@ -101,7 +101,7 @@ google-auth==2.40.2
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.16.0
+google-cloud-artifact-registry==1.16.1
     # via mozilla-jetstream
 google-cloud-bigquery==3.34.0
     # via
