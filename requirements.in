@@ -84,7 +84,7 @@ gitpython==3.1.44
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-google-api-core[grpc]==2.25.0
+google-api-core[grpc]==2.25.1
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
