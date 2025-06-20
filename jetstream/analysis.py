@@ -17,7 +17,7 @@ from google.cloud.exceptions import Conflict
 from metric_config_parser import metric
 from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.metric import AnalysisPeriod
-from mozanalysis.experiment import TimeLimits
+from mozanalysis.experiment import Experiment, TimeLimits
 from mozanalysis.utils import add_days
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
@@ -247,7 +247,7 @@ class Analysis:
     @dask.delayed
     def calculate_metrics(
         self,
-        exp: mozanalysis.experiment.Experiment,
+        exp: Experiment,
         time_limits: TimeLimits,
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
@@ -634,7 +634,7 @@ class Analysis:
             num_dates_enrollment=dates_enrollment,
         )
 
-        exp = mozanalysis.experiment.Experiment(
+        exp = Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
@@ -847,7 +847,7 @@ class Analysis:
                 )
                 continue
 
-            exp = mozanalysis.experiment.Experiment(
+            exp = Experiment(
                 experiment_slug=self.config.experiment.normandy_slug,
                 start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
                 app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
@@ -942,7 +942,7 @@ class Analysis:
 
     def enrollments_query(self, time_limits: TimeLimits, glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""
-        exp = mozanalysis.experiment.Experiment(
+        exp = Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
             start_date=self.config.experiment.start_date.strftime("%Y-%m-%d"),
             app_id=self._app_id_to_bigquery_dataset(self.config.experiment.app_id),
