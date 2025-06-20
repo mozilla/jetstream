@@ -22,7 +22,7 @@ cattrs==25.1.0
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-certifi==2025.4.26
+certifi==2025.6.15
     # via requests
 cffi==1.17.1
     # via cryptography
