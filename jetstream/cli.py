@@ -214,6 +214,7 @@ class SerialExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
     statistics_only: bool = False
+    glean_ids: bool = False
 
     def execute(
         self,
@@ -239,7 +240,7 @@ class SerialExecutorStrategy:
                     self.analysis_periods,
                     self.sql_output_dir,
                 )
-                analysis.run(date, statistics_only=self.statistics_only)
+                analysis.run(date, statistics_only=self.statistics_only, glean_ids=self.glean_ids)
 
                 # export metadata to GCS
                 if self.bucket:
@@ -775,6 +776,8 @@ statistics_only_option = click.option(
     default=False,
 )
 
+glean_ids_option = click.option("--glean-only", is_flag=True, default=False)
+
 
 @cli.command()
 @project_id_option()
@@ -789,6 +792,7 @@ statistics_only_option = click.option(
 @analysis_periods_option()
 @sql_output_dir_option
 @statistics_only_option
+@glean_ids_option
 @click.pass_context
 def run(
     ctx,
@@ -804,6 +808,7 @@ def run(
     analysis_periods,
     sql_output_dir,
     statistics_only,
+    glean_ids,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -834,6 +839,7 @@ def run(
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
             statistics_only=statistics_only,
+            glean_ids=glean_ids,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -1199,7 +1205,10 @@ def rerun_config_changed(
     is_flag=True,
     default=False,
 )
-def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
+@glean_ids_option
+def validate_config(
+    path: Iterable[os.PathLike], config_repos, private_config_repos, is_private, glean_ids
+):
     """Validate config files."""
     dirty = False
 
@@ -1224,6 +1233,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
+            glean_ids=glean_ids,
         )
         if (
             isinstance(entity, Config)
@@ -1242,6 +1252,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
                     private_config_repos, is_private=True
                 ),
                 experiment=experiments[0],
+                glean_ids=glean_ids,
             )
         try:
             call()
