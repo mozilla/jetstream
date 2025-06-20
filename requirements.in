@@ -300,7 +300,7 @@ pyparsing==3.2.3
     # via matplotlib
 pyproject-api==1.9.1
     # via tox
-pytest==8.3.5
+pytest==8.4.1
     # via
     #   mozilla-jetstream
     #   pytest-cov
