@@ -1207,10 +1207,7 @@ def rerun_config_changed(
     is_flag=True,
     default=False,
 )
-@use_glean_ids_option
-def validate_config(
-    path: Iterable[os.PathLike], config_repos, private_config_repos, is_private, use_glean_ids
-):
+def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
     """Validate config files."""
     dirty = False
 
@@ -1235,7 +1232,6 @@ def validate_config(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            use_glean_ids=use_glean_ids,
         )
         if (
             isinstance(entity, Config)
@@ -1254,7 +1250,6 @@ def validate_config(
                     private_config_repos, is_private=True
                 ),
                 experiment=experiments[0],
-                use_glean_ids=use_glean_ids,
             )
         try:
             call()
