@@ -601,7 +601,7 @@ class Analysis:
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", app_id).lower()
 
-    def validate(self, glean_ids: bool = False) -> None:
+    def validate(self, use_glean_ids: bool = False) -> None:
         self.check_runnable()
         assert self.config.experiment.start_date is not None  # for mypy
 
@@ -667,7 +667,7 @@ class Analysis:
             exposure_signal,
             segments,
             self.config.experiment.sample_size or None,
-            glean_ids=glean_ids,
+            use_glean_ids=use_glean_ids,
         )
 
         self._write_sql_output(
@@ -759,7 +759,7 @@ class Analysis:
         current_date: datetime,
         dry_run: bool = False,
         statistics_only: bool = False,
-        glean_ids: bool = False,
+        use_glean_ids: bool = False,
     ) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -788,7 +788,7 @@ class Analysis:
         ):
             raise errors.EnrollmentNotCompleteException(self.config.experiment.normandy_slug)
 
-        self.ensure_enrollments(current_date, glean_ids=glean_ids)
+        self.ensure_enrollments(current_date, use_glean_ids=use_glean_ids)
 
         # set up dask
         _dask_cluster = _dask_cluster or LocalCluster(
@@ -939,7 +939,7 @@ class Analysis:
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
 
-    def enrollments_query(self, time_limits: TimeLimits, glean_ids: bool = False) -> str:
+    def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""
         exp = Experiment(
             experiment_slug=self.config.experiment.normandy_slug,
@@ -967,10 +967,10 @@ class Analysis:
             exposure_signal,
             segments,
             self.config.experiment.sample_size or None,
-            glean_ids=glean_ids,
+            use_glean_ids=use_glean_ids,
         )
 
-    def ensure_enrollments(self, current_date: datetime, glean_ids: bool = False) -> None:
+    def ensure_enrollments(self, current_date: datetime, use_glean_ids: bool = False) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
         time_limits = self._get_timelimits_if_ready(AnalysisPeriod.DAY, current_date)
 
@@ -987,7 +987,9 @@ class Analysis:
         enrollments_table = f"enrollments_{normalized_slug}"
 
         logger.info(f"Create {enrollments_table}")
-        enrollments_sql = self.enrollments_query(time_limits=time_limits, glean_ids=glean_ids)
+        enrollments_sql = self.enrollments_query(
+            time_limits=time_limits, use_glean_ids=use_glean_ids
+        )
 
         try:
             self._write_sql_output(enrollments_table, enrollments_sql)

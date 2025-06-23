@@ -214,7 +214,7 @@ class SerialExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
     statistics_only: bool = False
-    glean_ids: bool = False
+    use_glean_ids: bool = False
 
     def execute(
         self,
@@ -240,7 +240,9 @@ class SerialExecutorStrategy:
                     self.analysis_periods,
                     self.sql_output_dir,
                 )
-                analysis.run(date, statistics_only=self.statistics_only, glean_ids=self.glean_ids)
+                analysis.run(
+                    date, statistics_only=self.statistics_only, use_glean_ids=self.use_glean_ids
+                )
 
                 # export metadata to GCS
                 if self.bucket:
@@ -776,7 +778,7 @@ statistics_only_option = click.option(
     default=False,
 )
 
-glean_ids_option = click.option("--glean-only", is_flag=True, default=False)
+use_glean_ids_option = click.option("--glean-only", is_flag=True, default=False)
 
 
 @cli.command()
@@ -792,7 +794,7 @@ glean_ids_option = click.option("--glean-only", is_flag=True, default=False)
 @analysis_periods_option()
 @sql_output_dir_option
 @statistics_only_option
-@glean_ids_option
+@use_glean_ids_option
 @click.pass_context
 def run(
     ctx,
@@ -808,7 +810,7 @@ def run(
     analysis_periods,
     sql_output_dir,
     statistics_only,
-    glean_ids,
+    use_glean_ids,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -839,7 +841,7 @@ def run(
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
             statistics_only=statistics_only,
-            glean_ids=glean_ids,
+            use_glean_ids=use_glean_ids,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -1205,9 +1207,9 @@ def rerun_config_changed(
     is_flag=True,
     default=False,
 )
-@glean_ids_option
+@use_glean_ids_option
 def validate_config(
-    path: Iterable[os.PathLike], config_repos, private_config_repos, is_private, glean_ids
+    path: Iterable[os.PathLike], config_repos, private_config_repos, is_private, use_glean_ids
 ):
     """Validate config files."""
     dirty = False
@@ -1233,7 +1235,7 @@ def validate_config(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            glean_ids=glean_ids,
+            use_glean_ids=use_glean_ids,
         )
         if (
             isinstance(entity, Config)
@@ -1252,7 +1254,7 @@ def validate_config(
                     private_config_repos, is_private=True
                 ),
                 experiment=experiments[0],
-                glean_ids=glean_ids,
+                use_glean_ids=use_glean_ids,
             )
         try:
             call()
