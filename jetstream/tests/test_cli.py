@@ -583,7 +583,9 @@ class TestSerialExecutorStrategy:
             ],
             None,
         )
-        fake_analysis().run.assert_called_once_with(run_date, statistics_only=False)
+        fake_analysis().run.assert_called_once_with(
+            run_date, statistics_only=False, use_glean_ids=False
+        )
 
 
 class TestArgoExecutorStrategy:
