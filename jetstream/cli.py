@@ -778,7 +778,7 @@ statistics_only_option = click.option(
     default=False,
 )
 
-use_glean_ids_option = click.option("--glean-only", is_flag=True, default=False)
+use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=True, default=False)
 
 
 @cli.command()
