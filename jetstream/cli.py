@@ -17,6 +17,7 @@ import attr
 import click
 import pytz
 import toml
+from jinja2.exceptions import UndefinedError
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from metric_config_parser.config import (
     Config,
@@ -408,6 +409,7 @@ class AnalysisExecutor:
                     InvalidConfigurationException,
                     DefinitionNotFound,
                     UnexpectedKeyConfigurationException,
+                    UndefinedError,
                 ) as e:
                     logger.exception(str(e), exc_info=e, extra={"experiment": slug})
 
