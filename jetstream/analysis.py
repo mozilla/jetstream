@@ -1183,7 +1183,7 @@ class Analysis:
                             ):
                                 continue
 
-                        segment_data: DataFrame = self.subset_metric_table(
+                        segment_data = self.subset_metric_table(
                             metrics_table,
                             segment,
                             summary,
@@ -1282,7 +1282,7 @@ class Analysis:
 
                         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
-                            segment_data: DataFrame = self.subset_metric_table(
+                            segment_data = self.subset_metric_table(
                                 metric_table,
                                 segment,
                                 summary,
