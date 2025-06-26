@@ -216,6 +216,7 @@ class SerialExecutorStrategy:
     sql_output_dir: str | None = None
     statistics_only: bool = False
     use_glean_ids: bool = False
+    discrete_metrics: bool = False
 
     def execute(
         self,
@@ -242,7 +243,10 @@ class SerialExecutorStrategy:
                     self.sql_output_dir,
                 )
                 analysis.run(
-                    date, statistics_only=self.statistics_only, use_glean_ids=self.use_glean_ids
+                    date,
+                    statistics_only=self.statistics_only,
+                    use_glean_ids=self.use_glean_ids,
+                    discrete_metrics=self.discrete_metrics,
                 )
 
                 # export metadata to GCS
@@ -782,6 +786,7 @@ statistics_only_option = click.option(
 
 use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=True, default=False)
 
+discrete_metrics_option = click.option("--discrete-metrics", is_flag=True, default=False)
 
 @cli.command()
 @project_id_option()
@@ -797,6 +802,7 @@ use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=T
 @sql_output_dir_option
 @statistics_only_option
 @use_glean_ids_option
+@discrete_metrics_option
 @click.pass_context
 def run(
     ctx,
@@ -813,6 +819,7 @@ def run(
     sql_output_dir,
     statistics_only,
     use_glean_ids,
+    discrete_metrics,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -844,6 +851,7 @@ def run(
             sql_output_dir=sql_output_dir,
             statistics_only=statistics_only,
             use_glean_ids=use_glean_ids,
+            discrete_metrics=discrete_metrics,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -947,6 +955,7 @@ def run_argo(
 @image_version_option
 @analysis_periods_option()
 @statistics_only_option
+@discrete_metrics_option
 @click.pass_context
 def rerun(
     ctx,
@@ -969,6 +978,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
+    discrete_metrics,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -991,9 +1001,12 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
+        discrete_metrics=discrete_metrics,
     )
 
     if argo:
+        if discrete_metrics:
+            raise ValueError("--discrete-metrics is not currently supported for Argo execution")
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
             dataset_id=dataset_id,
