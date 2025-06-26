@@ -788,6 +788,7 @@ use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=T
 
 discrete_metrics_option = click.option("--discrete-metrics", is_flag=True, default=False)
 
+
 @cli.command()
 @project_id_option()
 @dataset_id_option()
