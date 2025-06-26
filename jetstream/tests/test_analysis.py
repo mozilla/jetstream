@@ -265,6 +265,7 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -365,6 +366,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -399,6 +401,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
     AND mysegment = TRUE"""
@@ -491,6 +494,7 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_exposures_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
@@ -599,6 +603,7 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -1007,6 +1012,7 @@ def test_create_subset_metric_table_query_covariate_fallback(randomization_unit,
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -1062,6 +1068,7 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
