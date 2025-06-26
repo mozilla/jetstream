@@ -578,7 +578,7 @@ class Analysis:
         period: AnalysisPeriod,
         discrete_metrics: bool = False,
     ) -> str:
-        if covariate_params := summary.statistic.params.get("covariate_adjustment", False):
+        if covariate_params := summary.statistic.params.get("covariate_adjustment", False):  # type: ignore[attr-defined]
             covariate_metric_name = covariate_params.get("metric", summary.metric.name)
             covariate_period = AnalysisPeriod(covariate_params["period"])
             if covariate_period != period and period not in PREENROLLMENT_PERIODS:
@@ -859,9 +859,7 @@ class Analysis:
             use_glean_ids=use_glean_ids,
         )
 
-        self._write_sql_output(
-            f"enrollments_{bq_normalize_name(experiment_slug)}", enrollments_sql
-        )
+        self._write_sql_output(f"enrollments_{bq_normalize_name(experiment_slug)}", enrollments_sql)
 
         dry_run_query(enrollments_sql)
         print(f"Dry running enrollments query for {experiment_slug}:")
@@ -901,9 +899,7 @@ class Analysis:
                 ), analysis_windows AS (""",
             )
 
-            self._write_sql_output(
-                f"metrics_{bq_normalize_name(experiment_slug)}", metrics_sql
-            )
+            self._write_sql_output(f"metrics_{bq_normalize_name(experiment_slug)}", metrics_sql)
 
             dry_run_query(metrics_sql)
             print(f"Dry running metrics query for {experiment_slug}")
@@ -1145,6 +1141,7 @@ class Analysis:
                             ds.get_sanity_metrics(self.config.experiment.normandy_slug)
                         )
 
+                segment_data: DataFrame
                 if not discrete_metrics:
                     metrics_table = self.calculate_metrics(
                         exp, time_limits, period, analysis_basis, dry_run or statistics_only
@@ -1269,7 +1266,9 @@ class Analysis:
                                 continue
 
                         try:
-                            summary = next(m for m in summary_metrics if metric.name == m.metric.name)
+                            summary = next(
+                                m for m in summary_metrics if metric.name == m.metric.name
+                            )
                         except StopIteration:
                             # metric not part of config, skip stats
                             continue
@@ -1284,7 +1283,12 @@ class Analysis:
                         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
                             segment_data: DataFrame = self.subset_metric_table(
-                                metric_table, segment, summary, analysis_basis, period, discrete_metrics
+                                metric_table,
+                                segment,
+                                summary,
+                                analysis_basis,
+                                period,
+                                discrete_metrics,
                             )
 
                             analysis_length_dates = 1
