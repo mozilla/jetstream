@@ -1317,9 +1317,9 @@ platformdirs==4.3.8 \
     #   -r requirements.in
     #   tox
     #   virtualenv
-plotnine==0.14.5 \
-    --hash=sha256:4a8bc4360732dd69a0263def4abab285ed8f0f4386186f1e44c642f2cea79b88 \
-    --hash=sha256:9e75969e8e10d8d770a4be36d10e075cc10b88ca6fcc99e36ada53436fb5653f
+plotnine==0.14.6 \
+    --hash=sha256:45d66970a8dbc679258cc9f03ef046c26c985df7723ba0417297d18dcca9f1fd \
+    --hash=sha256:6e4d1cd17d360c18a3fccf9d838d5fa17859d29b6c1d722fa6f9bec89f269504
     # via
     #   -r requirements.in
     #   marginaleffects
