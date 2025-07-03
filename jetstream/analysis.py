@@ -240,7 +240,9 @@ class Analysis:
         if analysis_basis:
             normalized_postfix = bq_normalize_name(analysis_basis)
             view_name = "_".join([normalized_slug, normalized_postfix, window_period.table_suffix])
-            wildcard_expr = "_".join([normalized_slug, normalized_postfix, window_period.value, "*"])
+            wildcard_expr = "_".join(
+                [normalized_slug, normalized_postfix, window_period.value, "*"]
+            )
 
         if table_prefix:
             normalized_prefix = bq_normalize_name(table_prefix)

@@ -169,11 +169,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
@@ -309,11 +305,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
         metric_table = f"test_experiment_enrollments_preenrollment_week{table_suffix}_1"
 
         query_job = client.client.query(
@@ -421,11 +413,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
@@ -573,11 +561,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
@@ -712,11 +696,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
         metric_table = f"test_experiment_2_enrollments_week{table_suffix}_1"
 
         query_job = client.client.query(
@@ -817,11 +797,7 @@ class TestAnalysisIntegration:
             discrete_metrics=discrete_metrics,
         )
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
@@ -1236,11 +1212,7 @@ class TestAnalysisIntegration:
 
         analysis = Analysis(project_id, temporary_dataset, config, None)
 
-        table_suffix = (
-            "_active_hours"
-            if discrete_metrics
-            else ""
-        )
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         exposures_results = (
             analysis.subset_metric_table(
