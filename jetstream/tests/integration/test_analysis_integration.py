@@ -35,15 +35,25 @@ def _analysis_id_from_unit(analysis_unit: AnalysisUnit, a_or_b: Literal["a", "b"
 
 
 @pytest.mark.parametrize(
-    ("randomization_unit", "analysis_unit"),
+    ("randomization_unit", "analysis_unit", "discrete_metrics"),
     [
-        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value),
-        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value),
+        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value, False),
+        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value, False),
+        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value, True),
+        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value, True),
     ],
 )
 class TestAnalysisIntegration:
     def analysis_mock_run(
-        self, monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config=None
+        self,
+        monkeypatch,
+        config,
+        static_dataset,
+        temporary_dataset,
+        project_id,
+        log_config=None,
+        use_glean_ids=False,
+        discrete_metrics=False,
     ):
         orig_enrollments = mozanalysis.experiment.Experiment.build_enrollments_query
         orig_metrics = mozanalysis.experiment.Experiment.build_metrics_query
@@ -91,8 +101,13 @@ class TestAnalysisIntegration:
         )
         monkeypatch.setattr(dask.distributed.LocalCluster, "__init__", mock_local_cluster)
 
-        analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc))
-        analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
+        analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), use_glean_ids)
+        analysis.run(
+            dt.datetime(2020, 4, 12, tzinfo=pytz.utc),
+            dry_run=False,
+            use_glean_ids=use_glean_ids,
+            discrete_metrics=discrete_metrics,
+        )
 
     def test_metrics(
         self,
@@ -103,6 +118,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -144,13 +160,22 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_week_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_week{table_suffix}_1`
             ORDER BY enrollment_date DESC
         """
         )
@@ -194,13 +219,13 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
             )
             is not None
         )
 
         stats = client.client.list_rows(
-            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
@@ -229,6 +254,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -270,13 +296,23 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.PREENROLLMENT_WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
+        metric_table = f"test_experiment_enrollments_preenrollment_week{table_suffix}_1"
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_preenrollment_week_1`
+            FROM `{project_id}.{temporary_dataset}.{metric_table}`
             ORDER BY enrollment_date DESC
         """
         )
@@ -317,6 +353,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -367,13 +404,22 @@ class TestAnalysisIntegration:
             window_end="analysis_window_end",
         )
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_week_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_week{table_suffix}_1`
             ORDER BY enrollment_date DESC
         """
         )
@@ -411,7 +457,7 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
             )
             is not None
         )
@@ -432,6 +478,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -505,13 +552,22 @@ class TestAnalysisIntegration:
             ]
         }
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week{table_suffix}_1`
             ORDER BY enrollment_date DESC
         """
         )
@@ -550,13 +606,13 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
             )
             is not None
         )
 
         stats = client.client.list_rows(
-            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
         ).to_dataframe()
 
         ratio_by_branch = stats.query(
@@ -590,6 +646,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment-2",
@@ -630,13 +687,23 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
+        metric_table = f"test_experiment_2_enrollments_week{table_suffix}_1"
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_2_enrollments_week_1`
+            FROM `{project_id}.{temporary_dataset}.{metric_table}`
             ORDER BY enrollment_date DESC
         """
         )
@@ -644,7 +711,7 @@ class TestAnalysisIntegration:
         assert query_job.result().total_rows == 0
 
         stats = client.client.list_rows(
-            f"{project_id}.{temporary_dataset}.statistics_test_experiment_2_week_1"
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_2_week{table_suffix}_1"
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
@@ -670,6 +737,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -720,13 +788,22 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_suffix = "_active_hours" if discrete_metrics else ""
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week{table_suffix}_1`
             ORDER BY enrollment_date DESC
         """
         )
@@ -764,13 +841,13 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
             )
             is not None
         )
 
         stats = client.client.list_rows(
-            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
+            f"{project_id}.{temporary_dataset}.statistics_test_experiment_week{table_suffix}_1"
         ).to_dataframe()
 
         # Only one count per segment and branch, please
@@ -838,6 +915,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -899,7 +977,13 @@ class TestAnalysisIntegration:
             capacity=1,
         )
         self.analysis_mock_run(
-            monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            log_config,
+            discrete_metrics=discrete_metrics,
         )
 
         assert client.client.get_table(f"{project_id}.{temporary_dataset}.logs") is not None
@@ -989,6 +1073,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -1039,7 +1124,14 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
 
         query_job = client.client.query(
             f"""
@@ -1065,6 +1157,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -1108,13 +1201,22 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            discrete_metrics=discrete_metrics,
+        )
 
         analysis = Analysis(project_id, temporary_dataset, config, None)
 
+        table_suffix = "_active_hours" if discrete_metrics else ""
+
         exposures_results = (
             analysis.subset_metric_table(
-                "test_experiment_exposures_week_1",
+                f"test_experiment_exposures_week{table_suffix}_1",
                 "all",
                 summary,
                 AnalysisBasis.EXPOSURES,
@@ -1129,7 +1231,7 @@ class TestAnalysisIntegration:
 
         enrollments_results = (
             analysis.subset_metric_table(
-                "test_experiment_enrollments_week_1",
+                f"test_experiment_enrollments_week{table_suffix}_1",
                 "all",
                 summary,
                 AnalysisBasis.ENROLLMENTS,

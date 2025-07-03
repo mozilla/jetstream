@@ -12,6 +12,7 @@ class LOG_SOURCE(str, Enum):
     JETSTREAM = "jetstream"
     SIZING = "sizing"
     PREVIEW = "jetstream-preview"
+    TESTING = "jetstream-testing"
 
 
 @attr.s(auto_attribs=True)
