@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import attr
 import dask
+import dask.delayed
 import pytz
 from dask.distributed import Client, LocalCluster
 from google.api_core.exceptions import BadRequest
@@ -215,7 +216,7 @@ class Analysis:
 
         if metric:
             normalized_metric = bq_normalize_name(metric)
-            suffix = "_".join([normalized_metric, window_period, str(window_index)])
+            suffix = "_".join([window_period, normalized_metric, str(window_index)])
         else:
             suffix = "_".join([window_period, str(window_index)])
 
@@ -224,96 +225,39 @@ class Analysis:
         else:
             return "_".join([normalized_slug, suffix])
 
-    @dask.delayed
     def _publish_view(
         self,
         window_period: AnalysisPeriod,
         table_prefix=None,
         analysis_basis=None,
-        metrics_slugs: list[str] | None = None,
     ):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.table_suffix])
-        metric_and_window = (
-            "_".join(["%%", window_period.value]) if metrics_slugs else window_period.value
-        )
-
-        wildcard_expr = "_".join([normalized_slug, metric_and_window, "*"])
+        wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
 
         if analysis_basis:
             normalized_postfix = bq_normalize_name(analysis_basis)
             view_name = "_".join([normalized_slug, normalized_postfix, window_period.table_suffix])
-            wildcard_expr = "_".join([normalized_slug, normalized_postfix, metric_and_window, "*"])
+            wildcard_expr = "_".join([normalized_slug, normalized_postfix, window_period.value, "*"])
 
         if table_prefix:
             normalized_prefix = bq_normalize_name(table_prefix)
             view_name = "_".join([normalized_prefix, view_name])
             wildcard_expr = "_".join([normalized_prefix, wildcard_expr])
 
-        if metrics_slugs:
-            select_list = [
-                "analysis_id",
-                "branch",
-                "enrollment_date",
-                "num_enrollment_events",
-                "analysis_window_start",
-                "analysis_window_end",
-                "m0.exposure_date",
-                "m0.num_exposure_events",
-                "m0.window_index",
-            ] + [f"m{i}.{m}" for i, m in enumerate(metrics_slugs)]
-
-            # Table Name format (parens for clarity, not actually in names):
-            # (experiment_slug)_(analysisbasis)_(metric_name)_(window)_(index)
-
-            joins_list = [
-                dedent(
-                    f"""
-                    LEFT JOIN (
-                        SELECT
-                        *, CAST(_TABLE_SUFFIX AS INT64) AS window_index
-                        FROM `{self.project}.{self.dataset}.{wildcard_expr.replace("%%", m)}`
-                    ) m{i}
-                    USING (
-                        analysis_id,
-                        branch,
-                        enrollment_date,
-                        num_enrollment_events,
-                        analysis_window_start,
-                        analysis_window_end
-                    )
-                    """
-                )
-                for i, m in enumerate(metrics_slugs)
-            ]
-            joins = "\n".join(joins_list)
-            first = f"{wildcard_expr.replace('%%', metrics_slugs[0])}"
-
-            sql = dedent(
-                f"""
-                CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
-                    SELECT
-                        {", ".join(select_list)}
-                    FROM `{self.project}.{self.dataset}.{first}`
-                    {joins}
-                )
-                """
+        sql = dedent(
+            f"""
+            CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
+                SELECT
+                    *,
+                    CAST(REGEXP_EXTRACT(_TABLE_SUFFIX, r'[0-9]+$') AS INT64) AS window_index
+                FROM `{self.project}.{self.dataset}.{wildcard_expr}`
             )
+            """
+        )
 
-        else:
-            sql = dedent(
-                f"""
-                CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
-                    SELECT
-                        *,
-                        CAST(_TABLE_SUFFIX AS int64) AS window_index
-                    FROM `{self.project}.{self.dataset}.{wildcard_expr}`
-                )
-                """
-            )
-
-        logger.debug(f"View SQL: {sql}")
+        logger.info(f"View SQL: {sql}")
         self.bigquery.execute(sql)
 
     @dask.delayed
@@ -469,7 +413,7 @@ class Analysis:
                     f"{results.slot_millis * COST_PER_SLOT_MS}"
                 )
                 self._write_sql_output(res_table_name, metrics_sql)
-                # self._publish_view(period, analysis_basis=analysis_basis.value)
+                self._publish_view(period, analysis_basis=analysis_basis.value)
             except ValueError as e:
                 logger.exception(
                     str(e),
@@ -996,8 +940,14 @@ class Analysis:
             statistics_table, {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
 
-        if not discrete_metrics:
-            self._publish_view(period, table_prefix="statistics")
+        # self._publish_view(period, table_prefix="statistics")
+
+    @dask.delayed
+    def publish_statistics_view(self, period) -> None:
+        self._publish_view(
+            period,
+            table_prefix="statistics",
+        )
 
     def run(
         self,
@@ -1130,8 +1080,6 @@ class Analysis:
                     for m in summary_metrics
                 }
 
-                # TODO: Refactor mozanalysis to handle discrete sanity metrics
-                # WIP PR https://github.com/mozilla/mozanalysis/pull/512
                 sanity_metrics = set()
                 # first pass to get sanity metrics for each data source
                 for metric in config_metrics:
@@ -1221,8 +1169,8 @@ class Analysis:
                         )
                     )
                 else:
+                    # create the full list of metrics to compute individually
                     metrics = config_metrics | sanity_metrics
-                    # now we have the full list and can begin computing
                     for metric in metrics:
                         segment_results = StatisticResultCollection.model_validate([])
 
@@ -1324,18 +1272,8 @@ class Analysis:
                             )
                         )
 
-                    # done with metrics: publish view
-                    self._publish_view(
-                        period,
-                        analysis_basis=analysis_basis.value,
-                        metrics_slugs=list(metrics_computed),
-                    )
                     # done with statistics: publish view
-                    self._publish_view(
-                        period,
-                        table_prefix="statistics",
-                        metrics_slugs=[m.name for m in config_metrics],
-                    )
+                    self.publish_statistics_view(period)
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
