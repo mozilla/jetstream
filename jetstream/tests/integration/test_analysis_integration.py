@@ -37,10 +37,10 @@ def _analysis_id_from_unit(analysis_unit: AnalysisUnit, a_or_b: Literal["a", "b"
 @pytest.mark.parametrize(
     ("randomization_unit", "analysis_unit", "discrete_metrics"),
     [
-        # (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value, True),
-        # (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value, True),
         (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value, False),
         (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value, False),
+        (RandomizationUnit.GROUP_ID, AnalysisUnit.PROFILE_GROUP.value, True),
+        (RandomizationUnit.NORMANDY, AnalysisUnit.CLIENT.value, True),
     ],
 )
 class TestAnalysisIntegration:
@@ -248,8 +248,6 @@ class TestAnalysisIntegration:
             )
             is not None
         )
-
-        assert False
 
     def test_metrics_preenrollment(
         self,

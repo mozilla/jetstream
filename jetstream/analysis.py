@@ -11,6 +11,7 @@ import dask
 import dask.delayed
 import pytz
 from dask.distributed import Client, LocalCluster
+from dask.graph_manipulation import bind
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 from google.cloud.bigquery.job import WriteDisposition
@@ -323,7 +324,7 @@ class Analysis:
             metrics_sql = exp.build_metrics_query(
                 metrics,
                 last_window_limits,
-                enrollments_table_name,
+                f"{self.project}.{self.dataset}.{enrollments_table_name}",
                 analysis_basis,
                 exposure_signal,
             )
@@ -396,7 +397,7 @@ class Analysis:
                 metrics_sql = exp.build_metrics_query(
                     [metric],
                     last_window_limits,
-                    enrollments_table_name,
+                    f"{self.project}.{self.dataset}.{enrollments_table_name}",
                     analysis_basis,
                     exposure_signal,
                     discrete_metrics=True,
@@ -902,10 +903,8 @@ class Analysis:
     @dask.delayed
     def save_statistics(
         self,
-        period: AnalysisPeriod,
         segment_results: list[dict[str, Any]],
         metric_table: str,
-        discrete_metrics: bool = False,
     ):
         """Write statistics to BigQuery."""
         job_config = bigquery.LoadJobConfig()
@@ -939,8 +938,6 @@ class Analysis:
         self.bigquery.add_metadata_to_table(
             statistics_table, {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
-
-        # self._publish_view(period, table_prefix="statistics")
 
     @dask.delayed
     def publish_statistics_view(self, period) -> None:
@@ -1025,6 +1022,7 @@ class Analysis:
                 logger.info(f"Skipping {period};")
                 continue
 
+            stats_results = []
             segment_results = StatisticResultCollection.model_validate([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
@@ -1159,20 +1157,18 @@ class Analysis:
                             segment_data, segment, analysis_basis
                         ).model_dump(warnings=False)
 
-                    # save statistics for this metric
-                    results.append(
-                        self.save_statistics(
-                            period,
-                            segment_results.model_dump(warnings=False),
-                            self._table_name(period.value, len(time_limits.analysis_windows)),
-                            discrete_metrics,
-                        )
+                    # save statistics for this analysis basis
+                    result = self.save_statistics(
+                        segment_results.model_dump(warnings=False),
+                        self._table_name(period.value, len(time_limits.analysis_windows)),
                     )
+                    results.append(result)
+                    stats_results.append(result)
                 else:
                     # create the full list of metrics to compute individually
                     metrics = config_metrics | sanity_metrics
                     for metric in metrics:
-                        segment_results = StatisticResultCollection.model_validate([])
+                        # segment_results = StatisticResultCollection.model_validate([])
 
                         metric_table = self.calculate_metric(
                             exp,
@@ -1258,22 +1254,20 @@ class Analysis:
                                 segment_data, segment, analysis_basis
                             ).model_dump(warnings=False)
 
-                        # save statistics for this metric
-                        results.append(
-                            self.save_statistics(
-                                period,
-                                segment_results.model_dump(warnings=False),
-                                self._table_name(
-                                    period.value,
-                                    len(time_limits.analysis_windows),
-                                    metric=summary.metric.name,
-                                ),
-                                discrete_metrics,
-                            )
-                        )
+                    # save statistics for this metric
+                    result = self.save_statistics(
+                        segment_results.model_dump(warnings=False),
+                        self._table_name(
+                            period.value,
+                            len(time_limits.analysis_windows),
+                            metric=summary.metric.name,
+                        ),
+                    )
+                    results.append(result)
+                    stats_results.append(result)
 
-                    # done with statistics: publish view
-                    self.publish_statistics_view(period)
+            # done with period: publish stats view
+            results.append(bind(self.publish_statistics_view(period), stats_results))
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished
