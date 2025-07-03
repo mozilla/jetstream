@@ -308,7 +308,7 @@ class Analysis:
             metrics_sql = exp.build_metrics_query(
                 metrics,
                 last_window_limits,
-                enrollments_table_name,
+                f"{self.project}.{self.dataset}.{enrollments_table_name}",
                 analysis_basis,
                 exposure_signal,
             )
