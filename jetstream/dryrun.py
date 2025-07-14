@@ -33,6 +33,7 @@ class DryRunFailedError(Exception):
 
 def dry_run_query(sql: str) -> None:
     """Dry run the provided SQL query."""
+    print(sql)
     try:
         r = requests.post(
             DRY_RUN_URL,
