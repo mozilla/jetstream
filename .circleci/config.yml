@@ -52,7 +52,6 @@ jobs:
     - image: python:3.10
     steps:
     - checkout
-    - *authenticate
     - &skip_forked_pr
       run:
         name: Early return if this build is from a forked PR
