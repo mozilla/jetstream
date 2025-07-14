@@ -675,7 +675,6 @@ class Analysis:
             enrollments_sql,
         )
 
-        print(enrollments_sql)
         dry_run_query(enrollments_sql)
         print(f"Dry running enrollments query for {self.config.experiment.normandy_slug}:")
         print(enrollments_sql)

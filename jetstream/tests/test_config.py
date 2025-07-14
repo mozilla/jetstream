@@ -1,12 +1,130 @@
+import datetime
+from textwrap import dedent
+
 import pytest
+import toml
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.config import Config, DefaultConfig, Outcome
+from metric_config_parser.outcome import OutcomeSpec
 from mozanalysis.experiment import EnrollmentsQueryType
 
-from jetstream.config import ConfigLoader, _ConfigLoader
+from jetstream.config import ConfigLoader, _ConfigLoader, validate
+from jetstream.dryrun import DryRunFailedError
 from jetstream.platform import (
     Platform,
     PlatformConfigurationException,
     _generate_platform_config,
 )
+
+
+class TestConfig:
+    config_str = dedent(
+        """
+        [metrics]
+        weekly = ["view_about_logins"]
+
+        [metrics.view_about_logins.statistics.bootstrap_mean]
+        """
+    )
+    spec = AnalysisSpec.from_dict(toml.loads(config_str))
+
+    def test_valid_outcome_validates(self):
+        config = dedent(
+            """\
+            friendly_name = "Fred"
+            description = "Just your average paleolithic dad."
+
+            [metrics.rocks_mined]
+            select_expression = "COALESCE(SUM(pings_aggregated_by_this_row), 0)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            friendly_name = "Rocks mined"
+            description = "Number of rocks mined at the quarry"
+            """
+        )
+        spec = OutcomeSpec.from_dict(toml.loads(config))
+        extern = Outcome(
+            slug="good_outcome",
+            spec=spec,
+            platform="firefox_desktop",
+            commit_hash="0000000",
+        )
+
+        validate(extern)
+
+    def test_busted_config_fails(self, experiments):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+        extern = Config(
+            slug="bad_experiment",
+            spec=spec,
+            last_modified=datetime.datetime.now(),
+        )
+        with pytest.raises(DryRunFailedError):
+            validate(extern, experiments[0])
+
+    def test_busted_outcome_fails(self):
+        config = dedent(
+            """\
+            friendly_name = "Fred"
+            description = "Just your average paleolithic dad."
+
+            [metrics.rocks_mined]
+            select_expression = "COALESCE(SUM(fake_column_whoop_whoop), 0)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            friendly_name = "Rocks mined"
+            description = "Number of rocks mined at the quarry"
+            """
+        )
+        spec = OutcomeSpec.from_dict(toml.loads(config))
+        extern = Outcome(
+            slug="bogus_outcome",
+            spec=spec,
+            platform="firefox_desktop",
+            commit_hash="0000000",
+        )
+        with pytest.raises(DryRunFailedError):
+            validate(extern)
+
+    def test_valid_default_config_validates(self):
+        extern = DefaultConfig(
+            slug="firefox_desktop",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        validate(extern)
+
+    def test_busted_default_config_fails(self):
+        config = dedent(
+            """\
+            [metrics]
+            weekly = ["bogus_metric"]
+
+            [metrics.bogus_metric]
+            select_expression = "SUM(fake_column)"
+            data_source = "clients_daily"
+            statistics = { bootstrap_mean = {} }
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(config))
+        extern = DefaultConfig(
+            slug="firefox_desktop",
+            spec=spec,
+            last_modified=datetime.datetime.now(),
+        )
+        with pytest.raises(DryRunFailedError):
+            validate(extern)
 
 
 class TestConfigLoader:
