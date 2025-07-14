@@ -15,8 +15,11 @@ import json
 import logging
 from typing import Any
 
+import google.auth
 import requests
 import requests.exceptions
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.oauth2.id_token import fetch_id_token
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +36,26 @@ class DryRunFailedError(Exception):
 
 def dry_run_query(sql: str) -> None:
     """Dry run the provided SQL query."""
-    print(sql)
     try:
+        auth_req = GoogleAuthRequest()
+        creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        creds.refresh(auth_req)
+        if hasattr(creds, "id_token"):
+            # Get token from default credentials for the
+            # current environment created via Cloud SDK run
+            id_token = creds.id_token
+        else:
+            # If the environment variable GOOGLE_APPLICATION_CREDENTIALS
+            # is set to service account JSON file,
+            # then ID token is acquired using this service account credentials.
+            id_token = fetch_id_token(auth_req, DRY_RUN_URL)
+
         r = requests.post(
             DRY_RUN_URL,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {id_token}",
+            },
             data=json.dumps(
                 {"dataset": "mozanalysis", "project": "moz-fx-data-experiments", "query": sql}
             ).encode("utf8"),
