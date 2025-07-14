@@ -8,23 +8,17 @@ from importlib.metadata import version
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import (
-    Protocol,
-    TextIO,
-)
+from typing import Protocol, TextIO
 
 import attr
 import click
 import pytz
 import toml
+from google.auth.exceptions import DefaultCredentialsError
+from google.cloud import bigquery
 from jinja2.exceptions import UndefinedError
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
-from metric_config_parser.config import (
-    Config,
-    DefaultConfig,
-    DefinitionConfig,
-    entity_from_path,
-)
+from metric_config_parser.config import Config, DefaultConfig, DefinitionConfig, entity_from_path
 from metric_config_parser.data_source import DataSourceDefinition
 from metric_config_parser.errors import (
     ConfigException,
@@ -68,6 +62,15 @@ ALL_PERIODS = [
     AnalysisPeriod.PREENROLLMENT_WEEK,
     AnalysisPeriod.PREENROLLMENT_DAYS_28,
 ]
+
+
+def is_authenticated():
+    """Check if the user is authenticated to GCP."""
+    try:
+        bigquery.Client(project="")
+    except DefaultCredentialsError:
+        return False
+    return True
 
 
 @attr.s
@@ -1212,6 +1215,10 @@ def rerun_config_changed(
 def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
     """Validate config files."""
     dirty = False
+
+    if not is_authenticated():
+        click.echo("Not authenticated to GCP. Run `gcloud auth login  --update-adc` to login.")
+        sys.exit(1)
 
     for config_file in path:
         config_file = Path(config_file)

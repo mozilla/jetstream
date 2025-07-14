@@ -20,8 +20,7 @@ import requests.exceptions
 
 logger = logging.getLogger(__name__)
 
-# https://console.cloud.google.com/functions/details/us-central1/jetstream-dryrun?project=moz-fx-data-experiments
-DRY_RUN_URL = "https://us-central1-moz-fx-data-experiments.cloudfunctions.net/jetstream-dryrun"
+DRY_RUN_URL = "https://us-central1-moz-fx-data-shared-prod.cloudfunctions.net/bigquery-etl-dryrun"
 
 
 class DryRunFailedError(Exception):
@@ -38,7 +37,9 @@ def dry_run_query(sql: str) -> None:
         r = requests.post(
             DRY_RUN_URL,
             headers={"Content-Type": "application/json"},
-            data=json.dumps({"dataset": "mozanalysis", "query": sql}).encode("utf8"),
+            data=json.dumps(
+                {"dataset": "mozanalysis", "project": "moz-fx-data-experiments", "query": sql}
+            ).encode("utf8"),
         )
         response = r.json()
     except Exception:
