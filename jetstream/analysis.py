@@ -935,7 +935,6 @@ class Analysis:
             logger.debug(metrics_sql)
 
         else:
-            # TODO: validate discrete_metrics works here
             for i, metric in enumerate(metrics):
                 metric_sql = exp.build_metrics_query(
                     [metric],

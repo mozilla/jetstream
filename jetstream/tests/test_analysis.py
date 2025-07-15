@@ -90,6 +90,18 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     assert m.call_count == 2
 
 
+def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
+    m = Mock()
+    monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
+    x = experiments[0]
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+    Analysis("spam", "eggs", config).validate(discrete_metrics=True)
+    # 1 for enrollments + 14 metric queries
+    assert m.call_count == 15
+
+
 def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     conf = dedent(
         """
