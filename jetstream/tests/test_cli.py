@@ -587,7 +587,7 @@ class TestSerialExecutorStrategy:
             run_date,
             statistics_only=False,
             use_glean_ids=False,
-            discrete_metrics=False,
+            metric_slugs=None,
         )
 
 
