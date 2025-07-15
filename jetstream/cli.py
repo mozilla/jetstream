@@ -64,15 +64,6 @@ ALL_PERIODS = [
 ]
 
 
-def is_authenticated():
-    """Check if the user is authenticated to GCP."""
-    try:
-        bigquery.Client(project="")
-    except DefaultCredentialsError:
-        return False
-    return True
-
-
 @attr.s
 class AllType:
     """Sentinel value for AnalysisExecutor"""
@@ -1216,7 +1207,10 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
     """Validate config files."""
     dirty = False
 
-    if not is_authenticated():
+    # ensure authenticated to GCP in order to run cloud function
+    try:
+        bigquery.Client(project="")
+    except DefaultCredentialsError:
         click.echo("Not authenticated to GCP. Run `gcloud auth login  --update-adc` to login.")
         sys.exit(1)
 
