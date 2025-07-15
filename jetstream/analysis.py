@@ -1250,7 +1250,7 @@ class Analysis:
                         if m.metric.name in metric_slugs
                     }
 
-                    sanity_metrics = set()
+                    sanity_metrics: set[Metric] = set()
                     # get sanity metrics for each data source
                     # for metric in config_metrics:
                     #     ds: DataSource | None = metric.data_source

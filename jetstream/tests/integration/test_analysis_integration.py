@@ -496,7 +496,7 @@ class TestAnalysisIntegration:
     def test_metrics_with_exposure(
         self,
         monkeypatch,
-        client: BigQueryClient,
+        client,
         project_id,
         static_dataset,
         temporary_dataset,
