@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import attr
 import dask
@@ -43,8 +43,8 @@ from jetstream.statistics import (
 
 from . import bq_normalize_name
 
-if TYPE_CHECKING:
-    from mozanalysis.metrics import DataSource
+# if TYPE_CHECKING:
+#     from mozanalysis.metrics import DataSource
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +204,7 @@ class Analysis:
         window_index: int,
         analysis_basis: AnalysisBasis | None = None,
         metric: str | None = None,
+        statistics: bool = False,
     ) -> str:
         """
         Returns the Bigquery table name for statistics and metrics result tables.
@@ -217,7 +218,13 @@ class Analysis:
 
         if metric:
             normalized_metric = bq_normalize_name(metric)
-            suffix = "_".join([window_period, normalized_metric, str(window_index)])
+            # stats tables have the same schema across metrics, and so have different
+            # naming convention in order to build views differently vs metrics tables
+            # (this only matters when computing metrics discretely)
+            if statistics:
+                suffix = "_".join([window_period, normalized_metric, str(window_index)])
+            else:
+                suffix = "_".join([normalized_metric, window_period, str(window_index)])
         else:
             suffix = "_".join([window_period, str(window_index)])
 
@@ -226,41 +233,108 @@ class Analysis:
         else:
             return "_".join([normalized_slug, suffix])
 
-    def _publish_view(
+    @dask.delayed
+    def publish_view(
         self,
         window_period: AnalysisPeriod,
         table_prefix=None,
         analysis_basis=None,
+        metric_list: list[str] | None = None,
     ):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.table_suffix])
-        wildcard_expr = "_".join([normalized_slug, window_period.value, "*"])
+        wildcard_expr = normalized_slug
 
         if analysis_basis:
             normalized_postfix = bq_normalize_name(analysis_basis)
             view_name = "_".join([normalized_slug, normalized_postfix, window_period.table_suffix])
-            wildcard_expr = "_".join(
-                [normalized_slug, normalized_postfix, window_period.value, "*"]
-            )
+            wildcard_expr = "_".join([normalized_slug, normalized_postfix])
 
         if table_prefix:
             normalized_prefix = bq_normalize_name(table_prefix)
             view_name = "_".join([normalized_prefix, view_name])
             wildcard_expr = "_".join([normalized_prefix, wildcard_expr])
 
+        prefix = f"{self.project}.{self.dataset}.{wildcard_expr}"
         sql = dedent(
             f"""
             CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
                 SELECT
                     *,
                     CAST(REGEXP_EXTRACT(_TABLE_SUFFIX, r'[0-9]+$') AS INT64) AS window_index
-                FROM `{self.project}.{self.dataset}.{wildcard_expr}`
+                FROM `{prefix}_{window_period.value}_*`
             )
             """
         )
 
-        logger.info(f"View SQL: {sql}")
+        if metric_list:
+            analysis_unit_list = [
+                "analysis_id",
+                "branch",
+                "enrollment_date",
+                "num_enrollment_events",
+                "analysis_window_start",
+                "analysis_window_end",
+                "exposure_date",
+                "num_exposure_events",
+            ]
+            analysis_unit_str = ",".join(analysis_unit_list)
+            using_list = analysis_unit_list
+            using_list.append("window_index")
+            using_str = ",".join(using_list)
+            join_sql = ""
+            join_clause = f" USING ({using_str}) "
+
+            # join all of the sub-queries together so that we get the client info
+            # combined with all of the metric columns in one view:
+            #   ```sql (snippet)
+            #   (
+            #       SELECT analysis_id, branch, # etc.
+            #           metric_name,
+            #           1 AS window_index
+            #       FROM `project.dataset.<experiment_slug>_<metric_name>_<period>_*`
+            #   ) FULL OUTER JOIN
+            #   (
+            #       SELECT analysis_id, branch, # etc.
+            #           other_metric_name,
+            #           1 AS window_index
+            #       FROM `project.dataset.<experiment_slug>_<other_metric_name>_<period>_*`
+            #   )
+            #   USING (analysis_id, branch, etc.)
+            #   ```
+            # and so on for all of the metrics
+            for i, metric in enumerate(metric_list):
+                table_sql = dedent(f"""(
+                    SELECT
+                        {analysis_unit_str}, {metric},
+                        CAST(_TABLE_SUFFIX AS INT64) AS window_index
+                    FROM `{prefix}_{metric}_{window_period.value}_*`
+                )""")
+                join_sql += table_sql
+                if i > 0:
+                    join_sql += join_clause
+                    join_sql += " "
+                if i < (len(metric_list) - 1):
+                    join_sql += " FULL OUTER JOIN "
+
+            view_select = join_sql
+            if len(metric_list) > 1:
+                view_select = f"""
+                    SELECT * FROM (
+                        {join_sql}
+                    )
+                """
+
+            sql = dedent(
+                f"""
+                CREATE OR REPLACE VIEW `{self.project}.{self.dataset}.{view_name}` AS (
+                    {view_select}
+                )
+                """
+            )
+
+        logger.debug(f"View ({view_name}) SQL: {sql}")
         self.bigquery.execute(sql)
 
     @dask.delayed
@@ -271,6 +345,7 @@ class Analysis:
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
         dry_run: bool,
+        use_glean_ids: bool = False,
     ) -> str:
         """
         Calculate metrics for a specific experiment.
@@ -329,6 +404,8 @@ class Analysis:
                 f"{self.project}.{self.dataset}.{enrollments_table_name}",
                 analysis_basis,
                 exposure_signal,
+                discrete_metrics=False,
+                use_glean_ids=use_glean_ids,
             )
 
             results = self.bigquery.execute(
@@ -338,7 +415,6 @@ class Analysis:
                 f"Metric query cost: {results.slot_millis * COST_PER_SLOT_MS}",
             )
             self._write_sql_output(res_table_name, metrics_sql)
-            self._publish_view(period, analysis_basis=analysis_basis.value)
 
         return res_table_name
 
@@ -351,6 +427,7 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         metric: Metric,
         dry_run: bool,
+        use_glean_ids: bool = False,
     ) -> str:
         """
         Calculate individual metric for a specific experiment.
@@ -402,9 +479,11 @@ class Analysis:
                     f"{self.project}.{self.dataset}.{enrollments_table_name}",
                     analysis_basis,
                     exposure_signal,
-                    discrete_metrics=True,
+                    discrete_metrics=False,
+                    use_glean_ids=use_glean_ids,
                 )
-                print(f"QUERYING METRIC {metric.name}\n{metrics_sql}")
+                logger.debug(f"QUERYING METRIC {metric.name} ({analysis_basis})")
+                logger.debug(metrics_sql)
 
                 results = self.bigquery.execute(
                     metrics_sql,
@@ -416,7 +495,6 @@ class Analysis:
                     f"{results.slot_millis * COST_PER_SLOT_MS}"
                 )
                 self._write_sql_output(res_table_name, metrics_sql)
-                self._publish_view(period, analysis_basis=analysis_basis.value)
             except ValueError as e:
                 logger.exception(
                     str(e),
@@ -512,6 +590,9 @@ class Analysis:
             metric_table_name, segment, summary, analysis_basis, period, discrete_metrics
         )
 
+        logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}")
+        logger.debug(query)
+
         results: DataFrame = self.bigquery.execute(query).to_dataframe()
 
         return results
@@ -602,6 +683,7 @@ class Analysis:
         WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
         """
         )
+        logger.info(f"Subset metric table univariate: {query}")
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
@@ -809,8 +891,8 @@ class Analysis:
         self._write_sql_output(f"enrollments_{bq_normalize_name(experiment_slug)}", enrollments_sql)
 
         dry_run_query(enrollments_sql)
-        print(f"Dry running enrollments query for {experiment_slug}:")
-        print(enrollments_sql)
+        logger.info(f"Dry running enrollments query for {experiment_slug}:")
+        logger.info(enrollments_sql)
 
         if not discrete_metrics:
             metrics_sql = exp.build_metrics_query(
@@ -849,8 +931,8 @@ class Analysis:
             self._write_sql_output(f"metrics_{bq_normalize_name(experiment_slug)}", metrics_sql)
 
             dry_run_query(metrics_sql)
-            print(f"Dry running metrics query for {experiment_slug}")
-            print(metrics_sql)
+            logger.debug(f"Dry running metrics query for {experiment_slug}")
+            logger.debug(metrics_sql)
 
         else:
             # TODO: validate discrete_metrics works here
@@ -894,11 +976,11 @@ class Analysis:
                 )
 
                 dry_run_query(metric_sql)
-                print(
+                logger.debug(
                     f"Dry running metric [{metric.name}] query for {experiment_slug}"
                     f"({i + 1} of {len(metrics)})"
                 )
-                print(metric_sql)
+                logger.debug(metric_sql)
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
 
@@ -941,20 +1023,13 @@ class Analysis:
             statistics_table, {"schema_version": StatisticResult.SCHEMA_VERSION}
         )
 
-    @dask.delayed
-    def publish_statistics_view(self, period) -> None:
-        self._publish_view(
-            period,
-            table_prefix="statistics",
-        )
-
     def run(
         self,
         current_date: datetime,
         dry_run: bool = False,
         statistics_only: bool = False,
         use_glean_ids: bool = False,
-        discrete_metrics: bool = False,
+        metric_slugs: list[str] | None = None,
     ) -> None:
         """
         Run analysis using mozanalysis for a specific experiment.
@@ -1028,10 +1103,6 @@ class Analysis:
             segment_results = StatisticResultCollection.model_validate([])
             time_limits = self._get_timelimits_if_ready(period, current_date)
 
-            # we need a set of all metrics computed (if discrete_metrics)
-            # in order to publish a view joining all of the metric tables
-            metrics_computed = set()
-
             if time_limits is None:
                 logger.info(
                     "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
@@ -1054,10 +1125,20 @@ class Analysis:
             )
 
             analysis_bases = []
+            period_has_metric_slugs = False
 
             for m in self.config.metrics[period]:
+                if (metric_slugs and m.metric.name in metric_slugs) or not metric_slugs:
+                    period_has_metric_slugs = True
+
                 for analysis_basis in m.metric.analysis_bases:
                     analysis_bases.append(analysis_basis)
+
+            if not period_has_metric_slugs:
+                logger.warning(
+                    f"Skipping {period}; provided metric_slugs not found in period: {metric_slugs}"
+                )
+                continue
 
             analysis_bases = list(set(analysis_bases))
 
@@ -1065,35 +1146,19 @@ class Analysis:
                 continue
 
             for analysis_basis in analysis_bases:
-                # convert metric configurations to mozanalysis metrics
-                summary_metrics: list[Summary] = [
-                    m
-                    for m in self.config.metrics[period]
-                    if (
-                        m.metric.analysis_bases == analysis_basis
-                        or analysis_basis in m.metric.analysis_bases
-                    )
-                    and m.metric.select_expression is not None
-                ]
-                config_metrics: set[Metric] = {
-                    Metric.from_metric_config(m.metric).to_mozanalysis_metric()
-                    for m in summary_metrics
-                }
-
-                sanity_metrics = set()
-                # first pass to get sanity metrics for each data source
-                for metric in config_metrics:
-                    ds: DataSource | None = metric.data_source
-                    if ds is not None:
-                        sanity_metrics.update(
-                            ds.get_sanity_metrics(self.config.experiment.normandy_slug)
-                        )
-
                 segment_data: DataFrame
-                if not discrete_metrics:
+                metrics_results = []
+                metrics_in_basis = set()
+                if not metric_slugs:
                     metrics_table = self.calculate_metrics(
-                        exp, time_limits, period, analysis_basis, dry_run or statistics_only
+                        exp,
+                        time_limits,
+                        period,
+                        analysis_basis,
+                        dry_run or statistics_only,
+                        use_glean_ids=use_glean_ids,
                     )
+                    metrics_results.append(metrics_table)
 
                     if dry_run:
                         results.append(metrics_table)
@@ -1137,7 +1202,7 @@ class Analysis:
                             summary,
                             analysis_basis,
                             period,
-                            discrete_metrics,
+                            False,
                         )
 
                         analysis_length_dates = 1
@@ -1162,16 +1227,42 @@ class Analysis:
                     # save statistics for this analysis basis
                     result = self.save_statistics(
                         segment_results.model_dump(warnings=False),
-                        self._table_name(period.value, len(time_limits.analysis_windows)),
+                        self._table_name(
+                            period.value, len(time_limits.analysis_windows), statistics=True
+                        ),
                     )
                     results.append(result)
                     stats_results.append(result)
                 else:
-                    # create the full list of metrics to compute individually
-                    metrics = config_metrics | sanity_metrics
-                    for metric in metrics:
-                        # segment_results = StatisticResultCollection.model_validate([])
+                    # convert metric configurations to mozanalysis metrics
+                    summary_metrics: list[Summary] = [
+                        m
+                        for m in self.config.metrics[period]
+                        if (
+                            m.metric.analysis_bases == analysis_basis
+                            or analysis_basis in m.metric.analysis_bases
+                        )
+                        and m.metric.select_expression is not None
+                    ]
+                    config_metrics: set[Metric] = {
+                        Metric.from_metric_config(m.metric).to_mozanalysis_metric()
+                        for m in summary_metrics
+                        if m.metric.name in metric_slugs
+                    }
 
+                    sanity_metrics = set()
+                    # get sanity metrics for each data source
+                    # for metric in config_metrics:
+                    #     ds: DataSource | None = metric.data_source
+                    #     if ds is not None:
+                    #         sanity_metrics.update(
+                    #             ds.get_sanity_metrics(self.config.experiment.normandy_slug)
+                    #         )
+
+                    # create the full list of metrics to compute
+                    metrics = config_metrics | sanity_metrics
+                    logger.debug(f"COMPUTING METRICS: {[m.name for m in metrics]}")
+                    for metric in metrics:
                         metric_table = self.calculate_metric(
                             exp,
                             time_limits,
@@ -1180,7 +1271,8 @@ class Analysis:
                             metric,
                             dry_run or statistics_only,
                         )
-                        metrics_computed.add(metric.name)
+                        metrics_results.append(metric_table)
+                        metrics_in_basis.add(metric.name)
 
                         if dry_run:
                             results.append(metric_table)
@@ -1213,18 +1305,14 @@ class Analysis:
 
                         try:
                             summary = next(
-                                m for m in summary_metrics if metric.name == m.metric.name
+                                m
+                                for m in summary_metrics
+                                if metric.name == m.metric.name and m.statistic
                             )
                         except StopIteration:
-                            # metric not part of config, skip stats
+                            # metric not part of config, or stat not defined (sanity metric)
+                            # --> skip stats, go to next metric
                             continue
-
-                        # TODO: refactor to make this work metric-by-metric?
-                        # right now it's expecting all metrics to be done and in one table
-                        # so it just sends each metric to `subset_metric_table` with the
-                        # metric table name (which is expected to hold all metrics)
-                        # but we should be able to compute segment results alongside the
-                        # original metric loop
 
                         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
@@ -1234,7 +1322,7 @@ class Analysis:
                                 summary,
                                 analysis_basis,
                                 period,
-                                discrete_metrics,
+                                True,
                             )
 
                             analysis_length_dates = 1
@@ -1256,20 +1344,37 @@ class Analysis:
                                 segment_data, segment, analysis_basis
                             ).model_dump(warnings=False)
 
-                    # save statistics for this metric
-                    result = self.save_statistics(
-                        segment_results.model_dump(warnings=False),
-                        self._table_name(
-                            period.value,
-                            len(time_limits.analysis_windows),
-                            metric=summary.metric.name,
-                        ),
-                    )
-                    results.append(result)
-                    stats_results.append(result)
+                        # save statistics for this metric
+                        result = self.save_statistics(
+                            segment_results.model_dump(warnings=False),
+                            self._table_name(
+                                period.value,
+                                len(time_limits.analysis_windows),
+                                metric=summary.metric.name,
+                                statistics=True,
+                            ),
+                        )
+                        results.append(result)
+                        stats_results.append(result)
 
-            # done with period: publish stats view
-            results.append(bind(self.publish_statistics_view(period), stats_results))
+                # done with analysis_basis: publish metric view
+                results.append(
+                    bind(
+                        self.publish_view(
+                            period,
+                            analysis_basis=analysis_basis.value,
+                            metric_list=metrics_in_basis,
+                        ),
+                        [metrics_results],
+                    )
+                )
+            # done with period: publish statistic view
+            results.append(
+                bind(
+                    self.publish_view(period, table_prefix="statistics"),
+                    [stats_results],
+                )
+            )
 
         result_futures = client.compute(results)
         client.gather(result_futures)  # block until futures have finished

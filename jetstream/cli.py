@@ -108,6 +108,7 @@ class ArgoExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
+    metric_slugs: list[str] | None = None
     statistics_only: bool = False
 
     WORKFLOW_DIR = Path(__file__).parent / "workflows"
@@ -122,9 +123,26 @@ class ArgoExecutorStrategy:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: dict[str, list[str]] = {}
+        # TODO: uncomment this and related lines when adding Argo support for metric_slugs
+        # experiment_metrics_map: dict[str, set[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
+            )
+            # experiment_metrics_map[config.experiment.normandy_slug] = self.metric_slugs or set()
+            # # if metric_slugs is None or empty list
+            # if not self.metric_slugs:
+            #     # get a set of all metric slugs for the experiment
+            #     for analysis_period, metrics_list in config.metrics.items():
+            #         if analysis_period in self.analysis_periods:
+            #             experiment_metrics_map[config.experiment.normandy_slug].update(
+            #                 {m.metric.name for m in metrics_list}
+            #             )
+
+        if self.metric_slugs:
+            logger.warning(
+                "`metric_slugs` provided to ArgoExecutorStrategy, but is not"
+                " currently supported. Ignoring and running all metrics..."
             )
 
         # determine the docker image that was the most recent when enrollments ended for experiments
@@ -143,6 +161,7 @@ class ArgoExecutorStrategy:
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
+                # "metric_slugs": list(experiment_metrics_map.get(slug)),
             }
             for slug, dates in experiments_config.items()
         ]
@@ -214,9 +233,9 @@ class SerialExecutorStrategy:
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
+    metric_slugs: list[str] | None = None
     statistics_only: bool = False
     use_glean_ids: bool = False
-    discrete_metrics: bool = False
 
     def execute(
         self,
@@ -246,7 +265,7 @@ class SerialExecutorStrategy:
                     date,
                     statistics_only=self.statistics_only,
                     use_glean_ids=self.use_glean_ids,
-                    discrete_metrics=self.discrete_metrics,
+                    metric_slugs=self.metric_slugs,
                 )
 
                 # export metadata to GCS
@@ -579,6 +598,7 @@ log_source = click.option(
 )
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 @log_source
+@click.option("--debug", is_flag=True, default=False)
 @click.pass_context
 def cli(
     ctx,
@@ -589,7 +609,9 @@ def cli(
     task_monitoring_log_table_id,
     log_to_bigquery,
     log_source,
+    debug,
 ):
+    log_level = logging.DEBUG if debug else logging.INFO
     log_config = LogConfiguration(
         log_project_id,
         log_dataset_id,
@@ -598,6 +620,7 @@ def cli(
         task_monitoring_log_table_id,
         log_to_bigquery,
         log_source=log_source,
+        log_level=log_level,
     )
     log_config.setup_logger()
     ctx.ensure_object(dict)
@@ -786,7 +809,14 @@ statistics_only_option = click.option(
 
 use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=True, default=False)
 
-discrete_metrics_option = click.option("--discrete-metrics", is_flag=True, default=False)
+metric_slugs_option = click.option(
+    "--metric-slug",
+    "--metric_slug",
+    help="Slug of the metric(s) to compute",
+    type=str,
+    required=False,
+    multiple=True,
+)
 
 
 @cli.command()
@@ -803,7 +833,7 @@ discrete_metrics_option = click.option("--discrete-metrics", is_flag=True, defau
 @sql_output_dir_option
 @statistics_only_option
 @use_glean_ids_option
-@discrete_metrics_option
+@metric_slugs_option
 @click.pass_context
 def run(
     ctx,
@@ -820,7 +850,7 @@ def run(
     sql_output_dir,
     statistics_only,
     use_glean_ids,
-    discrete_metrics,
+    metric_slug,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -850,9 +880,9 @@ def run(
             ctx.obj["log_config"],
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
+            metric_slugs=metric_slug if metric_slug else None,
             statistics_only=statistics_only,
             use_glean_ids=use_glean_ids,
-            discrete_metrics=discrete_metrics,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -885,6 +915,7 @@ def run(
 @image_option
 @image_version_option
 @statistics_only_option
+# @metric_slugs_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -904,6 +935,7 @@ def run_argo(
     image,
     image_version,
     statistics_only,
+    # metric_slugs,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -919,6 +951,7 @@ def run_argo(
         image=image,
         image_version=image_version,
         statistics_only=statistics_only,
+        # metric_slugs=metric_slugs if metric_slugs else None,
     )
 
     AnalysisExecutor(
@@ -956,7 +989,7 @@ def run_argo(
 @image_version_option
 @analysis_periods_option()
 @statistics_only_option
-@discrete_metrics_option
+@metric_slugs_option
 @click.pass_context
 def rerun(
     ctx,
@@ -979,7 +1012,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
-    discrete_metrics,
+    metric_slugs,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -1002,12 +1035,12 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
-        discrete_metrics=discrete_metrics,
+        metric_slugs=metric_slugs if metric_slugs else None,
     )
 
     if argo:
-        if discrete_metrics:
-            raise ValueError("--discrete-metrics is not currently supported for Argo execution")
+        if metric_slugs:
+            raise ValueError("--metric-slugs is not currently supported for Argo execution")
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
             dataset_id=dataset_id,
@@ -1021,6 +1054,7 @@ def rerun(
             image=image,
             image_version=image_version,
             statistics_only=statistics_only,
+            # metric_slugs=metric_slugs if metric_slugs else None,
         )
 
     success = AnalysisExecutor(
@@ -1521,7 +1555,7 @@ def preview(
             log_to_bigquery=True,
             task_profiling_log_table_id=None,
             task_monitoring_log_table_id=None,
-            log_level=logging.INFO,
+            bq_log_level=logging.INFO,
             capacity=5,
             log_source=LOG_SOURCE.PREVIEW,
         )
