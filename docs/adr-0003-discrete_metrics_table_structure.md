@@ -13,7 +13,7 @@ We want Jetstream to support discrete metric execution ([proposal doc](https://g
 
 ## Decision Drivers
 
-* Flexible to individual metrics but also groups of metrics (i.e., by data source)
+* Flexible to individual metrics but also groups of metrics (e.g., all at once [as it works now], or possibly by data source)
 * Flexible to adding/removing metrics later
 * Backwards compatibility
 * Complexity
@@ -21,9 +21,11 @@ We want Jetstream to support discrete metric execution ([proposal doc](https://g
 
 ## Decision Outcome
 
-**Option 3** is the chosen option.
+**Option 3** is the chosen option*.
 
 We can preserve the data type of the metric values in BigQuery, and the schema broadly stays the same (client info + column for metric values -- though split across many tables). Option 2 is very similar, but pivots the data so that it can be stored row-wise in a single table (metric_slug: metric_value), and importantly requires many additional DML operations to delete existing metric results because it cannot simply truncate the entire table on each write like we do now, and can do in Option 3.
+
+*A note on deployment: We have opted for a hybrid approach, keeping the ability to compute all metrics in one big query. Individual metrics can be computed as needed (and as described in Option 3) with a command line argument. Deploying this as an option not only reduces risk, but gives us more flexibility to use it where it makes the most impact.
 
 
 ## Options
