@@ -911,6 +911,7 @@ class Analysis:
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
 
+    @dask.delayed
     def validate_metric_query(
         self,
         experiment: Experiment,
