@@ -74,7 +74,7 @@ filelock==3.18.0
     #   virtualenv
 fonttools==4.58.4
     # via matplotlib
-formulaic==1.1.1
+formulaic==1.2.0
     # via mozanalysis
 fsspec==2025.5.1
     # via dask

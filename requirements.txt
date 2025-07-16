@@ -500,9 +500,9 @@ fonttools==4.58.4 \
     # via
     #   -r requirements.in
     #   matplotlib
-formulaic==1.1.1 \
-    --hash=sha256:bbb7e38f99e4bcdc62cb0a6a818ad33b370b4e98e9e4f0b276561448482c8268 \
-    --hash=sha256:ddf80e4bef976dd99698aa27512015276c7b86c314b601ae6fd360c7741b7231
+formulaic==1.2.0 \
+    --hash=sha256:2c5f48886a979f034e9fce67b8a36223aa22020256a291abceecd6763291193b \
+    --hash=sha256:ab5c43a5b107d1b1e87f55cf0a01245531cce793d3dcab433dae12053c3cb2d6
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -1088,6 +1088,10 @@ mypy-extensions==1.1.0 \
     # via
     #   -r requirements.in
     #   mypy
+narwhals==1.47.0 \
+    --hash=sha256:38238882f3ab2bbc8e7121bc9be951a8a58f1a810bdb14aa2b18792bafac01f8 \
+    --hash=sha256:8b4ead8866046829de24058d1079e776806bd4aab7d38f55f17c58ce4c0994d2
+    # via formulaic
 numpy==1.26.4 \
     --hash=sha256:03a8c78d01d9781b28a6989f6fa1bb2c4f2d51201cf99d3dd875df6fbd96b23b \
     --hash=sha256:08beddf13648eb95f8d867350f6a018a4be2e5ad54c8d8caed89ebca558b2818 \
