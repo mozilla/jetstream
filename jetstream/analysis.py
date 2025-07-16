@@ -3,6 +3,7 @@ import os
 import re
 from collections.abc import Iterable
 from datetime import datetime, timedelta
+from multiprocessing import Pool
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -901,17 +902,22 @@ class Analysis:
             self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
         else:
             selected_metrics = [m for m in metrics if m.name in metric_slugs]
-            for i, metric in enumerate(selected_metrics):
-                output_loc = f"metrics_{bq_normalize_name(experiment_slug)}_{metric.name}"
-                logger.debug(
-                    f"Dry running metric [{metric.name}] query for {experiment_slug}"
-                    f"({i + 1} of {len(metric_slugs)})"
-                )
-                self.validate_metric_query(exp, [metric], limits, output_loc, use_glean_ids)
+            # dry run up to 8 metrics at a time
+            num_procs = min(len(selected_metrics), 8)
+            with Pool(num_procs) as pool:
+                for i, metric in enumerate(selected_metrics):
+                    output_loc = f"metrics_{bq_normalize_name(experiment_slug)}_{metric.name}"
+                    logger.debug(
+                        f"Dry running metric [{metric.name}] query for {experiment_slug}"
+                        f"({i + 1} of {len(metric_slugs)})"
+                    )
+                    pool.apply_async(
+                        self.validate_metric_query,
+                        args=(exp, [metric], limits, output_loc, use_glean_ids),
+                    )
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
 
-    @dask.delayed
     def validate_metric_query(
         self,
         experiment: Experiment,
