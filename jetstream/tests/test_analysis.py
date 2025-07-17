@@ -97,7 +97,14 @@ def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
         x, ConfigLoader.configs
     )
+
+    def bypass_mp_pool(_pool, func, args):
+        return func(*args)
+
+    monkeypatch.setattr("multiprocessing.pool.Pool.apply_async", bypass_mp_pool)
+
     Analysis("spam", "eggs", config).validate(metric_slugs=["active_hours", "retained"])
+
     # 1 for enrollments + 2 metrics
     assert m.call_count == 3
 
@@ -175,7 +182,7 @@ def test_validation_working_while_enrolling(experiments):
     try:
         Analysis("test", "test", config).validate()
     except Exception as e:
-        pytest.fail(f"Raised {e}")
+        pytest.fail(f"Raised {e} (are you authenticated?)")
 
 
 def test_run_when_enrolling_complete(experiments, monkeypatch):
