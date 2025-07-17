@@ -3,6 +3,7 @@
 * Status: accepting feedback
 * Deciders: mikewilli, scholtzan, danielkberry
 * Date: 2024-11-08
+* Updated: 2025-04-24
 
 
 ## Context and Problem Statement
@@ -12,7 +13,7 @@ We want Jetstream to support discrete metric execution ([proposal doc](https://g
 
 ## Decision Drivers
 
-* Flexible to individual metrics but also groups of metrics (i.e., by data source)
+* Flexible to individual metrics but also groups of metrics (e.g., all at once [as it works now], or possibly by data source)
 * Flexible to adding/removing metrics later
 * Backwards compatibility
 * Complexity
@@ -20,7 +21,11 @@ We want Jetstream to support discrete metric execution ([proposal doc](https://g
 
 ## Decision Outcome
 
-**Option 2** is the chosen option. We can preserve the schemas of the views by pivoting the results tables, and we save a lot on complexity during normal execution as compared to Option 1. Option 3 is very similar but creates additional clutter in the form of many tables.
+**Option 3** is the chosen option*.
+
+We can preserve the data type of the metric values in BigQuery, and the schema broadly stays the same (client info + column for metric values -- though split across many tables). Option 2 is very similar, but pivots the data so that it can be stored row-wise in a single table (metric_slug: metric_value), and importantly requires many additional DML operations to delete existing metric results because it cannot simply truncate the entire table on each write like we do now, and can do in Option 3.
+
+*A note on deployment: We have opted for a hybrid approach, keeping the ability to compute all metrics in one big query. Individual metrics can be computed as needed (and as described in Option 3) with a command line argument. Deploying this as an option not only reduces risk, but gives us more flexibility to use it where it makes the most impact.
 
 
 ## Options
@@ -58,6 +63,7 @@ For each option, we will use the following scenario as an example for describing
 * **+** This preserves the existing table structure
 * **-** Lots of added complexity
 * **-** Added cost (BigQuery treats each MERGE as basically a full delete/recreate of the table)
+* **-** Adds many DML operations, BigQuery limits how many can be queued concurrently
 
 
 ### 2. Row per Metric
@@ -86,20 +92,24 @@ For each option, we will use the following scenario as an example for describing
 #### Pros / Cons
 
 * **+** Low complexity of logic
-* **+** Only need to process new data for INSERTs
-* **-** This breaks backwards compatibility with the current tables schemas (mitigated by view schema remaining the same)
+* **+** Only need to process new data for INSERTs (but need to do DELETEs beforehand)
+* **-** This breaks backwards compatibility with the current tables schemas (mitigated if view schema remains the same)
 * **-** Redundancy in table for repeated client info columns
 * **-** Added cost for reruns (DELETE statements in BigQuery require reprocessing all data)
+* **-** Pivoting table into view (to preserve existing schema) is complicated
+* **-** Adds many DML operations, BigQuery limits how many can be queued concurrently
   
 
 ### 3. Table per Metric
 
-* This option is almost identical to the [Row per Metric](#2.-Row-per-Metric) option, however instead of adding rows to an existing table, we will create a new table for each metric
+* This option is almost identical to the [Row per Metric](#2.-Row-per-Metric) option, however instead of adding rows to an existing table, we will create a new table for each metric (or, for removal of metrics, delete the metric table)
 * The `metric_slug` column from Option 2 is not necessary, so we can retain the current column-named-with-metric-slug, but each table will only ever have one of these metric columns.
+* We can concatenate the metric results and statistics results into the views as they exist now
 
 #### Pros / Cons
 
 * **+** Low complexity of logic
-* **-** This breaks backwards compatibility with the current tables schemas (mitigated by view schema remaining the same)
-* **-** Redundancy in table for repeated client info columns
-* **-** Lots of added clutter in the form of many new tables
+* **+** No DML operations, just write with WRITE_TRUNCATE when writing to metric tables
+* **-** This breaks backwards compatibility with the current single metrics table (mitigated if view schema remains the same)
+* **-** Redundancy across tables for repeated client info columns
+* **-** Lots of added clutter in the form of many new tables (1 metrics table + 1 statistics table vs table per metric + table per metric for statistics)
