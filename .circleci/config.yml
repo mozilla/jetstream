@@ -105,6 +105,7 @@ workflows:
       - build
       - integration
       - gcp-gcr/build-and-push-image:
+          gcloud-service-key: EXPERIMENTS_GCLOUD_SERVICE_KEY
           requires:
             - build
             - integration
