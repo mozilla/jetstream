@@ -2,7 +2,7 @@ version: 2.1
 
 # See https://circleci.com/orbs/registry/orb/circleci/gcp-gcr
 orbs:
-  gcp-gcr: circleci/gcp-gcr@0.16.6
+  gcp-gcr: circleci/gcp-gcr@0.16.10
 
 jobs:
   build:
