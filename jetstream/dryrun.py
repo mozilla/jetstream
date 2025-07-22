@@ -13,6 +13,7 @@ data, we proxy the queries through the dry run service endpoint.
 
 import json
 import logging
+import os
 import random
 from typing import Any
 
@@ -62,18 +63,22 @@ class DryRunFailedError(Exception):
 def dry_run_query(sql: str) -> None:
     """Dry run the provided SQL query."""
     try:
-        auth_req = GoogleAuthRequest()
-        creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
-        creds.refresh(auth_req)
-        if hasattr(creds, "id_token"):
-            # Get token from default credentials for the
-            # current environment created via Cloud SDK run
-            id_token = creds.id_token
-        else:
-            # If the environment variable GOOGLE_APPLICATION_CREDENTIALS
-            # is set to service account JSON file,
-            # then ID token is acquired using this service account credentials.
-            id_token = fetch_id_token(auth_req, DRY_RUN_URL)
+        id_token = os.environ.get("GOOGLE_GHA_ID_TOKEN")
+        if not id_token:
+            auth_req = GoogleAuthRequest()
+            creds, _ = google.auth.default(
+                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            )
+            creds.refresh(auth_req)
+            if hasattr(creds, "id_token"):
+                # Get token from default credentials for the
+                # current environment created via Cloud SDK run
+                id_token = creds.id_token
+            else:
+                # If the environment variable GOOGLE_APPLICATION_CREDENTIALS
+                # is set to service account JSON file,
+                # then ID token is acquired using this service account credentials.
+                id_token = fetch_id_token(auth_req, DRY_RUN_URL)
 
         billing_project = random.choice(BILLING_PROJECTS)
         r = requests.post(
