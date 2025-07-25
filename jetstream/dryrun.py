@@ -13,6 +13,7 @@ data, we proxy the queries through the dry run service endpoint.
 
 import json
 import logging
+import random
 from typing import Any
 
 import google.auth
@@ -25,6 +26,29 @@ logger = logging.getLogger(__name__)
 
 # https://github.com/mozilla-services/cloudops-infra/blob/master/projects/data-shared/tf/modules/cloudfunctions/src/bigquery_etl_dryrun/index.js
 DRY_RUN_URL = "https://us-central1-moz-fx-data-shared-prod.cloudfunctions.net/bigquery-etl-dryrun"
+BILLING_PROJECTS = [
+    "moz-fx-data-backfill-10",
+    "moz-fx-data-backfill-11",
+    "moz-fx-data-backfill-12",
+    "moz-fx-data-backfill-13",
+    "moz-fx-data-backfill-14",
+    "moz-fx-data-backfill-15",
+    "moz-fx-data-backfill-16",
+    "moz-fx-data-backfill-17",
+    "moz-fx-data-backfill-18",
+    "moz-fx-data-backfill-19",
+    "moz-fx-data-backfill-20",
+    "moz-fx-data-backfill-21",
+    "moz-fx-data-backfill-22",
+    "moz-fx-data-backfill-23",
+    "moz-fx-data-backfill-24",
+    "moz-fx-data-backfill-25",
+    "moz-fx-data-backfill-26",
+    "moz-fx-data-backfill-27",
+    "moz-fx-data-backfill-28",
+    "moz-fx-data-backfill-29",
+    "moz-fx-data-backfill-31",
+]
 
 
 class DryRunFailedError(Exception):
@@ -51,6 +75,7 @@ def dry_run_query(sql: str) -> None:
             # then ID token is acquired using this service account credentials.
             id_token = fetch_id_token(auth_req, DRY_RUN_URL)
 
+        billing_project = random.choice(BILLING_PROJECTS)
         r = requests.post(
             DRY_RUN_URL,
             headers={
@@ -58,7 +83,12 @@ def dry_run_query(sql: str) -> None:
                 "Authorization": f"Bearer {id_token}",
             },
             data=json.dumps(
-                {"dataset": "mozanalysis", "project": "moz-fx-data-experiments", "query": sql}
+                {
+                    "dataset": "mozanalysis",
+                    "project": "moz-fx-data-experiments",
+                    "query": sql,
+                    "billing_project": billing_project,
+                }
             ).encode("utf8"),
         )
         response = r.json()
