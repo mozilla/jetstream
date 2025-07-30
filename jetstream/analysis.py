@@ -306,7 +306,7 @@ class Analysis:
             #   USING (analysis_id, branch, etc.)
             #   ```
             # and so on for all of the metrics
-            complete_sanity_metrics = set()
+            complete_sanity_metrics: set[str] = set()
             select_list = [f"t_0.{field}" for field in analysis_unit_list]
             select_list.append("t_0.window_index")
             for i, metric in enumerate(metric_dict.keys()):
@@ -1141,7 +1141,7 @@ class Analysis:
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
                 metrics_results = []
-                basis_metrics_to_sanity = {}
+                basis_metrics_to_sanity: dict[str, list[str]] = {}
                 if not metric_slugs:
                     metrics_table = self.calculate_metrics(
                         exp,
@@ -1256,7 +1256,6 @@ class Analysis:
                             dry_run or statistics_only,
                         )
                         metrics_results.append(metric_table)
-                        # basis_metrics_to_sanity.add(metric.name)
 
                         # get sanity metrics for this metric's data source (to include in view)
                         basis_metrics_to_sanity[metric.name] = []
