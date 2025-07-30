@@ -966,8 +966,8 @@ mizani==0.13.5 \
     # via
     #   -r requirements.in
     #   plotnine
-mozanalysis==2025.6.1 \
-    --hash=sha256:45ca6c9960c5f7462d4ddc86ee51579a93041ada48138e81fc6b91f102a57c48
+mozanalysis==2025.6.2 \
+    --hash=sha256:57183cb8e13d31e85720c7324b7a120d28082a61fcbc40a4fbc70688d8040e1b
     # via -r requirements.in
 mozilla-metric-config-parser==2025.5.3 \
     --hash=sha256:2c306f55f4744c42c275fca6fed95c8859eb0bdf83daced3920421cc9d8dc4bd
