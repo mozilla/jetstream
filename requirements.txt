@@ -698,9 +698,9 @@ grpcio==1.73.0 \
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.72.1 \
-    --hash=sha256:627111a87afa920eafb42cc6c50db209d263e07fa51fbb084981ef636566be7b \
-    --hash=sha256:75fb29e1b879e875ff0c37032cbbb4e102c6dce845cdac37904c44ff52cbd8e7
+grpcio-status==1.73.0 \
+    --hash=sha256:a2b7f430568217f884fe52a5a0133b6f4c9338beae33fb5370134a8eaf58f974 \
+    --hash=sha256:a3f3a9994b44c364f014e806114ba44cc52e50c426779f958c8b22f14ff0d892
     # via
     #   -r requirements.in
     #   google-api-core
