@@ -411,7 +411,7 @@ types-six==1.17.0.20250515
     # via mozilla-jetstream
 types-toml==0.10.8.20240310
     # via mozilla-jetstream
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   cattrs
     #   exceptiongroup
