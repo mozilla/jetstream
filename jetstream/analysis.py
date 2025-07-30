@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attr
 import dask
@@ -45,8 +45,8 @@ from jetstream.statistics import (
 
 from . import bq_normalize_name
 
-# if TYPE_CHECKING:
-#     from mozanalysis.metrics import DataSource
+if TYPE_CHECKING:
+    from mozanalysis.metrics import DataSource
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +241,7 @@ class Analysis:
         window_period: AnalysisPeriod,
         table_prefix=None,
         analysis_basis=None,
-        metric_list: list[str] | None = None,
+        metric_dict: dict[str, list[str]] | None = None,
     ):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
@@ -270,19 +270,19 @@ class Analysis:
             """
         )
 
-        if metric_list:
-            analysis_unit_list = [
+        if metric_dict:
+            base_list = [
                 "analysis_id",
                 "branch",
                 "enrollment_date",
                 "num_enrollment_events",
                 "analysis_window_start",
                 "analysis_window_end",
-                "exposure_date",
-                "num_exposure_events",
             ]
+            analysis_unit_list = list(base_list)
+            analysis_unit_list.extend(["exposure_date", "num_exposure_events"])
             analysis_unit_str = ",".join(analysis_unit_list)
-            using_list = analysis_unit_list
+            using_list = list(base_list)
             using_list.append("window_index")
             using_str = ",".join(using_list)
             join_sql = ""
@@ -306,24 +306,38 @@ class Analysis:
             #   USING (analysis_id, branch, etc.)
             #   ```
             # and so on for all of the metrics
-            for i, metric in enumerate(metric_list):
+            complete_sanity_metrics = set()
+            select_list = [f"t_0.{field}" for field in analysis_unit_list]
+            select_list.append("t_0.window_index")
+            for i, metric in enumerate(metric_dict.keys()):
+                sanity_metrics_str = ""
+                select_list.append(f"t_{i}.{metric}")
+                if not complete_sanity_metrics.issuperset(metric_dict[metric]):
+                    complete_sanity_metrics.update(metric_dict[metric])
+                    sanity_metrics_str = ",".join(metric_dict[metric]) + ","
+                    for m in metric_dict[metric]:
+                        select_list.append(f"t_{i}.{m}")
+
                 table_sql = dedent(f"""(
                     SELECT
-                        {analysis_unit_str}, {metric},
+                        {analysis_unit_str}, {metric}, {sanity_metrics_str}
                         CAST(_TABLE_SUFFIX AS INT64) AS window_index
                     FROM `{prefix}_{metric}_{window_period.value}_*`
                 )""")
+                if len(metric_dict) > 1:
+                    table_sql += f" t_{i}"
                 join_sql += table_sql
                 if i > 0:
                     join_sql += join_clause
                     join_sql += " "
-                if i < (len(metric_list) - 1):
+                if i < (len(metric_dict) - 1):
                     join_sql += " FULL OUTER JOIN "
 
             view_select = join_sql
-            if len(metric_list) > 1:
+            if len(metric_dict) > 1:
+                select_str = ",".join(select_list)
                 view_select = f"""
-                    SELECT * FROM (
+                    SELECT {select_str} FROM (
                         {join_sql}
                     )
                 """
@@ -685,7 +699,6 @@ class Analysis:
         WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
         """
         )
-        logger.info(f"Subset metric table univariate: {query}")
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
@@ -913,7 +926,7 @@ class Analysis:
                     )
                     pool.apply_async(
                         self.validate_metric_query,
-                        args=(exp, [metric], limits, output_loc, use_glean_ids),
+                        (exp, [metric], limits, output_loc, use_glean_ids),
                     )
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
@@ -1128,7 +1141,7 @@ class Analysis:
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
                 metrics_results = []
-                metrics_in_basis = set()
+                basis_metrics_to_sanity = {}
                 if not metric_slugs:
                     metrics_table = self.calculate_metrics(
                         exp,
@@ -1230,17 +1243,8 @@ class Analysis:
                         if m.metric.name in metric_slugs
                     }
 
-                    sanity_metrics: set[Metric] = set()
-                    # get sanity metrics for each data source
-                    # for metric in config_metrics:
-                    #     ds: DataSource | None = metric.data_source
-                    #     if ds is not None:
-                    #         sanity_metrics.update(
-                    #             ds.get_sanity_metrics(self.config.experiment.normandy_slug)
-                    #         )
-
                     # create the full list of metrics to compute
-                    metrics = config_metrics | sanity_metrics
+                    metrics = config_metrics
                     logger.debug(f"COMPUTING METRICS: {[m.name for m in metrics]}")
                     for metric in metrics:
                         metric_table = self.calculate_metric(
@@ -1252,7 +1256,16 @@ class Analysis:
                             dry_run or statistics_only,
                         )
                         metrics_results.append(metric_table)
-                        metrics_in_basis.add(metric.name)
+                        # basis_metrics_to_sanity.add(metric.name)
+
+                        # get sanity metrics for this metric's data source (to include in view)
+                        basis_metrics_to_sanity[metric.name] = []
+                        ds: DataSource | None = metric.data_source
+                        if ds is not None:
+                            basis_metrics_to_sanity[metric.name] = [
+                                m.name
+                                for m in ds.get_sanity_metrics(self.config.experiment.normandy_slug)
+                            ]
 
                         if dry_run:
                             results.append(metric_table)
@@ -1283,46 +1296,40 @@ class Analysis:
                                 )
                                 continue
 
-                        try:
-                            summary = next(
-                                m
-                                for m in summary_metrics
-                                if metric.name == m.metric.name and m.statistic
-                            )
-                        except StopIteration:
-                            # metric not part of config, or stat not defined (sanity metric)
-                            # --> skip stats, go to next metric
-                            continue
-
                         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
-                            segment_data = self.subset_metric_table(
-                                metric_table,
-                                segment,
-                                summary,
-                                analysis_basis,
-                                period,
-                                True,
-                            )
+                            for summary in summary_metrics:
+                                if not (summary.metric.name == metric.name and summary.statistic):
+                                    # not the current metric
+                                    continue
 
-                            analysis_length_dates = 1
-                            if period.value == AnalysisPeriod.OVERALL:
-                                analysis_length_dates = time_limits.analysis_length_dates
-                            elif period.value == AnalysisPeriod.WEEK:
-                                analysis_length_dates = 7
+                                segment_data = self.subset_metric_table(
+                                    metric_table,
+                                    segment,
+                                    summary,
+                                    analysis_basis,
+                                    period,
+                                    True,
+                                )
 
-                            segment_results.root += self.calculate_statistics(
-                                summary,
-                                segment_data,
-                                segment,
-                                analysis_basis,
-                                analysis_length_dates,
-                                period,
-                            ).model_dump(warnings=False)
+                                analysis_length_dates = 1
+                                if period.value == AnalysisPeriod.OVERALL:
+                                    analysis_length_dates = time_limits.analysis_length_dates
+                                elif period.value == AnalysisPeriod.WEEK:
+                                    analysis_length_dates = 7
 
-                            segment_results.root += self.counts(
-                                segment_data, segment, analysis_basis
-                            ).model_dump(warnings=False)
+                                segment_results.root += self.calculate_statistics(
+                                    summary,
+                                    segment_data,
+                                    segment,
+                                    analysis_basis,
+                                    analysis_length_dates,
+                                    period,
+                                ).model_dump(warnings=False)
+
+                                segment_results.root += self.counts(
+                                    segment_data, segment, analysis_basis
+                                ).model_dump(warnings=False)
 
                         # save statistics for this metric
                         result = self.save_statistics(
@@ -1330,7 +1337,7 @@ class Analysis:
                             self._table_name(
                                 period.value,
                                 len(time_limits.analysis_windows),
-                                metric=summary.metric.name,
+                                metric=metric.name,
                                 statistics=True,
                             ),
                         )
@@ -1343,7 +1350,7 @@ class Analysis:
                         self.publish_view(
                             period,
                             analysis_basis=analysis_basis.value,
-                            metric_list=metrics_in_basis,
+                            metric_dict=basis_metrics_to_sanity,
                         ),
                         [metrics_results],
                     )
