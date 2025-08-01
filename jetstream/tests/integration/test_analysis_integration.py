@@ -2,7 +2,7 @@ import datetime
 import datetime as dt
 import json
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import dask
 import jsonschema
@@ -21,10 +21,14 @@ from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUn
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from jetstream.analysis import Analysis
+from jetstream.bigquery_client import BigQueryClient
 from jetstream.config import ConfigLoader
 from jetstream.exposure_signal import ExposureSignal
 from jetstream.logging import LogConfiguration
 from jetstream.metric import Metric
+
+if TYPE_CHECKING:
+    from google.cloud.bigquery.job import QueryJob
 
 TEST_DIR = Path(__file__).parent.parent
 
@@ -43,7 +47,15 @@ def _analysis_id_from_unit(analysis_unit: AnalysisUnit, a_or_b: Literal["a", "b"
 )
 class TestAnalysisIntegration:
     def analysis_mock_run(
-        self, monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config=None
+        self,
+        monkeypatch,
+        config,
+        static_dataset,
+        temporary_dataset,
+        project_id,
+        log_config=None,
+        use_glean_ids=False,
+        metric_slugs=None,
     ):
         orig_enrollments = mozanalysis.experiment.Experiment.build_enrollments_query
         orig_metrics = mozanalysis.experiment.Experiment.build_metrics_query
@@ -91,13 +103,18 @@ class TestAnalysisIntegration:
         )
         monkeypatch.setattr(dask.distributed.LocalCluster, "__init__", mock_local_cluster)
 
-        analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc))
-        analysis.run(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), dry_run=False)
+        analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), use_glean_ids)
+        analysis.run(
+            dt.datetime(2020, 4, 12, tzinfo=pytz.utc),
+            dry_run=False,
+            use_glean_ids=use_glean_ids,
+            metric_slugs=metric_slugs,
+        )
 
     def test_metrics(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -144,7 +161,13 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         query_job = client.client.query(
             f"""
@@ -220,10 +243,164 @@ class TestAnalysisIntegration:
             is not None
         )
 
+    def test_discrete_metrics(
+        self,
+        monkeypatch,
+        client: BigQueryClient,
+        project_id,
+        static_dataset,
+        temporary_dataset,
+        randomization_unit,
+        analysis_unit,
+    ):
+        experiment = Experiment(
+            experimenter_slug="test-experiment",
+            type="rollout",
+            status="Live",
+            start_date=dt.datetime(2020, 3, 30, tzinfo=pytz.utc),
+            end_date=dt.datetime(2020, 6, 1, tzinfo=pytz.utc),
+            proposed_enrollment=7,
+            is_enrollment_paused=True,
+            branches=[Branch(slug="branch1", ratio=0.5), Branch(slug="branch2", ratio=0.5)],
+            reference_branch="branch2",
+            normandy_slug="test-experiment",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+            bucket_config=BucketConfig(
+                randomization_unit=randomization_unit,
+                count=100,
+                start=10,
+                namespace="test",
+            ),
+        )
+
+        config = AnalysisSpec().resolve(experiment, ConfigLoader.configs)
+
+        test_clients_daily = DataSource(
+            name="clients_daily",
+            from_expression=f"`{project_id}.test_data.clients_daily`",
+        )
+
+        test_active_hours = Metric(
+            name="active_hours",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+        )
+
+        test_active_hours_doubled = Metric(
+            name="active_hours_doubled",
+            data_source=test_clients_daily,
+            select_expression=f"{agg_sum('active_hours_sum')} * 2",
+            analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
+        )
+
+        stat = Statistic(name="bootstrap_mean", params={})
+
+        config.metrics = {
+            AnalysisPeriod.WEEK: [
+                Summary(test_active_hours, stat),
+                Summary(test_active_hours_doubled, stat),
+            ]
+        }
+
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            metric_slugs=["active_hours"],
+        )
+
+        query_job: QueryJob = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_active_hours_week_1`
+            ORDER BY enrollment_date DESC
+        """
+        )
+
+        expected_metrics_results = [
+            {
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "b"),
+                "branch": "branch2",
+                "enrollment_date": datetime.date(2020, 4, 3),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+            {
+                "analysis_id": _analysis_id_from_unit(analysis_unit, "a"),
+                "branch": "branch1",
+                "enrollment_date": datetime.date(2020, 4, 2),
+                "num_enrollment_events": 1,
+                "analysis_window_start": 0,
+                "analysis_window_end": 6,
+            },
+        ]
+
+        r = query_job.result()
+
+        for i, row in enumerate(r):
+            for k, v in expected_metrics_results[i].items():
+                assert row[k] == v
+
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.test_experiment_exposures_weekly"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.test_experiment_enrollments_weekly"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_active_hours_1"
+            )
+            is not None
+        )
+        assert (
+            client.client.get_table(
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
+            )
+            is not None
+        )
+
+        # stats = client.client.list_rows(
+        #     f"{project_id}.{temporary_dataset}.statistics_test_experiment_weekly"
+        # ).to_dataframe()
+        stats_query: QueryJob = client.client.query(
+            f"""
+            SELECT
+              *
+            FROM `{project_id}.{temporary_dataset}.statistics_test_experiment_weekly`
+        """
+        )
+        stats = stats_query.to_dataframe()
+        assert len(stats[stats["metric"] == "active_hours"]) > 1
+        assert len(stats[stats["metric"] == "active_hours_doubled"]) == 0
+
+        count_by_branch = stats.query("statistic == 'count'").set_index("branch")
+        assert count_by_branch.loc["branch1", "point"][0] == 1.0
+        assert count_by_branch.loc["branch2", "point"][0] == 1.0
+
+        if count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures":
+            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
+        else:
+            assert count_by_branch.loc["branch2", "analysis_basis"][0] == "enrollments"
+            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "exposures"
+
     def test_metrics_preenrollment(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -270,13 +447,21 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.PREENROLLMENT_WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
+
+        metric_table = "test_experiment_enrollments_preenrollment_week_1"
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_preenrollment_week_1`
+            FROM `{project_id}.{temporary_dataset}.{metric_table}`
             ORDER BY enrollment_date DESC
         """
         )
@@ -367,7 +552,13 @@ class TestAnalysisIntegration:
             window_end="analysis_window_end",
         )
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         query_job = client.client.query(
             f"""
@@ -426,7 +617,7 @@ class TestAnalysisIntegration:
     def test_metrics_with_depends_on(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -505,7 +696,13 @@ class TestAnalysisIntegration:
             ]
         }
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         query_job = client.client.query(
             f"""
@@ -584,7 +781,7 @@ class TestAnalysisIntegration:
     def test_no_enrollments(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -630,13 +827,21 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
+
+        metric_table = "test_experiment_2_enrollments_week_1"
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_2_enrollments_week_1`
+            FROM `{project_id}.{temporary_dataset}.{metric_table}`
             ORDER BY enrollment_date DESC
         """
         )
@@ -664,7 +869,7 @@ class TestAnalysisIntegration:
     def test_with_segments(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -720,7 +925,13 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         query_job = client.client.query(
             f"""
@@ -832,7 +1043,7 @@ class TestAnalysisIntegration:
     def test_logging(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -899,7 +1110,12 @@ class TestAnalysisIntegration:
             capacity=1,
         )
         self.analysis_mock_run(
-            monkeypatch, config, static_dataset, temporary_dataset, project_id, log_config
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+            log_config,
         )
 
         assert client.client.get_table(f"{project_id}.{temporary_dataset}.logs") is not None
@@ -983,7 +1199,7 @@ class TestAnalysisIntegration:
     def test_statistics_export(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -1039,7 +1255,13 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         query_job = client.client.query(
             f"""
@@ -1059,7 +1281,7 @@ class TestAnalysisIntegration:
     def test_subset_metric_table(
         self,
         monkeypatch,
-        client,
+        client: BigQueryClient,
         project_id,
         static_dataset,
         temporary_dataset,
@@ -1108,7 +1330,13 @@ class TestAnalysisIntegration:
 
         config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
 
-        self.analysis_mock_run(monkeypatch, config, static_dataset, temporary_dataset, project_id)
+        self.analysis_mock_run(
+            monkeypatch,
+            config,
+            static_dataset,
+            temporary_dataset,
+            project_id,
+        )
 
         analysis = Analysis(project_id, temporary_dataset, config, None)
 
