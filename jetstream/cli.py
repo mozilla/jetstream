@@ -929,7 +929,7 @@ def run_argo(
     image,
     image_version,
     statistics_only,
-    # metric_slugs,
+    # metric_slug,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -1006,7 +1006,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
-    metric_slugs,
+    metric_slug,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -1029,11 +1029,11 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
-        metric_slugs=metric_slugs if metric_slugs else None,
+        metric_slugs=metric_slug if metric_slug else None,
     )
 
     if argo:
-        if metric_slugs:
+        if metric_slug:
             raise ValueError("--metric-slugs is not currently supported for Argo execution")
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
@@ -1048,7 +1048,7 @@ def rerun(
             image=image,
             image_version=image_version,
             statistics_only=statistics_only,
-            # metric_slugs=metric_slugs if metric_slugs else None,
+            # metric_slugs=metric_slug if metric_slug else None,
         )
 
     success = AnalysisExecutor(
