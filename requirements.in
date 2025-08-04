@@ -244,7 +244,7 @@ patsy==1.0.1
     # via
     #   marginaleffects
     #   statsmodels
-pillow==11.2.1
+pillow==11.3.0
     # via matplotlib
 platformdirs==4.3.8
     # via
