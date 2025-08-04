@@ -90,6 +90,25 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     assert m.call_count == 2
 
 
+def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
+    m = Mock()
+    monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
+    x = experiments[0]
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+
+    def bypass_mp_pool(_pool, func, args):
+        return func(*args)
+
+    monkeypatch.setattr("multiprocessing.pool.Pool.apply_async", bypass_mp_pool)
+
+    Analysis("spam", "eggs", config).validate(metric_slugs=["active_hours", "retained"])
+
+    # 1 for enrollments + 2 metrics
+    assert m.call_count == 3
+
+
 def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     conf = dedent(
         """
@@ -163,7 +182,7 @@ def test_validation_working_while_enrolling(experiments):
     try:
         Analysis("test", "test", config).validate()
     except Exception as e:
-        pytest.fail(f"Raised {e}")
+        pytest.fail(f"Raised {e} (are you authenticated?)")
 
 
 def test_run_when_enrolling_complete(experiments, monkeypatch):
@@ -265,6 +284,7 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -365,6 +385,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -399,6 +420,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
     AND mysegment = TRUE"""
@@ -491,6 +513,7 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_exposures_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
@@ -599,6 +622,7 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -1007,6 +1031,7 @@ def test_create_subset_metric_table_query_covariate_fallback(randomization_unit,
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -1062,6 +1087,7 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )

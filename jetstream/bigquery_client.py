@@ -13,7 +13,7 @@ import google.cloud.bigquery.job
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
-from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import NotFound, PreconditionFailed
 from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
@@ -63,7 +63,19 @@ class BigQueryClient:
             table.description = description
             updated_fields.append("description")
 
-        self.client.update_table(table, updated_fields)
+        try:
+            self.client.update_table(table, updated_fields)
+        except PreconditionFailed as e:
+            # log but ignore: this is likely due to concurrent metadata updates
+            logger.exception(
+                "Ignoring PreconditionFailed error because it is likely due to "
+                f"concurrent metadata updates. Error information attached:\n{e}",
+                exc_info=e,
+                extra={
+                    "experiment": description,
+                    "metric": table_name,
+                },
+            )
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
@@ -177,8 +189,10 @@ class BigQueryClient:
         for table in tables:
             self.add_metadata_to_table(table, {"last_updated": timestamp})
 
-    def delete_table(self, table_id: str) -> None:
+    def delete_table(self, table_id: str, fully_qualify: bool = False) -> None:
         """Delete the table."""
+        if fully_qualify:
+            table_id = f"{self.project}.{self.dataset}.{table_id}"
         self.client.delete_table(table_id, not_found_ok=True)
 
     def delete_experiment_tables(
