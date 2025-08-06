@@ -9,9 +9,6 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   build:
@@ -92,9 +89,10 @@ jobs:
 
   deploy:
     permissions:
-      contents: read
       id-token: write
-    environment: GH Actions
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mozilla-jetstream
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
@@ -107,11 +105,8 @@ jobs:
         run: pip install --upgrade build setuptools wheel twine
       - name: Build distribution files
         run: python -m build --sdist
-      - name: Upload to PyPI
-        env:
-          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-        run: twine upload --skip-existing dist/*
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   docker:
     permissions:
@@ -124,7 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
-        run: docker build . -t jetstream
+        run: docker build . -t jetstream:latest
       - name: Push Docker image to GCR
         uses: mozilla-it/deploy-actions/docker-push@v3
         with:
