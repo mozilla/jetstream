@@ -15,7 +15,6 @@ jobs:
     environment: GH Actions
     permissions:
       contents: read
-      deployments: write
       id-token: write
     runs-on: ubuntu-latest
     steps:
@@ -23,17 +22,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.10.8
-      - name: Restore Cache
-        uses: actions/cache@v4
-        with:
-          key: python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
-          path: venv/
-          restore-keys: |-
-            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
-            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
-            python-packages-v1-{{ .Branch }}-
-            python-packages-v1-
+          python-version: '3.10'
+          cache: 'pip'
       - name: Build venv and install dependencies
         run: |
           python3.10 -m venv venv/
@@ -69,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.10.8
+          python-version: '3.10'
       - name: Build venv and install dependencies
         run: |
           python3.10 -m venv venv/
@@ -79,11 +69,6 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
-      - name: Debug GCP Credentials
-        run: |
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS"
-          ls -l $GOOGLE_APPLICATION_CREDENTIALS || true
-          env | grep GOOGLE
       - name: PyTest Integration Test
         run: venv/bin/pytest --ruff --ruff-format --integration jetstream/tests/integration/ -n 8
 
@@ -100,7 +85,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.10.8
+          python-version: '3.10'
       - name: Install deployment tools
         run: pip install --upgrade build setuptools wheel twine
       - name: Build distribution files
@@ -120,7 +105,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build . -t jetstream:latest
-      - name: Push Docker image to GCR
+      - name: Push Docker image to GAR
         uses: mozilla-it/deploy-actions/docker-push@v3
         with:
           project_id: moz-fx-data-experiments
