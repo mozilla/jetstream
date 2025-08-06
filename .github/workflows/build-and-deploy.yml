@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+  merge_group:
 
 jobs:
   build:
@@ -74,6 +75,7 @@ jobs:
 
   deploy:
     permissions:
+      contents: read
       id-token: write
     environment:
       name: pypi
