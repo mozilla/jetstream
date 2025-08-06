@@ -63,6 +63,7 @@ class DryRunFailedError(Exception):
 def dry_run_query(sql: str) -> None:
     """Dry run the provided SQL query."""
     try:
+        # look for token created by the GitHub Actions workflow
         id_token = os.environ.get("GOOGLE_GHA_ID_TOKEN")
         if not id_token:
             auth_req = GoogleAuthRequest()
