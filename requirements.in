@@ -113,7 +113,7 @@ google-cloud-bigquery-storage==2.32.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.58.0
+google-cloud-container==2.59.0
     # via mozilla-jetstream
 google-cloud-core==2.4.3
     # via
