@@ -1098,12 +1098,12 @@ class Analysis:
 
             if time_limits is None:
                 logger.info(
-                    "Skipping %s (%s); not ready [START: %s, CURRENT: %s]",
+                    "Skipping %s (%s); not ready [ENROLLMENT END: %s, CURRENT: %s]",
                     self.config.experiment.normandy_slug,
                     period.value,
                     (
-                        self.config.experiment.start_date.strftime("%Y-%m-%d")
-                        if self.config.experiment.start_date is not None
+                        self.config.experiment.enrollment_end_date.strftime("%Y-%m-%d")
+                        if self.config.experiment.enrollment_end_date is not None
                         else "None"
                     ),
                     current_date.strftime("%Y-%m-%d"),
@@ -1189,43 +1189,43 @@ class Analysis:
                             ):
                                 continue
 
-                        segment_data = self.subset_metric_table(
-                            metrics_table,
-                            segment,
-                            summary,
-                            analysis_basis,
-                            period,
-                            False,
+                            segment_data = self.subset_metric_table(
+                                metrics_table,
+                                segment,
+                                summary,
+                                analysis_basis,
+                                period,
+                                False,
+                            )
+
+                            analysis_length_dates = 1
+                            if period.value == AnalysisPeriod.OVERALL:
+                                analysis_length_dates = time_limits.analysis_length_dates
+                            elif period.value == AnalysisPeriod.WEEK:
+                                analysis_length_dates = 7
+
+                            segment_results.root += self.calculate_statistics(
+                                summary,
+                                segment_data,
+                                segment,
+                                analysis_basis,
+                                analysis_length_dates,
+                                period,
+                            ).model_dump(warnings=False)
+
+                            segment_results.root += self.counts(
+                                segment_data, segment, analysis_basis
+                            ).model_dump(warnings=False)
+
+                        # save statistics for this analysis basis
+                        result = self.save_statistics(
+                            segment_results.model_dump(warnings=False),
+                            self._table_name(
+                                period.value, len(time_limits.analysis_windows), statistics=True
+                            ),
                         )
-
-                        analysis_length_dates = 1
-                        if period.value == AnalysisPeriod.OVERALL:
-                            analysis_length_dates = time_limits.analysis_length_dates
-                        elif period.value == AnalysisPeriod.WEEK:
-                            analysis_length_dates = 7
-
-                        segment_results.root += self.calculate_statistics(
-                            summary,
-                            segment_data,
-                            segment,
-                            analysis_basis,
-                            analysis_length_dates,
-                            period,
-                        ).model_dump(warnings=False)
-
-                        segment_results.root += self.counts(
-                            segment_data, segment, analysis_basis
-                        ).model_dump(warnings=False)
-
-                    # save statistics for this analysis basis
-                    result = self.save_statistics(
-                        segment_results.model_dump(warnings=False),
-                        self._table_name(
-                            period.value, len(time_limits.analysis_windows), statistics=True
-                        ),
-                    )
-                    results.append(result)
-                    stats_results.append(result)
+                        results.append(result)
+                        stats_results.append(result)
                 else:
                     # convert metric configurations to mozanalysis metrics
                     summary_metrics: list[Summary] = [

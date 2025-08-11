@@ -67,7 +67,7 @@ class BigQueryClient:
             self.client.update_table(table, updated_fields)
         except PreconditionFailed as e:
             # log but ignore: this is likely due to concurrent metadata updates
-            logger.exception(
+            logger.warning(
                 "Ignoring PreconditionFailed error because it is likely due to "
                 f"concurrent metadata updates. Error information attached:\n{e}",
                 exc_info=e,
