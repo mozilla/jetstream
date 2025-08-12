@@ -1089,9 +1089,9 @@ mypy-extensions==1.1.0 \
     # via
     #   -r requirements.in
     #   mypy
-narwhals==1.48.0 \
-    --hash=sha256:2bbddc3adeed0c5b15ead8fe61f1d5e459f00c1d2fa60921e52a0f9bdc06077d \
-    --hash=sha256:7243b456cbdb60edb148731a8f9b203f473a373a249ad66c699362508730e63f
+narwhals==2.1.0 \
+    --hash=sha256:4d0d1ccc9f74fe44a93a7632b32268ab6658e7dfb026aa6f10b0c1bfa4c468b7 \
+    --hash=sha256:dfeb3b24c1b06501d1c1e979bd25e424f8bbd2eb7a9d0f7bbf0a7d47e36b498f
     # via
     #   -r requirements.in
     #   formulaic
