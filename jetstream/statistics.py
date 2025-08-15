@@ -495,7 +495,7 @@ class LinearModelMean(Statistic):
 
 
 @attr.s(auto_attribs=True)
-class PerClientDAUImpact(BootstrapMean):
+class PerClientDAUImpact(LinearModelMean):
     drop_highest: float = 0.0
 
     def transform(
@@ -507,7 +507,7 @@ class PerClientDAUImpact(BootstrapMean):
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        bootstrap_results = super().transform(
+        mean_results = super().transform(
             df,
             metric,
             reference_branch,
@@ -535,7 +535,7 @@ class PerClientDAUImpact(BootstrapMean):
             # experiment
             branch_data_abs = [
                 x
-                for x in bootstrap_results.root
+                for x in mean_results.root
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data_abs:
@@ -550,7 +550,7 @@ class PerClientDAUImpact(BootstrapMean):
             # per-user sum(DAU)
             branch_data_rel = [
                 x
-                for x in bootstrap_results.root
+                for x in mean_results.root
                 if x.branch == branch.slug and x.comparison == "relative_uplift"
             ]
             for d in branch_data_rel:
