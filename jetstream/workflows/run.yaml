@@ -5,7 +5,8 @@ metadata:
 spec:
   entrypoint: jetstream
   ttlStrategy:
-    secondsAfterSuccess: 432000 # delete workflows automatically after 5 days
+    secondsAfterCompletion: 4320000 # delete workflows automatically after 50 days
+    secondsAfterSuccess: 432000 # delete successful workflows automatically after 5 days
   arguments:
     parameters:
     - name: experiments  # set dynamically when workflow gets deployed
