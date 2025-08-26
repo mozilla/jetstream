@@ -44,7 +44,7 @@ colorama==0.4.6
     # via tox
 contourpy==1.3.2
     # via matplotlib
-coverage[toml]==7.10.4
+coverage[toml]==7.10.5
     # via
     #   mozilla-jetstream
     #   pytest-cov
