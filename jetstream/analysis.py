@@ -997,6 +997,7 @@ class Analysis:
                 statistics_table,
                 job_config=job_config,
                 experiment_slug=self.config.experiment.normandy_slug,
+                labels={"schema_version": StatisticResult.SCHEMA_VERSION},
             )
         except BadRequest as e:
             # There was a mismatch between the segment_results root dict
@@ -1011,10 +1012,6 @@ class Analysis:
             # logger.error(f"Data received: {segment_results}")
             ve = ValueError(error_msg)
             raise ve from e
-
-        self.bigquery.add_metadata_to_table(
-            statistics_table, {"schema_version": StatisticResult.SCHEMA_VERSION}
-        )
 
     def run(
         self,
