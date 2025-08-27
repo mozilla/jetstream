@@ -95,15 +95,21 @@ class BigQueryClient:
         table: str,
         job_config: google.cloud.bigquery.LoadJobConfig,
         experiment_slug: str | None = None,
+        labels: dict[str, str] | None = None,
     ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
+        if experiment_slug:
+            job_config.destination_table_description = experiment_slug
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
+        if labels and "last_updated" not in labels:
+            labels["last_updated"] = self._current_timestamp_label()
+        elif labels is None:
+            labels = {"last_updated": self._current_timestamp_label()}
+
         # add a label with the current timestamp to the table
-        self.add_metadata_to_table(
-            table, {"last_updated": self._current_timestamp_label()}, description=experiment_slug
-        )
+        self.add_metadata_to_table(table, labels)
 
     def execute(
         self,

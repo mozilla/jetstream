@@ -146,9 +146,21 @@ class TestBigQueryClient:
 
         table = "statistics_test_experiment_week_1"
 
-        client.load_table_from_json(test_data.model_dump(warnings=False), table, job_config)
+        client.load_table_from_json(
+            test_data.model_dump(warnings=False),
+            table,
+            job_config,
+            experiment_slug="test-slug",
+            labels={"schema_version": StatisticResult.SCHEMA_VERSION},
+        )
 
         table_ref = client.client.get_table(f"{temporary_dataset}.{table}")
+
+        assert table_ref.description == "test-slug"
+        assert table_ref.labels
+        assert "last_updated" in table_ref.labels
+        assert "schema_version" in table_ref.labels
+
         rows = client.client.list_rows(table_ref)
         results = list(rows)
 
