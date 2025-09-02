@@ -18,7 +18,7 @@ cachetools==5.5.2
     # via
     #   google-auth
     #   tox
-cattrs==25.1.1
+cattrs==25.2.0
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
