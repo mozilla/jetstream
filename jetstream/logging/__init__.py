@@ -12,6 +12,7 @@ class LOG_SOURCE(str, Enum):
     JETSTREAM = "jetstream"
     SIZING = "sizing"
     PREVIEW = "jetstream-preview"
+    TESTING = "jetstream-testing"
 
 
 @attr.s(auto_attribs=True)
@@ -25,12 +26,13 @@ class LogConfiguration:
     task_monitoring_log_table_id: str | None
     log_to_bigquery: bool = False
     capacity: int = 50
-    log_level: int = logging.WARNING
+    log_level: int = logging.INFO
+    bq_log_level: int = logging.WARNING
     log_source: str = LOG_SOURCE.JETSTREAM
 
     def setup_logger(self, client=None):
         logging.basicConfig(
-            level=logging.INFO,
+            level=self.log_level,
             format="%(levelname)s:%(asctime)s:%(name)s:%(message)s",
         )
         logger = logging.getLogger()
@@ -44,7 +46,7 @@ class LogConfiguration:
                 client,
                 self.capacity,
             )
-            bigquery_handler.setLevel(self.log_level)
+            bigquery_handler.setLevel(self.bq_log_level)
             logger.addHandler(bigquery_handler)
 
 

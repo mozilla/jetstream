@@ -13,7 +13,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
-from mozilla_nimbus_schemas.experiments import RandomizationUnit
+from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 import jetstream.analysis
@@ -90,6 +90,25 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     assert m.call_count == 2
 
 
+def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
+    m = Mock()
+    monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
+    x = experiments[0]
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+
+    def bypass_mp_pool(_pool, func, args):
+        return func(*args)
+
+    monkeypatch.setattr("multiprocessing.pool.Pool.apply_async", bypass_mp_pool)
+
+    Analysis("spam", "eggs", config).validate(metric_slugs=["active_hours", "retained"])
+
+    # 1 for enrollments + 2 metrics
+    assert m.call_count == 3
+
+
 def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
     conf = dedent(
         """
@@ -163,7 +182,7 @@ def test_validation_working_while_enrolling(experiments):
     try:
         Analysis("test", "test", config).validate()
     except Exception as e:
-        pytest.fail(f"Raised {e}")
+        pytest.fail(f"Raised {e} (are you authenticated?)")
 
 
 def test_run_when_enrolling_complete(experiments, monkeypatch):
@@ -265,6 +284,7 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -365,6 +385,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -399,6 +420,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
     AND mysegment = TRUE"""
@@ -491,6 +513,7 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_exposures_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
     )
@@ -599,6 +622,7 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )
@@ -971,6 +995,76 @@ def test_create_subset_metric_table_query_complete_covariate(randomization_unit,
         "all",
         summary,
         AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+    )
+
+    assert expected_query == actual_query
+
+
+@pytest.mark.parametrize(("randomization_unit"), list(RandomizationUnit))
+def test_create_subset_metric_table_query_covariate_fallback(randomization_unit, monkeypatch):
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
+    )
+    monkeypatch.setattr(
+        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        MagicMock(return_value=True),
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {
+            "metric": "my_metric",
+            "period": "preenrollment_days28",
+        }
+    }
+
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary.metric = metric
+
+    expected_query = dedent(
+        """
+    SELECT branch, metric_name
+    FROM `test_experiment_enrollments_1`
+
+    WHERE metric_name IS NOT NULL AND
+    enrollment_date IS NOT NULL"""
+    )
+
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Complete",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[Branch(slug="a", ratio=1), Branch(slug="b", ratio=1)],
+        normandy_slug="normandy-test-slug",
+        reference_branch="b",
+        is_high_population=False,
+        app_name="firefox_desktop",
+        app_id="firefox-desktop",
+        enrollment_end_date=dt.datetime(2019, 12, 7, tzinfo=pytz.utc),
+        bucket_config=BucketConfig(
+            randomization_unit=randomization_unit,
+            namespace="testing",
+            start=0,
+            count=10,
+            total=100,
+        ),
+    )
+
+    # covariate statistic should fall back to univariate if current period is preenrollment
+    actual_query = _empty_analysis([exp])._create_subset_metric_table_query(
+        "test_experiment_enrollments_1",
+        "all",
+        summary,
+        AnalysisBasis.ENROLLMENTS,
         AnalysisPeriod.PREENROLLMENT_WEEK,
     )
 
@@ -993,6 +1087,7 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
         """
     SELECT branch, metric_name
     FROM `test_experiment_enrollments_1`
+
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
     )

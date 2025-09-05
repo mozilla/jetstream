@@ -173,15 +173,23 @@ class StatisticResultCollection(StatisticsSchema):
 
     root: list[StatisticResult] = []
 
+    # Define dunder methods so we can treat the instance like a list
+    # instead of having to access `.root`
+    def __iter__(self):
+        return iter(self.root)
+
+    def __getitem__(self, item):
+        return self.root[item]
+
     def set_segment(self, segment: str) -> "StatisticResultCollection":
         """Sets the `segment` field in-place on all children."""
-        for result in self.root:
+        for result in self:
             result.segment = segment
         return self
 
     def set_analysis_basis(self, analysis_basis: AnalysisBasis) -> "StatisticResultCollection":
         """Sets the `analysis_basis` field in-place on all children."""
-        for result in self.root:
+        for result in self:
             result.analysis_basis = analysis_basis.value
         return self
 
@@ -487,7 +495,7 @@ class LinearModelMean(Statistic):
 
 
 @attr.s(auto_attribs=True)
-class PerClientDAUImpact(BootstrapMean):
+class PerClientDAUImpact(LinearModelMean):
     drop_highest: float = 0.0
 
     def transform(
@@ -499,7 +507,7 @@ class PerClientDAUImpact(BootstrapMean):
         analysis_basis: parser_metric.AnalysisBasis,
         segment: str,
     ) -> StatisticResultCollection:
-        bootstrap_results = super().transform(
+        mean_results = super().transform(
             df,
             metric,
             reference_branch,
@@ -513,6 +521,13 @@ class PerClientDAUImpact(BootstrapMean):
         num_enrolled_clients = len(df)
 
         results = []
+        # NOTE: we are intentionally omitting absolute data points from the results
+        # of this statistic in order to avoid potentially misleading experiment owners,
+        # because absolute results are a function of the number of enrollments, and therefore
+        # do not represent useful information outside of the specific experiment context.
+        # One small downside to this decision, at least at the time of writing (April 2025),
+        # is that this might lead to confusion on the Results UI in Experimenter because
+        # absolute data will show as (baseline) for all branches.
         for branch in experiment.branches:
             # for absolute differences we report the absolute difference in per-user
             # sum(DAU) scaled by total user enrollment. The interpretation here is the
@@ -520,7 +535,7 @@ class PerClientDAUImpact(BootstrapMean):
             # experiment
             branch_data_abs = [
                 x
-                for x in bootstrap_results.root
+                for x in mean_results.root
                 if x.branch == branch.slug and x.comparison == "difference"
             ]
             for d in branch_data_abs:
@@ -535,7 +550,7 @@ class PerClientDAUImpact(BootstrapMean):
             # per-user sum(DAU)
             branch_data_rel = [
                 x
-                for x in bootstrap_results.root
+                for x in mean_results.root
                 if x.branch == branch.slug and x.comparison == "relative_uplift"
             ]
             for d in branch_data_rel:

@@ -40,7 +40,7 @@ def temporary_dataset(project_id):
 
 
 @pytest.fixture
-def client(project_id, temporary_dataset):
+def client(project_id, temporary_dataset) -> BigQueryClient:
     """Provide a BigQuery client."""
     return BigQueryClient(project_id, temporary_dataset)
 

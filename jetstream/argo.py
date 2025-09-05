@@ -195,7 +195,7 @@ class ArgoApi:
         session.headers = headers
         return session
 
-    def create_workflow(self, namespace: str, manifest: str) -> dict[str, Any]:
+    def create_workflow(self, namespace: str, manifest: dict[Any, Any]) -> dict[str, Any]:
         """Submit a new Argo workflow via the Kubernetes API."""
         config = self._get_config()
         session = self._session_for_config(config)

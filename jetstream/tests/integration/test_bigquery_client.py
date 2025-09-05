@@ -65,10 +65,18 @@ class TestBigQueryClient:
         assert client.table_exists("dummy_table") is True
 
     def test_touch_tables(self, client, temporary_dataset):
-        client.client.create_table(f"{temporary_dataset}.enrollments_test_experiment")
-        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_week_0")
-        client.client.create_table(f"{temporary_dataset}.statistics_test_experiment_day_12")
-        client.client.create_table(f"{temporary_dataset}.test_foo_bar_day")
+        for table, experiment in {
+            "enrollments_test_experiment": "test-experiment",
+            "statistics_test_experiment_week_0": "test-experiment",
+            "statistics_test_experiment_day_12": "test-experiment",
+            "test_foo_bar_day": "test-foo-bar",
+        }.items():
+            client.client.create_table(f"{temporary_dataset}.{table}")
+            client.add_metadata_to_table(
+                table,
+                {},
+                description=experiment,
+            )
 
         client.touch_tables("test-experiment")
 
@@ -138,9 +146,21 @@ class TestBigQueryClient:
 
         table = "statistics_test_experiment_week_1"
 
-        client.load_table_from_json(test_data.model_dump(warnings=False), table, job_config)
+        client.load_table_from_json(
+            test_data.model_dump(warnings=False),
+            table,
+            job_config,
+            experiment_slug="test-slug",
+            labels={"schema_version": StatisticResult.SCHEMA_VERSION},
+        )
 
         table_ref = client.client.get_table(f"{temporary_dataset}.{table}")
+
+        assert table_ref.description == "test-slug"
+        assert table_ref.labels
+        assert "last_updated" in table_ref.labels
+        assert "schema_version" in table_ref.labels
+
         rows = client.client.list_rows(table_ref)
         results = list(rows)
 

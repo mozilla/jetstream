@@ -1,28 +1,24 @@
 import logging
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import datetime, time, timedelta
 from functools import partial
+from importlib.metadata import version
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import (
-    Protocol,
-    TextIO,
-)
+from typing import Protocol, TextIO
 
 import attr
 import click
 import pytz
 import toml
+from google.auth.exceptions import DefaultCredentialsError
+from google.cloud import bigquery
+from jinja2.exceptions import UndefinedError
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
-from metric_config_parser.config import (
-    Config,
-    DefaultConfig,
-    DefinitionConfig,
-    entity_from_path,
-)
+from metric_config_parser.config import Config, DefaultConfig, DefinitionConfig, entity_from_path
 from metric_config_parser.data_source import DataSourceDefinition
 from metric_config_parser.errors import (
     ConfigException,
@@ -102,14 +98,15 @@ class ArgoExecutorStrategy:
     bucket: str | None = None
     cluster_ip: str | None = None
     cluster_cert: str | None = None
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
+    metric_slugs: list[str] | None = None
     statistics_only: bool = False
 
-    WORKLFOW_DIR = Path(__file__).parent / "workflows"
-    RUN_WORKFLOW = WORKLFOW_DIR / "run.yaml"
+    WORKFLOW_DIR = Path(__file__).parent / "workflows"
+    RUN_WORKFLOW = WORKFLOW_DIR / "run.yaml"
 
     def execute(
         self,
@@ -120,9 +117,26 @@ class ArgoExecutorStrategy:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: dict[str, list[str]] = {}
+        # TODO: uncomment this and related lines when adding Argo support for metric_slugs
+        # experiment_metrics_map: dict[str, set[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
+            )
+            # experiment_metrics_map[config.experiment.normandy_slug] = self.metric_slugs or set()
+            # # if metric_slugs is None or empty list
+            # if not self.metric_slugs:
+            #     # get a set of all metric slugs for the experiment
+            #     for analysis_period, metrics_list in config.metrics.items():
+            #         if analysis_period in self.analysis_periods:
+            #             experiment_metrics_map[config.experiment.normandy_slug].update(
+            #                 {m.metric.name for m in metrics_list}
+            #             )
+
+        if self.metric_slugs:
+            logger.warning(
+                "`metric_slugs` provided to ArgoExecutorStrategy, but is not"
+                " currently supported. Ignoring and running all metrics..."
             )
 
         # determine the docker image that was the most recent when enrollments ended for experiments
@@ -141,9 +155,11 @@ class ArgoExecutorStrategy:
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
+                # "metric_slugs": list(experiment_metrics_map.get(slug)),
             }
             for slug, dates in experiments_config.items()
         ]
+        logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else AnalysisPeriod.DAYS_28
         )
@@ -207,11 +223,13 @@ class SerialExecutorStrategy:
     bucket: str | None = None
     log_config: LogConfiguration | None = None
     analysis_class: type = Analysis
-    experiment_getter: Callable[[], ExperimentCollection] = ExperimentCollection.from_experimenter
+    experiment_getter: Callable[..., ExperimentCollection] = ExperimentCollection.from_experimenter
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
+    metric_slugs: list[str] | None = None
     statistics_only: bool = False
+    use_glean_ids: bool = False
 
     def execute(
         self,
@@ -237,7 +255,12 @@ class SerialExecutorStrategy:
                     self.analysis_periods,
                     self.sql_output_dir,
                 )
-                analysis.run(date, statistics_only=self.statistics_only)
+                analysis.run(
+                    date,
+                    statistics_only=self.statistics_only,
+                    use_glean_ids=self.use_glean_ids,
+                    metric_slugs=self.metric_slugs,
+                )
 
                 # export metadata to GCS
                 if self.bucket:
@@ -288,7 +311,7 @@ class AnalysisExecutor:
     dataset_id: str
     bucket: str
     date: datetime | AllType
-    experiment_slugs: Iterable[str] | AllType
+    experiment_slugs: Sequence[str] | AllType
     configuration_map: Mapping[str, TextIO | AnalysisSpec] | None = attr.ib(None)
     recreate_enrollments: bool = False
     sql_output_dir: str | None = None
@@ -307,7 +330,7 @@ class AnalysisExecutor:
         strategy: ExecutorStrategy,
         *,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
         today: datetime | None = None,
@@ -388,11 +411,13 @@ class AnalysisExecutor:
         with ThreadPool() as pool:
             # this is the same functionality as pool.map except we can catch and log
             # errors without failing, and continue execution for successful experiments
-            results = []
+            results = {}
             for experiment in experiments:
-                results.append(pool.apply_async(_load_experiment_config, args=(experiment,)))
+                results[experiment.normandy_slug] = pool.apply_async(
+                    _load_experiment_config, args=(experiment,)
+                )
 
-            for result in results:
+            for slug, result in results.items():
                 try:
                     configs.append(result.get())
                 except (
@@ -401,22 +426,24 @@ class AnalysisExecutor:
                     InvalidConfigurationException,
                     DefinitionNotFound,
                     UnexpectedKeyConfigurationException,
+                    UndefinedError,
                 ) as e:
-                    logger.exception(
-                        str(e), exc_info=e, extra={"experiment": experiment.normandy_slug}
-                    )
+                    logger.exception(str(e), exc_info=e, extra={"experiment": slug})
 
         return configs
 
     def _experiment_configs_to_analyse(
         self,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
         config_getter: _ConfigLoader = ConfigLoader,
     ) -> list[AnalysisConfiguration]:
         """Fetch configs of experiments that are to be analysed."""
-        experiments = experiment_getter()
+        if not isinstance(self.experiment_slugs, AllType) and len(self.experiment_slugs) == 1:
+            experiments = experiment_getter(slug=self.experiment_slugs[0])
+        else:
+            experiments = experiment_getter()
         run_configs = []
 
         if isinstance(self.experiment_slugs, AllType):
@@ -473,7 +500,7 @@ class AnalysisExecutor:
         self,
         config_getter: _ConfigLoader = ConfigLoader,
         experiment_getter: Callable[
-            [], ExperimentCollection
+            ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
@@ -565,6 +592,7 @@ log_source = click.option(
 )
 @click.option("--log_to_bigquery", "--log-to-bigquery", is_flag=True, default=False)
 @log_source
+@click.option("--debug", is_flag=True, default=False)
 @click.pass_context
 def cli(
     ctx,
@@ -575,7 +603,9 @@ def cli(
     task_monitoring_log_table_id,
     log_to_bigquery,
     log_source,
+    debug,
 ):
+    log_level = logging.DEBUG if debug else logging.INFO
     log_config = LogConfiguration(
         log_project_id,
         log_dataset_id,
@@ -584,10 +614,13 @@ def cli(
         task_monitoring_log_table_id,
         log_to_bigquery,
         log_source=log_source,
+        log_level=log_level,
     )
     log_config.setup_logger()
     ctx.ensure_object(dict)
     ctx.obj["log_config"] = log_config
+
+    logger.info(f"Jetstream version {version('mozilla-jetstream')}")
 
 
 class ClickDate(click.ParamType):
@@ -768,6 +801,17 @@ statistics_only_option = click.option(
     default=False,
 )
 
+use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=True, default=False)
+
+metric_slugs_option = click.option(
+    "--metric-slug",
+    "--metric_slug",
+    help="Slug of the metric(s) to compute",
+    type=str,
+    required=False,
+    multiple=True,
+)
+
 
 @cli.command()
 @project_id_option()
@@ -782,6 +826,8 @@ statistics_only_option = click.option(
 @analysis_periods_option()
 @sql_output_dir_option
 @statistics_only_option
+@use_glean_ids_option
+@metric_slugs_option
 @click.pass_context
 def run(
     ctx,
@@ -797,6 +843,8 @@ def run(
     analysis_periods,
     sql_output_dir,
     statistics_only,
+    use_glean_ids,
+    metric_slug,
 ):
     """Runs analysis for the provided date."""
     if len(experiment_slug) > 1 and config_file:
@@ -826,7 +874,9 @@ def run(
             ctx.obj["log_config"],
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
+            metric_slugs=metric_slug if metric_slug else None,
             statistics_only=statistics_only,
+            use_glean_ids=use_glean_ids,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
@@ -859,6 +909,7 @@ def run(
 @image_option
 @image_version_option
 @statistics_only_option
+# @metric_slugs_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -878,6 +929,7 @@ def run_argo(
     image,
     image_version,
     statistics_only,
+    # metric_slug,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -893,6 +945,7 @@ def run_argo(
         image=image,
         image_version=image_version,
         statistics_only=statistics_only,
+        # metric_slugs=metric_slugs if metric_slugs else None,
     )
 
     AnalysisExecutor(
@@ -930,6 +983,7 @@ def run_argo(
 @image_version_option
 @analysis_periods_option()
 @statistics_only_option
+@metric_slugs_option
 @click.pass_context
 def rerun(
     ctx,
@@ -952,6 +1006,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
+    metric_slug,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -974,9 +1029,12 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
+        metric_slugs=metric_slug if metric_slug else None,
     )
 
     if argo:
+        if metric_slug:
+            raise ValueError("--metric-slugs is not currently supported for Argo execution")
         strategy = ArgoExecutorStrategy(
             project_id=project_id,
             dataset_id=dataset_id,
@@ -990,6 +1048,7 @@ def rerun(
             image=image,
             image_version=image_version,
             statistics_only=statistics_only,
+            # metric_slugs=metric_slug if metric_slug else None,
         )
 
     success = AnalysisExecutor(
@@ -1195,7 +1254,13 @@ def rerun_config_changed(
 def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
     """Validate config files."""
     dirty = False
-    collection = ExperimentCollection.from_experimenter()
+
+    # ensure authenticated to GCP in order to run cloud function
+    try:
+        bigquery.Client(project="")
+    except DefaultCredentialsError:
+        click.echo("Not authenticated to GCP. Run `gcloud auth login  --update-adc` to login.")
+        sys.exit(1)
 
     for config_file in path:
         config_file = Path(config_file)
@@ -1224,7 +1289,8 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             and not isinstance(entity, DefaultConfig)
             and not isinstance(entity, DefinitionConfig)
         ):
-            if (experiments := collection.with_slug(entity.slug).experiments) == []:
+            experiments = ExperimentCollection.from_experimenter(slug=entity.slug).experiments
+            if experiments == []:
                 print(f"No experiment with slug {entity.slug} in Experimenter.")
                 dirty = True
                 continue
@@ -1479,6 +1545,7 @@ def preview(
                             friendly_name=ds.friendly_name,
                             description=ds.description,
                             experiments_column_type="none",
+                            group_id_column=ds.group_id_column,
                         )
 
         # log to a table in the temporary dataset, will be displayed on the Looker dashboard
@@ -1489,7 +1556,7 @@ def preview(
             log_to_bigquery=True,
             task_profiling_log_table_id=None,
             task_monitoring_log_table_id=None,
-            log_level=logging.INFO,
+            bq_log_level=logging.INFO,
             capacity=5,
             log_source=LOG_SOURCE.PREVIEW,
         )
@@ -1509,7 +1576,9 @@ def preview(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
-            experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+            experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                experiments=[exp]
+            ),
         )
 
         # run preview analysis
@@ -1537,17 +1606,19 @@ def preview(
                     log_config,
                     analysis_periods=analysis_periods,
                     sql_output_dir=sql_output_dir,
-                    experiment_getter=lambda exp=experiment: ExperimentCollection(
+                    experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
                         experiments=[exp]
                     ),
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
                 ),
-                experiment_getter=lambda exp=experiment: ExperimentCollection(experiments=[exp]),
+                experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
+                    experiments=[exp]
+                ),
             )
 
         click.echo(
             "A preview is available at: "
-            + f"{LOOKER_PREVIEW_URL}?Project='{project_id}'&Dataset='{dataset_id}'&Slug='{table}'"
+            + f"{LOOKER_PREVIEW_URL}?Project={project_id}&Dataset={dataset_id}&Slug={table}"
         )

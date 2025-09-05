@@ -1,3 +1,5 @@
+import logging
+import re
 import time
 from collections.abc import Iterable, Mapping
 from datetime import datetime
@@ -8,15 +10,16 @@ import google.cloud.bigquery
 import google.cloud.bigquery.client
 import google.cloud.bigquery.dataset
 import google.cloud.bigquery.job
-import google.cloud.bigquery.table
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery_storage import BigQueryReadClient
-from google.cloud.exceptions import NotFound
+from google.cloud.exceptions import NotFound, PreconditionFailed
 from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from . import bq_normalize_name
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -60,7 +63,19 @@ class BigQueryClient:
             table.description = description
             updated_fields.append("description")
 
-        self.client.update_table(table, updated_fields)
+        try:
+            self.client.update_table(table, updated_fields)
+        except PreconditionFailed as e:
+            # log but ignore: this is likely due to concurrent metadata updates
+            logger.warning(
+                "Ignoring PreconditionFailed error because it is likely due to "
+                f"concurrent metadata updates. Error information attached:\n{e}",
+                exc_info=e,
+                extra={
+                    "experiment": description,
+                    "metric": table_name,
+                },
+            )
 
     def _current_timestamp_label(self) -> str:
         """Returns the current UTC timestamp as a valid BigQuery label."""
@@ -80,15 +95,21 @@ class BigQueryClient:
         table: str,
         job_config: google.cloud.bigquery.LoadJobConfig,
         experiment_slug: str | None = None,
+        labels: dict[str, str] | None = None,
     ):
         # wait for the job to complete
         destination_table = f"{self.project}.{self.dataset}.{table}"
+        if experiment_slug:
+            job_config.destination_table_description = experiment_slug
         self.client.load_table_from_json(results, destination_table, job_config=job_config).result()
 
+        if labels and "last_updated" not in labels:
+            labels["last_updated"] = self._current_timestamp_label()
+        elif labels is None:
+            labels = {"last_updated": self._current_timestamp_label()}
+
         # add a label with the current timestamp to the table
-        self.add_metadata_to_table(
-            table, {"last_updated": self._current_timestamp_label()}, description=experiment_slug
-        )
+        self.add_metadata_to_table(table, labels)
 
     def execute(
         self,
@@ -145,7 +166,7 @@ class BigQueryClient:
                 AND COALESCE(option_value, '') = '"{description}"'
             """
         )
-        print(job.query)
+        logger.info(job.query)
         result = list(job.result())
         return [row.table_name for row in result]
 
@@ -169,37 +190,34 @@ class BigQueryClient:
 
         Useful to prevent tables that we _didn't_ already touch from causing an experiment to look
         perpetually stale."""
-        normalized_slug = bq_normalize_name(normandy_slug)
-        analysis_periods = "|".join([p.value for p in AnalysisPeriod])
-        table_name_re = f"^(statistics_|enrollments_)?{normalized_slug}(_({analysis_periods})_)?.*$"
-        tables = self.tables_matching_regex(table_name_re)
+        tables = self.tables_matching_description(normandy_slug)
         timestamp = self._current_timestamp_label()
         for table in tables:
             self.add_metadata_to_table(table, {"last_updated": timestamp})
 
-    def delete_table(self, table_id: str) -> None:
+    def delete_table(self, table_id: str, fully_qualify: bool = False) -> None:
         """Delete the table."""
+        if fully_qualify:
+            table_id = f"{self.project}.{self.dataset}.{table_id}"
         self.client.delete_table(table_id, not_found_ok=True)
 
     def delete_experiment_tables(
         self, slug: str, analysis_periods: list[AnalysisPeriod], delete_enrollments: bool = False
     ):
         """Delete all tables associated with the specified experiment slug."""
-        normalized_slug = bq_normalize_name(slug)
         analysis_periods_re = "|".join([p.value for p in analysis_periods])
+        analysis_periods_pattern = re.compile(f"_({analysis_periods_re}).*$")
 
-        existing_tables = self.tables_matching_regex(
-            f"^{normalized_slug}_.+_({analysis_periods_re}).*$"
-        )
-        existing_tables += self.tables_matching_regex(
-            f"^statistics_{normalized_slug}_({analysis_periods_re}).*$"
-        )
+        enrollments_table = f"enrollments_{bq_normalize_name(slug)}"
 
-        if delete_enrollments:
-            existing_tables += self.tables_matching_regex(f"^enrollments_{normalized_slug}$")
-
-        for existing_table in existing_tables:
-            self.delete_table(f"{self.project}.{self.dataset}.{existing_table}")
+        tables = self.tables_matching_description(slug)
+        for table in tables:
+            if (
+                delete_enrollments and table == enrollments_table
+            ) or analysis_periods_pattern.search(table) is not None:
+                fully_qualified_table = f"{self.project}.{self.dataset}.{table}"
+                logger.info(f"Deleting table `{fully_qualified_table}`")
+                self.delete_table(fully_qualified_table)
 
     def experiment_table_first_updated(self, slug: str) -> datetime | None:
         """Get the timestamp for when an experiment related table was updated last."""
@@ -218,7 +236,7 @@ class BigQueryClient:
                 ) AS last_updated
             FROM
             {self.dataset}.INFORMATION_SCHEMA.TABLE_OPTIONS
-            WHERE option_name = 'labels' AND table_name LIKE "enrollments_{table_prefix}%"
+            WHERE option_name = 'labels' AND table_name = "enrollments_{table_prefix}"
             """
         )
         result = list(job.result())
