@@ -1,5 +1,3 @@
-[![CircleCI](https://circleci.com/gh/mozilla/jetstream/tree/main.svg?style=shield)](https://circleci.com/gh/mozilla/jetstream/tree/main)
-
 # jetstream
 
 Automated experiment analysis.
