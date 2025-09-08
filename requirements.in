@@ -74,7 +74,7 @@ filelock==3.19.1
     # via
     #   tox
     #   virtualenv
-fonttools==4.59.1
+fonttools==4.59.2
     # via matplotlib
 formulaic==1.2.0
     # via mozanalysis
