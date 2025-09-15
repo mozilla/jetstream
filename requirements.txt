@@ -2230,9 +2230,9 @@ types-pyyaml==6.0.12.20250822 \
     --hash=sha256:1fe1a5e146aa315483592d292b72a172b65b946a6d98aa6ddd8e4aa838ab7098 \
     --hash=sha256:259f1d93079d335730a9db7cff2bcaf65d7e04b4a56b5927d49a612199b59413
     # via -r requirements.in
-types-requests==2.32.4.20250809 \
-    --hash=sha256:d8060de1c8ee599311f56ff58010fb4902f462a1470802cf9f6ed27bc46c4df3 \
-    --hash=sha256:f73d1832fb519ece02c85b1f09d5f0dd3108938e7d47e7f94bbfa18a6782b163
+types-requests==2.32.4.20250913 \
+    --hash=sha256:78c9c1fffebbe0fa487a418e0fa5252017e9c60d1a2da394077f1780f655d7e1 \
+    --hash=sha256:abd6d4f9ce3a9383f269775a9835a4c24e5cd6b9f647d64f88aa4613c33def5d
     # via -r requirements.in
 types-setuptools==80.9.0.20250822 \
     --hash=sha256:070ea7716968ec67a84c7f7768d9952ff24d28b65b6594797a464f1b3066f965 \
