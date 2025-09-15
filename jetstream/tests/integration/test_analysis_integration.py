@@ -362,7 +362,7 @@ class TestAnalysisIntegration:
         )
         assert (
             client.client.get_table(
-                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_active_hours_1"
+                f"{project_id}.{temporary_dataset}.statistics_test_experiment_week_1"
             )
             is not None
         )
