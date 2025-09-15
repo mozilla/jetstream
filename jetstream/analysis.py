@@ -824,6 +824,7 @@ class Analysis:
             and self.config.experiment.end_date
             and self.config.experiment.end_date < current_date
         ):
+            print(f"Experiment is over: {current_date} past {self.config.experiment.end_date}")
             raise errors.EndedException(self.config.experiment.normandy_slug)
 
         if self.config.experiment.is_rollout:
@@ -1027,9 +1028,8 @@ class Analysis:
         global _dask_cluster
         self.start_time = datetime.now(tz=pytz.utc)
         logger.info(
-            "Analysis.run invoked for experiment %s at %s",
-            self.config.experiment.normandy_slug,
-            self.start_time,
+            f"Analysis.run invoked at {self.start_time}"
+            f"for experiment {self.config.experiment.normandy_slug} and date {current_date.date()}"
         )
 
         self.check_runnable(current_date)
@@ -1214,15 +1214,6 @@ class Analysis:
                                 segment_data, segment, analysis_basis
                             ).model_dump(warnings=False)
 
-                        # save statistics for this analysis basis
-                        result = self.save_statistics(
-                            segment_results.model_dump(warnings=False),
-                            self._table_name(
-                                period.value, len(time_limits.analysis_windows), statistics=True
-                            ),
-                        )
-                        results.append(result)
-                        stats_results.append(result)
                 else:
                     # convert metric configurations to mozanalysis metrics
                     summary_metrics: list[Summary] = [
@@ -1327,19 +1318,6 @@ class Analysis:
                                     segment_data, segment, analysis_basis
                                 ).model_dump(warnings=False)
 
-                        # save statistics for this metric
-                        result = self.save_statistics(
-                            segment_results.model_dump(warnings=False),
-                            self._table_name(
-                                period.value,
-                                len(time_limits.analysis_windows),
-                                metric=metric.name,
-                                statistics=True,
-                            ),
-                        )
-                        results.append(result)
-                        stats_results.append(result)
-
                 # done with analysis_basis: publish metric view
                 results.append(
                     bind(
@@ -1351,6 +1329,15 @@ class Analysis:
                         [metrics_results],
                     )
                 )
+
+            # done with period: save statistics results to table
+            result = self.save_statistics(
+                segment_results.model_dump(warnings=False),
+                self._table_name(period.value, len(time_limits.analysis_windows), statistics=True),
+            )
+            results.append(result)
+            stats_results.append(result)
+
             # done with period: publish statistic view
             results.append(
                 bind(
