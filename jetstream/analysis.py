@@ -912,7 +912,7 @@ class Analysis:
 
         if not metric_slugs:
             output_loc = f"metrics_{bq_normalize_name(experiment_slug)}"
-            logger.debug(f"Dry running metrics query for {experiment_slug}")
+            logger.info(f"Dry running metrics query for {experiment_slug}")
             self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
         else:
             selected_metrics = [m for m in metrics if m.name in metric_slugs]
@@ -921,7 +921,7 @@ class Analysis:
             with Pool(num_procs) as pool:
                 for i, metric in enumerate(selected_metrics):
                     output_loc = f"metrics_{bq_normalize_name(experiment_slug)}_{metric.name}"
-                    logger.debug(
+                    logger.info(
                         f"Dry running metric [{metric.name}] query for {experiment_slug}"
                         f"({i + 1} of {len(metric_slugs)})"
                     )
@@ -976,7 +976,7 @@ class Analysis:
         self._write_sql_output(output_loc, metrics_sql)
 
         dry_run_query(metrics_sql)
-        logger.debug(metrics_sql)
+        logger.info(metrics_sql)
 
     @dask.delayed
     def save_statistics(
