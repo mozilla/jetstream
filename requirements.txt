@@ -530,9 +530,9 @@ fonttools==4.59.1 \
     # via
     #   -r requirements.in
     #   matplotlib
-formulaic==1.2.0 \
-    --hash=sha256:2c5f48886a979f034e9fce67b8a36223aa22020256a291abceecd6763291193b \
-    --hash=sha256:ab5c43a5b107d1b1e87f55cf0a01245531cce793d3dcab433dae12053c3cb2d6
+formulaic==1.2.1 \
+    --hash=sha256:661d6d2467aa961b9afb3a1e2a187494239793c63eb729e422d1307afa98b43b \
+    --hash=sha256:dc79476baa2d811b35798893eb2f2c1e51edee8d7a9c1429b400e56f4e0beccc
     # via
     #   -r requirements.in
     #   mozanalysis
