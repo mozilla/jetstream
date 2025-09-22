@@ -302,7 +302,7 @@ pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via pytest
-pyparsing==3.2.3
+pyparsing==3.2.5
     # via matplotlib
 pyproject-api==1.9.1
     # via tox
