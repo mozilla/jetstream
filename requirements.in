@@ -202,7 +202,7 @@ mypy==1.17.1
     # via mozilla-jetstream
 mypy-extensions==1.1.0
     # via mypy
-narwhals==2.1.2
+narwhals==2.3.0
     # via formulaic
 numpy==1.26.4
     # via
