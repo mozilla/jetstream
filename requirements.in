@@ -312,7 +312,7 @@ pytest==8.4.1
     #   pytest-cov
     #   pytest-ruff
     #   pytest-xdist
-pytest-cov==6.2.1
+pytest-cov==6.3.0
     # via mozilla-jetstream
 pytest-ruff==0.5
     # via mozilla-jetstream
