@@ -178,7 +178,7 @@ locket==1.0.0
     #   partd
 marginaleffects==0.0.12
     # via mozanalysis
-markupsafe==3.0.2
+markupsafe==3.0.3
     # via jinja2
 matplotlib==3.10.5
     # via
