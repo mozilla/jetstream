@@ -60,7 +60,7 @@ class DryRunFailedError(Exception):
         super().__init__(error)
 
 
-def dry_run_query(sql: str) -> None:
+def dry_run_query(sql: str) -> int:
     """Dry run the provided SQL query."""
     try:
         # look for token created by the GitHub Actions workflow
@@ -109,7 +109,7 @@ def dry_run_query(sql: str) -> None:
 
     if response["valid"]:
         logger.info("Dry run OK")
-        return
+        return int(response.get("bytesProcessed", -1))
 
     error = response["errors"][0] if "errors" in response and len(response["errors"]) == 1 else None
 
@@ -123,6 +123,6 @@ def dry_run_query(sql: str) -> None:
         # we expect CREATE VIEW and CREATE TABLE to throw specific
         # exceptions.
         logger.info("Dry run OK")
-        return
+        return int(response.get("bytesProcessed", -1))
 
     raise DryRunFailedError((error and error.get("message", None)) or response["errors"], sql=sql)

@@ -906,9 +906,12 @@ class Analysis:
 
         self._write_sql_output(f"enrollments_{bq_normalize_name(experiment_slug)}", enrollments_sql)
 
-        dry_run_query(enrollments_sql)
+        bytes_processed = dry_run_query(enrollments_sql)
         logger.info(f"Dry running enrollments query for {experiment_slug}:")
         logger.info(enrollments_sql)
+        if bytes_processed and bytes_processed > 0:
+            tb_processed = bytes_processed / 1024 / 1024 / 1024 / 1024
+            logger.info(f"Enrollments query will process {round(tb_processed, 2)} TB")
 
         if not metric_slugs:
             output_loc = f"metrics_{bq_normalize_name(experiment_slug)}"
@@ -975,8 +978,12 @@ class Analysis:
 
         self._write_sql_output(output_loc, metrics_sql)
 
-        dry_run_query(metrics_sql)
+        bytes_processed = dry_run_query(metrics_sql)
         logger.info(metrics_sql)
+
+        if bytes_processed and bytes_processed > 0:
+            tb_processed = bytes_processed / 1024 / 1024 / 1024 / 1024
+            logger.info(f"Metrics query will process {round(tb_processed, 2)} TB")
 
     @dask.delayed
     def save_statistics(

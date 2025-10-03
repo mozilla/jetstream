@@ -81,6 +81,7 @@ def test_get_timelimits_if_ready(experiments):
 
 def test_validate_doesnt_explode(experiments, monkeypatch):
     m = Mock()
+    m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
     x = experiments[0]
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
@@ -92,6 +93,7 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
 
 def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
     m = Mock()
+    m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
     x = experiments[0]
     config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
@@ -206,6 +208,7 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id)
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla")
+            return -1
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
         config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
@@ -225,6 +228,7 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_ios")
+            return -1
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
         config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
@@ -244,6 +248,7 @@ def test_focus_android_experiments_use_right_datasets(focus_android_experiments,
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_focus")
+            return -1
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
         config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
@@ -263,6 +268,7 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
             assert dataset in query
             assert query.count(dataset) == query.count("org_mozilla_klar")
+            return -1
 
         monkeypatch.setattr("jetstream.analysis.dry_run_query", dry_run_query)
         config = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs).resolve(
