@@ -434,7 +434,7 @@ typing-extensions==4.14.1
     #   tox
     #   typing-inspection
     #   virtualenv
-typing-inspection==0.4.1
+typing-inspection==0.4.2
     # via pydantic
 tzdata==2025.2
     # via
