@@ -165,7 +165,7 @@ class ArgoApi:
                 "is provided explicitly."
             )
 
-        creds, projects = google.auth.default(
+        creds, _projects = google.auth.default(
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
 
