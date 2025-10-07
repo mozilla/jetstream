@@ -1,5 +1,6 @@
 import datetime as dt
 import os
+import re
 from textwrap import dedent
 from unittest import mock
 from unittest.mock import MagicMock, Mock
@@ -402,7 +403,9 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
         strategy = DummyExecutorStrategy("project", "dataset")
-        with pytest.raises(ValueError, match="Declining to re-run all experiments for all time."):
+        with pytest.raises(
+            ValueError, match=re.escape("Declining to re-run all experiments for all time.")
+        ):
             executor.execute(
                 experiment_getter=cli_experiments,
                 config_getter=ConfigLoader,
@@ -480,7 +483,9 @@ class TestAnalysisExecutor:
             experiment_slugs=cli.All,
         )
 
-        with pytest.raises(ValueError, match="Declining to re-run all experiments for all time."):
+        with pytest.raises(
+            ValueError, match=re.escape("Declining to re-run all experiments for all time.")
+        ):
             executor._experiment_configs_to_analyse(cli_experiments)
 
     def test_experiments_to_analyze_specific_date(self):
