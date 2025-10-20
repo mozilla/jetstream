@@ -198,7 +198,7 @@ mozilla-nimbus-schemas==3001.0.0
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-msgpack==1.1.1
+msgpack==1.1.2
     # via distributed
 mypy==1.18.2
     # via mozilla-jetstream
