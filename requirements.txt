@@ -1418,9 +1418,9 @@ pathspec==0.12.1 \
     # via
     #   -r requirements.in
     #   mypy
-patsy==1.0.1 \
-    --hash=sha256:751fb38f9e97e62312e921a1954b81e1bb2bcda4f5eeabaf94db251ee791509c \
-    --hash=sha256:e786a9391eec818c054e359b737bbce692f051aee4c661f4141cc88fb459c0c4
+patsy==1.0.2 \
+    --hash=sha256:37bfddbc58fcf0362febb5f54f10743f8b21dd2aa73dec7e7ef59d1b02ae668a \
+    --hash=sha256:cdc995455f6233e90e22de72c37fcadb344e7586fb83f06696f54d92f8ce74c0
     # via
     #   -r requirements.in
     #   marginaleffects
