@@ -1573,9 +1573,9 @@ polars-runtime-32==1.34.0 \
     # via
     #   -r requirements.in
     #   polars
-polyfactory==2.22.2 \
-    --hash=sha256:9bea58ac9a80375b4153cd60820f75e558b863e567e058794d28c6a52b84118a \
-    --hash=sha256:a3297aa0b004f2b26341e903795565ae88507c4d86e68b132c2622969028587a
+polyfactory==2.22.3 \
+    --hash=sha256:0bfd5fe2fb2e5db39ded6aee8e923d1961095d4ebb44185cceee4654cb85e0b1 \
+    --hash=sha256:ae57d07408d1f7609031a83827c7980ce32104535e146cac2253988d0a7665e1
     # via
     #   -r requirements.in
     #   mozilla-nimbus-schemas
