@@ -246,7 +246,7 @@ partd==1.4.2
     # via dask
 pathspec==0.12.1
     # via mypy
-patsy==1.0.1
+patsy==1.0.2
     # via
     #   marginaleffects
     #   statsmodels
