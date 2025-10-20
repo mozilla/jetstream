@@ -267,7 +267,7 @@ polars==1.34.0
     # via marginaleffects
 polars-runtime-32==1.34.0
     # via polars
-polyfactory==2.22.2
+polyfactory==2.22.3
     # via mozilla-nimbus-schemas
 proto-plus==1.26.1
     # via
