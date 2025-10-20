@@ -628,9 +628,9 @@ google-auth==2.41.1 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.16.1 \
-    --hash=sha256:4a372ac68b2737f4632c813b3b9e67f85e39f94e4945fe0e5a5955439629780e \
-    --hash=sha256:5f7bf9d37b933c8984852170fe842501a8adc7f31281a81b94ad6192448becce
+google-cloud-artifact-registry==1.17.0 \
+    --hash=sha256:bb14b9d84ee77d1ecce630ce027905be54f0ba3d9c4680318bbb1beb61ca2408 \
+    --hash=sha256:dae22fc5700093b184e2be0bf64c0cb6d2f3c4b885e11fd573a5daa7934a5425
     # via -r requirements.in
 google-cloud-bigquery==3.38.0 \
     --hash=sha256:8afcb7116f5eac849097a344eb8bfda78b7cfaae128e60e019193dd483873520 \
@@ -786,6 +786,7 @@ grpcio==1.75.1 \
     # via
     #   -r requirements.in
     #   google-api-core
+    #   google-cloud-artifact-registry
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
