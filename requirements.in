@@ -402,7 +402,7 @@ tomli==2.2.1
     #   pyproject-api
     #   pytest
     #   tox
-toolz==1.0.0
+toolz==1.1.0
     # via
     #   dask
     #   distributed
