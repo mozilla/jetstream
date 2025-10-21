@@ -45,7 +45,9 @@ jobs:
           id_token_audience: 'https://us-central1-moz-fx-data-shared-prod.cloudfunctions.net/bigquery-etl-dryrun'
           id_token_include_email: true
       - name: Export ID Token for Python
-        run: echo "GOOGLE_GHA_ID_TOKEN=${{ steps.auth.outputs.id_token }}" >> $GITHUB_ENV
+        env:
+          GOOGLE_GHA_ID_TOKEN: ${{ steps.auth.outputs.id_token }}
+        run: echo "GOOGLE_GHA_ID_TOKEN=$GOOGLE_GHA_ID_TOKEN" >> $GITHUB_ENV
       - name: PyTest
         run: venv/bin/pytest --ruff --ruff-format --ignore=jetstream/tests/integration/ -n 8
 
