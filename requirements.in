@@ -287,7 +287,7 @@ protobuf==6.32.1
     #   proto-plus
 psutil==7.1.0
     # via distributed
-pyarrow==21.0.0
+pyarrow==22.0.0
     # via
     #   db-dtypes
     #   marginaleffects
