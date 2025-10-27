@@ -140,7 +140,7 @@ googleapis-common-protos[grpc]==1.70.0
     #   grpcio-status
 grpc-google-iam-v1==0.14.2
     # via google-cloud-artifact-registry
-grpcio==1.75.1
+grpcio==1.76.0
     # via
     #   google-api-core
     #   googleapis-common-protos
