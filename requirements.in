@@ -387,7 +387,7 @@ statsmodels==0.14.5
     #   mozanalysis
     #   mozilla-jetstream
     #   plotnine
-tblib==3.1.0
+tblib==3.2.0
     # via distributed
 threadpoolctl==3.6.0
     # via scikit-learn
