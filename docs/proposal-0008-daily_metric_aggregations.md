@@ -71,6 +71,9 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
 
 #### Questions
 1. How to handle aggregating client metric values across multiple days?
+
+    *Context*: Metric definitions are valid SQL select expressions, which could be computations that don't naturally extend to aggregations from these results (e.g., `COUNT DISTINCT`, `AVG`, etc.). We need to decide how best to aggregate daily metrics into weekly and overall metrics.
+  - **Option A** Aggregate by data type
     - Query could look like the following
       - `MIN` enrollment and exposure dates is not necessary since we already do this when building enrollments
       - `SUM` enrollment and exposure events
@@ -94,24 +97,40 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
       GROUP BY ALL
       ORDER BY client_level_daily_active_users_v2 DESC
       ```
-    - If the above does not cover what we need, then some alternative options:
-      - add a new metric-hub parameter for metrics to specify how Jetstream should aggregate across days
-      - retain the original column names in the daily metrics query output, and then just run the original metric `select_expression` against the daily results tables
-        - possibly store all daily values in a histogram field so that we can do arbitrary aggregations/statistics without loss of fidelity
+    - [**+**] Straightforward
+    - [**-**] Limited fidelity for certain types of metrics means and distinct counts
+  - **Option B** Add a new metric-hub parameter to specify how Jetstream should aggregate across days
+    - [**+**] Covers all metrics
+    - [**-**] High burden to add this parameter to existing metrics
+    - [**-**] Added complexity to Jetstream and metric-hub
+  - **Option C** Retain original column names/values in the daily metrics query output (store values as histograms)
+    - [**+**] Allows us to compute aggregated values from original data using the original metric definitions
+    - [**-**] Additional data replicated
+    - [**-**] Added complexity to Jetstream
 
 2. How to handle pre-enrollment analysis periods?
-    - I haven't seen these fail before (and failure is not catastrophic, we just lose pre-enrollment bias correction), so maybe we just leave them alone
-    - But this means we have a separate workflow for pre-enrollment periods than everything else, so we can do them with daily aggregations as well if it reduces complexity
-    - Also worth considering whether to take this opportunity to add pre-enrollment periods as a dependency to post-enrollment analysis (would work similarly to daily analysis being a dependency to weekly/overall)
+
+    *Context*: We don't currently compute daily metrics for pre-enrollment, so we'd need to add a new pre-enrollment analysis period and then compute aggregations off of that.
+  - **Option A** Leave them alone (no Daily calculations, no aggregations off of daily)
+    - [**+**] These have never failed before
+    - [**+**] Failure is not catastrophic, we just lose pre-enrollment bias correction
+  - **Option B** Daily Metric Aggregations
+    - [**+**] same workflow for pre-enrollment periods as everything else
+    - [**+**] can make pre-enrollment periods a dependency to post-enrollment analysis using same logic that we'll need to implement for daily analysis being a dependency to weekly/overall
+    - [**-**] adds unnecessary daily calculations and data that we won't use except to aggregate from
+  - **Option C** Weekly Metric Aggregations (do the same as daily but with the already-computed weekly pre-enrollment periods)
+    - [**+**] same general workflow for pre-enrollment periods as everything else
+    - [**+**] doesn't add new calculations that we don't need
+    - [**-**] slightly different workflow
 
 
 #### Pros / Cons
 
-* **+** Does not increase number of tasks or queries
-* **+** Should decrease overall cost by eliminating the largest queries entirely
-* **+** Would resolve >90% of the experiments which had analysis timeout failures (32 experiments, only 3 of which had failures in weekly or overall and also in daily*)
-* **-** Does not help scenarios where the daily metrics query fails (but these are rare as noted above)
-* **-** Adds some complexity in the form of a more DAG-shaped execution structure across analysis periods (right now we only have task dependencies by metrics --> statistics --> exports)
+* [**+**] Does not increase number of tasks or queries
+* [**+**] Should decrease overall cost by eliminating the largest queries entirely
+* [**+**] Would resolve >90% of the experiments which had analysis timeout failures (32 experiments, only 3 of which had failures in weekly or overall and also in daily*)
+* [**-**] Does not help scenarios where the daily metrics query fails (but these are rare as noted above)
+* [**-**] Adds some complexity in the form of a more DAG-shaped execution structure across analysis periods (right now we only have task dependencies by metrics --> statistics --> exports)
 
 * Query for reference:
 ```sql
