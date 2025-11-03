@@ -638,9 +638,9 @@ google-cloud-bigquery==3.38.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.33.1 \
-    --hash=sha256:24952aba0d69acc4d6bfbdc7a09dddbb728496b1780bd224f1056361a1b51044 \
-    --hash=sha256:3fd25bef364ac5fb9bbd6560f0dd11b90b1845883df8e0a8c706ad53d00fc23b
+google-cloud-bigquery-storage==2.34.0 \
+    --hash=sha256:221740a991b3173027ebb0f3aa5f06c65bdf90fc4eb1b71da798093b6bf6d22d \
+    --hash=sha256:5c1b55f2a33bfb0730cf5a2f7e4f0cc6a7166d9026142ab78c2ffd5130884c46
     # via
     #   -r requirements.in
     #   mozanalysis
@@ -786,6 +786,7 @@ grpcio==1.75.1 \
     # via
     #   -r requirements.in
     #   google-api-core
+    #   google-cloud-bigquery-storage
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
