@@ -1155,8 +1155,8 @@ mizani==0.14.3 \
 mozanalysis==2025.10.1 \
     --hash=sha256:eb5b03bf0fb4e7e331f7f5a60c955ade8ea230568414a0ec7fdef598555b24ea
     # via -r requirements.in
-mozilla-metric-config-parser==2025.8.1 \
-    --hash=sha256:659ec7ea9ab039557a821c5d012ab30e55b49608afc1216ecea7fa093bf7df09
+mozilla-metric-config-parser==2025.11.1 \
+    --hash=sha256:6fdecd8cf9a80f874659ff35067bd5c545822871b6cb777c98858239767424fa
     # via
     #   -r requirements.in
     #   mozanalysis
