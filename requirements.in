@@ -316,7 +316,7 @@ pyparsing==3.2.5
     # via matplotlib
 pyproject-api==1.10.0
     # via tox
-pytest==8.4.2
+pytest==9.0.0
     # via
     #   mozilla-jetstream
     #   pytest-cov
