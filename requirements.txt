@@ -677,9 +677,9 @@ google-cloud-core==2.5.0 \
     #   -r requirements.in
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==3.4.1 \
-    --hash=sha256:6f041a297e23a4b485fad8c305a7a6e6831855c208bcbe74d00332a909f82268 \
-    --hash=sha256:972764cc0392aa097be8f49a5354e22eb47c3f62370067fb1571ffff4a1c1189
+google-cloud-storage==3.5.0 \
+    --hash=sha256:10b89e1d1693114b3e0ca921bdd28c5418701fd092e39081bb77e5cee0851ab7 \
+    --hash=sha256:e28fd6ad8764e60dbb9a398a7bc3296e7920c494bc329057d828127e5f9630d3
     # via
     #   -r requirements.in
     #   smart-open
