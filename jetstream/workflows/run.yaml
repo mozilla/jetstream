@@ -7,7 +7,7 @@ spec:
   archiveLogs: true
   ttlStrategy:
     secondsAfterCompletion: 4320000 # delete workflows automatically after 50 days
-    secondsAfterSuccess: 432000 # delete successful workflows automatically after 5 days
+    secondsAfterSuccess: 1296000 # delete successful workflows automatically after 15 days
   arguments:
     parameters:
     - name: experiments  # set dynamically when workflow gets deployed
