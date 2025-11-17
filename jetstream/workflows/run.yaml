@@ -4,6 +4,7 @@ metadata:
   generateName: jetstream-
 spec:
   entrypoint: jetstream
+  archiveLogs: true
   ttlStrategy:
     secondsAfterCompletion: 4320000 # delete workflows automatically after 50 days
     secondsAfterSuccess: 432000 # delete successful workflows automatically after 5 days
