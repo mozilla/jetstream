@@ -115,7 +115,7 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
 
     Option A is the most straightforward approach, and has buy-in from data science as an acceptable compromise, so this will be the chosen course of action. The compromise here is the reason why we will first pursue phase one's discrete metric changes.
 
-    Option B is both a lot of manual effort to update all metric definitions, and requires new complexity in Jetstream.
+    Option B is a lot of manual effort to update all metric definitions, and also requires new complexity in Jetstream. This effort/complexity is not worthwhile since the solution cannot produce accurate results in all cases.
 
     Option C is not reasonable because it would require maintaining an almost fully duplicated copy of each data source for the time period of the experiment, in addition to the added complexity required in Jetstream to manage this.
 
@@ -149,7 +149,8 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
     - [**+**] Covers all metrics
     - [**-**] High burden to add this parameter to existing metrics
     - [**-**] Added complexity to Jetstream to interpret and use this for aggregations
-    - [**-**] Might not maintain fidelity anyway
+    - [**-**] Does not maintain accuracy of non-aggregated results 
+      * e.g., means would still be aggregated across days, so this produces an average of averages
   - **Option C** Retain original column names/values in the daily metrics query output
     - [**+**] Possible to compute aggregated values from original data using the original metric definitions
     - [**+**] Data is still pre-filtered to only what is relevant, eliminating the large joins for non-daily metrics
