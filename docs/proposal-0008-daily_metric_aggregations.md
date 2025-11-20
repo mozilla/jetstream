@@ -1,4 +1,4 @@
-# Reducing BigQuery Timeout Errors with Daily Aggregations
+# Reducing BigQuery Timeout Errors
 
 * Status: accepting feedback
 * Deciders: mwilliams, ascholtz
@@ -6,7 +6,7 @@
 
 ## Context and Problem Statement
 
-Through the first 7 months of 2025, 32 out 160 (20%) experiments had at least one error due to a query hitting BigQuery's 6 hour limit for query execution time. While a number of factors influence the metrics query time, most prominent among them are: number/complexity of metrics, and amount of data processed. This proposal seeks to address the latter by reducing the numbers of days to query in any metrics query.
+Through the first 7 months of 2025, 32 out 160 (20%) experiments had at least one error due to a query hitting BigQuery's 6 hour limit for query execution time. A further 6 of these 160 (4%) failed due to exhausting compute resources during query execution, for a total of 24% of experiments with failures due to resource issues executing the metrics query. While a number of factors influence the metrics query time, the most prominent ones that we can affect in Jetstream are: number/complexity of metrics, and amount of data processed.
 
 
 ## Decision Drivers
@@ -15,34 +15,60 @@ Through the first 7 months of 2025, 32 out 160 (20%) experiments had at least on
 
 ### Non-Drivers
 
-* Costs (though the reduction in large queries should reduce costs!)
+* Costs
 
 
 ## Description of Solution
 
-The proposed solution is to use daily metric results to aggregate weekly and overall results, foregoing the need to run comparatively large metrics queries for these larger analysis windows. Since we are computing daily results anyway, we should be able to query these tables in order to produce the weekly and overall results without re-querying telemetry.
+The solution proposes two phases to resolving analysis failures.
+
+Phase one revisits the discrete metrics execution work, seeking to resolve some of the issues encountered during the initial implementation. This will help to reduce the number/complexity of metrics in a single query, and prevent large data sources from causing all metrics to fail.
+
+Phase two is an optional follow-on that would use daily metric results to aggregate weekly and overall results. This would limit the amount of data processed by limiting the number of days needed in a single query to the length of the enrollment period. However, there is a significant compromise to this approach (detailed below), so we will evaluate phase one's efficacy before implementing phase two.
+
+The basic mechanics of phase one were laid out in proposal 0007, so this proposal will only detail the remaining work and why we think it will be more successful than the initial deployment. The majority of this proposal lays out the details of the phase two daily metrics aggregation.
 
 
-## Alternatives Considered
+## Possible Alternatives
 
-* Discrete Metric Execution (see [proposal 0007]('proposal-0007-discrete_metric_execution.md'))
-  * Similar goal: eliminate the largest metrics queries
-  * Splits execution queries up by individual metrics
-  * Limits the number of tables required for any given query
-  * **Con**: Does not limit the amount of data pulled from telemetry tables
-  * **Con**: Significant increase in number of queries & tables
-  * **Con**: Increased complexity in debugging (e.g., ~10x number of tasks in Argo UI)
-  * This capability is largely built but kept behind a CLI flag
-    * Ideally we can use both capabilities, for different scenarios:
-      * Daily Aggregations for all experiments
-      * Discrete metrics for reruns and case-by-case (and using daily aggregations)
+* Increase BigQuery slot reservations
+  * Throw money at it
+* Remove Outcomes
+  * These are critical to determining the impact of experiments and we do not want to lose this
 
 
-## Changes Required
+## Phase One: Discrete Metric Execution Details
+
+### Issues with current solution
+
+When rolling out the current solution, we discovered a couple scaling issues that we'll seek to resolve here:
+* ~10-15x the number of Argo tasks make the Argo UI useless for managing and monitoring workflows
+* Significant additional overhead led to much higher overall runtime
+  * In testing discrete metrics, a single day's analysis run was canceled after it did not finish overnight (at least 14 hours -- the original production run for that day took 5 hours)
+
+### Changes
+
+* Metrics computed within one pod (Argo UI not cluttered; should be less overhead)
+  * orchestrated by Dask where appropriate
+  * Dask is already used in Jetstream
+* Group metrics by data source
+  * no need to run the same query multiple times if the only change is the select statement
+
+### Pros / Cons
+
+- [**+**] Technical solution that doesn't require removing existing capabilities
+- [**+**] Individual metric failures do not prevent other metrics from producing results
+- [**+**] Adding more metrics does not increase the complexity of any single query
+- [**-**] Problematic configurations (e.g., very large and/or unfiltered data sources) may still fail, requiring manual effort to resolve
+- [**-**] More total queries (by factor of `m` where `m` is the # of metric data sources, possibly)
+  * (but fewer queries than discretely computing every metric)
+
+
+## Phase Two: Daily Metric Aggregations Details
 
 This solution requires some significant changes to how Jetstream currently works. I will describe the relevant parts of the workflow, and where it would need to change to accommodate the proposed behavior.
 
-#### Current
+### Current
 1. Jetstream reads experiment config, grouping metrics into their respective analysis windows.
 2. Jetstream loops over the analysis windows. For each window:
     - Ensure this window is in the list to be computed (CLI parameter)
@@ -55,24 +81,44 @@ This solution requires some significant changes to how Jetstream currently works
     - Produce metrics and statistics views containing results from all analysis windows within a given period
 Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do not get blocked waiting for results
 
-#### Proposed
-1. Jetstream reads experiment config, **grouping metrics into their respective analysis windows** (optional).
+### Proposed
+0. (optional implementation detail) Statically defined dependency map of which periods depend on each other, e.g, something like:
+    ```
+    {
+      day: [preenrollment_week, preenrollment_days28],
+      week: [preenrollment_week, preenrollment_days28, day],
+      overall: [preenrollment_week, preenrollment_days28, day],
+      preenrollment_week: [],
+      preenrollment_days28: [preenrollment_week]
+    }
+    ```
+1. Jetstream reads experiment config, **grouping metrics into their respective analysis windows** (optional implementation detail).
+  - **change** Daily analysis period must include **all** metrics.
 2. Jetstream loops over the analysis windows. For **daily** window:
-    - **change** start by checking whether table exists and returning early if yes
-      - these tables may get deleted by a rerun, but that happens upfront and so checking for existence of the table should be reasonable to do here
+    - **change** Check whether table exists and return early if yes
+      - these tables may get deleted by a rerun, but that happens upfront and so checking for existence of the table should be reasonable here
     - After check, same as current workflow -- see caveat below for possible change
-2. (**changes**) For **other** windows:
+3. (**changes**) For **other** windows:
     - Same checks as above to ensure we should continue with execution.
     - Each task should have a dependence on the current daily execution(s), as well as all other relevant daily windows (e.g., if running week 0, day 6 should be already kicked off, and days 0-5 should be added as dependency here as well)
       - if day's results already exist, it will return early (see change to daily window above)
-    - If all daily results exist, query daily metrics view for relevant window indices
+    - When all daily results exist, query daily metrics view for relevant window indices
       - Aggregate per-client metric values based on the metric definition [Question 1]
 
 
-#### Questions
+### Decision Points
 1. How to handle aggregating client metric values across multiple days?
 
     *Context*: Metric definitions are valid SQL select expressions, which could be computations that don't naturally extend to aggregations from these results (e.g., `COUNT DISTINCT`, `AVG`, etc.). We need to decide how best to aggregate daily metrics into weekly and overall metrics.
+
+    #### Decision: Option A
+
+    Option A is the most straightforward approach, and has buy-in from data science as an acceptable compromise, so this will be the chosen course of action. The compromise here is the reason why we will first pursue phase one's discrete metric changes.
+
+    Option B is both a lot of manual effort to update all metric definitions, and requires new complexity in Jetstream.
+
+    Option C is not reasonable because it would require maintaining an almost fully duplicated copy of each data source for the time period of the experiment, in addition to the added complexity required in Jetstream to manage this.
+
   - **Option A** Aggregate by data type
     - Query could look like the following
       - `MIN` enrollment and exposure dates is not necessary since we already do this when building enrollments
@@ -84,36 +130,39 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
         analysis_id,
         branch,
         enrollment_date,
-        SUM(num_enrollment_events) AS num_enrollment_events,
+        num_enrollment_events,
         0 AS analysis_window_start,
         6 AS analysis_window_end,
         exposure_date,
-        SUM(num_exposure_events) AS num_exposure_events,
+        num_exposure_events,
         LOGICAL_OR(unenroll) AS unenroll,
-        SUM(client_level_daily_active_users_v2) AS client_level_daily_active_users_v2,
+        SUM(active_hours) AS active_hours,
         0 AS window_index
       FROM `moz-fx-data-experiments.mozanalysis.experiment_slug_enrollments_daily` 
-      WHERE window_index BETWEEN 0 AND 6
+      WHERE window_index BETWEEN 1 AND 7
       GROUP BY ALL
-      ORDER BY client_level_daily_active_users_v2 DESC
       ```
     - [**+**] Straightforward
-    - [**-**] Limited fidelity for certain types of metrics means and distinct counts
+    - [**-**] Lose ability to compute certain types of metrics (e.g., rates, means)
+      - Workaround: use `depends_on` to produce rates or averages from two metric values
   - **Option B** Add a new metric-hub parameter to specify how Jetstream should aggregate across days
     - [**+**] Covers all metrics
     - [**-**] High burden to add this parameter to existing metrics
-    - [**-**] Added complexity to Jetstream and metric-hub
-  - **Option C** Retain original column names/values in the daily metrics query output (store values as histograms)
-    - [**+**] Allows us to compute aggregated values from original data using the original metric definitions
+    - [**-**] Added complexity to Jetstream to interpret and use this for aggregations
+    - [**-**] Might not maintain fidelity anyway
+  - **Option C** Retain original column names/values in the daily metrics query output
+    - [**+**] Possible to compute aggregated values from original data using the original metric definitions
+    - [**+**] Data is still pre-filtered to only what is relevant, eliminating the large joins for non-daily metrics
     - [**-**] Additional data replicated
     - [**-**] Added complexity to Jetstream
 
 2. How to handle pre-enrollment analysis periods?
 
     *Context*: We don't currently compute daily metrics for pre-enrollment, so we'd need to add a new pre-enrollment analysis period and then compute aggregations off of that.
-  - **Option A** Leave them alone (no Daily calculations, no aggregations off of daily)
+  - **Option A** Leave them alone (no pre-enrollment daily calculations, no aggregations off of daily)
     - [**+**] These have never failed before
     - [**+**] Failure is not catastrophic, we just lose pre-enrollment bias correction
+    - [**-**] different workflow from the post-enrollment analysis periods
   - **Option B** Daily Metric Aggregations
     - [**+**] same workflow for pre-enrollment periods as everything else
     - [**+**] can make pre-enrollment periods a dependency to post-enrollment analysis using same logic that we'll need to implement for daily analysis being a dependency to weekly/overall
@@ -129,8 +178,9 @@ Note: all tasks in (2) are spawned in parallel, managed by dask, so the loops do
 * [**+**] Does not increase number of tasks or queries
 * [**+**] Should decrease overall cost by eliminating the largest queries entirely
 * [**+**] Would resolve >90% of the experiments which had analysis timeout failures (32 experiments, only 3 of which had failures in weekly or overall and also in daily*)
-* [**-**] Does not help scenarios where the daily metrics query fails (but these are rare as noted above)
+* [**-**] Adds many new metrics to the daily query, possibly leading to higher rate of failure
 * [**-**] Adds some complexity in the form of a more DAG-shaped execution structure across analysis periods (right now we only have task dependencies by metrics --> statistics --> exports)
+* [**-**] Removes existing capabilities (unrestricted metric types)
 
 * Query for reference:
 ```sql
