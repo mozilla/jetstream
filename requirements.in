@@ -14,7 +14,7 @@ attrs==25.4.0
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==6.2.1
+cachetools==6.2.2
     # via
     #   google-auth
     #   tox
