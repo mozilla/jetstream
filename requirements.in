@@ -375,7 +375,7 @@ scipy==1.15.3
     #   plotnine
     #   scikit-learn
     #   statsmodels
-secretstorage==3.4.0
+secretstorage==3.5.0
     # via mozanalysis
 six==1.17.0
     # via python-dateutil
