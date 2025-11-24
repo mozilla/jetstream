@@ -2296,9 +2296,9 @@ statsmodels==0.14.5 \
     #   -r requirements.in
     #   mozanalysis
     #   plotnine
-tblib==3.2.1 \
-    --hash=sha256:846e274d0aeec822953251a3cbd3d840fd0ee7a5ec844d59ffbde7b056f9cd2b \
-    --hash=sha256:aacdaffceac6c4ef6818887b15677513f16d75c68384b76b415a935d548dd172
+tblib==3.2.2 \
+    --hash=sha256:26bdccf339bcce6a88b2b5432c988b266ebbe63a4e593f6b578b1d2e723d2b76 \
+    --hash=sha256:e9a652692d91bf4f743d4a15bc174c0b76afc750fe8c7b6d195cc1c1d6d2ccec
     # via
     #   -r requirements.in
     #   distributed
