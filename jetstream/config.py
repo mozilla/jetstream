@@ -225,8 +225,12 @@ def validate(
     config: Outcome | Config | DefaultConfig | DefinitionConfig,
     experiment: Experiment | None = None,
     config_getter: _ConfigLoader = ConfigLoader,
-):
-    """Validate and dry run a config."""
+) -> int:
+    """Validate and dry run a config.
+
+    Returns (int) the amount of data to be processed by the metrics query.
+        If there are multiple metrics queries, this returns the highest processing estimate.
+    """
     from jetstream.analysis import Analysis
     from jetstream.platform import PLATFORM_CONFIGS
 
@@ -288,4 +292,4 @@ def validate(
     else:
         raise Exception(f"Unable to validate config: {config}")
 
-    Analysis("no project", "no dataset", resolved_config).validate()
+    return Analysis("no project", "no dataset", resolved_config).validate()
