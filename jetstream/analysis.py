@@ -919,14 +919,14 @@ class Analysis:
             tb_processed = bytes_processed / 1024 / 1024 / 1024 / 1024
             logger.info(f"Enrollments query will process {round(tb_processed, 2)} TB")
 
-        metrics_tb = 0
+        metrics_tb = 0.0
         if not metric_slugs:
             output_loc = f"metrics_{bq_normalize_name(experiment_slug)}"
             logger.info(f"Dry running metrics query for {experiment_slug}")
             metrics_tb = self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
         else:
             selected_metrics = [m for m in metrics if m.name in metric_slugs]
-            metrics_tb_list = []
+            metrics_tb_async_list = []
             # dry run up to 8 metrics at a time
             num_procs = min(len(selected_metrics), 8)
             with Pool(num_procs) as pool:
@@ -936,14 +936,15 @@ class Analysis:
                         f"Dry running metric [{metric.name}] query for {experiment_slug}"
                         f"({i + 1} of {len(metric_slugs)})"
                     )
-                    metrics_tb_list.append(
+                    metrics_tb_async_list.append(
                         pool.apply_async(
                             self.validate_metric_query,
                             (exp, [metric], limits, output_loc, use_glean_ids),
                         )
                     )
-
-            metrics_tb = max(metrics_tb_list)
+            # ensure we have all the async results, then get the max value
+            metrics_tb_list = [m.get() for m in metrics_tb_async_list]
+            metrics_tb = max(metrics_tb_list, default=0.0)
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
 

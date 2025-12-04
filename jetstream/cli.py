@@ -1283,6 +1283,7 @@ def validate_config(
         3: Experiment metrics query data estimate > high_data_threshold
     """
     dirty = False
+    tb_processed = 0
 
     # ensure authenticated to GCP in order to run cloud function
     try:
