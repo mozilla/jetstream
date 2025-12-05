@@ -63,6 +63,9 @@ ALL_PERIODS = [
     AnalysisPeriod.PREENROLLMENT_DAYS_28,
 ]
 
+HIGH_DATA_THRESHOLD = 20
+MODERATE_DATA_THRESHOLD = 10
+
 
 @attr.s
 class AllType:
@@ -1251,9 +1254,36 @@ def rerun_config_changed(
     is_flag=True,
     default=False,
 )
-def validate_config(path: Iterable[os.PathLike], config_repos, private_config_repos, is_private):
-    """Validate config files."""
+@click.option(
+    "--high-data-threshold",
+    type=int,
+    help="Threshold above which metrics query validation returns exit code 3.",
+    default=HIGH_DATA_THRESHOLD,
+)
+@click.option(
+    "--moderate-data-threshold",
+    type=int,
+    help="Threshold above which metrics query validation returns exit code 2.",
+    default=MODERATE_DATA_THRESHOLD,
+)
+def validate_config(
+    path: Iterable[os.PathLike],
+    config_repos,
+    private_config_repos,
+    is_private,
+    high_data_threshold,
+    moderate_data_threshold,
+):
+    """Validate config files.
+
+    Exit Codes:
+        0: success
+        1: SQL error or invalid experiment slug
+        2: Experiment metrics query data estimate > moderate_data_threshold
+        3: Experiment metrics query data estimate > high_data_threshold
+    """
     dirty = False
+    tb_processed = 0
 
     # ensure authenticated to GCP in order to run cloud function
     try:
@@ -1303,7 +1333,7 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
                 experiment=experiments[0],
             )
         try:
-            call()
+            tb_processed = call()
         except DryRunFailedError as e:
             print("Error evaluating SQL:")
             for i, line in enumerate(e.sql.split("\n")):
@@ -1313,7 +1343,16 @@ def validate_config(path: Iterable[os.PathLike], config_repos, private_config_re
             dirty = True
         except ExplicitSkipException:
             print("Found an explicit skip directive; will ignore this experiment.")
-    sys.exit(dirty)
+
+    exit_code = 0
+    if dirty:
+        exit_code = 1
+    elif tb_processed and tb_processed > high_data_threshold:
+        exit_code = 3
+    elif tb_processed and tb_processed > moderate_data_threshold:
+        exit_code = 2
+
+    sys.exit(exit_code)
 
 
 @cli.command()

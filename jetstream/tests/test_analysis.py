@@ -101,7 +101,15 @@ def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
     )
 
     def bypass_mp_pool(_pool, func, args):
-        return func(*args)
+        class MockApplyResult:
+            def __init__(self, func, args):
+                self._func = func
+                self._args = args
+
+            def get(self, timeout=0):
+                return self._func(*self._args)
+
+        return MockApplyResult(func, args)
 
     monkeypatch.setattr("multiprocessing.pool.Pool.apply_async", bypass_mp_pool)
 

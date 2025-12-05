@@ -835,7 +835,13 @@ class Analysis:
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", app_id).lower()
 
-    def validate(self, use_glean_ids: bool = False, metric_slugs: list[str] | None = None) -> None:
+    def validate(self, use_glean_ids: bool = False, metric_slugs: list[str] | None = None) -> int:
+        """Validates enrollments and metrics queries for an experiment.
+
+        Returns (int) the amount of data to be processed by the metrics query.
+            If there are multiple metrics queries, this returns the highest processing estimate.
+            -1 indicates that there is no data processing estimate available.
+        """
         experiment_slug = self.config.experiment.normandy_slug
         self.check_runnable()
         assert self.config.experiment.start_date is not None  # for mypy
@@ -913,12 +919,14 @@ class Analysis:
             tb_processed = bytes_processed / 1024 / 1024 / 1024 / 1024
             logger.info(f"Enrollments query will process {round(tb_processed, 2)} TB")
 
+        metrics_tb = 0.0
         if not metric_slugs:
             output_loc = f"metrics_{bq_normalize_name(experiment_slug)}"
             logger.info(f"Dry running metrics query for {experiment_slug}")
-            self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
+            metrics_tb = self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
         else:
             selected_metrics = [m for m in metrics if m.name in metric_slugs]
+            metrics_tb_async_list = []
             # dry run up to 8 metrics at a time
             num_procs = min(len(selected_metrics), 8)
             with Pool(num_procs) as pool:
@@ -928,12 +936,19 @@ class Analysis:
                         f"Dry running metric [{metric.name}] query for {experiment_slug}"
                         f"({i + 1} of {len(metric_slugs)})"
                     )
-                    pool.apply_async(
-                        self.validate_metric_query,
-                        (exp, [metric], limits, output_loc, use_glean_ids),
+                    metrics_tb_async_list.append(
+                        pool.apply_async(
+                            self.validate_metric_query,
+                            (exp, [metric], limits, output_loc, use_glean_ids),
+                        )
                     )
+            # ensure we have all the async results, then get the max value
+            metrics_tb_list = [m.get() for m in metrics_tb_async_list]
+            metrics_tb = max(metrics_tb_list, default=0.0)
 
             logger.info(f"Validation complete: {len(metrics)} metric queries printed above.")
+
+        return round(metrics_tb)
 
     def validate_metric_query(
         self,
@@ -942,7 +957,7 @@ class Analysis:
         limits: TimeLimits,
         output_loc: str,
         use_glean_ids: bool = False,
-    ):
+    ) -> float:
         metrics_sql = experiment.build_metrics_query(
             metrics,
             limits,
@@ -984,6 +999,9 @@ class Analysis:
         if bytes_processed and bytes_processed > 0:
             tb_processed = bytes_processed / 1024 / 1024 / 1024 / 1024
             logger.info(f"Metrics query will process {round(tb_processed, 2)} TB")
+            return tb_processed
+
+        return -1
 
     @dask.delayed
     def save_statistics(
