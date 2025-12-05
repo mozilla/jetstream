@@ -2245,9 +2245,9 @@ six==1.17.0 \
     # via
     #   -r requirements.in
     #   python-dateutil
-smart-open[gcs]==7.4.3 \
-    --hash=sha256:58380011d58d98975abf73f8d2cd576d9d98115346f57d8380a5f78326c0ac84 \
-    --hash=sha256:f32839234a287e2cb2ecdccc5b315de34a8e79db4db729e1a864ab3b359f9fee
+smart-open[gcs]==7.5.0 \
+    --hash=sha256:87e695c5148bbb988f15cec00971602765874163be85acb1c9fb8abc012e6599 \
+    --hash=sha256:f394b143851d8091011832ac8113ea4aba6b92e6c35f6e677ddaaccb169d7cb9
     # via -r requirements.in
 smmap==5.0.2 \
     --hash=sha256:26ea65a03958fa0c8a1c7e8c7a58fdc77221b8910f6be2131affade476898ad5 \
