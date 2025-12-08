@@ -80,7 +80,7 @@ formulaic==1.2.1
     # via
     #   marginaleffects
     #   mozanalysis
-fsspec==2025.10.0
+fsspec==2025.12.0
     # via dask
 gitdb==4.0.12
     # via gitpython
