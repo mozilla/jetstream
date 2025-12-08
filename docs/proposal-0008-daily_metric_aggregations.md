@@ -26,13 +26,14 @@ Phase one revisits the discrete metrics execution work, seeking to resolve some 
 
 Phase two is an optional follow-on that would use daily metric results to aggregate weekly and overall results. This would limit the amount of data processed by limiting the number of days needed in a single query to the length of the enrollment period. However, there is a significant compromise to this approach (detailed below), so we will evaluate phase one's efficacy before implementing phase two.
 
-The basic mechanics of phase one were laid out in proposal 0007, so this proposal will only detail the remaining work and why we think it will be more successful than the initial deployment. The majority of this proposal lays out the details of the phase two daily metrics aggregation.
+The basic mechanics of phase one were laid out in proposal 0007, so this proposal will only detail the remaining work and why we think it will be more successful than the initial deployment. The rest of this proposal lays out the details of the optional phase two daily metrics aggregation.
 
 
 ## Possible Alternatives
 
 * Increase BigQuery slot reservations
   * Throw money at it
+  * There are additional benefits to the proposed solution, but this alternative will be investigated separately
 * Remove Outcomes
   * These are critical to determining the impact of experiments and we do not want to lose this
 
@@ -48,23 +49,24 @@ When rolling out the current solution, we discovered a couple scaling issues tha
 
 ### Changes
 
-* Metrics computed within one pod (Argo UI not cluttered; should be less overhead)
-  * orchestrated by Dask where appropriate
+* Metrics computed within one pod
+  * Argo UI not cluttered, should be less overhead
+  * orchestrated by Dask where appropriate instead of Argo
   * Dask is already used in Jetstream
 * Group metrics by data source
-  * no need to run the same query multiple times if the only change is the select statement
+  * no need to run the same query multiple times if the only change is the select expression
 
 ### Pros / Cons
 
 - [**+**] Technical solution that doesn't require removing existing capabilities
 - [**+**] Individual metric failures do not prevent other metrics from producing results
 - [**+**] Adding more metrics does not increase the complexity of any single query
-- [**-**] Problematic configurations (e.g., very large and/or unfiltered data sources) may still fail, requiring manual effort to resolve
-- [**-**] More total queries (by factor of `m` where `m` is the # of metric data sources, possibly)
-  * (but fewer queries than discretely computing every metric)
+- [**-**] Problematic configurations (e.g., very large and/or unfiltered data sources) may still fail, requiring manual effort to resolve (but only for the specific failed metrics, as mentioned above)
+- [**-**] More total queries (by factor of `m` where `m` is the # of metric data sources)
+  * (but this is fewer queries than discretely computing every metric)
 
 
-## Phase Two: Daily Metric Aggregations Details
+## Phase Two (if needed): Daily Metric Aggregations Details
 
 This solution requires some significant changes to how Jetstream currently works. I will describe the relevant parts of the workflow, and where it would need to change to accommodate the proposed behavior.
 
