@@ -34,7 +34,7 @@ def inclusive_date_range(start_date, end_date):
 
 
 def retry_get(session: Session, url: str, max_retries: int, user_agent: str | None = None) -> Any:
-    for _i in range(max_retries):
+    for i in range(max_retries):
         try:
             if user_agent:
                 session.headers.update({"user-agent": user_agent})
@@ -42,9 +42,10 @@ def retry_get(session: Session, url: str, max_retries: int, user_agent: str | No
             blob = session.get(url).json()
             break
         except Exception as e:
-            print(e)
-            logger.info(f"Error fetching from {url}. Retrying...")
-            time.sleep(1)
+            logger.info(e)
+            timeout_sec = min(10**i, 180)
+            logger.info(f"Error fetching from {url}. Retrying in {timeout_sec}s...")
+            time.sleep(timeout_sec)
     else:
         exception = RetryLimitExceededException(f"Too many retries for {url}")
 
