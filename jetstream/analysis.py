@@ -852,7 +852,7 @@ class Analysis:
         experiment_slug = self.config.experiment.normandy_slug
         is_runnable = self.check_runnable()
         if not is_runnable:
-            return
+            raise Exception("Cannot validate experiment: app_id not supported.")
 
         assert self.config.experiment.start_date is not None  # for mypy
 
