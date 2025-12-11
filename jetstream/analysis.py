@@ -819,6 +819,13 @@ class Analysis:
         if self.config.experiment.start_date is None:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
+        if self.config.experiment.app_id and self.config.experiment.app_id not in PLATFORM_CONFIGS:
+            logger.warning(
+                f"{self.config.experiment.app_id} not found in platform config:"
+                + " Experiment will not be analyzed.",
+            )
+            return False
+
         if (
             current_date
             and self.config.experiment.end_date
@@ -843,7 +850,10 @@ class Analysis:
             -1 indicates that there is no data processing estimate available.
         """
         experiment_slug = self.config.experiment.normandy_slug
-        self.check_runnable()
+        is_runnable = self.check_runnable()
+        if not is_runnable:
+            return
+
         assert self.config.experiment.start_date is not None  # for mypy
 
         dates_enrollment = self.config.experiment.enrollment_period + 1
@@ -1057,7 +1067,10 @@ class Analysis:
             f"for experiment {self.config.experiment.normandy_slug} and date {current_date.date()}"
         )
 
-        self.check_runnable(current_date)
+        is_runnable = self.check_runnable(current_date)
+        if not is_runnable:
+            return
+
         assert self.config.experiment.start_date is not None  # for mypy
 
         # make sure enrollment is actually ended (and enrollment is not manually overridden)

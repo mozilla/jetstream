@@ -145,6 +145,29 @@ def test_is_high_population_check(experiments):
         Analysis("spam", "eggs", config).check_runnable()
 
 
+def test_check_runnable_false(experiments):
+    x = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Live",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[],
+        normandy_slug="normandy-test-slug",
+        reference_branch=None,
+        is_high_population=False,
+        app_name="invalid_app",
+        app_id="invalid-app",
+    )
+    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
+        x, ConfigLoader.configs
+    )
+
+    is_runnable = Analysis("spam", "eggs", config).check_runnable()
+    assert is_runnable is False
+
+
 def test_skip_works(experiments):
     conf = dedent(
         """
