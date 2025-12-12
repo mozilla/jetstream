@@ -1,6 +1,3 @@
-from jetstream.platform import PLATFORM_CONFIGS
-
-
 class ValidationException(Exception):
     """Exception thrown when an experiment is invalid."""
 
@@ -77,7 +74,6 @@ class UnsupportedApplicationException(Exception):
         super().__init__(
             f"{experiment_slug} -> {app_name} not found in platform config:"
             "experiment will not be analyzed."
-            f"{PLATFORM_CONFIGS}"
         )
 
 
