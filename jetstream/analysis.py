@@ -819,13 +819,6 @@ class Analysis:
         if self.config.experiment.start_date is None:
             raise errors.NoStartDateException(self.config.experiment.normandy_slug)
 
-        if self.config.experiment.app_id and self.config.experiment.app_id not in PLATFORM_CONFIGS:
-            logger.warning(
-                f"{self.config.experiment.app_id} not found in platform config:"
-                + " Experiment will not be analyzed.",
-            )
-            return False
-
         if (
             current_date
             and self.config.experiment.end_date
@@ -836,6 +829,15 @@ class Analysis:
 
         if self.config.experiment.is_rollout:
             raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
+
+        if (
+            self.config.experiment.app_name
+            and self.config.experiment.app_name not in PLATFORM_CONFIGS
+        ):
+            raise errors.UnsupportedApplicationException(
+                self.config.experiment.normandy_slug,
+                self.config.experiment.app_name,
+            )
 
         return True
 
@@ -850,9 +852,7 @@ class Analysis:
             -1 indicates that there is no data processing estimate available.
         """
         experiment_slug = self.config.experiment.normandy_slug
-        is_runnable = self.check_runnable()
-        if not is_runnable:
-            raise Exception("Cannot validate experiment: app_id not supported.")
+        self.check_runnable()
 
         assert self.config.experiment.start_date is not None  # for mypy
 
@@ -1067,9 +1067,7 @@ class Analysis:
             f"for experiment {self.config.experiment.normandy_slug} and date {current_date.date()}"
         )
 
-        is_runnable = self.check_runnable(current_date)
-        if not is_runnable:
-            return
+        self.check_runnable(current_date)
 
         assert self.config.experiment.start_date is not None  # for mypy
 

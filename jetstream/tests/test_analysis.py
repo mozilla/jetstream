@@ -23,6 +23,7 @@ from jetstream.errors import (
     EnrollmentNotCompleteException,
     ExplicitSkipException,
     HighPopulationException,
+    UnsupportedApplicationException,
 )
 from jetstream.metric import Metric
 
@@ -145,7 +146,7 @@ def test_is_high_population_check(experiments):
         Analysis("spam", "eggs", config).check_runnable()
 
 
-def test_check_runnable_false(experiments):
+def test_check_runnable_invalid_app(experiments):
     x = Experiment(
         experimenter_slug="test_slug",
         type="v6",
@@ -164,8 +165,8 @@ def test_check_runnable_false(experiments):
         x, ConfigLoader.configs
     )
 
-    is_runnable = Analysis("spam", "eggs", config).check_runnable()
-    assert is_runnable is False
+    with pytest.raises(UnsupportedApplicationException, match="normandy-test-slug -> invalid_app"):
+        Analysis("spam", "eggs", config).check_runnable()
 
 
 def test_skip_works(experiments):
