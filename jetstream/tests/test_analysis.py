@@ -23,6 +23,7 @@ from jetstream.errors import (
     EnrollmentNotCompleteException,
     ExplicitSkipException,
     HighPopulationException,
+    UnsupportedApplicationException,
 )
 from jetstream.metric import Metric
 
@@ -30,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 def _empty_analysis(experiments):
-    x: Experiment = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp: Experiment = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
     return Analysis("spam", "eggs", config)
 
@@ -83,9 +84,9 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     m = Mock()
     m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
-    x = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
     Analysis("spam", "eggs", config).validate()
     assert m.call_count == 2
@@ -95,9 +96,9 @@ def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
     m = Mock()
     m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
-    x = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
 
     def bypass_mp_pool(_pool, func, args):
@@ -136,12 +137,35 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
 
 
 def test_is_high_population_check(experiments):
-    x = experiments[3]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[3]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
 
     with pytest.raises(HighPopulationException):
+        Analysis("spam", "eggs", config).check_runnable()
+
+
+def test_check_runnable_invalid_app(experiments):
+    exp = Experiment(
+        experimenter_slug="test_slug",
+        type="v6",
+        status="Live",
+        start_date=dt.datetime(2019, 12, 1, tzinfo=pytz.utc),
+        end_date=dt.datetime(2020, 3, 1, tzinfo=pytz.utc),
+        proposed_enrollment=7,
+        branches=[],
+        normandy_slug="normandy-test-slug",
+        reference_branch=None,
+        is_high_population=False,
+        app_name="invalid_app",
+        app_id="invalid-app",
+    )
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
+    )
+
+    with pytest.raises(UnsupportedApplicationException, match="normandy-test-slug -> invalid_app"):
         Analysis("spam", "eggs", config).check_runnable()
 
 

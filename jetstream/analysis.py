@@ -830,6 +830,15 @@ class Analysis:
         if self.config.experiment.is_rollout:
             raise errors.RolloutSkipException(self.config.experiment.normandy_slug)
 
+        if (
+            self.config.experiment.app_name
+            and self.config.experiment.app_name not in PLATFORM_CONFIGS
+        ):
+            raise errors.UnsupportedApplicationException(
+                self.config.experiment.normandy_slug,
+                self.config.experiment.app_name,
+            )
+
         return True
 
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:

@@ -64,6 +64,19 @@ class StatisticComputationException(Exception):
         super().__init__(message)
 
 
+class UnsupportedApplicationException(Exception):
+    """
+    Exception thrown when experiment is configured with an application
+    that is not defined in the platform config TOML.
+    """
+
+    def __init__(self, experiment_slug, app_name):
+        super().__init__(
+            f"{experiment_slug} -> {app_name} not found in platform config:"
+            "experiment will not be analyzed."
+        )
+
+
 class UnexpectedKeyConfigurationException(InvalidConfigurationException):
     pass
 
