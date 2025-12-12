@@ -147,7 +147,7 @@ def test_is_high_population_check(experiments):
 
 
 def test_check_runnable_invalid_app(experiments):
-    x = Experiment(
+    exp = Experiment(
         experimenter_slug="test_slug",
         type="v6",
         status="Live",
@@ -161,8 +161,8 @@ def test_check_runnable_invalid_app(experiments):
         app_name="invalid_app",
         app_id="invalid-app",
     )
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
 
     with pytest.raises(UnsupportedApplicationException, match="normandy-test-slug -> invalid_app"):
