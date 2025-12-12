@@ -853,7 +853,6 @@ class Analysis:
         """
         experiment_slug = self.config.experiment.normandy_slug
         self.check_runnable()
-
         assert self.config.experiment.start_date is not None  # for mypy
 
         dates_enrollment = self.config.experiment.enrollment_period + 1
@@ -1068,7 +1067,6 @@ class Analysis:
         )
 
         self.check_runnable(current_date)
-
         assert self.config.experiment.start_date is not None  # for mypy
 
         # make sure enrollment is actually ended (and enrollment is not manually overridden)
