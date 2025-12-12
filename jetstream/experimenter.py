@@ -187,8 +187,9 @@ class ExperimentCollection:
                         NimbusExperiment.from_dict(draft_experiment).to_experiment()
                     )
                 except Exception as e:
-                    print(f"Error converting draft experiment {draft_experiment}")
-                    print(str(e))
+                    logger.exception(
+                        f"Error converting draft experiment {draft_experiment}", exc_info=e
+                    )
 
         return cls(nimbus_experiments + draft_experiments)
 

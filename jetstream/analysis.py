@@ -1411,6 +1411,7 @@ class Analysis:
             exposure_signal,
             segments,
             self.config.experiment.sample_size or None,
+            suppress_custom_query_validation=True,
             use_glean_ids=use_glean_ids,
         )
 
