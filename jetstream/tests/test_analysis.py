@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 def _empty_analysis(experiments):
-    x: Experiment = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp: Experiment = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
     return Analysis("spam", "eggs", config)
 
@@ -84,9 +84,9 @@ def test_validate_doesnt_explode(experiments, monkeypatch):
     m = Mock()
     m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
-    x = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
     Analysis("spam", "eggs", config).validate()
     assert m.call_count == 2
@@ -96,9 +96,9 @@ def test_validate_doesnt_explode_discrete_metric(experiments, monkeypatch):
     m = Mock()
     m.return_value = -1
     monkeypatch.setattr(jetstream.analysis, "dry_run_query", m)
-    x = experiments[0]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
 
     def bypass_mp_pool(_pool, func, args):
@@ -137,9 +137,9 @@ def test_analysis_doesnt_choke_on_segments(experiments, monkeypatch):
 
 
 def test_is_high_population_check(experiments):
-    x = experiments[3]
-    config = AnalysisSpec.default_for_experiment(x, ConfigLoader.configs).resolve(
-        x, ConfigLoader.configs
+    exp = experiments[3]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
     )
 
     with pytest.raises(HighPopulationException):
