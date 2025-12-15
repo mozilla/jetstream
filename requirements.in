@@ -121,7 +121,7 @@ google-cloud-core==2.5.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==3.4.1
+google-cloud-storage==3.7.0
     # via
     #   mozilla-jetstream
     #   smart-open
