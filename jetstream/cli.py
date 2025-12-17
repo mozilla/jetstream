@@ -1417,14 +1417,20 @@ def ensure_enrollments(
 )
 @click.option(
     "--num-days",
-    "--num-days",
+    "--num_days",
     type=int,
     help="Number of days for which the project be analyzed. Default: 3",
     default=3,
     required=False,
 )
 @experiment_slug_option
-@config_file_option
+@click.option(
+    "--config_file",
+    "--config-file",
+    type=str,
+    help="Path (local) to experiment config file",
+    required=False,
+)
 @config_repos_option
 @private_config_repos_option
 @analysis_periods_option(
@@ -1505,8 +1511,9 @@ def preview(
         experiment_slug = [external_config.slug]
 
     for slug in experiment_slug:
-        collection = ExperimentCollection.from_experimenter(with_draft_experiments=True)
-        experimenter_experiments = collection.with_slug(slug)
+        experimenter_experiments = ExperimentCollection.from_experimenter(
+            with_draft_experiments=True, slug=slug
+        )
         if experimenter_experiments.experiments == [] and not config_file:
             click.echo(
                 f"Experiment {slug} doesn't exist in Experimenter and no config file specified."
@@ -1551,6 +1558,9 @@ def preview(
         if external_spec := config_getter.spec_for_experiment(experiment.normandy_slug):
             spec.merge(external_spec)
 
+        if config_file:
+            spec.merge(external_config.spec)
+
         config = spec.resolve(experiment=experiment, configs=config_getter.configs)
 
         # generated sampled enrollment query
@@ -1570,22 +1580,22 @@ def preview(
             for _, summaries in config.metrics.items():
                 for summary in summaries:
                     ds = summary.metric.data_source
-
-                    if ds.name in spec.data_sources.definitions:
-                        spec.data_sources.definitions[ds.name].experiments_column_type = "none"
-                    else:
-                        spec.data_sources.definitions[ds.name] = DataSourceDefinition(
-                            name=ds.name,
-                            from_expression=ds.from_expression,
-                            client_id_column=ds.client_id_column,
-                            submission_date_column=ds.submission_date_column,
-                            default_dataset=ds.default_dataset,
-                            build_id_column=ds.build_id_column,
-                            friendly_name=ds.friendly_name,
-                            description=ds.description,
-                            experiments_column_type="none",
-                            group_id_column=ds.group_id_column,
-                        )
+                    if ds is not None:
+                        if ds.name in spec.data_sources.definitions:
+                            spec.data_sources.definitions[ds.name].experiments_column_type = "none"
+                        else:
+                            spec.data_sources.definitions[ds.name] = DataSourceDefinition(
+                                name=ds.name,
+                                from_expression=ds.from_expression,
+                                client_id_column=ds.client_id_column,
+                                submission_date_column=ds.submission_date_column,
+                                default_dataset=ds.default_dataset,
+                                build_id_column=ds.build_id_column,
+                                friendly_name=ds.friendly_name,
+                                description=ds.description,
+                                experiments_column_type="none",
+                                group_id_column=ds.group_id_column,
+                            )
 
         # log to a table in the temporary dataset, will be displayed on the Looker dashboard
         log_config = LogConfiguration(

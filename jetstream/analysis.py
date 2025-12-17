@@ -423,6 +423,7 @@ class Analysis:
                 discrete_metrics=False,
                 use_glean_ids=use_glean_ids,
             )
+            logger.info(metrics_sql)
 
             results = self.bigquery.execute(
                 metrics_sql, res_table_name, experiment_slug=self.config.experiment.normandy_slug
