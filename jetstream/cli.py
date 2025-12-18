@@ -1427,7 +1427,7 @@ def ensure_enrollments(
 @click.option(
     "--config_file",
     "--config-file",
-    type=str,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Path (local) to experiment config file",
     required=False,
 )
@@ -1507,7 +1507,7 @@ def preview(
     # At least one of `--slug` and `--config-file` is required. If slug is not
     # given, find it from the config file.
     if not experiment_slug:
-        external_config = entity_from_path(Path(config_file))
+        external_config = entity_from_path(config_file)
         experiment_slug = [external_config.slug]
 
     for slug in experiment_slug:
