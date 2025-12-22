@@ -654,9 +654,9 @@ google-cloud-artifact-registry==1.17.0 \
     --hash=sha256:bb14b9d84ee77d1ecce630ce027905be54f0ba3d9c4680318bbb1beb61ca2408 \
     --hash=sha256:dae22fc5700093b184e2be0bf64c0cb6d2f3c4b885e11fd573a5daa7934a5425
     # via -r requirements.in
-google-cloud-bigquery==3.38.0 \
-    --hash=sha256:8afcb7116f5eac849097a344eb8bfda78b7cfaae128e60e019193dd483873520 \
-    --hash=sha256:e06e93ff7b245b239945ef59cb59616057598d369edac457ebf292bd61984da6
+google-cloud-bigquery==3.39.0 \
+    --hash=sha256:cb375e1d63dea9bd5bf735e66024338f294159d43afdf63e1d023f5fcbbf55ea \
+    --hash=sha256:dc7a64921465859105461b43c42562e38e797d7a73feb72b3cfc4865b7b1c5ef
     # via
     #   -r requirements.in
     #   mozanalysis
