@@ -2412,9 +2412,9 @@ types-requests==2.32.4.20250913 \
     --hash=sha256:78c9c1fffebbe0fa487a418e0fa5252017e9c60d1a2da394077f1780f655d7e1 \
     --hash=sha256:abd6d4f9ce3a9383f269775a9835a4c24e5cd6b9f647d64f88aa4613c33def5d
     # via -r requirements.in
-types-setuptools==80.9.0.20250822 \
-    --hash=sha256:070ea7716968ec67a84c7f7768d9952ff24d28b65b6594797a464f1b3066f965 \
-    --hash=sha256:53bf881cb9d7e46ed12c76ef76c0aaf28cfe6211d3fab12e0b83620b1a8642c3
+types-setuptools==80.9.0.20251221 \
+    --hash=sha256:05da599f5a062bbee3e83d60318576ba23111a768b7a2e46aa11644109c5d17f \
+    --hash=sha256:fecf4b9ebfc4cdd9cd38b898b653ad197507d7a62d465a168b709c56e94b02c4
     # via -r requirements.in
 types-six==1.17.0.20251009 \
     --hash=sha256:2494f4c2a58ada0edfe01ea84b58468732e43394c572d9cf5b1dd06d86c487a3 \
