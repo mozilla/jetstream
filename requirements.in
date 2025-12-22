@@ -125,7 +125,7 @@ google-cloud-storage==3.4.1
     # via
     #   mozilla-jetstream
     #   smart-open
-google-crc32c==1.7.1
+google-crc32c==1.8.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
