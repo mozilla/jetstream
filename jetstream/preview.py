@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import mozanalysis
+from metric_config_parser import AnalysisUnit
 from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.data_source import DataSourceReference
 from metric_config_parser.exposure_signal import ExposureSignalDefinition
@@ -12,7 +13,10 @@ from .platform import PLATFORM_CONFIGS
 
 
 def sampled_enrollment_query(
-    start_date: datetime, config: AnalysisConfiguration, population_sample_size: int
+    start_date: datetime,
+    config: AnalysisConfiguration,
+    population_sample_size: int,
+    use_glean_ids: bool = False,
 ) -> str:
     """Generated an enrollment query of a sampled population."""
     analysis = Analysis(project="", dataset="", config=config)
@@ -26,32 +30,42 @@ def sampled_enrollment_query(
 
     enrollments_sql = analysis.enrollments_query(time_limits=time_limits)
 
+    analysis_unit = (
+        AnalysisUnit.PROFILE_GROUP
+        if config.experiment.app_name == "firefox_desktop"
+        and config.experiment.randomization_unit is None
+        else config.experiment.analysis_unit
+    )
+
     # add sampling and remove matching on experiment slug (because no clients enrolled)
     exp = mozanalysis.experiment.Experiment(
         experiment_slug=config.experiment.normandy_slug,
         start_date=start_date,
         app_id=analysis._app_id_to_bigquery_dataset(config.experiment.app_id),
-        analysis_unit=config.experiment.analysis_unit,
+        analysis_unit=analysis_unit,
     )
     enrollments_query_type = PLATFORM_CONFIGS[config.experiment.app_name].enrollments_query_type
+    analysis_id = analysis_unit.value
 
-    if enrollments_query_type == EnrollmentsQueryType.NORMANDY:
+    if enrollments_query_type == EnrollmentsQueryType.NORMANDY and not use_glean_ids:
         enrollments_sql = f"""
         (SELECT
-            e.client_id AS analysis_id,
+            e.{analysis_id} AS analysis_id,
             "control" AS branch,
             MIN(e.submission_date) AS enrollment_date,
             COUNT(e.submission_date) AS num_enrollment_events
         FROM
             `moz-fx-data-shared-prod.telemetry.events` e
         WHERE
-            client_id IS NOT NULL AND
+            {analysis_id} IS NOT NULL AND
             e.submission_date BETWEEN '{time_limits.first_enrollment_date}'
                 AND '{time_limits.last_enrollment_date}'
             AND sample_id < {population_sample_size}
-        GROUP BY e.client_id, branch)
+        GROUP BY e.{analysis_id}, branch)
             """
-    elif enrollments_query_type == EnrollmentsQueryType.GLEAN_EVENT:
+    elif enrollments_query_type == EnrollmentsQueryType.GLEAN_EVENT or (
+        enrollments_query_type == EnrollmentsQueryType.NORMANDY and use_glean_ids
+    ):
         enrollments_sql = f"""
             SELECT
                 client_id AS analysis_id,
