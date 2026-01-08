@@ -1444,6 +1444,7 @@ class Analysis:
                 WriteDisposition.WRITE_EMPTY,
                 experiment_slug=self.config.experiment.normandy_slug,
             )
+            logger.info(enrollments_sql)
             logger.info(
                 "Enrollment query cost: " + f"{results.slot_millis * COST_PER_SLOT_MS}",
             )

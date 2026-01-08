@@ -26,7 +26,7 @@ from google.oauth2.id_token import fetch_id_token
 logger = logging.getLogger(__name__)
 
 # https://github.com/mozilla-services/cloudops-infra/blob/master/projects/data-shared/tf/modules/cloudfunctions/src/bigquery_etl_dryrun/index.js
-DRY_RUN_URL = "https://us-central1-moz-fx-data-shared-prod.cloudfunctions.net/bigquery-etl-dryrun"
+DRY_RUN_URL = "https://us-central1-moz-fx-data-shared-prod.cloudfunctions.net/dryrun"
 BILLING_PROJECTS = [
     "moz-fx-data-backfill-10",
     "moz-fx-data-backfill-11",

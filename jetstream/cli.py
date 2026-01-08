@@ -505,6 +505,7 @@ class AnalysisExecutor:
         experiment_getter: Callable[
             ..., ExperimentCollection
         ] = ExperimentCollection.from_experimenter,
+        use_glean_ids=False,
     ) -> None:
         """Ensure that enrollment tables for experiment are up-to-date or re-create."""
         run_configs = self._experiment_configs_to_analyse(experiment_getter, config_getter)
@@ -545,7 +546,7 @@ class AnalysisExecutor:
                         and config.experiment.experiment_spec.enrollment_period is None
                     )
                 ):
-                    analysis.ensure_enrollments(end_date)
+                    analysis.ensure_enrollments(end_date, use_glean_ids)
             except Exception as e:
                 logger.exception(
                     str(e), exc_info=e, extra={"experiment": config.experiment.normandy_slug}
@@ -1364,6 +1365,7 @@ def validate_config(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@use_glean_ids_option
 def ensure_enrollments(
     project_id,
     dataset_id,
@@ -1373,6 +1375,7 @@ def ensure_enrollments(
     recreate_enrollments,
     config_repos,
     private_config_repos,
+    use_glean_ids,
 ):
     """Ensure that enrollment tables for experiment are up-to-date or re-create."""
     if len(experiment_slug) > 1 and config_file:
@@ -1393,6 +1396,7 @@ def ensure_enrollments(
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
+        use_glean_ids=use_glean_ids,
     )
 
 
@@ -1472,6 +1476,7 @@ def ensure_enrollments(
     default=3,
     help="Number of days used as enrollment period when generating population.",
 )
+@use_glean_ids_option
 def preview(
     project_id,
     dataset_id,
@@ -1488,6 +1493,7 @@ def preview(
     generate_population,
     population_sample_size,
     enrollment_period,
+    use_glean_ids,
 ):
     """Create a preview for a specific experiment based on a subset of data."""
     if not experiment_slug and not config_file:
@@ -1506,9 +1512,10 @@ def preview(
 
     # At least one of `--slug` and `--config-file` is required. If slug is not
     # given, find it from the config file.
-    if not experiment_slug:
+    if config_file:
         external_config = entity_from_path(config_file)
-        experiment_slug = [external_config.slug]
+        if not experiment_slug:
+            experiment_slug = [external_config.slug]
 
     for slug in experiment_slug:
         experimenter_experiments = ExperimentCollection.from_experimenter(
@@ -1566,11 +1573,16 @@ def preview(
         # generated sampled enrollment query
         if generate_population:
             spec.experiment.enrollment_query = sampled_enrollment_query(
-                start_date, config, population_sample_size
+                start_date,
+                config,
+                population_sample_size,
+                use_glean_ids,
             )
 
             # update dates
-            spec.experiment.start_date = (start_date - timedelta(days=3)).strftime("%Y-%m-%d")
+            spec.experiment.start_date = (start_date - timedelta(days=enrollment_period)).strftime(
+                "%Y-%m-%d"
+            )
             spec.experiment.end_date = end_date.strftime("%Y-%m-%d")
             spec.experiment.enrollment_period = enrollment_period
 
@@ -1628,6 +1640,7 @@ def preview(
             experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
                 experiments=[exp]
             ),
+            use_glean_ids=use_glean_ids,
         )
 
         # run preview analysis
@@ -1658,6 +1671,7 @@ def preview(
                     experiment_getter=lambda exp=experiment, slug=None: ExperimentCollection(
                         experiments=[exp]
                     ),
+                    use_glean_ids=use_glean_ids,
                 ),
                 config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                     private_config_repos, is_private=True
