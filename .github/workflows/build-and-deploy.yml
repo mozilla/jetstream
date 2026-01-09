@@ -23,11 +23,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           cache: 'pip'
       - name: Build venv and install dependencies
         run: |
-          python3.10 -m venv venv/
+          python -m venv venv/
           venv/bin/pip install --no-deps --progress-bar off --upgrade -r requirements.txt
       - name: Ruff lint
         run: venv/bin/ruff check jetstream
@@ -62,10 +62,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       - name: Build venv and install dependencies
         run: |
-          python3.10 -m venv venv/
+          python -m venv venv/
           venv/bin/pip install --no-deps --progress-bar off --upgrade -r requirements.txt
       - name: Authenticate to GCP (OIDC)
         uses: google-github-actions/auth@v2
@@ -89,7 +89,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       - name: Install deployment tools
         run: pip install --upgrade build setuptools wheel twine
       - name: Build distribution files
