@@ -356,7 +356,7 @@ rpds-py==0.30.0
     #   referencing
 rsa==4.9.1
     # via google-auth
-ruff==0.14.11
+ruff==0.14.13
     # via
     #   mozilla-jetstream
     #   pytest-ruff
