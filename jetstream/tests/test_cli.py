@@ -196,8 +196,27 @@ class TestCli:
                 config.write(conf)
 
             result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml", "--is_private"])
-            assert result.exit_code
+            assert result.exit_code == 1
             assert "dataset_id needs to be explicitly set for private experiments" in str(result)
+
+    def test_validate_invalid_toml_exit_code(self, runner, monkeypatch):
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
+        with runner.isolated_filesystem():
+            conf = dedent(
+                """
+                [experiment
+                start_date = "2020-12-31"
+                end_date = "2021-02-01"
+                start_date = "2020-12-31"
+                """
+            )
+
+            with open("my_cool_experiment.toml", "w") as config:
+                config.write(conf)
+
+            result = runner.invoke(cli.validate_config, ["my_cool_experiment.toml"])
+            assert result.exit_code == 1
+            assert "TomlDecodeError" in str(result)
 
     def test_validate_example_outcome_config(self, runner, monkeypatch):
         monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", cli_experiments)
