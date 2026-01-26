@@ -222,7 +222,7 @@ numpy==2.4.0
     #   scikit-learn
     #   scipy
     #   statsmodels
-packaging==25.0
+packaging==26.0
     # via
     #   dask
     #   db-dtypes
