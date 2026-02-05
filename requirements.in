@@ -243,7 +243,7 @@ pandas==2.3.3
     #   statsmodels
 partd==1.4.2
     # via dask
-pathspec==1.0.3
+pathspec==1.0.4
     # via mypy
 patsy==1.0.2
     # via
