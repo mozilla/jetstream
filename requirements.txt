@@ -1222,9 +1222,9 @@ matplotlib==3.10.8 \
     #   -r requirements.in
     #   mozanalysis
     #   plotnine
-mizani==0.14.3 \
-    --hash=sha256:6d2ca9b1b8366ff85668f0cc1b6095f1e702e26e66f132c4f02a949efa32a688 \
-    --hash=sha256:c2fb886b3c9e8109be5b8fd21e1130fba1f0a20230a987146240221209fc0ddd
+mizani==0.14.4 \
+    --hash=sha256:28934d91516d922d7cb0382c82a6c513692abc0174c42a50294ae571520633f9 \
+    --hash=sha256:ed72bf249e2a18b5dcc65cd54c7eaa5444b2cb09c7e18aafa2ab6f05f1b78620
     # via
     #   -r requirements.in
     #   plotnine
