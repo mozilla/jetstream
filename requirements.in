@@ -255,7 +255,7 @@ platformdirs==4.5.1
     # via
     #   tox
     #   virtualenv
-plotnine==0.15.2
+plotnine==0.15.3
     # via marginaleffects
 pluggy==1.6.0
     # via
