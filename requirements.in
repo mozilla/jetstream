@@ -185,7 +185,7 @@ matplotlib==3.10.8
     # via
     #   mozanalysis
     #   plotnine
-mizani==0.14.3
+mizani==0.14.4
     # via plotnine
 mozanalysis==2026.1.2
     # via mozilla-jetstream
