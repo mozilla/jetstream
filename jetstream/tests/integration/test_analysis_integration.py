@@ -911,6 +911,12 @@ class TestAnalysisIntegration:
             select_expression=agg_sum("active_hours_sum"),
         )
 
+        test_active_hours_2 = Metric(
+            name="active_hours_2",
+            data_source=test_clients_daily,
+            select_expression=agg_sum("active_hours_sum"),
+        )
+
         test_clients_last_seen = SegmentDataSource(
             "clients_last_seen", f"`{project_id}.test_data.clients_last_seen`"
         )
@@ -923,7 +929,12 @@ class TestAnalysisIntegration:
 
         stat = Statistic(name="bootstrap_mean", params={})
 
-        config.metrics = {AnalysisPeriod.WEEK: [Summary(test_active_hours, stat)]}
+        config.metrics = {
+            AnalysisPeriod.WEEK: [
+                Summary(test_active_hours, stat),
+                Summary(test_active_hours_2, stat),
+            ]
+        }
 
         self.analysis_mock_run(
             monkeypatch,
