@@ -1245,9 +1245,9 @@ class Analysis:
                                 period,
                             ).model_dump(warnings=False)
 
-                            segment_results.root += self.counts(
-                                segment_data, segment, analysis_basis
-                            ).model_dump(warnings=False)
+                        segment_results.root += self.counts(
+                            segment_data, segment, analysis_basis
+                        ).model_dump(warnings=False)
 
                 else:
                     # convert metric configurations to mozanalysis metrics
@@ -1349,9 +1349,9 @@ class Analysis:
                                     period,
                                 ).model_dump(warnings=False)
 
-                                segment_results.root += self.counts(
-                                    segment_data, segment, analysis_basis
-                                ).model_dump(warnings=False)
+                            segment_results.root += self.counts(
+                                segment_data, segment, analysis_basis
+                            ).model_dump(warnings=False)
 
                 # done with analysis_basis: publish metric view
                 results.append(
