@@ -608,9 +608,9 @@ formulaic==1.2.1 \
     #   -r requirements.in
     #   marginaleffects
     #   mozanalysis
-fsspec==2026.1.0 \
-    --hash=sha256:cb76aa913c2285a3b49bdd5fc55b1d7c708d7208126b60f2eb8194fe1b4cbdcc \
-    --hash=sha256:e987cb0496a0d81bba3a9d1cee62922fb395e7d4c3b575e57f547953334fe07b
+fsspec==2026.2.0 \
+    --hash=sha256:6544e34b16869f5aacd5b90bdf1a71acb37792ea3ddf6125ee69a22a53fb8bff \
+    --hash=sha256:98de475b5cb3bd66bedd5c4679e87b4fdfe1a3bf4d707b151b3c07e58c9a2437
     # via
     #   -r requirements.in
     #   dask
