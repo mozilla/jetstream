@@ -444,7 +444,7 @@ urllib3==2.6.3
     #   types-requests
 virtualenv==20.36.1
     # via tox
-wrapt==2.0.1
+wrapt==2.1.1
     # via
     #   formulaic
     #   smart-open
