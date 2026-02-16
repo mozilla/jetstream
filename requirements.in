@@ -64,7 +64,7 @@ execnet==2.1.2
     # via pytest-xdist
 faker==40.1.0
     # via polyfactory
-filelock==3.20.3
+filelock==3.24.2
     # via
     #   tox
     #   virtualenv
