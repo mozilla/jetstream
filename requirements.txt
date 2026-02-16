@@ -658,9 +658,9 @@ google-cloud-bigquery==3.40.0 \
     # via
     #   -r requirements.in
     #   mozanalysis
-google-cloud-bigquery-storage==2.36.0 \
-    --hash=sha256:1769e568070db672302771d2aec18341de10712aa9c4a8c549f417503e0149f0 \
-    --hash=sha256:d3c1ce9d2d3a4d7116259889dcbe3c7c70506f71f6ce6bbe54aa0a68bbba8f8f
+google-cloud-bigquery-storage==2.36.1 \
+    --hash=sha256:99ad6b8810d028f0cf368ea0cc54b3cda20e856f05eb4cda51f1db2a70692286 \
+    --hash=sha256:fd3917584a41f7a9d9c633b31ff43103869b108224e8a4b765537eb1ea83148c
     # via
     #   -r requirements.in
     #   mozanalysis
