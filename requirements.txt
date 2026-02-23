@@ -2562,9 +2562,9 @@ urllib3==2.6.3 \
     #   distributed
     #   requests
     #   types-requests
-virtualenv==20.37.0 \
-    --hash=sha256:5d3951c32d57232ae3569d4de4cc256c439e045135ebf43518131175d9be435d \
-    --hash=sha256:6f7e2064ed470aa7418874e70b6369d53b66bcd9e9fd5389763e96b6c94ccb7c
+virtualenv==20.39.0 \
+    --hash=sha256:44888bba3775990a152ea1f73f8e5f566d49f11bbd1de61d426fd7732770043e \
+    --hash=sha256:a15f0cebd00d50074fd336a169d53422436a12dfe15149efec7072cfe817df8b
     # via
     #   -r requirements.in
     #   tox
