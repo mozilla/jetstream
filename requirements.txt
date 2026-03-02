@@ -555,6 +555,7 @@ filelock==3.24.2 \
     --hash=sha256:c22803117490f156e59fafce621f0550a7a853e2bbf4f87f112b11d469b6c81b
     # via
     #   -r requirements.in
+    #   python-discovery
     #   tox
     #   virtualenv
 fonttools==4.61.1 \
@@ -1672,6 +1673,7 @@ platformdirs==4.9.2 \
     --hash=sha256:9a33809944b9db043ad67ca0db94b14bf452cc6aeaac46a88ea55b26e2e9d291
     # via
     #   -r requirements.in
+    #   python-discovery
     #   tox
     #   virtualenv
 plotnine==0.15.3 \
@@ -2021,6 +2023,10 @@ python-dateutil==2.9.0.post0 \
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
+python-discovery==1.1.0 \
+    --hash=sha256:447941ba1aed8cc2ab7ee3cb91be5fc137c5bdbb05b7e6ea62fbdcb66e50b268 \
+    --hash=sha256:a162893b8809727f54594a99ad2179d2ede4bf953e12d4c7abc3cc9cdbd1437b
+    # via virtualenv
 pytz==2025.2 \
     --hash=sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3 \
     --hash=sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00
@@ -2562,9 +2568,9 @@ urllib3==2.6.3 \
     #   distributed
     #   requests
     #   types-requests
-virtualenv==20.37.0 \
-    --hash=sha256:5d3951c32d57232ae3569d4de4cc256c439e045135ebf43518131175d9be435d \
-    --hash=sha256:6f7e2064ed470aa7418874e70b6369d53b66bcd9e9fd5389763e96b6c94ccb7c
+virtualenv==21.1.0 \
+    --hash=sha256:164f5e14c5587d170cf98e60378eb91ea35bf037be313811905d3a24ea33cc07 \
+    --hash=sha256:1990a0188c8f16b6b9cf65c9183049007375b26aad415514d377ccacf1e4fb44
     # via
     #   -r requirements.in
     #   tox
