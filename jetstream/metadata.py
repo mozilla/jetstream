@@ -126,15 +126,20 @@ def export_metadata(
 
     metadata = ExperimentMetadata.from_config(config, analysis_start_time)
 
-    storage_client = storage.Client(project_id)
-    bucket = storage_client.get_bucket(bucket_name)
-    target_file = f"metadata_{bq_normalize_name(config.experiment.normandy_slug)}"
-    target_path = "metadata"
-    blob = bucket.blob(f"{target_path}/{target_file}.json")
+    logger.info(metadata.model_dump_json())
 
-    logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
+    if bucket_name:
+        storage_client = storage.Client(project_id)
+        bucket = storage_client.get_bucket(bucket_name)
+        target_file = f"metadata_{bq_normalize_name(config.experiment.normandy_slug)}"
+        target_path = "metadata"
+        blob = bucket.blob(f"{target_path}/{target_file}.json")
 
-    blob.upload_from_string(
-        data=metadata.model_dump_json(),
-        content_type="application/json",
-    )
+        logger.info(f"Uploading {target_file} to {bucket_name}/{target_path}.")
+
+        blob.upload_from_string(
+            data=metadata.model_dump_json(),
+            content_type="application/json",
+        )
+    else:
+        logger.info("No bucket_name provided, skipping upload...")
