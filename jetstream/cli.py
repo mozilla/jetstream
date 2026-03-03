@@ -1122,6 +1122,44 @@ def export_statistics_to_json(project_id, dataset_id, bucket, experiment_slug):
 
 
 @cli.command()
+@project_id_option()
+@dataset_id_option()
+@bucket_option
+@experiment_slug_option
+@config_repos_option
+@private_config_repos_option
+def export_metadata_to_json(
+    project_id, dataset_id, bucket, experiment_slug, config_repos, private_config_repos
+):
+    """Export all tables as JSON (optionally to a GCS bucket)."""
+    config_getter = ConfigLoader.with_configs_from(config_repos).with_configs_from(
+        private_config_repos, is_private=True
+    )
+    for slug in experiment_slug:
+        experiments = ExperimentCollection.from_experimenter(slug=slug).experiments
+        if experiments == []:
+            print(f"No experiment with slug {slug} in Experimenter.")
+            continue
+
+        # run_configs = self._experiments_to_configs(experiment_slug, config_getter)
+        experiment = experiments[0]
+
+        client = BigQueryClient(project_id, dataset_id)
+        first_updated = client.experiment_table_first_updated(experiment.normandy_slug)
+
+        # get the configs that were the most recent when the experiment was last updated
+        config_collection = config_getter.configs.as_of(first_updated)
+        spec = AnalysisSpec.default_for_experiment(experiment, config_collection)
+
+        if external_spec := config_collection.spec_for_experiment(experiment.normandy_slug):
+            spec.merge(external_spec)
+
+        config = spec.resolve(experiment, config_collection)
+
+        export_metadata(config, bucket, project_id, None)
+
+
+@cli.command()
 @log_project_id_option
 @log_dataset_id_option
 @log_table_id_option
