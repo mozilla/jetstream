@@ -170,7 +170,7 @@ jsonschema==4.26.0
     #   mozilla-nimbus-schemas
 jsonschema-specifications==2025.9.1
     # via jsonschema
-kiwisolver==1.4.9
+kiwisolver==1.5.0
     # via matplotlib
 librt==0.8.1
     # via mypy
