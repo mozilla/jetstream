@@ -381,7 +381,7 @@ six==1.17.0
     # via python-dateutil
 smart-open[gcs]==7.5.1
     # via mozilla-jetstream
-smmap==5.0.2
+smmap==5.0.3
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
