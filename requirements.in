@@ -69,7 +69,7 @@ filelock==3.25.0
     #   python-discovery
     #   tox
     #   virtualenv
-fonttools==4.61.1
+fonttools==4.62.0
     # via matplotlib
 formulaic==1.2.1
     # via
