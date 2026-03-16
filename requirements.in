@@ -62,7 +62,7 @@ distributed==2026.1.2
     # via dask
 execnet==2.1.2
     # via pytest-xdist
-faker==40.5.1
+faker==40.11.0
     # via polyfactory
 filelock==3.25.0
     # via
