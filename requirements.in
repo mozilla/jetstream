@@ -204,7 +204,7 @@ mypy==1.19.1
     # via mozilla-jetstream
 mypy-extensions==1.1.0
     # via mypy
-narwhals==2.17.0
+narwhals==2.18.0
     # via
     #   formulaic
     #   marginaleffects
