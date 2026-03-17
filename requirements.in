@@ -294,7 +294,7 @@ pyarrow==23.0.1
     #   marginaleffects
     #   mozanalysis
     #   mozilla-jetstream
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   pyasn1-modules
     #   rsa
