@@ -105,8 +105,9 @@ class ArgoExecutorStrategy:
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     image: str = "jetstream"
     image_version: str | None = None
-    metric_slugs: list[str] | None = None
     statistics_only: bool = False
+    discrete_metrics: bool = False
+    metric_slugs: list[str] | None = None
 
     WORKFLOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKFLOW_DIR / "run.yaml"
@@ -121,6 +122,7 @@ class ArgoExecutorStrategy:
 
         experiments_config: dict[str, list[str]] = {}
         # TODO: uncomment this and related lines when adding Argo support for metric_slugs
+        # - this will run each slug in its own argo task, potentially exploding the # of tasks
         # experiment_metrics_map: dict[str, set[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
@@ -210,6 +212,9 @@ class ArgoExecutorStrategy:
                 ),
                 "image": self.image,
                 "statistics_only": self.statistics_only,
+                "discrete_metrics": "--discrete-metrics"
+                if self.discrete_metrics
+                else "--no-discrete-metrics",
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -230,9 +235,10 @@ class SerialExecutorStrategy:
     config_getter: _ConfigLoader = ConfigLoader
     analysis_periods: list[AnalysisPeriod] = ALL_PERIODS
     sql_output_dir: str | None = None
-    metric_slugs: list[str] | None = None
     statistics_only: bool = False
     use_glean_ids: bool = False
+    discrete_metrics: bool = False
+    metric_slugs: list[str] | None = None
 
     def execute(
         self,
@@ -262,6 +268,7 @@ class SerialExecutorStrategy:
                     date,
                     statistics_only=self.statistics_only,
                     use_glean_ids=self.use_glean_ids,
+                    discrete_metrics=self.discrete_metrics,
                     metric_slugs=self.metric_slugs,
                 )
 
@@ -430,6 +437,7 @@ class AnalysisExecutor:
                     DefinitionNotFound,
                     UnexpectedKeyConfigurationException,
                     UndefinedError,
+                    RuntimeError,
                 ) as e:
                     logger.exception(str(e), exc_info=e, extra={"experiment": slug})
 
@@ -807,6 +815,14 @@ statistics_only_option = click.option(
 
 use_glean_ids_option = click.option("--use-glean-ids", "--glean-only", is_flag=True, default=False)
 
+discrete_metrics_option = click.option(
+    "--discrete-metrics/--no-discrete-metrics",
+    "--discrete_metrics/--no_discrete_metrics",
+    is_flag=True,
+    help="Whether to split up the metrics query",
+    default=False,
+)
+
 metric_slugs_option = click.option(
     "--metric-slug",
     "--metric_slug",
@@ -831,6 +847,7 @@ metric_slugs_option = click.option(
 @sql_output_dir_option
 @statistics_only_option
 @use_glean_ids_option
+@discrete_metrics_option
 @metric_slugs_option
 @click.pass_context
 def run(
@@ -848,6 +865,7 @@ def run(
     sql_output_dir,
     statistics_only,
     use_glean_ids,
+    discrete_metrics,
     metric_slug,
 ):
     """Runs analysis for the provided date."""
@@ -881,11 +899,14 @@ def run(
             metric_slugs=metric_slug if metric_slug else None,
             statistics_only=statistics_only,
             use_glean_ids=use_glean_ids,
+            discrete_metrics=discrete_metrics,
         ),
         config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
             private_config_repos, is_private=True
         ),
     )
+
+    logger.info(f"Done! Success: {success}")
 
     sys.exit(not success)
 
@@ -913,7 +934,8 @@ def run(
 @image_option
 @image_version_option
 @statistics_only_option
-# @metric_slugs_option
+@discrete_metrics_option
+@metric_slugs_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -933,7 +955,8 @@ def run_argo(
     image,
     image_version,
     statistics_only,
-    # metric_slug,
+    discrete_metrics,
+    metric_slug,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -949,7 +972,8 @@ def run_argo(
         image=image,
         image_version=image_version,
         statistics_only=statistics_only,
-        # metric_slugs=metric_slugs if metric_slugs else None,
+        discrete_metrics=discrete_metrics,
+        metric_slugs=metric_slug if metric_slug else None,
     )
 
     AnalysisExecutor(
@@ -987,6 +1011,7 @@ def run_argo(
 @image_version_option
 @analysis_periods_option()
 @statistics_only_option
+@discrete_metrics_option
 @metric_slugs_option
 @click.pass_context
 def rerun(
@@ -1010,6 +1035,7 @@ def rerun(
     image,
     image_version,
     statistics_only,
+    discrete_metrics,
     metric_slug,
 ):
     """Rerun all available analyses for a specific experiment."""
@@ -1033,6 +1059,7 @@ def rerun(
         ctx.obj["log_config"],
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
+        discrete_metrics=discrete_metrics,
         metric_slugs=metric_slug if metric_slug else None,
     )
 
@@ -1052,7 +1079,8 @@ def rerun(
             image=image,
             image_version=image_version,
             statistics_only=statistics_only,
-            # metric_slugs=metric_slug if metric_slug else None,
+            discrete_metrics=discrete_metrics,
+            metric_slugs=metric_slug if metric_slug else None,
         )
 
     success = AnalysisExecutor(
