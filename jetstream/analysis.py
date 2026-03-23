@@ -1284,7 +1284,6 @@ class Analysis:
                     # create the full list of metrics to compute
                     # metrics = config_metrics
                     logger.debug(f"COMPUTING METRICS: {[m.name for m in config_metrics]}")
-                    segment_counts_added: dict[str, bool] = {}
                     for data_source, ds_metrics in metrics_by_ds.items():
                         metric_table = self.calculate_metric_for_ds(
                             exp,
@@ -1372,11 +1371,9 @@ class Analysis:
                                     period,
                                 ).model_dump(warnings=False)
 
-                            if not segment_counts_added.get(data_source.name, False):
-                                segment_results.root += self.counts(
-                                    segment_data, segment, analysis_basis
-                                ).model_dump(warnings=False)
-                                segment_counts_added[data_source.name] = True
+                            segment_results.root += self.counts(
+                                segment_data, segment, analysis_basis
+                            ).model_dump(warnings=False)
 
                 # done with analysis_basis: publish metric view
                 results.append(
