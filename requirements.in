@@ -318,7 +318,7 @@ pytest==9.0.2
     #   pytest-cov
     #   pytest-ruff
     #   pytest-xdist
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via mozilla-jetstream
 pytest-ruff==0.5
     # via mozilla-jetstream
