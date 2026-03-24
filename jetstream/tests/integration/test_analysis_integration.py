@@ -56,6 +56,7 @@ class TestAnalysisIntegration:
         log_config=None,
         use_glean_ids=False,
         metric_slugs=None,
+        discrete_metrics=False,
     ):
         orig_enrollments = mozanalysis.experiment.Experiment.build_enrollments_query
         orig_metrics = mozanalysis.experiment.Experiment.build_metrics_query
@@ -109,6 +110,7 @@ class TestAnalysisIntegration:
             dry_run=False,
             use_glean_ids=use_glean_ids,
             metric_slugs=metric_slugs,
+            discrete_metrics=discrete_metrics,
         )
 
     def test_metrics(
@@ -311,14 +313,14 @@ class TestAnalysisIntegration:
             static_dataset,
             temporary_dataset,
             project_id,
-            metric_slugs=["active_hours"],
+            discrete_metrics=True,
         )
 
         query_job: QueryJob = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_active_hours_week_1`
+            FROM `{project_id}.{temporary_dataset}.test_experiment_exposures_clients_daily_week_1`
             ORDER BY enrollment_date DESC
         """
         )
@@ -384,8 +386,8 @@ class TestAnalysisIntegration:
         """
         )
         stats = stats_query.to_dataframe()
-        assert len(stats[stats["metric"] == "active_hours"]) > 1
-        assert len(stats[stats["metric"] == "active_hours_doubled"]) == 0
+        assert len(stats[stats["metric"] == "active_hours"]) == 12
+        assert len(stats[stats["metric"] == "active_hours_doubled"]) == 12
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
         assert count_by_branch.loc["branch1", "point"][0] == 1.0

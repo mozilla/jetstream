@@ -574,7 +574,8 @@ class TestSerialExecutorStrategy:
         strategy.execute([])
         fake_analysis().run.assert_not_called()
 
-    def test_simple_workflow(self, bq_client_mock, cli_experiments, monkeypatch):
+    @pytest.mark.parametrize("discrete_metrics", [True, False])
+    def test_simple_workflow(self, bq_client_mock, cli_experiments, monkeypatch, discrete_metrics):
         monkeypatch.setattr("jetstream.cli.export_metadata", Mock())
         monkeypatch.setattr("jetstream.cli.export_experiment_logs", Mock())
         fake_analysis = Mock()
@@ -587,6 +588,7 @@ class TestSerialExecutorStrategy:
             analysis_class=fake_analysis,
             experiment_getter=lambda: cli_experiments,
             config_getter=ConfigLoader,
+            discrete_metrics=discrete_metrics,
         )
         config = spec.resolve(experiment, ConfigLoader.configs)
         run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
@@ -611,12 +613,14 @@ class TestSerialExecutorStrategy:
             run_date,
             statistics_only=False,
             use_glean_ids=False,
+            discrete_metrics=discrete_metrics,
             metric_slugs=None,
         )
 
 
 class TestArgoExecutorStrategy:
-    def test_simple_workflow(self, cli_experiments, monkeypatch, docker_images):
+    @pytest.mark.parametrize("discrete_metrics", [True, False])
+    def test_simple_workflow(self, cli_experiments, monkeypatch, docker_images, discrete_metrics):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
         config = spec.resolve(experiment, ConfigLoader.configs)
@@ -650,9 +654,12 @@ class TestArgoExecutorStrategy:
                         AnalysisPeriod.PREENROLLMENT_WEEK,
                         AnalysisPeriod.PREENROLLMENT_DAYS_28,
                     ],
+                    discrete_metrics=discrete_metrics,
                 )
                 run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
                 strategy.execute([(config, run_date)])
+
+            discrete_flag = "--discrete-metrics" if discrete_metrics else "--no-discrete-metrics"
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
@@ -678,14 +685,16 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "jetstream",
                     "statistics_only": False,
+                    "discrete_metrics": discrete_flag,
                 },
                 monitor_status=False,
                 cluster_ip=None,
                 cluster_cert=None,
             )
 
+    @pytest.mark.parametrize("discrete_metrics", [True, False])
     def test_simple_workflow_custom_image(
-        self, bq_client_mock, cli_experiments, monkeypatch, docker_images
+        self, bq_client_mock, cli_experiments, monkeypatch, docker_images, discrete_metrics
     ):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
@@ -715,9 +724,12 @@ class TestArgoExecutorStrategy:
                 ],
                 image="unrelated",
                 image_version="latest",
+                discrete_metrics=discrete_metrics,
             )
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
             strategy.execute([(config, run_date)])
+
+            discrete_flag = "--discrete-metrics" if discrete_metrics else "--no-discrete-metrics"
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
@@ -743,6 +755,7 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "unrelated",
                     "statistics_only": False,
+                    "discrete_metrics": discrete_flag,
                 },
                 monitor_status=False,
                 cluster_ip=None,

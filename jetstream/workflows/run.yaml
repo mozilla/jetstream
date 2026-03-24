@@ -103,7 +103,8 @@ spec:
         "--analysis_periods={{workflow.parameters.analysis_periods_overall}}",
         "--analysis_periods={{workflow.parameters.analysis_periods_preenrollment_week}}",
         "--analysis_periods={{workflow.parameters.analysis_periods_preenrollment_days28}}",
-        "--statistics-only={{workflow.parameters.statistics_only}}"
+        "--statistics-only={{workflow.parameters.statistics_only}}",
+        "{{workflow.parameters.discrete_metrics}}",
       ]
       resources:
         requests:

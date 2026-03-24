@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import attr
 import dask
@@ -20,7 +20,7 @@ from google.cloud.bigquery.job import WriteDisposition
 from google.cloud.exceptions import Conflict
 from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.metric import AnalysisPeriod
-from mozanalysis.experiment import Experiment, TimeLimits
+from mozanalysis.experiment import Experiment, TimeLimits, partition_metrics_by_data_source
 from mozanalysis.utils import add_days
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 from pandas import DataFrame
@@ -44,9 +44,6 @@ from jetstream.statistics import (
 )
 
 from . import bq_normalize_name
-
-if TYPE_CHECKING:
-    from mozanalysis.metrics import DataSource
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +238,7 @@ class Analysis:
         window_period: AnalysisPeriod,
         table_prefix=None,
         analysis_basis=None,
-        metric_dict: dict[str, list[str]] | None = None,
+        metrics_dict: dict[str, list[str]] | None = None,
     ):
         assert self.config.experiment.normandy_slug is not None
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
@@ -270,7 +267,8 @@ class Analysis:
             """
         )
 
-        if metric_dict:
+        if metrics_dict:
+            # metrics_dict is a map from data_source name to a list of metric names
             base_list = [
                 "analysis_id",
                 "branch",
@@ -306,35 +304,31 @@ class Analysis:
             #   USING (analysis_id, branch, etc.)
             #   ```
             # and so on for all of the metrics
-            complete_sanity_metrics: set[str] = set()
             select_list = [f"t_0.{field}" for field in analysis_unit_list]
             select_list.append("t_0.window_index")
-            for i, metric in enumerate(metric_dict.keys()):
-                sanity_metrics_str = ""
-                select_list.append(f"t_{i}.{metric}")
-                if not complete_sanity_metrics.issuperset(metric_dict[metric]):
-                    complete_sanity_metrics.update(metric_dict[metric])
-                    sanity_metrics_str = ",".join(metric_dict[metric]) + ","
-                    for m in metric_dict[metric]:
-                        select_list.append(f"t_{i}.{m}")
+            for i, data_source in enumerate(metrics_dict.keys()):
+                metrics_str = ""
+                for m in metrics_dict[data_source]:
+                    metrics_str += f"{m}, "
+                    select_list.append(f"t_{i}.{m}")
 
                 table_sql = dedent(f"""(
                     SELECT
-                        {analysis_unit_str}, {metric}, {sanity_metrics_str}
+                        {analysis_unit_str}, {metrics_str}
                         CAST(_TABLE_SUFFIX AS INT64) AS window_index
-                    FROM `{prefix}_{metric}_{window_period.value}_*`
+                    FROM `{prefix}_{data_source}_{window_period.value}_*`
                 )""")
-                if len(metric_dict) > 1:
+                if len(metrics_dict) > 1:
                     table_sql += f" t_{i}"
                 join_sql += table_sql
                 if i > 0:
                     join_sql += join_clause
                     join_sql += " "
-                if i < (len(metric_dict) - 1):
+                if i < (len(metrics_dict) - 1):
                     join_sql += " FULL OUTER JOIN "
 
             view_select = join_sql
-            if len(metric_dict) > 1:
+            if len(metrics_dict) > 1:
                 select_str = ",".join(select_list)
                 view_select = f"""
                     SELECT {select_str} FROM (
@@ -362,6 +356,7 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         dry_run: bool,
         use_glean_ids: bool = False,
+        metric_slugs: list[str] | None = None,
     ) -> str:
         """
         Calculate metrics for a specific experiment.
@@ -413,6 +408,11 @@ class Analysis:
                 )
                 and m.metric.select_expression is not None
             }
+            if metric_slugs:
+                logger.info(
+                    f"Filtering metrics list based on provided metric slugs: {metric_slugs}"
+                )
+                metrics = {m for m in metrics if m.name in metric_slugs}
 
             metrics_sql = exp.build_metrics_query(
                 metrics,
@@ -436,13 +436,13 @@ class Analysis:
         return res_table_name
 
     @dask.delayed
-    def calculate_metric(
+    def calculate_metric_for_ds(
         self,
         exp: Experiment,
         time_limits: TimeLimits,
         period: AnalysisPeriod,
         analysis_basis: AnalysisBasis,
-        metric: Metric,
+        metrics: list[Metric],
         dry_run: bool,
         use_glean_ids: bool = False,
     ) -> str:
@@ -461,8 +461,10 @@ class Analysis:
             ),
         )
 
+        # name the result table using the metric data source's name
+        metric_ds = metrics[0].data_source  # use the first metric for its data source
         res_table_name = self._table_name(
-            period.value, window, analysis_basis=analysis_basis, metric=metric.name
+            period.value, window, analysis_basis=analysis_basis, metric=metric_ds.name
         )
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
 
@@ -475,7 +477,7 @@ class Analysis:
         else:
             logger.info(
                 f"Executing query for {self.config.experiment.normandy_slug}"
-                f"({period.value}) ({metric.name})"
+                f" ({analysis_basis.value} | {period.value} | {metric_ds.name})"
             )
 
             enrollments_table_name = f"enrollments_{normalized_slug}"
@@ -491,7 +493,7 @@ class Analysis:
 
             try:
                 metrics_sql = exp.build_metrics_query(
-                    [metric],
+                    metrics,
                     last_window_limits,
                     f"{self.project}.{self.dataset}.{enrollments_table_name}",
                     analysis_basis,
@@ -499,7 +501,7 @@ class Analysis:
                     discrete_metrics=False,
                     use_glean_ids=use_glean_ids,
                 )
-                logger.debug(f"QUERYING METRIC {metric.name} ({analysis_basis})")
+                logger.debug(f"QUERYING METRIC DATA SOURCE {metric_ds.name} ({analysis_basis})")
                 logger.debug(metrics_sql)
 
                 results = self.bigquery.execute(
@@ -508,20 +510,22 @@ class Analysis:
                     experiment_slug=self.config.experiment.normandy_slug,
                 )
                 logger.info(
-                    f"Metric {metric.name} ({analysis_basis}) query cost:"
+                    f"Metric DS {metric_ds.name} ({analysis_basis}) query cost:"
                     f"{results.slot_millis * COST_PER_SLOT_MS}"
                 )
                 self._write_sql_output(res_table_name, metrics_sql)
             except ValueError as e:
-                logger.exception(
-                    str(e),
-                    exc_info=e,
-                    extra={
-                        "experiment": self.config.experiment.normandy_slug,
-                        "metric": metric.name,
-                        "analysis_basis": analysis_basis,
-                    },
-                )
+                for metric in metrics:
+                    # log an exception for each failed metric because this is how we track errors
+                    logger.exception(
+                        str(e),
+                        exc_info=e,
+                        extra={
+                            "experiment": self.config.experiment.normandy_slug,
+                            "metric": metric.name,
+                            "analysis_basis": analysis_basis,
+                        },
+                    )
 
         return res_table_name
 
@@ -1055,6 +1059,7 @@ class Analysis:
         dry_run: bool = False,
         statistics_only: bool = False,
         use_glean_ids: bool = False,
+        discrete_metrics: bool = False,
         metric_slugs: list[str] | None = None,
     ) -> None:
         """
@@ -1173,8 +1178,8 @@ class Analysis:
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
                 metrics_results = []
-                basis_metrics_to_sanity: dict[str, list[str]] = {}
-                if not metric_slugs:
+                all_metrics_by_ds: dict[str, list[str]] = {}
+                if not discrete_metrics:
                     metrics_table = self.calculate_metrics(
                         exp,
                         time_limits,
@@ -1182,6 +1187,7 @@ class Analysis:
                         analysis_basis,
                         dry_run or statistics_only,
                         use_glean_ids=use_glean_ids,
+                        metric_slugs=metric_slugs,
                     )
                     metrics_results.append(metrics_table)
 
@@ -1260,34 +1266,45 @@ class Analysis:
                         )
                         and m.metric.select_expression is not None
                     ]
-                    config_metrics: set[Metric] = {
-                        Metric.from_metric_config(m.metric).to_mozanalysis_metric()
-                        for m in summary_metrics
-                        if m.metric.name in metric_slugs
-                    }
+                    config_metrics: set[Metric] = (
+                        {
+                            Metric.from_metric_config(m.metric).to_mozanalysis_metric()
+                            for m in summary_metrics
+                            if m.metric.name in metric_slugs
+                        }
+                        if metric_slugs
+                        else {
+                            Metric.from_metric_config(m.metric).to_mozanalysis_metric()
+                            for m in summary_metrics
+                        }
+                    )
+
+                    metrics_by_ds = partition_metrics_by_data_source(config_metrics)
 
                     # create the full list of metrics to compute
-                    metrics = config_metrics
-                    logger.debug(f"COMPUTING METRICS: {[m.name for m in metrics]}")
-                    for metric in metrics:
-                        metric_table = self.calculate_metric(
+                    # metrics = config_metrics
+                    logger.debug(f"COMPUTING METRICS: {[m.name for m in config_metrics]}")
+                    for data_source, ds_metrics in metrics_by_ds.items():
+                        metric_table = self.calculate_metric_for_ds(
                             exp,
                             time_limits,
                             period,
                             analysis_basis,
-                            metric,
+                            ds_metrics,
                             dry_run or statistics_only,
                         )
                         metrics_results.append(metric_table)
 
-                        # get sanity metrics for this metric's data source (to include in view)
-                        basis_metrics_to_sanity[metric.name] = []
-                        ds: DataSource | None = metric.data_source
-                        if ds is not None:
-                            basis_metrics_to_sanity[metric.name] = [
-                                m.name
-                                for m in ds.get_sanity_metrics(self.config.experiment.normandy_slug)
-                            ]
+                        # get sanity metrics for this data source (to include in view)
+                        all_metrics_by_ds[data_source.name] = [
+                            m.name
+                            for m in (
+                                ds_metrics
+                                + data_source.get_sanity_metrics(
+                                    self.config.experiment.normandy_slug
+                                )
+                            )
+                        ]
 
                         if dry_run:
                             results.append(metric_table)
@@ -1304,25 +1321,30 @@ class Analysis:
                                 period.value,
                                 len(time_limits.analysis_windows),
                                 analysis_basis=analysis_basis,
-                                metric=metric.name,
+                                metric=data_source.name,
                             )
                             if not self.bigquery.table_exists(metric_table_name):
-                                logger.warning(
-                                    f"Cannot compute only statistics for period {period.value}; "
-                                    f"metric table does not exist for metric {metric.name}!",
-                                    extra={
-                                        "experiment": self.config.experiment.normandy_slug,
-                                        "metric": metric.name,
-                                        "analysis_basis": analysis_basis.value,
-                                    },
-                                )
+                                for metric in data_source:
+                                    logger.warning(
+                                        f"Cannot compute only statistics for period {period.value};"
+                                        "metrics table doesn't exist"
+                                        f"for data source {data_source.name}!",
+                                        extra={
+                                            "experiment": self.config.experiment.normandy_slug,
+                                            "metric": metric.name,
+                                            "analysis_basis": analysis_basis.value,
+                                        },
+                                    )
                                 continue
 
                         segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
                             for summary in summary_metrics:
-                                if not (summary.metric.name == metric.name and summary.statistic):
-                                    # not the current metric
+                                if not (
+                                    summary.metric.name in [m.name for m in ds_metrics]
+                                    and summary.statistic
+                                ):
+                                    # metric not part of current data source
                                     continue
 
                                 segment_data = self.subset_metric_table(
@@ -1359,7 +1381,7 @@ class Analysis:
                         self.publish_view(
                             period,
                             analysis_basis=analysis_basis.value,
-                            metric_dict=basis_metrics_to_sanity,
+                            metrics_dict=all_metrics_by_ds,
                         ),
                         [metrics_results],
                     )
