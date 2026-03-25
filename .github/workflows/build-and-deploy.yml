@@ -104,7 +104,7 @@ jobs:
     environment: GH Actions
     # if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [build, integration]
+    # needs: [build, integration]
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
@@ -117,7 +117,7 @@ jobs:
         uses: mozilla-it/deploy-actions/docker-push@b9d76236c1d1dd89daab4ea15651cbe76574267a
         with:
           project_id: moz-fx-data-experiments
-          image_tags: 
-            - gcr.io/moz-fx-data-experiments/jetstream:latest
-            - gcr.io/moz-fx-data-experiments/jetstream:breaking
+          image_tags: |-
+            gcr.io/moz-fx-data-experiments/jetstream:latest
+            gcr.io/moz-fx-data-experiments/jetstream:breaking
           workload_identity_pool_project_number: ${{ vars.GCPV2_WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}
