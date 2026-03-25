@@ -108,10 +108,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
-        if: ${{ ! startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
+        if: ${{ ! startsWith(github.event.pull_request.title, '[ci breaking-change]') }}
         run: docker build . -t jetstream:latest
       - name: Build Docker image (breaking tag)
-        if: ${{ startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
+        if: ${{ startsWith(github.event.pull_request.title, '[ci breaking-change]') }}
         run: docker build . -t jetstream:latest -t jetstream:breaking
       - name: Push Docker image to GAR
         uses: mozilla-it/deploy-actions/docker-push@v3
