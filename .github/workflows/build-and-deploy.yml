@@ -121,3 +121,4 @@ jobs:
             gcr.io/moz-fx-data-experiments/jetstream:latest
             gcr.io/moz-fx-data-experiments/jetstream:breaking
           workload_identity_pool_project_number: ${{ vars.GCPV2_WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}
+          service_account_name: artifact-writer
