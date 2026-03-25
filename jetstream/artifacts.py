@@ -2,8 +2,13 @@ from datetime import datetime, timezone
 
 import attr
 from google.cloud import artifactregistry
+from google.cloud.artifactregistry import DockerImage
 
 from jetstream.bigquery_client import BigQueryClient
+
+
+def _hash_for_image(image):
+    return image.name.split("sha256:")[1]
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -42,10 +47,18 @@ class ArtifactManager:
         Get the image that should be used to analyse the experiment with the provided slug.
 
         The image is determined based on the oldest last updated timestamp of the analysis results
-        (in other words, the timestamp from the first time the experiment was analyzed).
+        (in other words, the timestamp from the first time the experiment was analyzed), unless
+        there is a newer image with the `breaking` tag, in which case this image is used.
         """
         client = BigQueryClient(self.project, self.dataset)
         last_updated = client.experiment_table_first_updated(slug=slug)
+
+        breaking_image = self._image_with_tag("breaking")
+        if breaking_image:
+            breaking_time = breaking_image.upload_time
+            # see note below about mypy ignore here
+            if last_updated and last_updated < breaking_time:  # type: ignore
+                last_updated = breaking_time  # type: ignore
 
         if last_updated:
             return self._image_for_date(last_updated)
@@ -86,13 +99,21 @@ class ArtifactManager:
 
         if latest_updated:
             # return hash of image closest to the provided date
-            return latest_updated.name.split("sha256:")[1]
+            return _hash_for_image(latest_updated)
         elif earliest_uploaded:
             # return hash of earliest image available if table got created before image got uploaded
-            return earliest_uploaded.name.split("sha256:")[1]
+            return _hash_for_image(earliest_uploaded)
         else:
             raise ValueError(f"No `{self.image}` docker image available in {self.project}")
 
     def latest_image(self) -> str:
         """Return the latest docker image hash."""
         return self._image_for_date(date=datetime.now(timezone.utc))
+
+    def _image_with_tag(self, tag) -> DockerImage | None:
+        """Return the docker image for a given tag (or None if tag is not found)."""
+        for image in self.images:
+            if tag in image.tags:
+                return image
+
+        return None
