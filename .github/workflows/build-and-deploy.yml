@@ -110,10 +110,20 @@ jobs:
       - name: Build Docker image
         if: ${{ ! startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
         run: docker build . -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest
-      - name: Build Docker image (breaking tag)
+      - name: Push Docker image to GAR
+        if: ${{ ! startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
+        uses: mozilla-it/deploy-actions/docker-push@b9d76236c1d1dd89daab4ea15651cbe76574267a
+        with:
+          project_id: moz-fx-data-experiments
+          image_tags: |-
+            us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest
+          workload_identity_pool_project_number: ${{ vars.GCPV2_WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}
+          service_account_name: artifact-writer
+      - name: Build Docker image (with breaking tag)
         if: ${{ startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
         run: docker build . -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:breaking
-      - name: Push Docker image to GAR
+      - name: Push Docker image to GAR (with breaking tag)
+        if: ${{ startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
         uses: mozilla-it/deploy-actions/docker-push@b9d76236c1d1dd89daab4ea15651cbe76574267a
         with:
           project_id: moz-fx-data-experiments
