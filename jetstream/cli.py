@@ -67,6 +67,9 @@ ALL_PERIODS = [
 HIGH_DATA_THRESHOLD = 20
 MODERATE_DATA_THRESHOLD = 10
 
+# Date when discrete metrics was switched to default
+DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 26, tzinfo=pytz.UTC)
+
 
 @attr.s
 class AllType:
@@ -147,7 +150,6 @@ class ArgoExecutorStrategy:
         # then don't pass the --discrete-metrics flag
         # unless --discrete-metrics was passed as an explicit command-line parameter
         client = BigQueryClient(self.project_id, self.dataset_id)
-        DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 26, tzinfo=pytz.UTC)
         discrete_source = click.get_current_context().get_parameter_source("discrete_metrics")
         explicit_discrete = discrete_source == ParameterSource.COMMANDLINE
         discrete_metrics = (
@@ -161,9 +163,11 @@ class ArgoExecutorStrategy:
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
                 "discrete_metrics": "--no-discrete-metrics"
-                if not explicit_discrete
-                and client.experiment_table_first_updated(slug)
-                and client.experiment_table_first_updated(slug) < DISCRETE_AS_DEFAULT_THRESHOLD
+                if (
+                    not explicit_discrete
+                    and (client.experiment_table_first_updated(slug) or datetime.now(tz=pytz.utc))
+                    <= DISCRETE_AS_DEFAULT_THRESHOLD
+                )
                 else discrete_metrics,
             }
             for slug, dates in experiments_config.items()
