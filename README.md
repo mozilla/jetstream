@@ -6,6 +6,12 @@ Jetstream automatically calculates metrics and applies statistical treatments to
 
 For more information, see [the documentation](https://experimenter.info/jetstream/jetstream/).
 
+## Deployment
+
+Jetstream automatically builds and pushes a docker image when a PR is merged into the main branch.
+
+Use the `[ci breaking-change]` prefix on a PR title in order to give the image the `"breaking"` tag, which helps Jetstream's automated versioning determine when an incompatible change has landed, and bump up to at least the latest compatible version so that analysis can succeed.
+
 ## Local installation
 
 ```bash

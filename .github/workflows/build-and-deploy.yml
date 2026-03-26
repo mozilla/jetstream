@@ -108,12 +108,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
-        run: docker build . -t jetstream:latest
+        if: ${{ ! startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
+        run: docker build . -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest
+      - name: Build Docker image (breaking tag)
+        if: ${{ startsWith(github.event.head_commit.message, '[ci breaking-change]') }}
+        run: docker build . -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest -t us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:breaking
       - name: Push Docker image to GAR
-        uses: mozilla-it/deploy-actions/docker-push@v3
+        uses: mozilla-it/deploy-actions/docker-push@b9d76236c1d1dd89daab4ea15651cbe76574267a
         with:
           project_id: moz-fx-data-experiments
-          local_image: jetstream
-          image_repo_host: gcr.io
-          image_repo_path: moz-fx-data-experiments/jetstream
+          image_tags: |-
+            us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:latest
+            us-docker.pkg.dev/moz-fx-data-experiments/gcr.io/jetstream:breaking
           workload_identity_pool_project_number: ${{ vars.GCPV2_WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}
+          service_account_name: artifact-writer

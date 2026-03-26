@@ -1,0 +1,27 @@
+name: Jetstream Detect Possible Breaking Change
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'jetstream/workflows/run.yaml'
+  merge_group:
+
+jobs:
+  breaking-warning:
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: Possible Breaking Change Message
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: "⚠️ Detected changes to the Argo workflow, which could indicate breaking changes.\n\n Do you want to mark this image with the `breaking` tag using `[ci breaking-change]`?"
+          });
