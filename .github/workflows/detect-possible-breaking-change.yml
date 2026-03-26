@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'jetstream/workflows/run.yaml'
-  merge_group:
 
 jobs:
   breaking-warning:
