@@ -68,7 +68,7 @@ HIGH_DATA_THRESHOLD = 20
 MODERATE_DATA_THRESHOLD = 10
 
 # Date when discrete metrics was switched to default
-DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 26, tzinfo=pytz.UTC)
+DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
 
 
 @attr.s
