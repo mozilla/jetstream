@@ -8,6 +8,8 @@ from unittest.mock import MagicMock, Mock
 import attr
 import pytest
 import toml
+from click.core import ParameterSource
+from click.globals import push_context
 from click.testing import CliRunner
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Config, ConfigCollection
@@ -619,8 +621,49 @@ class TestSerialExecutorStrategy:
 
 
 class TestArgoExecutorStrategy:
-    @pytest.mark.parametrize("discrete_metrics", [True, False])
-    def test_simple_workflow(self, cli_experiments, monkeypatch, docker_images, discrete_metrics):
+    @pytest.fixture
+    def bq_client_mock(self, request):
+        # dynamically set the experiment date based on the test's parameters
+        # NOTE: depends on current parameters of `test_simple_workflow`
+        experiment_date = dt.datetime(2023, 4, 1, tzinfo=UTC)
+        for k in request.keywords:
+            if "experiment_date" in k:
+                keyword: str = k
+                num = keyword.split("experiment_date")[1][0]
+                if int(num) > 3:
+                    experiment_date = dt.datetime(2026, 4, 1, tzinfo=UTC)
+
+        with mock.patch("jetstream.cli.BigQueryClient") as fixture:
+            bigquery_mock_client = MagicMock()
+            bigquery_mock_client.experiment_table_first_updated.return_value = experiment_date
+            fixture.return_value = bigquery_mock_client
+            yield fixture
+
+    @pytest.mark.parametrize(
+        ("discrete_metrics", "click_param_source", "experiment_date", "expected_discrete"),
+        [
+            # pre-cutoff date defaults to non-discrete
+            (True, ParameterSource.COMMANDLINE, dt.datetime(2023, 4, 1, tzinfo=UTC), True),
+            (True, ParameterSource.DEFAULT, dt.datetime(2023, 4, 1, tzinfo=UTC), False),
+            (False, ParameterSource.COMMANDLINE, dt.datetime(2023, 4, 1, tzinfo=UTC), False),
+            (False, ParameterSource.DEFAULT, dt.datetime(2023, 4, 1, tzinfo=UTC), False),
+            # post-cutoff date defaults to discrete
+            (True, ParameterSource.COMMANDLINE, dt.datetime(2026, 4, 1, tzinfo=UTC), True),
+            (True, ParameterSource.DEFAULT, dt.datetime(2026, 4, 1, tzinfo=UTC), True),
+            (False, ParameterSource.COMMANDLINE, dt.datetime(2026, 4, 1, tzinfo=UTC), False),
+            (False, ParameterSource.DEFAULT, dt.datetime(2026, 4, 1, tzinfo=UTC), False),
+        ],
+    )
+    def test_simple_workflow(
+        self,
+        cli_experiments,
+        monkeypatch,
+        docker_images,
+        discrete_metrics,
+        click_param_source,
+        experiment_date,
+        expected_discrete,
+    ):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
         config = spec.resolve(experiment, ConfigLoader.configs)
@@ -628,12 +671,14 @@ class TestArgoExecutorStrategy:
         mock_artifact_client.list_docker_images.return_value = docker_images
         monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
 
+        ctx = MagicMock()
+        ctx.get_parameter_source.return_value = click_param_source
+        push_context(ctx)
+
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             with mock.patch("jetstream.artifacts.BigQueryClient") as bq_client:
                 bigquery_mock_client = MagicMock()
-                bigquery_mock_client.experiment_table_first_updated.return_value = dt.datetime(
-                    2023, 4, 1, tzinfo=UTC
-                )
+                bigquery_mock_client.experiment_table_first_updated.return_value = experiment_date
                 bq_client.return_value = bigquery_mock_client
 
                 strategy = cli.ArgoExecutorStrategy(
@@ -659,7 +704,7 @@ class TestArgoExecutorStrategy:
                 run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
                 strategy.execute([(config, run_date)])
 
-            discrete_flag = "--discrete-metrics" if discrete_metrics else "--no-discrete-metrics"
+            discrete_flag = "--discrete-metrics" if expected_discrete else "--no-discrete-metrics"
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
@@ -672,6 +717,7 @@ class TestArgoExecutorStrategy:
                             "slug": "my_cool_experiment",
                             "dates": ["2020-10-31"],
                             "image_hash": "xxxxx",
+                            "discrete_metrics": discrete_flag,
                         }
                     ],
                     "project_id": "spam",
@@ -685,16 +731,23 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "jetstream",
                     "statistics_only": False,
-                    "discrete_metrics": discrete_flag,
                 },
                 monitor_status=False,
                 cluster_ip=None,
                 cluster_cert=None,
             )
 
-    @pytest.mark.parametrize("discrete_metrics", [True, False])
+    @pytest.mark.parametrize(
+        ("discrete_metrics", "click_param_source"),
+        [
+            (True, ParameterSource.COMMANDLINE),
+            (True, ParameterSource.DEFAULT),
+            (False, ParameterSource.COMMANDLINE),
+            (False, ParameterSource.DEFAULT),
+        ],
+    )
     def test_simple_workflow_custom_image(
-        self, bq_client_mock, cli_experiments, monkeypatch, docker_images, discrete_metrics
+        self, cli_experiments, monkeypatch, docker_images, discrete_metrics, click_param_source
     ):
         experiment = cli_experiments.experiments[0]
         spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
@@ -702,6 +755,10 @@ class TestArgoExecutorStrategy:
         mock_artifact_client = Mock()
         mock_artifact_client.list_docker_images.return_value = docker_images
         monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
+
+        ctx = MagicMock()
+        ctx.get_parameter_source.return_value = click_param_source
+        push_context(ctx)
 
         with mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock:
             strategy = cli.ArgoExecutorStrategy(
@@ -729,7 +786,11 @@ class TestArgoExecutorStrategy:
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
             strategy.execute([(config, run_date)])
 
-            discrete_flag = "--discrete-metrics" if discrete_metrics else "--no-discrete-metrics"
+            discrete_flag = (
+                "--discrete-metrics"
+                if discrete_metrics and click_param_source == ParameterSource.COMMANDLINE
+                else "--no-discrete-metrics"
+            )
 
             submit_workflow_mock.assert_called_once_with(
                 project_id="spam",
@@ -742,6 +803,7 @@ class TestArgoExecutorStrategy:
                             "slug": "my_cool_experiment",
                             "dates": ["2020-10-31"],
                             "image_hash": "aaaaa",
+                            "discrete_metrics": discrete_flag,
                         }
                     ],
                     "project_id": "spam",
@@ -755,7 +817,6 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "unrelated",
                     "statistics_only": False,
-                    "discrete_metrics": discrete_flag,
                 },
                 monitor_status=False,
                 cluster_ip=None,

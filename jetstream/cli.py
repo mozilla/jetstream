@@ -14,6 +14,7 @@ import attr
 import click
 import pytz
 import toml
+from click.core import ParameterSource
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import bigquery
 from jinja2.exceptions import UndefinedError
@@ -65,6 +66,9 @@ ALL_PERIODS = [
 
 HIGH_DATA_THRESHOLD = 20
 MODERATE_DATA_THRESHOLD = 10
+
+# Date when discrete metrics was switched to default
+DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
 
 
 @attr.s
@@ -121,22 +125,10 @@ class ArgoExecutorStrategy:
             raise Exception("Custom configurations are not supported when running with Argo")
 
         experiments_config: dict[str, list[str]] = {}
-        # TODO: uncomment this and related lines when adding Argo support for metric_slugs
-        # - this will run each slug in its own argo task, potentially exploding the # of tasks
-        # experiment_metrics_map: dict[str, set[str]] = {}
         for config, date in worklist:
             experiments_config.setdefault(config.experiment.normandy_slug, []).append(
                 date.strftime("%Y-%m-%d")
             )
-            # experiment_metrics_map[config.experiment.normandy_slug] = self.metric_slugs or set()
-            # # if metric_slugs is None or empty list
-            # if not self.metric_slugs:
-            #     # get a set of all metric slugs for the experiment
-            #     for analysis_period, metrics_list in config.metrics.items():
-            #         if analysis_period in self.analysis_periods:
-            #             experiment_metrics_map[config.experiment.normandy_slug].update(
-            #                 {m.metric.name for m in metrics_list}
-            #             )
 
         if self.metric_slugs:
             logger.warning(
@@ -153,6 +145,16 @@ class ArgoExecutorStrategy:
         if self.image_version == "latest":
             image_version = artifact_manager.latest_image()
 
+        # SPECIAL CASE DISCRETE METRICS LOGIC
+        # if the experiment's versioning date is before we flipped to discrete metrics as default
+        # then don't pass the --discrete-metrics flag
+        # unless --discrete-metrics was passed as an explicit command-line parameter
+        client = BigQueryClient(self.project_id, self.dataset_id)
+        discrete_source = click.get_current_context().get_parameter_source("discrete_metrics")
+        explicit_discrete = discrete_source == ParameterSource.COMMANDLINE
+        discrete_metrics = (
+            "--discrete-metrics" if self.discrete_metrics else "--no-discrete-metrics"
+        )
         experiments_config_list = [
             {
                 "slug": slug,
@@ -160,10 +162,17 @@ class ArgoExecutorStrategy:
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
-                # "metric_slugs": list(experiment_metrics_map.get(slug)),
+                "discrete_metrics": "--no-discrete-metrics"
+                if (
+                    not explicit_discrete
+                    and (client.experiment_table_first_updated(slug) or datetime.now(tz=pytz.utc))
+                    <= DISCRETE_AS_DEFAULT_THRESHOLD
+                )
+                else discrete_metrics,
             }
             for slug, dates in experiments_config.items()
         ]
+
         logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
         analysis_period_default = (
             self.analysis_periods[0] if self.analysis_periods != [] else AnalysisPeriod.DAYS_28
@@ -212,9 +221,6 @@ class ArgoExecutorStrategy:
                 ),
                 "image": self.image,
                 "statistics_only": self.statistics_only,
-                "discrete_metrics": "--discrete-metrics"
-                if self.discrete_metrics
-                else "--no-discrete-metrics",
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -820,7 +826,7 @@ discrete_metrics_option = click.option(
     "--discrete_metrics/--no_discrete_metrics",
     is_flag=True,
     help="Whether to split up the metrics query",
-    default=False,
+    default=True,
 )
 
 metric_slugs_option = click.option(
