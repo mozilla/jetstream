@@ -270,7 +270,7 @@ polars-runtime-32==1.39.3
     # via polars
 polyfactory==2.22.5
     # via mozilla-nimbus-schemas
-proto-plus==1.27.1
+proto-plus==1.27.2
     # via
     #   google-api-core
     #   google-cloud-artifact-registry

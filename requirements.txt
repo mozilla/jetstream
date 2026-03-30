@@ -1741,9 +1741,9 @@ polyfactory==2.22.5 \
     # via
     #   -r requirements.in
     #   mozilla-nimbus-schemas
-proto-plus==1.27.1 \
-    --hash=sha256:912a7460446625b792f6448bade9e55cd4e41e6ac10e27009ef71a7f317fa147 \
-    --hash=sha256:e4643061f3a4d0de092d62aa4ad09fa4756b2cbb89d4627f3985018216f9fefc
+proto-plus==1.27.2 \
+    --hash=sha256:6432f75893d3b9e70b9c412f1d2f03f65b11fb164b793d14ae2ca01821d22718 \
+    --hash=sha256:b2adde53adadf75737c44d3dcb0104fde65250dfc83ad59168b4aa3e574b6a24
     # via
     #   -r requirements.in
     #   google-api-core
