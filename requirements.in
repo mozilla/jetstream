@@ -356,7 +356,7 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-ruff==0.15.7
+ruff==0.15.9
     # via
     #   mozilla-jetstream
     #   pytest-ruff
