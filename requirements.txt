@@ -554,9 +554,9 @@ execnet==2.1.2 \
     # via
     #   -r requirements.in
     #   pytest-xdist
-faker==40.11.0 \
-    --hash=sha256:0e9816c950528d2a37d74863f3ef389ea9a3a936cbcde0b11b8499942e25bf90 \
-    --hash=sha256:7c419299103b13126bd02ec14bd2b47b946edb5a5eedf305e66a193b25f9a734
+faker==40.13.0 \
+    --hash=sha256:a0751c84c3abac17327d7bb4c98e8afe70ebf7821e01dd7d0b15cd8856415525 \
+    --hash=sha256:c1298fd0d819b3688fb5fd358c4ba8f56c7c8c740b411fd3dbd8e30bf2c05019
     # via
     #   -r requirements.in
     #   polyfactory
