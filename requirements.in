@@ -54,7 +54,7 @@ dask[distributed]==2026.3.0
     # via
     #   distributed
     #   mozilla-jetstream
-db-dtypes==1.5.0
+db-dtypes==1.5.1
     # via mozilla-jetstream
 distlib==0.4.0
     # via virtualenv

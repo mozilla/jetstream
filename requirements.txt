@@ -532,9 +532,9 @@ dask[distributed]==2026.3.0 \
     # via
     #   -r requirements.in
     #   distributed
-db-dtypes==1.5.0 \
-    --hash=sha256:abdbb2e4eb965800ed6f98af0c5c1cafff9063ace09114be2d26a7f046be2c8a \
-    --hash=sha256:ad9e94243f53e104bc77dbf9ae44b580d83a770d3694483aba59c9767966daa5
+db-dtypes==1.5.1 \
+    --hash=sha256:901099b807c9312bc61a5bddbfb07512884e6c6d5a9edacf24d50bcf303aa5f7 \
+    --hash=sha256:ad71a6645e3c1f06d4d32023940576648f43119822f825f0d22587c6ef8afe15
     # via -r requirements.in
 distlib==0.4.0 \
     --hash=sha256:9659f7d87e46584a30b5780e43ac7a2143098441670ff0a49d5f9034c54a6c16 \
