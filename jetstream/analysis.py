@@ -12,9 +12,9 @@ import attr
 import dask
 import dask.delayed
 import pytz
-from dask.distributed import Client, LocalCluster
+from dask.distributed import Client, LocalCluster, as_completed
 from dask.graph_manipulation import bind
-from google.api_core.exceptions import BadRequest
+from google.api_core.exceptions import BadRequest, GoogleAPICallError
 from google.cloud import bigquery
 from google.cloud.bigquery.job import WriteDisposition
 from google.cloud.exceptions import Conflict
@@ -345,7 +345,17 @@ class Analysis:
             )
 
         logger.debug(f"View ({view_name}) SQL: {sql}")
-        self.bigquery.execute(sql)
+        try:
+            self.bigquery.execute(sql)
+        except GoogleAPICallError as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "analysis_basis": analysis_basis,
+                },
+            )
+            raise
 
     @dask.delayed
     def calculate_metrics(
@@ -425,9 +435,21 @@ class Analysis:
             )
             logger.info(metrics_sql)
 
-            results = self.bigquery.execute(
-                metrics_sql, res_table_name, experiment_slug=self.config.experiment.normandy_slug
-            )
+            try:
+                results = self.bigquery.execute(
+                    metrics_sql,
+                    res_table_name,
+                    experiment_slug=self.config.experiment.normandy_slug,
+                )
+            except GoogleAPICallError as e:
+                logger.exception(
+                    str(e),
+                    extra={
+                        "experiment": self.config.experiment.normandy_slug,
+                        "analysis_basis": analysis_basis,
+                    },
+                )
+                raise
             logger.info(
                 f"Metric query cost: {results.slot_millis * COST_PER_SLOT_MS}",
             )
@@ -514,18 +536,18 @@ class Analysis:
                     f"{results.slot_millis * COST_PER_SLOT_MS}"
                 )
                 self._write_sql_output(res_table_name, metrics_sql)
-            except ValueError as e:
+            except (ValueError, GoogleAPICallError) as e:
                 for metric in metrics:
                     # log an exception for each failed metric because this is how we track errors
                     logger.exception(
                         str(e),
-                        exc_info=e,
                         extra={
                             "experiment": self.config.experiment.normandy_slug,
                             "metric": metric.name,
                             "analysis_basis": analysis_basis,
                         },
                     )
+                raise
 
         return res_table_name
 
@@ -542,58 +564,84 @@ class Analysis:
         """
         Run statistics on metric.
         """
-        return (
-            Summary.from_config(metric, analysis_length_dates, period)
-            .run(
-                segment_data,
-                self.config.experiment,
-                analysis_basis,
-                segment,
+        try:
+            return (
+                Summary.from_config(metric, analysis_length_dates, period)
+                .run(
+                    segment_data,
+                    self.config.experiment,
+                    analysis_basis,
+                    segment,
+                )
+                .set_segment(segment)
+                .set_analysis_basis(analysis_basis)
             )
-            .set_segment(segment)
-            .set_analysis_basis(analysis_basis)
-        )
+        except Exception as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "metric": metric.metric.name,
+                    "statistic": metric.statistic.name(),
+                    "analysis_basis": analysis_basis,
+                    "segment": segment,
+                },
+            )
+            raise
 
     @dask.delayed
     def counts(
         self, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
     ) -> StatisticResultCollection:
         """Count and missing count statistics."""
-        metric = "identity"
-        counts = (
-            Count()
-            .transform(
-                segment_data,
-                metric,
-                "*",
-                self.config.experiment.normandy_slug,
-                analysis_basis,
-                segment,
+        try:
+            metric = "identity"
+            counts = (
+                Count()
+                .transform(
+                    segment_data,
+                    metric,
+                    "*",
+                    self.config.experiment.normandy_slug,
+                    analysis_basis,
+                    segment,
+                )
+                .set_segment(segment)
+                .set_analysis_basis(analysis_basis)
             )
-            .set_segment(segment)
-            .set_analysis_basis(analysis_basis)
-        )
 
-        other_counts = [
-            StatisticResult(
-                metric=metric,
-                statistic="count",
-                parameter=None,
-                branch=b.slug,
-                comparison=None,
-                comparison_to_branch=None,
-                ci_width=None,
-                point=0,
-                lower=None,
-                upper=None,
-                segment=segment,
-                analysis_basis=analysis_basis,
+            other_counts = [
+                StatisticResult(
+                    metric=metric,
+                    statistic="count",
+                    parameter=None,
+                    branch=b.slug,
+                    comparison=None,
+                    comparison_to_branch=None,
+                    ci_width=None,
+                    point=0,
+                    lower=None,
+                    upper=None,
+                    segment=segment,
+                    analysis_basis=analysis_basis,
+                )
+                for b in self.config.experiment.branches
+                if b.slug not in {c.branch for c in counts}
+            ]
+
+            return StatisticResultCollection.model_validate(counts.root + other_counts)
+        except Exception as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "metric": "identity",
+                    "statistic": "count",
+                    "analysis_basis": analysis_basis,
+                    "segment": segment,
+                },
             )
-            for b in self.config.experiment.branches
-            if b.slug not in {c.branch for c in counts}
-        ]
-
-        return StatisticResultCollection.model_validate(counts.root + other_counts)
+            raise
 
     @dask.delayed
     def subset_metric_table(
@@ -606,7 +654,6 @@ class Analysis:
         discrete_metrics: bool = False,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
-
         query = self._create_subset_metric_table_query(
             metric_table_name, segment, summary, analysis_basis, period, discrete_metrics
         )
@@ -614,7 +661,19 @@ class Analysis:
         logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}")
         logger.debug(query)
 
-        results: DataFrame = self.bigquery.execute(query).to_dataframe()
+        try:
+            results: DataFrame = self.bigquery.execute(query).to_dataframe()
+        except GoogleAPICallError as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "metric": summary.metric.name,
+                    "analysis_basis": analysis_basis,
+                    "segment": segment,
+                },
+            )
+            raise
 
         return results
 
@@ -1051,7 +1110,21 @@ class Analysis:
             # logger.error(f"Expected schema: {StatisticResult.bq_schema}")
             # logger.error(f"Data received: {segment_results}")
             ve = ValueError(error_msg)
+            logger.exception(
+                str(ve),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                },
+            )
             raise ve from e
+        except Exception as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                },
+            )
+            raise
 
     def run(
         self,
@@ -1404,7 +1477,12 @@ class Analysis:
             )
 
         result_futures = client.compute(results)
-        client.gather(result_futures)  # block until futures have finished
+        for future in as_completed(result_futures):
+            if future.status == "error":
+                try:
+                    future.result()
+                except Exception:
+                    logger.exception("A task failed during analysis")
 
     def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""
