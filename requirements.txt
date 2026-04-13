@@ -2530,9 +2530,9 @@ types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
     --hash=sha256:d6e97ec51d56b96debfbf1dea32ebec22c1687f16d2547ea0a34b48db45df205
     # via -r requirements.in
-types-protobuf==6.32.1.20260221 \
-    --hash=sha256:6d5fb060a616bfb076cbb61b4b3c3969f5fc8bec5810f9a2f7e648ee5cbcbf6e \
-    --hash=sha256:da7cdd947975964a93c30bfbcc2c6841ee646b318d3816b033adc2c4eb6448e4
+types-protobuf==7.34.1.20260408 \
+    --hash=sha256:e2c0a0430e08c75b52671a6f0035abfdcc791aad12af16274282de1b721758ab \
+    --hash=sha256:ebbcd4e27b145aef6a59bc0cb6c013b3528151c1ba5e7f7337aeee355d276a5e
     # via -r requirements.in
 types-pytz==2026.1.1.20260304 \
     --hash=sha256:0c3542d8e9b0160b424233440c52b83d6f58cae4b85333d54e4f961cf013e117 \
