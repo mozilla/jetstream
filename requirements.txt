@@ -2550,9 +2550,9 @@ types-setuptools==82.0.0.20260210 \
     --hash=sha256:5124a7daf67f195c6054e0f00f1d97c69caad12fdcf9113eba33eff0bce8cd2b \
     --hash=sha256:d9719fbbeb185254480ade1f25327c4654f8c00efda3fec36823379cebcdee58
     # via -r requirements.in
-types-six==1.17.0.20251009 \
-    --hash=sha256:2494f4c2a58ada0edfe01ea84b58468732e43394c572d9cf5b1dd06d86c487a3 \
-    --hash=sha256:efe03064ecd0ffb0f7afe133990a2398d8493d8d1c1cc10ff3dfe476d57ba44f
+types-six==1.17.0.20260408 \
+    --hash=sha256:02208fa1099944ed0c8f8de42f065ffd63c55cd7b59f49be49802626b8d58318 \
+    --hash=sha256:b28579aedb204d07abac52e49c87e2b4c03cb6171bd764bd9b7775ba58fffaba
     # via -r requirements.in
 types-toml==0.10.8.20240310 \
     --hash=sha256:3d41501302972436a6b8b239c850b26689657e25281b48ff0ec06345b8830331 \
