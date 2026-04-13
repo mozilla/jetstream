@@ -252,7 +252,7 @@ patsy==1.0.2
     #   statsmodels
 pillow==12.1.1
     # via matplotlib
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   python-discovery
     #   tox
