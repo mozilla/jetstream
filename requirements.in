@@ -419,7 +419,7 @@ types-setuptools==82.0.0.20260210
     # via mozilla-jetstream
 types-six==1.17.0.20251009
     # via mozilla-jetstream
-types-toml==0.10.8.20240310
+types-toml==0.10.8.20260408
     # via mozilla-jetstream
 typing-extensions==4.15.0
     # via
