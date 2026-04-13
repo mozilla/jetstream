@@ -375,7 +375,7 @@ secretstorage==3.5.0
     # via mozanalysis
 six==1.17.0
     # via python-dateutil
-smart-open[gcs]==7.5.1
+smart-open[gcs]==7.6.0
     # via mozilla-jetstream
 smmap==5.0.3
     # via gitdb
