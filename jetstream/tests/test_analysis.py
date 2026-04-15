@@ -328,7 +328,11 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
+        "test_experiment_enrollments_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -396,6 +400,7 @@ def test_create_subset_metric_table_query_covariate_basic(randomization_unit, mo
         AnalysisBasis.ENROLLMENTS,
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -435,6 +440,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         AnalysisBasis.ENROLLMENTS,
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -465,7 +471,11 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-        "test_experiment_enrollments_1", "mysegment", metric, AnalysisBasis.ENROLLMENTS
+        "test_experiment_enrollments_1",
+        "mysegment",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -534,6 +544,7 @@ def test_create_subset_metric_table_query_covariate_segment(randomization_unit, 
         AnalysisBasis.ENROLLMENTS,
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -553,11 +564,15 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
     FROM `test_experiment_exposures_1` m
 
     WHERE metric_name IS NOT NULL AND
-    enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+    enrollment_date IS NOT NULL AND m.exposure_date IS NOT NULL"""
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-        "test_experiment_exposures_1", "all", metric, AnalysisBasis.EXPOSURES
+        "test_experiment_exposures_1",
+        "all",
+        metric,
+        AnalysisBasis.EXPOSURES,
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
@@ -625,15 +640,29 @@ def test_create_subset_metric_table_query_covariate_exposures(randomization_unit
         AnalysisBasis.EXPOSURES,
         AnalysisPeriod.PREENROLLMENT_WEEK,
         "metric_name",
+        AnalysisPeriod.WEEK,
     )
 
     assert expected_query == actual_query
 
 
-def test_create_subset_metric_table_query_univariate_depends_on(experiments):
+def test_create_subset_metric_table_query_univariate_depends_on(experiments, monkeypatch):
+    # Return different dependency table names based on the data source argument (args[3])
+    # so that both upstream metrics produce distinct LEFT JOINs.
+    def table_name_side_effect(*args, **kwargs):
+        data_source = args[3] if len(args) > 3 else kwargs.get("metric")
+        if data_source == "data_source_a":
+            return "dep_table_a_1"
+        return "dep_table_b_1"
+
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._table_name",
+        MagicMock(side_effect=table_name_side_effect),
+    )
+
     upstream_1_metric = Metric(
         name="upstream_1",
-        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        data_source=DataSource(name="data_source_a", from_expression="test.test"),
         select_expression="test",
         analysis_bases=[AnalysisBasis.ENROLLMENTS],
     )
@@ -641,35 +670,35 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
 
     upstream_2_metric = Metric(
         name="upstream_2",
-        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        data_source=DataSource(name="data_source_b", from_expression="test.test"),
         select_expression="test",
         analysis_bases=[AnalysisBasis.ENROLLMENTS],
     )
-
     upstream_2 = Summary(upstream_2_metric, None, None)
 
     metric = Metric(
-        name="metric_name",
+        name="ratio_metric",
         data_source=DataSource(name="test_data_source", from_expression="test.test"),
-        select_expression="test",
+        select_expression=None,
         analysis_bases=[AnalysisBasis.ENROLLMENTS],
         depends_on=[upstream_1, upstream_2],
     )
 
-    expected_query = dedent(
-        """
-    SELECT branch, upstream_1, upstream_2, NULL AS metric_name
-    FROM `test_experiment_enrollments_1` m
-
-    WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
-    enrollment_date IS NOT NULL"""
-    )
-
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-        "test_experiment_enrollments_1", "all", metric, AnalysisBasis.ENROLLMENTS
+        "dep_table_a_1", "all", metric, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.DAY
     )
 
-    assert expected_query == actual_query
+    # can't assert whole query because order of metrics is not guaranteed
+    assert "upstream_1" in actual_query
+    assert "upstream_2" in actual_query
+    assert "NULL AS ratio_metric" in actual_query
+    assert "FROM `dep_table_a_1` m" in actual_query
+    assert "LEFT JOIN `dep_table_b_1`" in actual_query
+    assert "analysis_id" in actual_query
+    assert "analysis_window_start" in actual_query
+    assert "enrollment_date IS NOT NULL" in actual_query
+
+    assert "LEFT JOIN `dep_table_a_1`" not in actual_query
 
 
 def test_create_subset_metric_table_query_covariate_depends_on(experiments, monkeypatch):
@@ -712,6 +741,7 @@ def test_create_subset_metric_table_query_covariate_depends_on(experiments, monk
             AnalysisBasis.ENROLLMENTS,
             AnalysisPeriod.PREENROLLMENT_WEEK,
             "metric_name",
+            AnalysisPeriod.WEEK,
         )
 
 
@@ -731,7 +761,11 @@ def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
     )
     with pytest.raises(ValueError, match=re.escape(error_str)):
         _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-            "test_experiment_exposures_1", "all", metric, analysis_basis
+            "test_experiment_exposures_1",
+            "all",
+            metric,
+            analysis_basis,
+            AnalysisPeriod.WEEK,
         )
 
 
@@ -761,6 +795,7 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
             analysis_basis,
             AnalysisPeriod.PREENROLLMENT_WEEK,
             "metric_name",
+            AnalysisPeriod.WEEK,
         )
 
 
@@ -1139,3 +1174,55 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
     )
 
     assert expected_query == actual_query
+
+
+def test_metric_slugs_adds_depends_on_metrics(experiments, monkeypatch):
+    config = AnalysisSpec.default_for_experiment(experiments[0], ConfigLoader.configs).resolve(
+        experiments[0], ConfigLoader.configs
+    )
+
+    upstream_1_metric = Metric(
+        name="upstream_1",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    upstream_2_metric = Metric(
+        name="upstream_2",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    ratio_metric = Metric(
+        name="ratio_metric",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression=None,
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        depends_on=[
+            Summary(upstream_1_metric, None, None),
+            Summary(upstream_2_metric, None, None),
+        ],
+    )
+    config.metrics[AnalysisPeriod.WEEK].append(Summary(ratio_metric, MagicMock(), []))
+
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._get_timelimits_if_ready", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr("jetstream.analysis.Analysis.calculate_metrics", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Analysis.save_statistics", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Analysis.publish_view", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.bind", lambda x, deps: x)
+    monkeypatch.setattr("jetstream.analysis.LocalCluster", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Client", MagicMock())
+
+    metric_slugs = ["ratio_metric"]
+    Analysis("test", "test", config).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc),
+        dry_run=True,
+        metric_slugs=metric_slugs,
+    )
+
+    assert "upstream_1" in metric_slugs
+    assert "upstream_2" in metric_slugs
+    assert "ratio_metric" in metric_slugs
