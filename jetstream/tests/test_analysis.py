@@ -685,7 +685,12 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments, mon
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
-        "dep_table_a_1", "all", metric, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.DAY
+        "dep_table_a_1",
+        "all",
+        metric,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.DAY,
+        discrete_metrics=True,
     )
 
     # can't assert whole query because order of metrics is not guaranteed

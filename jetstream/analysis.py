@@ -648,7 +648,7 @@ class Analysis:
                 )
 
         return self._create_subset_metric_table_query_univariate(
-            metric_table_name, segment, summary.metric, analysis_basis, period
+            metric_table_name, segment, summary.metric, analysis_basis, period, discrete_metrics
         )
 
     def _create_subset_metric_table_query_univariate(
@@ -658,6 +658,7 @@ class Analysis:
         metric: Metric,
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
+        discrete_metrics: bool = False,
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis"""
 
@@ -672,11 +673,12 @@ class Analysis:
             window = int(metric_table_name.split("_")[-1])
             for dependency in metric.depends_on:
                 metric_names.add(dependency.metric.name)
-                dependency_metric_table = self._table_name(
-                    period.value, window, analysis_basis, dependency.metric.data_source.name
-                )
-                if dependency_metric_table != metric_table_name:
-                    dependency_metric_tables.add(dependency_metric_table)
+                if discrete_metrics:
+                    dependency_metric_table = self._table_name(
+                        period.value, window, analysis_basis, dependency.metric.data_source.name
+                    )
+                    if dependency_metric_table != metric_table_name:
+                        dependency_metric_tables.add(dependency_metric_table)
         else:
             metric_names.add(metric.name)
 
