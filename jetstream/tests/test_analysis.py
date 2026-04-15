@@ -321,7 +321,7 @@ def test_create_subset_metric_table_query_univariate_basic(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
@@ -422,7 +422,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
@@ -457,7 +457,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
@@ -550,7 +550,7 @@ def test_create_subset_metric_table_query_univariate_exposures(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_exposures_1`
+    FROM `test_experiment_exposures_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
@@ -659,7 +659,7 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments):
     expected_query = dedent(
         """
     SELECT branch, upstream_1, upstream_2, NULL AS metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE upstream_1 IS NOT NULL AND upstream_2 IS NOT NULL AND
     enrollment_date IS NOT NULL"""
@@ -1068,7 +1068,7 @@ def test_create_subset_metric_table_query_covariate_fallback(randomization_unit,
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""
@@ -1124,7 +1124,7 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
     expected_query = dedent(
         """
     SELECT branch, metric_name
-    FROM `test_experiment_enrollments_1`
+    FROM `test_experiment_enrollments_1` m
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL"""

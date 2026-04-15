@@ -611,8 +611,7 @@ class Analysis:
             metric_table_name, segment, summary, analysis_basis, period, discrete_metrics
         )
 
-        logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}")
-        logger.debug(query)
+        logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}\n{query}")
 
         results: DataFrame = self.bigquery.execute(query).to_dataframe()
 
@@ -644,11 +643,12 @@ class Analysis:
                     analysis_basis,
                     covariate_period,
                     covariate_metric_name,
+                    period,
                     discrete_metrics,
                 )
 
         return self._create_subset_metric_table_query_univariate(
-            metric_table_name, segment, summary.metric, analysis_basis
+            metric_table_name, segment, summary.metric, analysis_basis, period
         )
 
     def _create_subset_metric_table_query_univariate(
@@ -657,10 +657,11 @@ class Analysis:
         segment: str,
         metric: Metric,
         analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis"""
 
-        metric_names = []
+        metric_names = set()
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
@@ -668,16 +669,16 @@ class Analysis:
         dependency_metric_tables = set()
         if metric.depends_on:
             empty_metric_names.append(f"NULL AS {metric.name}")
+            window = int(metric_table_name.split("_")[-1])
             for dependency in metric.depends_on:
-                metric_names.append(dependency.metric.name)
-                # if the table name doesn't contain metric.name (not discrete metrics), this is noop
-                dependency_metric_table = metric_table_name.replace(
-                    metric.name, dependency.metric.name
+                metric_names.add(dependency.metric.name)
+                dependency_metric_table = self._table_name(
+                    period.value, window, analysis_basis, dependency.metric.data_source.name
                 )
                 if dependency_metric_table != metric_table_name:
                     dependency_metric_tables.add(dependency_metric_table)
         else:
-            metric_names.append(metric.name)
+            metric_names.add(metric.name)
 
         # dependency_joins will be "" if not discrete metrics or no depends_on
         dependency_joins = "\n".join(
@@ -698,17 +699,17 @@ class Analysis:
         )
         query = dedent(
             f"""
-        SELECT branch, {", ".join(metric_names + empty_metric_names)}
-        FROM `{metric_table_name}`
+        SELECT branch, {", ".join(list(metric_names) + empty_metric_names)}
+        FROM `{metric_table_name}` m
         {dependency_joins}
-        WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
+        WHERE {" IS NOT NULL AND ".join(list(metric_names) + [""])[:-1]}
         """
         )
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+            basis_filter = """enrollment_date IS NOT NULL AND m.exposure_date IS NOT NULL"""
         else:
             raise ValueError(
                 f"AnalysisBasis {analysis_basis} not valid"
@@ -734,6 +735,7 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         covariate_period: AnalysisPeriod,
         covariate_metric_name: str,
+        period: AnalysisPeriod,
         discrete_metrics: bool = False,
     ) -> str:
         """Creates a SQL query string to pull a during-experiment metric and join on a
@@ -761,7 +763,7 @@ class Analysis:
                 },
             )
             return self._create_subset_metric_table_query_univariate(
-                metric_table_name, segment, metric, analysis_basis
+                metric_table_name, segment, metric, analysis_basis, period
             )
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
@@ -1158,8 +1160,19 @@ class Analysis:
             period_has_metric_slugs = False
 
             for m in self.config.metrics[period]:
-                if (metric_slugs and m.metric.name in metric_slugs) or not metric_slugs:
+                if not metric_slugs:
                     period_has_metric_slugs = True
+                elif metric_slugs and m.metric.name in metric_slugs:
+                    period_has_metric_slugs = True
+                    # for ratio metrics, ensure dependency metrics are not omitted
+                    if m.metric.depends_on:
+                        for summary in m.metric.depends_on:
+                            if summary.metric.name not in metric_slugs:
+                                logger.warning(
+                                    f"`{m.metric.name}` requested without all dependency metrics"
+                                    f" ... Adding `{summary.metric.name}`"
+                                )
+                                metric_slugs.append(summary.metric.name)
 
                 for analysis_basis in m.metric.analysis_bases:
                     analysis_bases.append(analysis_basis)
@@ -1174,6 +1187,13 @@ class Analysis:
 
             if len(analysis_bases) == 0:
                 continue
+
+            segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+            analysis_length_dates = 1
+            if period.value == AnalysisPeriod.OVERALL:
+                analysis_length_dates = time_limits.analysis_length_dates
+            elif period.value == AnalysisPeriod.WEEK:
+                analysis_length_dates = 7
 
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
@@ -1218,7 +1238,6 @@ class Analysis:
                             )
                             continue
 
-                    segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                     for segment in segment_labels:
                         for summary in self.config.metrics[period]:
                             if (
@@ -1235,12 +1254,6 @@ class Analysis:
                                 period,
                                 False,
                             )
-
-                            analysis_length_dates = 1
-                            if period.value == AnalysisPeriod.OVERALL:
-                                analysis_length_dates = time_limits.analysis_length_dates
-                            elif period.value == AnalysisPeriod.WEEK:
-                                analysis_length_dates = 7
 
                             segment_results.root += self.calculate_statistics(
                                 summary,
@@ -1264,18 +1277,21 @@ class Analysis:
                             m.metric.analysis_bases == analysis_basis
                             or analysis_basis in m.metric.analysis_bases
                         )
-                        and m.metric.select_expression is not None
+                        and (metric_slugs is None or m.metric.name in metric_slugs)
                     ]
+                    # metrics with depends_on have no select_expression and are handled separately
                     config_metrics: set[Metric] = (
                         {
                             Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                             for m in summary_metrics
                             if m.metric.name in metric_slugs
+                            and m.metric.select_expression is not None
                         }
                         if metric_slugs
                         else {
                             Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                             for m in summary_metrics
+                            if m.metric.select_expression is not None
                         }
                     )
 
@@ -1337,7 +1353,6 @@ class Analysis:
                                     )
                                 continue
 
-                        segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
                             for summary in summary_metrics:
                                 if not (
@@ -1356,12 +1371,6 @@ class Analysis:
                                     True,
                                 )
 
-                                analysis_length_dates = 1
-                                if period.value == AnalysisPeriod.OVERALL:
-                                    analysis_length_dates = time_limits.analysis_length_dates
-                                elif period.value == AnalysisPeriod.WEEK:
-                                    analysis_length_dates = 7
-
                                 segment_results.root += self.calculate_statistics(
                                     summary,
                                     segment_data,
@@ -1373,6 +1382,30 @@ class Analysis:
 
                             segment_results.root += self.counts(
                                 segment_data, segment, analysis_basis
+                            ).model_dump(warnings=False)
+
+                    # metrics are done: now iterate over the depends_on metrics
+                    for summary in summary_metrics:
+                        if not summary.metric.depends_on:
+                            continue
+
+                        for segment in segment_labels:
+                            segment_data = self.subset_metric_table(
+                                metric_table,
+                                segment,
+                                summary,
+                                analysis_basis,
+                                period,
+                                True,
+                            )
+
+                            segment_results.root += self.calculate_statistics(
+                                summary,
+                                segment_data,
+                                segment,
+                                analysis_basis,
+                                analysis_length_dates,
+                                period,
                             ).model_dump(warnings=False)
 
                 # done with analysis_basis: publish metric view
