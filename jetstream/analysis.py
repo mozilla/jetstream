@@ -919,7 +919,8 @@ class Analysis:
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
-            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
+            self.config.experiment.enrollments_query_type
+            or PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,
@@ -1463,7 +1464,8 @@ class Analysis:
 
         return exp.build_enrollments_query(
             time_limits,
-            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
+            self.config.experiment.enrollments_query_type
+            or PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,

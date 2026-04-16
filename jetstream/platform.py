@@ -5,7 +5,7 @@ from typing import Any
 import attr
 import toml
 from metric_config_parser.analysis import AnalysisSpec
-from mozanalysis.experiment import EnrollmentsQueryType
+from metric_config_parser.experiment import EnrollmentsQueryType
 
 from jetstream.config import ConfigLoader
 
@@ -27,7 +27,7 @@ class Platform:
     More info about Jetstream configuration: https://experimenter.info/jetstream/configuration
 
     :param enrollments_query_type:
-    :type enrollments_query_type: mozanalysis.experiment.EnrollmentsQueryType
+    :type enrollments_query_type: metric_config_parser.experiment.EnrollmentsQueryType
     :param app_id:
     :type app_id: str
 
