@@ -4,9 +4,9 @@ import mozanalysis
 from metric_config_parser import AnalysisUnit
 from metric_config_parser.analysis import AnalysisConfiguration
 from metric_config_parser.data_source import DataSourceReference
+from metric_config_parser.experiment import EnrollmentsQueryType
 from metric_config_parser.exposure_signal import ExposureSignalDefinition
 from metric_config_parser.metric import AnalysisPeriod
-from mozanalysis.experiment import EnrollmentsQueryType
 
 from .analysis import Analysis
 from .platform import PLATFORM_CONFIGS
