@@ -14,7 +14,7 @@ attrs==26.1.0
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==7.0.5
+cachetools==7.0.6
     # via tox
 cattrs==26.1.0
     # via
