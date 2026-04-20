@@ -64,7 +64,7 @@ execnet==2.1.2
     # via pytest-xdist
 faker==40.11.0
     # via polyfactory
-filelock==3.25.2
+filelock==3.29.0
     # via
     #   python-discovery
     #   tox
