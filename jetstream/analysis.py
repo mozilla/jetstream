@@ -1477,12 +1477,20 @@ class Analysis:
             )
 
         result_futures = client.compute(results)
+        # Cascade failures share the same exception type+message as their root cause;
+        # dedup so each distinct failure is logged once rather than once per dependent task.
+        seen_failures: set[tuple[str, str]] = set()
         for future in as_completed(result_futures):
-            if future.status == "error":
-                try:
-                    future.result()
-                except Exception:
-                    logger.exception("A task failed during analysis")
+            if future.status != "error":
+                continue
+            try:
+                future.result()
+            except Exception as e:
+                key = (type(e).__name__, str(e))
+                if key in seen_failures:
+                    continue
+                seen_failures.add(key)
+                logger.exception("A task failed during analysis")
 
     def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""

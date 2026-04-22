@@ -1139,3 +1139,71 @@ def test_create_subset_metric_table_query_complete_univariate(experiments):
     )
 
     assert expected_query == actual_query
+
+
+def test_run_continues_after_task_failure(experiments, monkeypatch, caplog):
+    import threading
+
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
+    )
+    analysis = Analysis("test", "test", config)
+
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    monkeypatch.setattr("jetstream.analysis._dask_cluster", None)
+
+    # Use threads so that patches are visible inside dask workers; n_workers=1
+    # ensures sequential task execution so the "fail only once" logic is race-free.
+    original_local_cluster = jetstream.analysis.LocalCluster
+    monkeypatch.setattr(
+        "jetstream.analysis.LocalCluster",
+        lambda **kwargs: original_local_cluster(**{**kwargs, "processes": False, "n_workers": 1}),
+    )
+
+    # Mock BigQueryClient so save_statistics and publish_view don't hit real BQ
+    mock_bq = MagicMock()
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    # Fail only the first calculate_metric_for_ds call (identified by metric != None,
+    # statistics=False), leave all subsequent calls to succeed.
+    has_failed = threading.Event()
+    completed_metric_tasks = []
+    original_table_name = Analysis._table_name
+
+    def patched_table_name(
+        self, window_period, window_index, analysis_basis=None, metric=None, statistics=False
+    ):
+        if metric is not None and not statistics and not has_failed.is_set():
+            has_failed.set()
+            raise RuntimeError(f"simulated failure for data source {metric}")
+        result = original_table_name(
+            self,
+            window_period,
+            window_index,
+            analysis_basis=analysis_basis,
+            metric=metric,
+            statistics=statistics,
+        )
+        if metric is not None and not statistics:
+            completed_metric_tasks.append((window_period, metric))
+        return result
+
+    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", patched_table_name)
+
+    with caplog.at_level(logging.ERROR):
+        analysis.run(
+            current_date=dt.datetime(2020, 1, 10, tzinfo=pytz.utc),
+            dry_run=True,
+            discrete_metrics=True,
+        )
+
+    # The failing task's error was logged
+    assert "simulated failure for data source" in caplog.text
+    # The cascade (publish_view depends on the failing metric via bind) must not produce
+    # redundant "A task failed" logs — each distinct root failure is logged exactly once.
+    assert caplog.text.count("A task failed during analysis") == 1
+    # Other calculate_metric_for_ds tasks still ran despite the failure
+    assert len(completed_metric_tasks) > 0
+    # publish_view ran for periods where all data sources succeeded (calls bigquery.execute)
+    assert mock_bq.execute.called
