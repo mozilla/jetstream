@@ -857,9 +857,9 @@ iniconfig==2.3.0 \
     # via
     #   -r requirements.in
     #   pytest
-interface-meta==1.3.0 \
-    --hash=sha256:8a4493f8bdb73fb9655dcd5115bc897e207319e36c8835f39c516a2d7e9d79a1 \
-    --hash=sha256:de35dc5241431886e709e20a14d6597ed07c9f1e8b4bfcffde2190ca5b700ee8
+interface-meta==2.0.0 \
+    --hash=sha256:523b17cdffe80bbbeb9981e81321f54bee30ca88671f256d57681cb4d2a09abe \
+    --hash=sha256:6abcf78d27e695b157f44f226ff955ff766d43e8dbd6bd1d763c3e2a99beb4f2
     # via
     #   -r requirements.in
     #   formulaic
