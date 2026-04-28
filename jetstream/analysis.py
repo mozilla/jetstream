@@ -1399,7 +1399,7 @@ class Analysis:
                             continue
 
                         if statistics_only and not self.bigquery.table_exists(metric_table_name):
-                            for metric in data_source:
+                            for metric in ds_metrics:
                                 logger.warning(
                                     f"Cannot compute only statistics for period {period.value};"
                                     "metrics table doesn't exist"
