@@ -821,20 +821,20 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         period: AnalysisPeriod,
         discrete_metrics: bool,
-    ) -> list[str]:
+    ) -> set[str]:
         """Returns the BigQuery table names referenced by a subset_metric_table query
         that are NOT already covered by the metric_table_name positional arg.
 
         Used to build explicit Dask ordering edges so readers never run before their
         writers, regardless of parallel-scheduler ordering.
         """
-        prereqs: list[str] = []
+        prereqs: set[str] = set()
 
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):  # type: ignore[attr-defined]
             covariate_period = AnalysisPeriod(covariate_params["period"])
             if covariate_period != period and period not in PREENROLLMENT_PERIODS:
                 metric_name = summary.metric.name if discrete_metrics else None
-                prereqs.append(
+                prereqs.add(
                     self._table_name(
                         covariate_period.value, 1, AnalysisBasis.ENROLLMENTS, metric=metric_name
                     )
@@ -846,8 +846,8 @@ class Analysis:
                 dep_table = self._table_name(
                     period.value, window, analysis_basis, dependency.metric.data_source.name
                 )
-                if dep_table != metric_table_name and dep_table not in prereqs:
-                    prereqs.append(dep_table)
+                if dep_table != metric_table_name:
+                    prereqs.add(dep_table)
 
         return prereqs
 

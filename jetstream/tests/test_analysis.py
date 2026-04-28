@@ -1247,7 +1247,7 @@ def test_subset_metric_table_prerequisites_simple(experiments):
         False,
     )
 
-    assert prereqs == []
+    assert prereqs == set()
 
 
 def test_subset_metric_table_prerequisites_covariate(experiments):
@@ -1270,7 +1270,7 @@ def test_subset_metric_table_prerequisites_covariate(experiments):
     expected_covariate_table = analysis._table_name(
         AnalysisPeriod.PREENROLLMENT_WEEK.value, 1, AnalysisBasis.ENROLLMENTS
     )
-    assert prereqs == [expected_covariate_table]
+    assert prereqs == {expected_covariate_table}
 
 
 def test_subset_metric_table_prerequisites_covariate_skipped_for_preenrollment_period(experiments):
@@ -1290,7 +1290,7 @@ def test_subset_metric_table_prerequisites_covariate_skipped_for_preenrollment_p
         False,
     )
 
-    assert prereqs == []
+    assert prereqs == set()
 
 
 def test_subset_metric_table_prerequisites_discrete_depends_on(experiments):
