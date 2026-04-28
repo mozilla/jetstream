@@ -1231,3 +1231,179 @@ def test_metric_slugs_adds_depends_on_metrics(experiments, monkeypatch):
     assert "upstream_1" in metric_slugs
     assert "upstream_2" in metric_slugs
     assert "ratio_metric" in metric_slugs
+
+
+def test_subset_metric_table_prerequisites_simple(experiments):
+    """A plain metric with no covariate and no depends_on has no additional prerequisites."""
+    summary = MagicMock()
+    summary.statistic.params = {}
+    summary.metric.depends_on = None
+
+    prereqs = _empty_analysis(experiments)._subset_metric_table_prerequisites(
+        summary,
+        "normandy_test_slug_enrollments_week_1",
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+        False,
+    )
+
+    assert prereqs == set()
+
+
+def test_subset_metric_table_prerequisites_covariate(experiments):
+    """Covariate adjustment against preenrollment_week returns the covariate table name."""
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_week"}
+    }
+    summary.metric.depends_on = None
+
+    analysis = _empty_analysis(experiments)
+    prereqs = analysis._subset_metric_table_prerequisites(
+        summary,
+        "normandy_test_slug_enrollments_week_1",
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+        False,
+    )
+
+    expected_covariate_table = analysis._table_name(
+        AnalysisPeriod.PREENROLLMENT_WEEK.value, 1, AnalysisBasis.ENROLLMENTS
+    )
+    assert prereqs == {expected_covariate_table}
+
+
+def test_subset_metric_table_prerequisites_covariate_skipped_for_preenrollment_period(experiments):
+    """When the current period is a preenrollment period, covariate adjustment is not applied,
+    so no extra prerequisite table should be returned."""
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "my_metric", "period": "preenrollment_week"}
+    }
+    summary.metric.depends_on = None
+
+    prereqs = _empty_analysis(experiments)._subset_metric_table_prerequisites(
+        summary,
+        "normandy_test_slug_enrollments_preenrollment_week_1",
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.PREENROLLMENT_WEEK,
+        False,
+    )
+
+    assert prereqs == set()
+
+
+def test_subset_metric_table_prerequisites_discrete_depends_on(experiments):
+    """For a discrete ratio metric whose dependencies span two data sources, the prerequisite
+    list contains the cross-DS dependency table but not the primary table."""
+    upstream_a = Metric(
+        name="upstream_a",
+        data_source=DataSource(name="data_source_a", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    upstream_b = Metric(
+        name="upstream_b",
+        data_source=DataSource(name="data_source_b", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    from jetstream.statistics import Summary as JetstreamSummary
+
+    ratio_metric = Metric(
+        name="ratio_metric",
+        data_source=DataSource(name="data_source_a", from_expression="test.test"),
+        select_expression=None,
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        depends_on=[
+            JetstreamSummary(upstream_a, None, None),
+            JetstreamSummary(upstream_b, None, None),
+        ],
+    )
+
+    summary = MagicMock()
+    summary.statistic.params = {}
+    summary.metric = ratio_metric
+
+    analysis = _empty_analysis(experiments)
+    primary_table = analysis._table_name(
+        AnalysisPeriod.WEEK.value, 1, AnalysisBasis.ENROLLMENTS, metric="data_source_a"
+    )
+    cross_ds_table = analysis._table_name(
+        AnalysisPeriod.WEEK.value, 1, AnalysisBasis.ENROLLMENTS, metric="data_source_b"
+    )
+
+    prereqs = analysis._subset_metric_table_prerequisites(
+        summary,
+        primary_table,
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+        True,
+    )
+
+    assert cross_ds_table in prereqs
+    assert primary_table not in prereqs
+
+
+def test_run_covariate_bind_wires_cross_period_dep(experiments, monkeypatch):
+    """When a metric uses covariate adjustment from preenrollment_week, run() must pass
+    the preenrollment writer Delayed as a bind prerequisite for the weekly subset task."""
+    config = AnalysisSpec.default_for_experiment(experiments[0], ConfigLoader.configs).resolve(
+        experiments[0], ConfigLoader.configs
+    )
+
+    metric = Metric(
+        name="active_hours",
+        data_source=DataSource(name="clients_daily", from_expression="test.test"),
+        select_expression="SUM(ah)",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    cov_statistic = MagicMock()
+    cov_statistic.params = {
+        "covariate_adjustment": {"metric": "active_hours", "period": "preenrollment_week"}
+    }
+    from jetstream.statistics import Summary as JetstreamSummary
+
+    plain_statistic = MagicMock()
+    plain_statistic.params = {}
+    config.metrics = {
+        AnalysisPeriod.WEEK: [JetstreamSummary(metric, cov_statistic, [])],
+        AnalysisPeriod.PREENROLLMENT_WEEK: [JetstreamSummary(metric, plain_statistic, [])],
+    }
+
+    bind_calls: list[tuple] = []
+
+    def capturing_bind(thing, deps):
+        bind_calls.append((thing, list(deps)))
+        return thing
+
+    stats_mock = MagicMock()
+    stats_mock.model_dump.return_value = []
+
+    monkeypatch.setattr("jetstream.analysis.bind", capturing_bind)
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._get_timelimits_if_ready", MagicMock(return_value=MagicMock())
+    )
+    monkeypatch.setattr("jetstream.analysis.Analysis.calculate_metrics", MagicMock())
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis.calculate_statistics", MagicMock(return_value=stats_mock)
+    )
+    monkeypatch.setattr("jetstream.analysis.Analysis.counts", MagicMock(return_value=stats_mock))
+    monkeypatch.setattr("jetstream.analysis.Analysis.save_statistics", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Analysis.publish_view", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.LocalCluster", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Client", MagicMock())
+
+    Analysis("test", "test", config).run(
+        current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc),
+    )
+
+    # At least one bind call for a subset_metric_table task should carry a non-empty deps list,
+    # containing the preenrollment writer as the cross-period prerequisite.
+    subset_binds_with_prereqs = [deps for _, deps in bind_calls if deps]
+    assert subset_binds_with_prereqs, (
+        "Expected at least one subset_metric_table bind call with prerequisites, "
+        "but all bind calls had empty deps. The covariate cross-period edge is missing."
+    )
