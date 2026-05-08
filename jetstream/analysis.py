@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import attr
 import dask
@@ -44,6 +44,9 @@ from jetstream.statistics import (
 )
 
 from . import bq_normalize_name
+
+if TYPE_CHECKING:
+    from dask.delayed import Delayed
 
 logger = logging.getLogger(__name__)
 
@@ -658,8 +661,7 @@ class Analysis:
             metric_table_name, segment, summary, analysis_basis, period, discrete_metrics
         )
 
-        logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}")
-        logger.debug(query)
+        logger.debug(f"subset_metric_table: {metric_table_name}, {summary.metric.name}\n{query}")
 
         try:
             results: DataFrame = self.bigquery.execute(query).to_dataframe()
@@ -703,11 +705,12 @@ class Analysis:
                     analysis_basis,
                     covariate_period,
                     covariate_metric_name,
+                    period,
                     discrete_metrics,
                 )
 
         return self._create_subset_metric_table_query_univariate(
-            metric_table_name, segment, summary.metric, analysis_basis
+            metric_table_name, segment, summary.metric, analysis_basis, period, discrete_metrics
         )
 
     def _create_subset_metric_table_query_univariate(
@@ -716,10 +719,12 @@ class Analysis:
         segment: str,
         metric: Metric,
         analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
+        discrete_metrics: bool = False,
     ) -> str:
         """Creates a SQL query string to pull a single metric for a segment/analysis"""
 
-        metric_names = []
+        metric_names = set()
         # select placeholder column for metrics without select statement
         # since metrics that don't appear in the df are skipped
         # e.g., metrics with depends on such as population ratio metrics
@@ -727,16 +732,17 @@ class Analysis:
         dependency_metric_tables = set()
         if metric.depends_on:
             empty_metric_names.append(f"NULL AS {metric.name}")
+            window = int(metric_table_name.split("_")[-1])
             for dependency in metric.depends_on:
-                metric_names.append(dependency.metric.name)
-                # if the table name doesn't contain metric.name (not discrete metrics), this is noop
-                dependency_metric_table = metric_table_name.replace(
-                    metric.name, dependency.metric.name
-                )
-                if dependency_metric_table != metric_table_name:
-                    dependency_metric_tables.add(dependency_metric_table)
+                metric_names.add(dependency.metric.name)
+                if discrete_metrics:
+                    dependency_metric_table = self._table_name(
+                        period.value, window, analysis_basis, dependency.metric.data_source.name
+                    )
+                    if dependency_metric_table != metric_table_name:
+                        dependency_metric_tables.add(dependency_metric_table)
         else:
-            metric_names.append(metric.name)
+            metric_names.add(metric.name)
 
         # dependency_joins will be "" if not discrete metrics or no depends_on
         dependency_joins = "\n".join(
@@ -757,17 +763,17 @@ class Analysis:
         )
         query = dedent(
             f"""
-        SELECT branch, {", ".join(metric_names + empty_metric_names)}
-        FROM `{metric_table_name}`
+        SELECT branch, {", ".join(list(metric_names) + empty_metric_names)}
+        FROM `{metric_table_name}` m
         {dependency_joins}
-        WHERE {" IS NOT NULL AND ".join(metric_names + [""])[:-1]}
+        WHERE {" IS NOT NULL AND ".join(list(metric_names) + [""])[:-1]}
         """
         )
 
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
-            basis_filter = """enrollment_date IS NOT NULL AND exposure_date IS NOT NULL"""
+            basis_filter = """enrollment_date IS NOT NULL AND m.exposure_date IS NOT NULL"""
         else:
             raise ValueError(
                 f"AnalysisBasis {analysis_basis} not valid"
@@ -793,6 +799,7 @@ class Analysis:
         analysis_basis: AnalysisBasis,
         covariate_period: AnalysisPeriod,
         covariate_metric_name: str,
+        period: AnalysisPeriod,
         discrete_metrics: bool = False,
     ) -> str:
         """Creates a SQL query string to pull a during-experiment metric and join on a
@@ -820,7 +827,7 @@ class Analysis:
                 },
             )
             return self._create_subset_metric_table_query_univariate(
-                metric_table_name, segment, metric, analysis_basis
+                metric_table_name, segment, metric, analysis_basis, period
             )
 
         preenrollment_metric_select = f"pre.{covariate_metric_name} AS {covariate_metric_name}_pre"
@@ -865,6 +872,43 @@ class Analysis:
             query += segment_filter
 
         return query
+
+    def _subset_metric_table_prerequisites(
+        self,
+        summary: Summary,
+        metric_table_name: str,
+        analysis_basis: AnalysisBasis,
+        period: AnalysisPeriod,
+        discrete_metrics: bool,
+    ) -> set[str]:
+        """Returns the BigQuery table names referenced by a subset_metric_table query
+        that are NOT already covered by the metric_table_name positional arg.
+
+        Used to build explicit Dask ordering edges so readers never run before their
+        writers, regardless of parallel-scheduler ordering.
+        """
+        prereqs: set[str] = set()
+
+        if covariate_params := summary.statistic.params.get("covariate_adjustment", False):  # type: ignore[attr-defined]
+            covariate_period = AnalysisPeriod(covariate_params["period"])
+            if covariate_period != period and period not in PREENROLLMENT_PERIODS:
+                metric_name = summary.metric.name if discrete_metrics else None
+                prereqs.add(
+                    self._table_name(
+                        covariate_period.value, 1, AnalysisBasis.ENROLLMENTS, metric=metric_name
+                    )
+                )
+
+        if discrete_metrics and summary.metric.depends_on:
+            window = int(metric_table_name.split("_")[-1])
+            for dependency in summary.metric.depends_on:
+                dep_table = self._table_name(
+                    period.value, window, analysis_basis, dependency.metric.data_source.name
+                )
+                if dep_table != metric_table_name:
+                    prereqs.add(dep_table)
+
+        return prereqs
 
     def check_runnable(self, current_date: datetime | None = None) -> bool:
         if self.config.experiment.normandy_slug is None:
@@ -974,7 +1018,8 @@ class Analysis:
 
         enrollments_sql = exp.build_enrollments_query(
             limits,
-            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
+            self.config.experiment.enrollments_query_type
+            or PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,
@@ -1173,6 +1218,7 @@ class Analysis:
         client = Client(_dask_cluster)
 
         results = []
+        metric_table_writers: dict[str, Delayed] = {}
 
         if self.log_config:
             log_plugin = LogPlugin(self.log_config)
@@ -1231,8 +1277,19 @@ class Analysis:
             period_has_metric_slugs = False
 
             for m in self.config.metrics[period]:
-                if (metric_slugs and m.metric.name in metric_slugs) or not metric_slugs:
+                if not metric_slugs:
                     period_has_metric_slugs = True
+                elif metric_slugs and m.metric.name in metric_slugs:
+                    period_has_metric_slugs = True
+                    # for ratio metrics, ensure dependency metrics are not omitted
+                    if m.metric.depends_on:
+                        for summary in m.metric.depends_on:
+                            if summary.metric.name not in metric_slugs:
+                                logger.warning(
+                                    f"`{m.metric.name}` requested without all dependency metrics"
+                                    f" ... Adding `{summary.metric.name}`"
+                                )
+                                metric_slugs.append(summary.metric.name)
 
                 for analysis_basis in m.metric.analysis_bases:
                     analysis_bases.append(analysis_basis)
@@ -1247,6 +1304,13 @@ class Analysis:
 
             if len(analysis_bases) == 0:
                 continue
+
+            segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
+            analysis_length_dates = 1
+            if period.value == AnalysisPeriod.OVERALL:
+                analysis_length_dates = time_limits.analysis_length_dates
+            elif period.value == AnalysisPeriod.WEEK:
+                analysis_length_dates = 7
 
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
@@ -1263,6 +1327,14 @@ class Analysis:
                         metric_slugs=metric_slugs,
                     )
                     metrics_results.append(metrics_table)
+                    # calculate_metrics returns a Delayed — compute the table name eagerly so we
+                    # can register it for Dask dependency wiring before any readers are created.
+                    metrics_table_name = self._table_name(
+                        period.value,
+                        len(time_limits.analysis_windows),
+                        analysis_basis=analysis_basis,
+                    )
+                    metric_table_writers[metrics_table_name] = metrics_table
 
                     if dry_run:
                         results.append(metrics_table)
@@ -1274,24 +1346,17 @@ class Analysis:
                         )
                         continue
 
-                    if statistics_only:
-                        metrics_table_name = self._table_name(
-                            period.value,
-                            len(time_limits.analysis_windows),
-                            analysis_basis=analysis_basis,
+                    if statistics_only and not self.bigquery.table_exists(metrics_table_name):
+                        logger.warning(
+                            f"Cannot compute only statistics for period {period.value}; "
+                            "metric table does not exist!",
+                            extra={
+                                "experiment": self.config.experiment.normandy_slug,
+                                "analysis_basis": analysis_basis.value,
+                            },
                         )
-                        if not self.bigquery.table_exists(metrics_table_name):
-                            logger.warning(
-                                f"Cannot compute only statistics for period {period.value}; "
-                                "metric table does not exist!",
-                                extra={
-                                    "experiment": self.config.experiment.normandy_slug,
-                                    "analysis_basis": analysis_basis.value,
-                                },
-                            )
-                            continue
+                        continue
 
-                    segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                     for segment in segment_labels:
                         for summary in self.config.metrics[period]:
                             if (
@@ -1300,7 +1365,15 @@ class Analysis:
                             ):
                                 continue
 
-                            segment_data = self.subset_metric_table(
+                            prereq_tables = self._subset_metric_table_prerequisites(
+                                summary, metrics_table_name, analysis_basis, period, False
+                            )
+                            prereqs = [
+                                metric_table_writers[t]
+                                for t in prereq_tables
+                                if t in metric_table_writers
+                            ]
+                            subset_delayed = self.subset_metric_table(
                                 metrics_table,
                                 segment,
                                 summary,
@@ -1308,12 +1381,9 @@ class Analysis:
                                 period,
                                 False,
                             )
-
-                            analysis_length_dates = 1
-                            if period.value == AnalysisPeriod.OVERALL:
-                                analysis_length_dates = time_limits.analysis_length_dates
-                            elif period.value == AnalysisPeriod.WEEK:
-                                analysis_length_dates = 7
+                            segment_data = (
+                                bind(subset_delayed, prereqs) if prereqs else subset_delayed
+                            )
 
                             segment_results.root += self.calculate_statistics(
                                 summary,
@@ -1337,18 +1407,21 @@ class Analysis:
                             m.metric.analysis_bases == analysis_basis
                             or analysis_basis in m.metric.analysis_bases
                         )
-                        and m.metric.select_expression is not None
+                        and (metric_slugs is None or m.metric.name in metric_slugs)
                     ]
+                    # metrics with depends_on have no select_expression and are handled separately
                     config_metrics: set[Metric] = (
                         {
                             Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                             for m in summary_metrics
                             if m.metric.name in metric_slugs
+                            and m.metric.select_expression is not None
                         }
                         if metric_slugs
                         else {
                             Metric.from_metric_config(m.metric).to_mozanalysis_metric()
                             for m in summary_metrics
+                            if m.metric.select_expression is not None
                         }
                     )
 
@@ -1367,6 +1440,15 @@ class Analysis:
                             dry_run or statistics_only,
                         )
                         metrics_results.append(metric_table)
+                        # calculate_metric_for_ds returns a Delayed — compute the table name eagerly
+                        # so we can register it as a Dask dep before trying to read from it.
+                        metric_table_name = self._table_name(
+                            period.value,
+                            len(time_limits.analysis_windows),
+                            analysis_basis=analysis_basis,
+                            metric=data_source.name,
+                        )
+                        metric_table_writers[metric_table_name] = metric_table
 
                         # get sanity metrics for this data source (to include in view)
                         all_metrics_by_ds[data_source.name] = [
@@ -1389,28 +1471,20 @@ class Analysis:
                             )
                             continue
 
-                        if statistics_only:
-                            metric_table_name = self._table_name(
-                                period.value,
-                                len(time_limits.analysis_windows),
-                                analysis_basis=analysis_basis,
-                                metric=data_source.name,
-                            )
-                            if not self.bigquery.table_exists(metric_table_name):
-                                for metric in data_source:
-                                    logger.warning(
-                                        f"Cannot compute only statistics for period {period.value};"
-                                        "metrics table doesn't exist"
-                                        f"for data source {data_source.name}!",
-                                        extra={
-                                            "experiment": self.config.experiment.normandy_slug,
-                                            "metric": metric.name,
-                                            "analysis_basis": analysis_basis.value,
-                                        },
-                                    )
-                                continue
+                        if statistics_only and not self.bigquery.table_exists(metric_table_name):
+                            for metric in ds_metrics:
+                                logger.warning(
+                                    f"Cannot compute only statistics for period {period.value};"
+                                    "metrics table doesn't exist"
+                                    f"for data source {data_source.name}!",
+                                    extra={
+                                        "experiment": self.config.experiment.normandy_slug,
+                                        "metric": metric.name,
+                                        "analysis_basis": analysis_basis.value,
+                                    },
+                                )
+                            continue
 
-                        segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
                         for segment in segment_labels:
                             for summary in summary_metrics:
                                 if not (
@@ -1420,7 +1494,15 @@ class Analysis:
                                     # metric not part of current data source
                                     continue
 
-                                segment_data = self.subset_metric_table(
+                                prereq_tables = self._subset_metric_table_prerequisites(
+                                    summary, metric_table_name, analysis_basis, period, True
+                                )
+                                prereqs = [
+                                    metric_table_writers[t]
+                                    for t in prereq_tables
+                                    if t in metric_table_writers
+                                ]
+                                subset_delayed = self.subset_metric_table(
                                     metric_table,
                                     segment,
                                     summary,
@@ -1428,12 +1510,9 @@ class Analysis:
                                     period,
                                     True,
                                 )
-
-                                analysis_length_dates = 1
-                                if period.value == AnalysisPeriod.OVERALL:
-                                    analysis_length_dates = time_limits.analysis_length_dates
-                                elif period.value == AnalysisPeriod.WEEK:
-                                    analysis_length_dates = 7
+                                segment_data = (
+                                    bind(subset_delayed, prereqs) if prereqs else subset_delayed
+                                )
 
                                 segment_results.root += self.calculate_statistics(
                                     summary,
@@ -1446,6 +1525,41 @@ class Analysis:
 
                             segment_results.root += self.counts(
                                 segment_data, segment, analysis_basis
+                            ).model_dump(warnings=False)
+
+                    # metrics are done: now iterate over the depends_on metrics
+                    for summary in summary_metrics:
+                        if not summary.metric.depends_on:
+                            continue
+
+                        prereq_tables = self._subset_metric_table_prerequisites(
+                            summary, metric_table_name, analysis_basis, period, True
+                        )
+                        prereqs = [
+                            metric_table_writers[t]
+                            for t in prereq_tables
+                            if t in metric_table_writers
+                        ]
+                        for segment in segment_labels:
+                            subset_delayed = self.subset_metric_table(
+                                metric_table,
+                                segment,
+                                summary,
+                                analysis_basis,
+                                period,
+                                True,
+                            )
+                            segment_data = (
+                                bind(subset_delayed, prereqs) if prereqs else subset_delayed
+                            )
+
+                            segment_results.root += self.calculate_statistics(
+                                summary,
+                                segment_data,
+                                segment,
+                                analysis_basis,
+                                analysis_length_dates,
+                                period,
                             ).model_dump(warnings=False)
 
                 # done with analysis_basis: publish metric view
@@ -1514,7 +1628,8 @@ class Analysis:
 
         return exp.build_enrollments_query(
             time_limits,
-            PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
+            self.config.experiment.enrollments_query_type
+            or PLATFORM_CONFIGS[self.config.experiment.app_name].enrollments_query_type,
             self.config.experiment.enrollment_query,
             None,
             exposure_signal,

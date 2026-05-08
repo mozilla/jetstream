@@ -616,6 +616,7 @@ class TestAnalysisIntegration:
             is not None
         )
 
+    @pytest.mark.parametrize("discrete_metrics", [True, False])
     def test_metrics_with_depends_on(
         self,
         monkeypatch,
@@ -625,6 +626,7 @@ class TestAnalysisIntegration:
         temporary_dataset,
         randomization_unit,
         analysis_unit,
+        discrete_metrics,
     ):
         experiment = Experiment(
             experimenter_slug="test-experiment",
@@ -704,13 +706,20 @@ class TestAnalysisIntegration:
             static_dataset,
             temporary_dataset,
             project_id,
+            discrete_metrics=discrete_metrics,
+        )
+
+        table_id = (
+            "test_experiment_enrollments_clients_daily_week_1"
+            if discrete_metrics
+            else "test_experiment_enrollments_week_1"
         )
 
         query_job = client.client.query(
             f"""
             SELECT
               *
-            FROM `{project_id}.{temporary_dataset}.test_experiment_enrollments_week_1`
+            FROM `{project_id}.{temporary_dataset}.{table_id}`
             ORDER BY enrollment_date DESC
         """
         )

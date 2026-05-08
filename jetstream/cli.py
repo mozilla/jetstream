@@ -902,7 +902,7 @@ def run(
             ctx.obj["log_config"],
             analysis_periods=analysis_periods,
             sql_output_dir=sql_output_dir,
-            metric_slugs=metric_slug if metric_slug else None,
+            metric_slugs=list(metric_slug) if metric_slug else None,
             statistics_only=statistics_only,
             use_glean_ids=use_glean_ids,
             discrete_metrics=discrete_metrics,
@@ -979,7 +979,7 @@ def run_argo(
         image_version=image_version,
         statistics_only=statistics_only,
         discrete_metrics=discrete_metrics,
-        metric_slugs=metric_slug if metric_slug else None,
+        metric_slugs=list(metric_slug) if metric_slug else None,
     )
 
     AnalysisExecutor(
@@ -1066,7 +1066,7 @@ def rerun(
         analysis_periods=analysis_periods,
         statistics_only=statistics_only,
         discrete_metrics=discrete_metrics,
-        metric_slugs=metric_slug if metric_slug else None,
+        metric_slugs=list(metric_slug) if metric_slug else None,
     )
 
     if argo:
@@ -1086,7 +1086,7 @@ def rerun(
             image_version=image_version,
             statistics_only=statistics_only,
             discrete_metrics=discrete_metrics,
-            metric_slugs=metric_slug if metric_slug else None,
+            metric_slugs=list(metric_slug) if metric_slug else None,
         )
 
     success = AnalysisExecutor(

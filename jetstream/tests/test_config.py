@@ -5,8 +5,8 @@ import pytest
 import toml
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import Config, DefaultConfig, Outcome
+from metric_config_parser.experiment import EnrollmentsQueryType
 from metric_config_parser.outcome import OutcomeSpec
-from mozanalysis.experiment import EnrollmentsQueryType
 
 from jetstream.config import ConfigLoader, _ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
