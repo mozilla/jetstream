@@ -59,6 +59,22 @@ PREENROLLMENT_PERIODS = [AnalysisPeriod.PREENROLLMENT_DAYS_28, AnalysisPeriod.PR
 _dask_cluster = None
 
 
+@dask.delayed
+def _successful_metrics_dict(
+    metric_table_results: list[str],
+    all_metrics_by_ds: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Return only the data-source entries whose metric table was successfully computed."""
+    try:
+        return {
+            name: metrics
+            for (name, metrics), result in zip(all_metrics_by_ds.items(), metric_table_results)
+            if result
+        }
+    except Exception:
+        return {}
+
+
 @attr.s(auto_attribs=True)
 class Analysis:
     """Wrapper for analysing experiments."""
@@ -244,6 +260,11 @@ class Analysis:
         metrics_dict: dict[str, list[str]] | None = None,
     ):
         assert self.config.experiment.normandy_slug is not None
+        if metrics_dict is not None and not metrics_dict:
+            logger.warning(
+                f"publish_view: all metrics queries failed for {window_period.value} {analysis_basis}; skipping view"
+            )
+            return
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
         view_name = "_".join([normalized_slug, window_period.table_suffix])
         wildcard_expr = normalized_slug
@@ -550,7 +571,7 @@ class Analysis:
                             "analysis_basis": analysis_basis,
                         },
                     )
-                raise
+                return ""
 
         return res_table_name
 
@@ -567,6 +588,8 @@ class Analysis:
         """
         Run statistics on metric.
         """
+        if segment_data is None or segment_data.empty:
+            return StatisticResultCollection.model_validate([])
         try:
             return (
                 Summary.from_config(metric, analysis_length_dates, period)
@@ -590,13 +613,15 @@ class Analysis:
                     "segment": segment,
                 },
             )
-            raise
+            return StatisticResultCollection.model_validate([])
 
     @dask.delayed
     def counts(
         self, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
     ) -> StatisticResultCollection:
         """Count and missing count statistics."""
+        if segment_data is None or segment_data.empty:
+            return StatisticResultCollection.model_validate([])
         try:
             metric = "identity"
             counts = (
@@ -644,7 +669,7 @@ class Analysis:
                     "segment": segment,
                 },
             )
-            raise
+            return StatisticResultCollection.model_validate([])
 
     @dask.delayed
     def subset_metric_table(
@@ -657,6 +682,8 @@ class Analysis:
         discrete_metrics: bool = False,
     ) -> DataFrame:
         """Pulls the metric data for this segment/analysis basis"""
+        if not metric_table_name:
+            return None
         query = self._create_subset_metric_table_query(
             metric_table_name, segment, summary, analysis_basis, period, discrete_metrics
         )
@@ -675,7 +702,7 @@ class Analysis:
                     "segment": segment,
                 },
             )
-            raise
+            return None
 
         return results
 
@@ -1562,15 +1589,13 @@ class Analysis:
                                 period,
                             ).model_dump(warnings=False)
 
-                # done with analysis_basis: publish metric view
+                # done with analysis_basis: publish metric view for successful metrics only
+                filtered_dict = _successful_metrics_dict(metrics_results, all_metrics_by_ds)
                 results.append(
-                    bind(
-                        self.publish_view(
-                            period,
-                            analysis_basis=analysis_basis.value,
-                            metrics_dict=all_metrics_by_ds,
-                        ),
-                        [metrics_results],
+                    self.publish_view(
+                        period,
+                        analysis_basis=analysis_basis.value,
+                        metrics_dict=filtered_dict,
                     )
                 )
 
@@ -1591,19 +1616,12 @@ class Analysis:
             )
 
         result_futures = client.compute(results)
-        # Cascade failures share the same exception type+message as their root cause;
-        # dedup so each distinct failure is logged once rather than once per dependent task.
-        seen_failures: set[tuple[str, str]] = set()
         for future in as_completed(result_futures):
             if future.status != "error":
                 continue
             try:
                 future.result()
-            except Exception as e:
-                key = (type(e).__name__, str(e))
-                if key in seen_failures:
-                    continue
-                seen_failures.add(key)
+            except Exception:
                 logger.exception("A task failed during analysis")
 
     def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
