@@ -591,7 +591,7 @@ class Analysis:
         """
         Run statistics on metric.
         """
-        if segment_data is None or segment_data.empty:
+        if segment_data is None:
             return StatisticResultCollection.model_validate([])
         try:
             return (
@@ -623,7 +623,7 @@ class Analysis:
         self, segment_data: DataFrame, segment: str, analysis_basis: AnalysisBasis
     ) -> StatisticResultCollection:
         """Count and missing count statistics."""
-        if segment_data is None or segment_data.empty:
+        if segment_data is None:
             return StatisticResultCollection.model_validate([])
         try:
             metric = "identity"
