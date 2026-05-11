@@ -68,7 +68,9 @@ def _successful_metrics_dict(
     try:
         return {
             name: metrics
-            for (name, metrics), result in zip(all_metrics_by_ds.items(), metric_table_results)
+            for (name, metrics), result in zip(
+                all_metrics_by_ds.items(), metric_table_results, strict=True
+            )
             if result
         }
     except Exception:
@@ -262,7 +264,8 @@ class Analysis:
         assert self.config.experiment.normandy_slug is not None
         if metrics_dict is not None and not metrics_dict:
             logger.warning(
-                f"publish_view: all metrics queries failed for {window_period.value} {analysis_basis}; skipping view"
+                f"all metrics queries failed for {window_period.value} {analysis_basis};"
+                "skipping publish view..."
             )
             return
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
@@ -494,7 +497,7 @@ class Analysis:
     ) -> str:
         """
         Calculate individual metric for a specific experiment.
-        Returns the BigQuery table results are written to.
+        Returns the BigQuery table results are written to, or empty str on failure.
         """
         window = len(time_limits.analysis_windows)
         last_analysis_window = time_limits.analysis_windows[-1]

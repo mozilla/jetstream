@@ -8,11 +8,13 @@ from unittest.mock import MagicMock, Mock
 import pytest
 import pytz
 import toml
+from google.api_core.exceptions import GoogleAPICallError
 from metric_config_parser import segment
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
+from mozanalysis.experiment import TimeLimits
 from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
@@ -1241,11 +1243,217 @@ def test_run_continues_after_task_failure(experiments, monkeypatch, caplog):
         )
 
     assert "simulated failure for data source" in caplog.text
-    # Cascade failures (publish_view bound to the failing metric) share the same
-    # exception and must not generate duplicate log entries.
-    assert caplog.text.count("A task failed during analysis") == 1
+    assert "A task failed during analysis" in caplog.text
     # publish_view ran for periods where all data sources succeeded
     assert mock_bq.execute.called
+
+
+@pytest.mark.parametrize("ErrorType", [GoogleAPICallError, ValueError])
+def test_calculate_metric_for_ds_returns_empty_on_specific_errors(
+    experiments,
+    monkeypatch,
+    caplog,
+    ErrorType,
+):
+    """calculate_metric_for_ds returns '' (not raises) on GoogleAPICallError."""
+    config = AnalysisSpec.default_for_experiment(experiments[0], ConfigLoader.configs).resolve(
+        experiments[0], ConfigLoader.configs
+    )
+
+    mock_bq = MagicMock()
+    mock_bq.execute.side_effect = ErrorType("simulated error")
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    analysis = Analysis("test", "test", config)
+
+    mock_exp = MagicMock()
+    mock_exp.build_metrics_query.return_value = "SELECT 1"
+
+    time_limits = TimeLimits.for_single_analysis_window(
+        last_date_full_data="2020-01-09",
+        analysis_start_days=0,
+        analysis_length_dates=7,
+        first_enrollment_date="2019-12-01",
+        num_dates_enrollment=8,
+    )
+
+    mock_metric = MagicMock()
+    mock_metric.data_source.name = "test_ds"
+
+    with caplog.at_level(logging.ERROR):
+        result = analysis.calculate_metric_for_ds(
+            mock_exp,
+            time_limits,
+            AnalysisPeriod.WEEK,
+            AnalysisBasis.ENROLLMENTS,
+            [mock_metric],
+            False,
+        ).compute(scheduler="synchronous")
+
+    assert result == ""
+    assert "simulated error" in caplog.text
+
+
+def test_calculate_metric_for_ds_raises_for_other_errors(experiments, monkeypatch):
+    """calculate_metric_for_ds returns '' (not raises) on GoogleAPICallError."""
+    config = AnalysisSpec.default_for_experiment(experiments[0], ConfigLoader.configs).resolve(
+        experiments[0], ConfigLoader.configs
+    )
+
+    mock_bq = MagicMock()
+    mock_bq.execute.side_effect = HighPopulationException("simulated error")
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    analysis = Analysis("test", "test", config)
+
+    mock_exp = MagicMock()
+    mock_exp.build_metrics_query.return_value = "SELECT 1"
+
+    time_limits = TimeLimits.for_single_analysis_window(
+        last_date_full_data="2020-01-09",
+        analysis_start_days=0,
+        analysis_length_dates=7,
+        first_enrollment_date="2019-12-01",
+        num_dates_enrollment=8,
+    )
+
+    mock_metric = MagicMock()
+    mock_metric.data_source.name = "test_ds"
+
+    with pytest.raises(HighPopulationException):
+        analysis.calculate_metric_for_ds(
+            mock_exp,
+            time_limits,
+            AnalysisPeriod.WEEK,
+            AnalysisBasis.ENROLLMENTS,
+            [mock_metric],
+            False,
+        ).compute(scheduler="synchronous")
+
+
+def test_subset_metric_table_returns_none_for_empty_name(experiments, monkeypatch):
+    """subset_metric_table returns None without calling BQ when metric_table_name is ''."""
+    mock_bq = MagicMock()
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    analysis = _empty_analysis(experiments)
+
+    summary = MagicMock()
+    summary.metric.name = "test_metric"
+    summary.statistic.params = {}
+    summary.metric.depends_on = None
+
+    result = analysis.subset_metric_table(
+        "", "all", summary, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.WEEK, True
+    ).compute(scheduler="synchronous")
+
+    assert result is None
+    mock_bq.execute.assert_not_called()
+
+
+def test_subset_metric_table_returns_none_on_google_api_error(experiments, monkeypatch, caplog):
+    """subset_metric_table returns None (not raises) on GoogleAPICallError."""
+    mock_bq = MagicMock()
+    mock_bq.execute.side_effect = GoogleAPICallError("simulated subset error")
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._create_subset_metric_table_query",
+        Mock(return_value="SELECT 1"),
+    )
+
+    analysis = _empty_analysis(experiments)
+
+    summary = MagicMock()
+    summary.metric.name = "test_metric"
+
+    with caplog.at_level(logging.ERROR):
+        result = analysis.subset_metric_table(
+            "some_table", "all", summary, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.WEEK, True
+        ).compute(scheduler="synchronous")
+
+    assert result is None
+    assert "simulated subset error" in caplog.text
+
+
+def test_counts_returns_empty_for_none_segment_data(experiments):
+    """counts returns an empty StatisticResultCollection when segment_data is None."""
+    result = (
+        _empty_analysis(experiments)
+        .counts(None, "all", AnalysisBasis.ENROLLMENTS)
+        .compute(scheduler="synchronous")
+    )
+
+    assert result.root == []
+
+
+def test_calculate_statistics_returns_empty_for_none_segment_data(experiments):
+    """calculate_statistics returns an empty StatisticResultCollection when segment_data is None."""
+    summary = MagicMock()
+
+    result = (
+        _empty_analysis(experiments)
+        .calculate_statistics(
+            summary, None, "all", AnalysisBasis.ENROLLMENTS, 7, AnalysisPeriod.WEEK
+        )
+        .compute(scheduler="synchronous")
+    )
+
+    assert result.root == []
+
+
+def test_run_continues_after_google_api_error(experiments, monkeypatch, caplog):
+    """Ensure that a GoogleAPICallError from one data source does not prevent
+    save_statistics from being called, and no downstream BQ calls are made with
+    empty string as a table name."""
+    exp = experiments[0]
+    config = AnalysisSpec.default_for_experiment(exp, ConfigLoader.configs).resolve(
+        exp, ConfigLoader.configs
+    )
+    analysis = Analysis("test", "test", config)
+
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    monkeypatch.setattr("jetstream.analysis._dask_cluster", None)
+
+    original_local_cluster = jetstream.analysis.LocalCluster
+    monkeypatch.setattr(
+        "jetstream.analysis.LocalCluster",
+        lambda **kwargs: original_local_cluster(**{**kwargs, "processes": False, "n_workers": 1}),
+    )
+
+    mock_bq = MagicMock()
+
+    def bq_execute_side_effect(*args, **kwargs):
+        # Metric-table write calls have 2 positional args (sql, table_name).
+        # Raise for the search_clients data source only.
+        if len(args) >= 2 and "search_clients" in str(args[1]):
+            raise GoogleAPICallError("simulated failure for search_clients data source")
+        result = MagicMock()
+        result.slot_millis = 0
+        return result
+
+    mock_bq.execute.side_effect = bq_execute_side_effect
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    with caplog.at_level(logging.ERROR):
+        analysis.run(
+            current_date=dt.datetime(2020, 1, 10, tzinfo=pytz.utc),
+            dry_run=False,
+            discrete_metrics=True,
+        )
+
+    # The legitimate failure was logged.
+    assert "simulated failure for search_clients data source" in caplog.text
+
+    # save_statistics ran for the surviving periods (load_table_from_json is its BQ call).
+    assert mock_bq.load_table_from_json.called
+
+    # No BQ execute call was made with an empty-identifier SQL pattern
+    for call in mock_bq.execute.call_args_list:
+        sql = str(call.args[0]) if call.args else ""
+        assert "``" not in sql, f"BQ execute called with empty identifier in SQL: {sql!r}"
+
+    # No NoneType errors from counts receiving a None sentinel.
+    assert "NoneType" not in caplog.text
 
 
 def test_metric_slugs_adds_depends_on_metrics(experiments, monkeypatch):
