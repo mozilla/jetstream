@@ -1428,6 +1428,15 @@ class Analysis:
                             segment_data, segment, analysis_basis
                         ).model_dump(warnings=False)
 
+                    # done with analysis_basis: publish metrics view
+                    # bind ensures publish_view runs after the metric table is written
+                    results.append(
+                        bind(
+                            self.publish_view(period, analysis_basis=analysis_basis.value),
+                            metrics_results,
+                        )
+                    )
+
                 else:
                     # convert metric configurations to mozanalysis metrics
                     summary_metrics: list[Summary] = [
@@ -1592,22 +1601,13 @@ class Analysis:
                                 period,
                             ).model_dump(warnings=False)
 
-                # done with analysis_basis: publish metric view for successful metrics only
-                if discrete_metrics:
+                    # done with analysis_basis: publish metrics view for successful metrics only
                     filtered_dict = _successful_metrics_dict(metrics_results, all_metrics_by_ds)
                     results.append(
                         self.publish_view(
                             period,
                             analysis_basis=analysis_basis.value,
                             metrics_dict=filtered_dict,
-                        )
-                    )
-                else:
-                    # bind ensures publish_view runs after the metric table is written
-                    results.append(
-                        bind(
-                            self.publish_view(period, analysis_basis=analysis_basis.value),
-                            metrics_results,
                         )
                     )
 
