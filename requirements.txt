@@ -2560,9 +2560,9 @@ types-six==1.17.0.20260408 \
     --hash=sha256:02208fa1099944ed0c8f8de42f065ffd63c55cd7b59f49be49802626b8d58318 \
     --hash=sha256:b28579aedb204d07abac52e49c87e2b4c03cb6171bd764bd9b7775ba58fffaba
     # via -r requirements.in
-types-toml==0.10.8.20260408 \
-    --hash=sha256:6b30b031235565a12febb1388900b129f1adeabfcfa594da46d0372b2ac107ad \
-    --hash=sha256:e958d4c660385e548705a298f17dc162baf44c8b6d6aff79aeefe75f4f77ac87
+types-toml==0.10.8.20260508 \
+    --hash=sha256:144d615419051493ab1e5e71b6477f7c56fadc78f0856407775e75c8e2916140 \
+    --hash=sha256:93aaa72365bd9bc8c2ce1ca3502b0470d8d428376bada020e1a4956b8b82fdda
     # via -r requirements.in
 typing-extensions==4.15.0 \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
