@@ -1627,7 +1627,7 @@ def preview(
             reference_branch=experiment.reference_branch if experiment else "control",
             is_high_population=False,
             app_name=platform,
-            app_id=PLATFORM_CONFIGS[platform].app_id,
+            app_id=experiment.app_id if experiment else PLATFORM_CONFIGS[platform].app_id,
             outcomes=experiment.outcomes if experiment else [],
             segments=experiment.segments if experiment else [],
             enrollment_end_date=None,
