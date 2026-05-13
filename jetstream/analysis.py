@@ -1627,6 +1627,7 @@ class Analysis:
                 )
             )
 
+        # submit all tasks, and log errors for failed tasks
         result_futures = client.compute(results)
         for future in as_completed(result_futures):
             if future.status != "error":
@@ -1634,7 +1635,12 @@ class Analysis:
             try:
                 future.result()
             except Exception:
-                logger.exception("A task failed during analysis")
+                logger.exception(
+                    "A task failed during analysis with an unexpected exception",
+                    extra={
+                        "experiment": self.config.experiment.normandy_slug,
+                    },
+                )
 
     def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""
