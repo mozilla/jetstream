@@ -1495,6 +1495,7 @@ def test_metric_slugs_adds_depends_on_metrics(experiments, monkeypatch):
     monkeypatch.setattr("jetstream.analysis.bind", lambda x, deps: x)
     monkeypatch.setattr("jetstream.analysis.LocalCluster", MagicMock())
     monkeypatch.setattr("jetstream.analysis.Client", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.as_completed", Mock(return_value=[]))
 
     metric_slugs = ["ratio_metric"]
     Analysis("test", "test", config).run(
@@ -1670,6 +1671,7 @@ def test_run_covariate_bind_wires_cross_period_dep(experiments, monkeypatch):
     monkeypatch.setattr("jetstream.analysis.Analysis.publish_view", MagicMock())
     monkeypatch.setattr("jetstream.analysis.LocalCluster", MagicMock())
     monkeypatch.setattr("jetstream.analysis.Client", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.as_completed", Mock(return_value=[]))
 
     Analysis("test", "test", config).run(
         current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc),
