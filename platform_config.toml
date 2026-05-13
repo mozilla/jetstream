@@ -8,7 +8,9 @@ app_id = "firefox-desktop"
 
 # Android platforms configuration
 [platform.fenix]
-app_id = "org.mozilla.fenix"
+# the actual app_id for fenix differs by channel,
+# but the `fenix` dataset joins them all together
+app_id = "fenix"
 
 [platform.focus_android]
 app_id = "org.mozilla.focus"
