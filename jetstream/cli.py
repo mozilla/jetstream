@@ -1690,7 +1690,6 @@ def preview(
             task_profiling_log_table_id=None,
             task_monitoring_log_table_id=None,
             bq_log_level=logging.INFO,
-            capacity=5,
             log_source=LOG_SOURCE.PREVIEW,
         )
         client.delete_table(f"{project_id}.{dataset_id}.logs_{table}")
@@ -1752,6 +1751,13 @@ def preview(
                     experiments=[exp]
                 ),
             )
+        # make sure we've flushed all the logs
+        for handler in logger.root.handlers:
+            try:
+                handler.flush()
+            except AttributeError:
+                # ignore if log handler does not have 'flush'
+                pass
 
         click.echo(
             "A preview is available at: "
