@@ -263,9 +263,13 @@ class Analysis:
     ):
         assert self.config.experiment.normandy_slug is not None
         if metrics_dict is not None and not metrics_dict:
-            logger.warning(
+            logger.error(
                 f"all metrics queries failed for {window_period.value} {analysis_basis};"
-                "skipping publish view..."
+                " cannot publish view...",
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "analysis_basis": analysis_basis,
+                },
             )
             return
         normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
