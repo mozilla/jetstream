@@ -1620,7 +1620,7 @@ def preview(
             normandy_slug=experiment.normandy_slug if experiment else slug,
             type=experiment.type if experiment else "v6",
             status="Live",
-            start_date=start_date - timedelta(days=3),  # subtract enrollment days
+            start_date=start_date - timedelta(days=enrollment_period),  # subtract enrollment days
             end_date=end_date,
             proposed_enrollment=enrollment_period,
             branches=experiment.branches if experiment else [Branch(slug="control", ratio=1)],
@@ -1630,7 +1630,8 @@ def preview(
             app_id=experiment.app_id if experiment else PLATFORM_CONFIGS[platform].app_id,
             outcomes=experiment.outcomes if experiment else [],
             segments=experiment.segments if experiment else [],
-            enrollment_end_date=None,
+            # end enrollment on the day before the analysis start date
+            enrollment_end_date=start_date - timedelta(days=1),
         )
 
         spec = AnalysisSpec.default_for_experiment(experiment, config_getter.configs)

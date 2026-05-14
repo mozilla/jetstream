@@ -182,6 +182,12 @@ class ExperimentCollection:
                 draft_experiments_json = [draft_experiments_json]
 
             for draft_experiment in draft_experiments_json:
+                if (
+                    "detail" in draft_experiment
+                    and draft_experiment["detail"] == "No NimbusExperiment matches the given query."
+                ):
+                    logger.warning(f"No draft experiment found with slug {slug}, skipping...")
+                    continue
                 try:
                     draft_experiments.append(
                         NimbusExperiment.from_dict(draft_experiment).to_experiment()
