@@ -1221,7 +1221,7 @@ class Analysis:
         self.start_time = datetime.now(tz=pytz.utc)
         logger.info(
             f"Analysis.run invoked at {self.start_time}"
-            f"for experiment {self.config.experiment.normandy_slug} and date {current_date.date()}"
+            f" for experiment {self.config.experiment.normandy_slug} and date {current_date.date()}"
         )
 
         self.check_runnable(current_date)
