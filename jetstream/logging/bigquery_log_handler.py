@@ -41,6 +41,9 @@ class BigQueryLogHandler(BufferingHandler):
                     None if not hasattr(record, "analysis_basis") else record.analysis_basis
                 ),
                 "segment": None if not hasattr(record, "segment") else record.segment,
+                "analysis_period": (
+                    None if not hasattr(record, "analysis_period") else record.analysis_period
+                ),
                 "message": record.getMessage(),
                 "log_level": record.levelname,
                 "exception": str(record.exc_info),

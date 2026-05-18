@@ -16,6 +16,7 @@ class TestLoggingIntegration:
             bigquery.SchemaField("statistic", "STRING"),
             bigquery.SchemaField("analysis_basis", "STRING"),
             bigquery.SchemaField("segment", "STRING"),
+            bigquery.SchemaField("analysis_period", "STRING"),
             bigquery.SchemaField("message", "STRING"),
             bigquery.SchemaField("log_level", "STRING"),
             bigquery.SchemaField("exception", "STRING"),
@@ -54,6 +55,7 @@ class TestLoggingIntegration:
                 "statistic": "test_statistic",
                 "segment": "all",
                 "analysis_basis": "enrollments",
+                "analysis_period": "week_2",
             },
         )
         logger.exception(
@@ -85,6 +87,7 @@ class TestLoggingIntegration:
             and r.segment == "all"
             and r.analysis_basis == "enrollments"
             and r.source == "jetstream"
+            and r.analysis_period == "week_2"
             for r in result
         )
         assert any(
