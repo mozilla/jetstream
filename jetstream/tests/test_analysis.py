@@ -469,7 +469,7 @@ def test_create_subset_metric_table_query_univariate_segment(experiments):
 
     WHERE metric_name IS NOT NULL AND
     enrollment_date IS NOT NULL
-    AND mysegment = TRUE"""
+    AND m.mysegment = TRUE"""
     )
 
     actual_query = _empty_analysis(experiments)._create_subset_metric_table_query_univariate(
