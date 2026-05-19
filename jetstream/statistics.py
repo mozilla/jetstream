@@ -274,6 +274,7 @@ class Statistic(ABC):
                             "statistic": self.name(),
                             "analysis_basis": analysis_basis.value,
                             "segment": segment,
+                            "analysis_period": self.period,
                         },
                     )
 

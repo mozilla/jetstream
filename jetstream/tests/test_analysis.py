@@ -25,6 +25,7 @@ from jetstream.errors import (
     EnrollmentNotCompleteException,
     ExplicitSkipException,
     HighPopulationException,
+    StatisticComputationException,
     UnsupportedApplicationException,
 )
 from jetstream.metric import Metric
@@ -1292,6 +1293,13 @@ def test_calculate_metric_for_ds_returns_empty_on_specific_errors(
 
     assert result == ""
     assert "simulated error" in caplog.text
+    # assert logged extras are as expected
+    assert len(caplog.records) == 1
+    log = caplog.records[0]
+    assert log.experiment == experiments[0].normandy_slug
+    assert log.analysis_basis == AnalysisBasis.ENROLLMENTS
+    assert log.analysis_period == f"{AnalysisPeriod.WEEK.value}_1"
+    assert log.metric == mock_metric.name
 
 
 def test_calculate_metric_for_ds_raises_for_other_errors(experiments, monkeypatch):
@@ -1399,6 +1407,34 @@ def test_calculate_statistics_returns_empty_for_none_segment_data(experiments):
     )
 
     assert result.root == []
+
+
+def test_calculate_statistics_logging_extras(experiments, monkeypatch, caplog):
+    """Ensure that the expected extras are logged."""
+    summary = MagicMock()
+    segment_data = MagicMock()
+    mocked_from_config = Mock(side_effect=StatisticComputationException("Statistic failed!"))
+    monkeypatch.setattr("jetstream.analysis.Summary.from_config", mocked_from_config)
+
+    with caplog.at_level(logging.ERROR):
+        result = (
+            _empty_analysis(experiments)
+            .calculate_statistics(
+                summary, segment_data, "all", AnalysisBasis.ENROLLMENTS, 7, AnalysisPeriod.WEEK
+            )
+            .compute(scheduler="synchronous")
+        )
+
+    assert result.root == []
+    assert "Statistic failed!" in caplog.text
+    assert len(caplog.records) == 1
+    log = caplog.records[0]
+    assert log.experiment == "normandy-test-slug"
+    assert log.segment == "all"
+    assert log.analysis_basis == AnalysisBasis.ENROLLMENTS
+    assert log.analysis_period == AnalysisPeriod.WEEK
+    assert log.metric == summary.metric.name
+    assert log.statistic == summary.statistic.name()
 
 
 def test_run_continues_after_google_api_error(experiments, monkeypatch, caplog):
