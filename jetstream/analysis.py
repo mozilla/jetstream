@@ -269,7 +269,7 @@ class Analysis:
                 extra={
                     "experiment": self.config.experiment.normandy_slug,
                     "analysis_basis": analysis_basis,
-                    "analysis_period": window_period,
+                    "analysis_period": window_period.value,
                 },
             )
             return
@@ -385,7 +385,7 @@ class Analysis:
                 extra={
                     "experiment": self.config.experiment.normandy_slug,
                     "analysis_basis": analysis_basis,
-                    "analysis_period": window_period,
+                    "analysis_period": window_period.value,
                 },
             )
             raise
@@ -622,7 +622,7 @@ class Analysis:
                     "statistic": metric.statistic.name(),
                     "analysis_basis": analysis_basis,
                     "segment": segment,
-                    "analysis_period": period,
+                    "analysis_period": period.value,
                 },
             )
             return StatisticResultCollection.model_validate([])
@@ -712,7 +712,7 @@ class Analysis:
                     "metric": summary.metric.name,
                     "analysis_basis": analysis_basis,
                     "segment": segment,
-                    "analysis_period": period,
+                    "analysis_period": period.value,
                 },
             )
             return None
@@ -864,7 +864,7 @@ class Analysis:
                     "metric": metric.name,
                     "analysis_basis": analysis_basis.value,
                     "segment": segment,
-                    "analysis_period": period,
+                    "analysis_period": period.value,
                 },
             )
             return self._create_subset_metric_table_query_univariate(
@@ -1394,7 +1394,7 @@ class Analysis:
                             extra={
                                 "experiment": self.config.experiment.normandy_slug,
                                 "analysis_basis": analysis_basis.value,
-                                "analysis_period": period,
+                                "analysis_period": period.value,
                             },
                         )
                         continue
@@ -1532,7 +1532,7 @@ class Analysis:
                                         "experiment": self.config.experiment.normandy_slug,
                                         "metric": metric.name,
                                         "analysis_basis": analysis_basis.value,
-                                        "analysis_period": period,
+                                        "analysis_period": period.value,
                                     },
                                 )
                             continue
