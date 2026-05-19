@@ -1432,7 +1432,7 @@ def test_calculate_statistics_logging_extras(experiments, monkeypatch, caplog):
     assert log.experiment == "normandy-test-slug"
     assert log.segment == "all"
     assert log.analysis_basis == AnalysisBasis.ENROLLMENTS
-    assert log.analysis_period == AnalysisPeriod.WEEK
+    assert log.analysis_period == AnalysisPeriod.WEEK.value
     assert log.metric == summary.metric.name
     assert log.statistic == summary.statistic.name()
 
