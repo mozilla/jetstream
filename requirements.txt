@@ -20,9 +20,9 @@ attrs==26.1.0 \
     #   mozanalysis
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==7.1.1 \
-    --hash=sha256:0335cd7a0952d2b22327441fb0628139e234c565559eeb91a8a4ac7551c5353d \
-    --hash=sha256:27bdf856d68fd3c71c26c01b5edc312124ed427524d1ddb31aa2b7746fe20d4b
+cachetools==7.1.3 \
+    --hash=sha256:135cfe944bc3c1e805505f65dae0bef375a2f96261171ab66c79ef77d0bda39d \
+    --hash=sha256:9876787e2346e20584d5cca236cb5d49d04e7193de91646f230725b2e1e8b804
     # via
     #   -r requirements.in
     #   tox
