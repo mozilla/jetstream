@@ -208,7 +208,7 @@ narwhals==2.20.0
     # via
     #   formulaic
     #   marginaleffects
-numpy==2.4.4
+numpy==2.4.6
     # via
     #   contourpy
     #   db-dtypes
