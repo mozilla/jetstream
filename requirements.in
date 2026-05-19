@@ -413,7 +413,7 @@ types-protobuf==7.34.1.20260503
     # via mozilla-jetstream
 types-pytz==2026.2.0.20260506
     # via mozilla-jetstream
-types-pyyaml==6.0.12.20260408
+types-pyyaml==6.0.12.20260518
     # via mozilla-jetstream
 types-requests==2.33.0.20260503
     # via mozilla-jetstream
