@@ -1186,6 +1186,7 @@ class TestAnalysisIntegration:
         assert error_logs[4].get("statistic") == "bootstrap_mean"
         assert error_logs[4].get("analysis_basis") == "enrollments"
         assert error_logs[4].get("segment") == "regular_user_v3"
+        assert error_logs[4].get("analysis_period") == "week"
 
         assert error_logs[5].get("log_level") == "ERROR"
         assert error_logs[5].get("experiment") == "test-experiment"
@@ -1193,6 +1194,7 @@ class TestAnalysisIntegration:
         assert error_logs[5].get("statistic") == "bootstrap_mean"
         assert error_logs[5].get("analysis_basis") == "exposures"
         assert error_logs[5].get("segment") == "regular_user_v3"
+        assert error_logs[5].get("analysis_period") == "week"
 
     # wait for profiling results to land in BigQuery
     # todo: improve this test as it might lead to flakiness
