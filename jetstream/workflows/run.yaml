@@ -20,6 +20,7 @@ spec:
     - name: analysis_periods_preenrollment_week
     - name: analysis_periods_preenrollment_days28
     - name: image
+    - name: memory_request
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -112,11 +113,15 @@ spec:
         "--statistics-only={{workflow.parameters.statistics_only}}",
         "{{inputs.parameters.discrete_metrics}}",
       ]
-      resources:
-        requests:
-          memory: 16Gi   # make sure there is at least 16Gb of memory available for the task
-        limits:
-          cpu: 4  # limit to 4 cores
+    # podSpecPatch allows us to parameterize the resources
+    podSpecPatch: |
+      containers:
+        - name: main
+          resources:
+            requests:
+              memory: "{{workflow.parameters.memory_request}}"
+            limits:
+              cpu: 4
     retryStrategy:
       limit: 3  # execute a container max. 3x; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"

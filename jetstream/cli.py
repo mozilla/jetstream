@@ -67,6 +67,11 @@ ALL_PERIODS = [
 HIGH_DATA_THRESHOLD = 20
 MODERATE_DATA_THRESHOLD = 10
 
+# Nodes in our current cluster have 61.47GB allocatable, per GCP console.
+# The node's reported memory requested seems to be 0.89GB higher than what we request,
+# so this default represents greatest whole number doesn't leave a lot of wasted memory.
+DEFAULT_MEMORY_REQUEST_GB = 19
+
 # Date when discrete metrics was switched to default
 DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
 
@@ -102,6 +107,9 @@ class ArgoExecutorStrategy:
     zone: str
     cluster_id: str
     monitor_status: bool
+    memory_request: (
+        str  # format rules: https://argo-workflows.readthedocs.io/en/latest/fields/#quantity
+    )
     bucket: str | None = None
     cluster_ip: str | None = None
     cluster_cert: str | None = None
@@ -220,6 +228,7 @@ class ArgoExecutorStrategy:
                     else analysis_period_default.value
                 ),
                 "image": self.image,
+                "memory_request": self.memory_request,
                 "statistics_only": self.statistics_only,
             },
             monitor_status=self.monitor_status,
@@ -663,6 +672,19 @@ class ClickNullableString(click.ParamType):
         return value
 
 
+class ClickGBString(click.ParamType):
+    # takes an int and converts it to a memory request string for Argo like "15G"
+    name = "gb_str_from_int"
+
+    def convert(self, value, param, ctx) -> str:
+        # if value already ends with G, assume the rest is an int
+        int_value = int(value[0:-1]) if value[-1] == "G" else int(value)
+        if int_value >= 1 and int_value <= 60:
+            return f"{int_value}G"
+
+        self.fail(f"{value} must be an integer between 1 and 60 (inclusive)", param, ctx)
+
+
 def project_id_option(default="moz-fx-data-experiments"):
     return click.option(
         "--project_id",
@@ -838,6 +860,15 @@ metric_slugs_option = click.option(
     multiple=True,
 )
 
+memory_request_option = click.option(
+    "--memory-request",
+    "--memory_request",
+    help="Memory request for Argo pod (in GB)",
+    type=ClickGBString(),
+    required=False,
+    default=DEFAULT_MEMORY_REQUEST_GB,
+)
+
 
 @cli.command()
 @project_id_option()
@@ -942,6 +973,7 @@ def run(
 @statistics_only_option
 @discrete_metrics_option
 @metric_slugs_option
+@memory_request_option
 @analysis_periods_option()
 def run_argo(
     project_id,
@@ -963,6 +995,7 @@ def run_argo(
     statistics_only,
     discrete_metrics,
     metric_slug,
+    memory_request,
 ):
     """Runs analysis for the provided date using Argo."""
     strategy = ArgoExecutorStrategy(
@@ -980,6 +1013,7 @@ def run_argo(
         statistics_only=statistics_only,
         discrete_metrics=discrete_metrics,
         metric_slugs=list(metric_slug) if metric_slug else None,
+        memory_request=memory_request,
     )
 
     AnalysisExecutor(
@@ -1019,6 +1053,7 @@ def run_argo(
 @statistics_only_option
 @discrete_metrics_option
 @metric_slugs_option
+@memory_request_option
 @click.pass_context
 def rerun(
     ctx,
@@ -1043,6 +1078,7 @@ def rerun(
     statistics_only,
     discrete_metrics,
     metric_slug,
+    memory_request,
 ):
     """Rerun all available analyses for a specific experiment."""
     if len(experiment_slug) > 1 and config_file:
@@ -1087,6 +1123,7 @@ def rerun(
             statistics_only=statistics_only,
             discrete_metrics=discrete_metrics,
             metric_slugs=list(metric_slug) if metric_slug else None,
+            memory_request=memory_request,
         )
 
     success = AnalysisExecutor(
