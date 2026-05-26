@@ -677,8 +677,8 @@ class ClickGBString(click.ParamType):
     name = "gb_str_from_int"
 
     def convert(self, value, param, ctx) -> str:
-        # if value already ends with G, assume the rest is an int
-        int_value = int(value[0:-1]) if value[-1] == "G" else int(value)
+        # if value is str and ends with G, assume the rest is an int
+        int_value = int(value[0:-1]) if isinstance(value, str) and value[-1] == "G" else int(value)
         if int_value >= 1 and int_value <= 60:
             return f"{int_value}G"
 
