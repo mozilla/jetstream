@@ -700,6 +700,7 @@ class TestArgoExecutorStrategy:
                         AnalysisPeriod.PREENROLLMENT_DAYS_28,
                     ],
                     discrete_metrics=discrete_metrics,
+                    memory_request="1G",
                 )
                 run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
                 strategy.execute([(config, run_date)])
@@ -730,6 +731,7 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_week": "preenrollment_week",
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "jetstream",
+                    "memory_request": "1G",
                     "statistics_only": False,
                 },
                 monitor_status=False,
@@ -781,6 +783,7 @@ class TestArgoExecutorStrategy:
                 ],
                 image="unrelated",
                 image_version="latest",
+                memory_request="12G",
                 discrete_metrics=discrete_metrics,
             )
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
@@ -816,6 +819,7 @@ class TestArgoExecutorStrategy:
                     "analysis_periods_preenrollment_week": "preenrollment_week",
                     "analysis_periods_preenrollment_days28": "preenrollment_days28",
                     "image": "unrelated",
+                    "memory_request": "12G",
                     "statistics_only": False,
                 },
                 monitor_status=False,

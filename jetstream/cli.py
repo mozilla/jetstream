@@ -672,7 +672,7 @@ class ClickNullableString(click.ParamType):
         return value
 
 
-class GBString(click.ParamType):
+class ClickGBString(click.ParamType):
     # takes an int and converts it to a memory request string for Argo like "15G"
     name = "gb_str_from_int"
 
@@ -864,7 +864,7 @@ memory_request_option = click.option(
     "--memory-request",
     "--memory_request",
     help="Memory request for Argo pod (in GB)",
-    type=GBString(),
+    type=ClickGBString(),
     required=False,
     default=DEFAULT_MEMORY_REQUEST_GB,
 )
