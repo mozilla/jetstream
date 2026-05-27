@@ -1274,9 +1274,9 @@ def export_experiment_logs_to_json(
 @recreate_enrollments_option
 @config_repos_option
 @private_config_repos_option
+@analysis_periods_option()
 @image_option
 @image_version_option
-@analysis_periods_option()
 @memory_request_option
 @click.pass_context
 def rerun_config_changed(
