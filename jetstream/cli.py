@@ -1277,6 +1277,7 @@ def export_experiment_logs_to_json(
 @image_option
 @image_version_option
 @analysis_periods_option()
+@memory_request_option
 @click.pass_context
 def rerun_config_changed(
     ctx,
@@ -1296,6 +1297,7 @@ def rerun_config_changed(
     analysis_periods,
     image,
     image_version,
+    memory_request,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
     # TODO: make this smarter: figure out if we need to rerun metrics or just statistics,
@@ -1335,6 +1337,7 @@ def rerun_config_changed(
             analysis_periods=analysis_periods,
             image=image,
             image_version=image_version,
+            memory_request=memory_request,
         )
 
     success = AnalysisExecutor(
