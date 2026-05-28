@@ -1206,47 +1206,39 @@ def test_run_continues_after_task_failure(experiments, monkeypatch, caplog):
     mock_bq = MagicMock()
     monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
 
-    # Raise on the first _table_name call that runs inside a dask worker thread.
-    # _table_name is also called from the main thread during graph construction
-    # (with the same arguments), so the thread check prevents a premature failure
-    # before any task has been submitted.
+    # Raise on the first bigquery.execute call that runs inside a dask worker thread.
+    # The main thread does not call execute, but the thread check guards against
+    # any future changes that might add such a call.
     has_failed = threading.Event()
     main_thread = threading.main_thread()
-    original_table_name = Analysis._table_name
 
-    def patched_table_name(
-        self, window_period, window_index, analysis_basis=None, metric=None, statistics=False
-    ):
-        if (
-            metric is not None
-            and not statistics
-            and not has_failed.is_set()
-            and threading.current_thread() is not main_thread
-        ):
+    def bq_execute_side_effect(*args, **kwargs):
+        if not has_failed.is_set() and threading.current_thread() is not main_thread:
             has_failed.set()
-            raise RuntimeError(f"simulated failure for data source {metric}")
-        return original_table_name(
-            self,
-            window_period,
-            window_index,
-            analysis_basis=analysis_basis,
-            metric=metric,
-            statistics=statistics,
-        )
+            raise ValueError("simulated failure for data source")
+        result = MagicMock()
+        result.slot_millis = 0
+        return result
 
-    monkeypatch.setattr("jetstream.analysis.Analysis._table_name", patched_table_name)
+    mock_bq.execute.side_effect = bq_execute_side_effect
 
     with caplog.at_level(logging.ERROR):
         analysis.run(
             current_date=dt.datetime(2020, 1, 10, tzinfo=pytz.utc),
-            dry_run=True,
+            dry_run=False,
             discrete_metrics=True,
         )
 
     assert "simulated failure for data source" in caplog.text
-    assert "A task failed during analysis" in caplog.text
-    # publish_view ran for periods where all data sources succeeded
-    assert mock_bq.execute.called
+    error_records = [r for r in caplog.records if "simulated failure" in r.getMessage()]
+    assert error_records
+    all_metric_names = {m.metric.name for summaries in config.metrics.values() for m in summaries}
+    assert error_records[0].experiment == exp.normandy_slug
+    assert error_records[0].metric in all_metric_names
+    assert error_records[0].analysis_basis in [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
+    assert re.match(r"^day_\d+$", error_records[0].analysis_period)
+    # save_statistics ran for periods where some data sources succeeded
+    assert mock_bq.load_table_from_json.called
 
 
 @pytest.mark.parametrize("ErrorType", [GoogleAPICallError, ValueError])

@@ -1648,12 +1648,8 @@ class Analysis:
             try:
                 future.result()
             except Exception:
-                logger.exception(
-                    "A task failed during analysis with an unexpected exception",
-                    extra={
-                        "experiment": self.config.experiment.normandy_slug,
-                    },
-                )
+                # we already logged any exceptions inside the delayed function, so just continue
+                continue
 
     def enrollments_query(self, time_limits: TimeLimits, use_glean_ids: bool = False) -> str:
         """Returns the enrollments SQL query."""
