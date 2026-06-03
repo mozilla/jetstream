@@ -622,9 +622,9 @@ fonttools==4.62.1 \
     # via
     #   -r requirements.in
     #   matplotlib
-formulaic==1.2.1 \
-    --hash=sha256:661d6d2467aa961b9afb3a1e2a187494239793c63eb729e422d1307afa98b43b \
-    --hash=sha256:dc79476baa2d811b35798893eb2f2c1e51edee8d7a9c1429b400e56f4e0beccc
+formulaic==1.2.2 \
+    --hash=sha256:0f84ff49e3fc9dc0e68ab08a0a9427874021aa6c558e66b44dc634a35739b09b \
+    --hash=sha256:c99e8f11ff7d327eaecaf63855ca69b7fa0da100ad6c0041ef80912fbac667e6
     # via
     #   -r requirements.in
     #   marginaleffects
