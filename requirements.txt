@@ -1708,9 +1708,9 @@ platformdirs==4.9.6 \
     #   python-discovery
     #   tox
     #   virtualenv
-plotnine==0.15.4 \
-    --hash=sha256:4cc47539575670dbcbeed9cd44d0c3bb7973f815f679136ff3b70314266719b4 \
-    --hash=sha256:a55dde4bd00bf4c395bb4c99b36f25960625bf63e10ae4777cc7d83d878b1625
+plotnine==0.15.5 \
+    --hash=sha256:03cc520299be5f32d405c05cb547465acf668d61115e8adb3b9a0bccc271f50e \
+    --hash=sha256:9bc5e06a7d9558f4252374348fde0125112c571ef76ccefdd8f507d007ee55b9
     # via
     #   -r requirements.in
     #   marginaleffects
