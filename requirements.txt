@@ -1413,9 +1413,9 @@ mypy-extensions==1.1.0 \
     # via
     #   -r requirements.in
     #   mypy
-narwhals==2.20.0 \
-    --hash=sha256:16e750ea5507d4ba6e8d03455b5f93a535e0405976561baea235bca5dc9f475d \
-    --hash=sha256:c10994975fa7dc5a68c2cffcddbd5908fc8ebb2d463c5bab085309c0ee1f551e
+narwhals==2.22.0 \
+    --hash=sha256:1421797ede01789cc1537619dbc3f36f840737240f748fdb24a60a0225fc80be \
+    --hash=sha256:6486282bb7e4b4ab55963efbd8be1451b764cc4874b74d1fd625eba9dc60b86f
     # via
     #   -r requirements.in
     #   formulaic
