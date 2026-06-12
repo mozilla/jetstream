@@ -1317,6 +1317,19 @@ def rerun_config_changed(
         experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
     )
 
+    # get the experiments from Experimenter API that are explicitly marked for rerun
+    # and are out of date
+    all_experiments = ExperimentCollection.from_experimenter()
+    rerun_experiments = [exp for exp in all_experiments if exp.do_rerun]
+    client = BigQueryClient(project_id, dataset_id)
+    for exp in rerun_experiments:
+        first_updated = client.experiment_table_first_updated(exp.normandy_slug)
+        # if exp was never run (has no results tables) or was last run before new rerun trigger
+        if first_updated is None or (
+            exp.do_rerun_timestamp is not None and first_updated < exp.do_rerun_timestamp
+        ):
+            experiment_slugs.add(exp.normandy_slug)
+
     # update the table timestamps which indicate whether a experiment needs to be rerun
     client = BigQueryClient(project_id, dataset_id)
     for slug in experiment_slugs:
