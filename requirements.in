@@ -257,7 +257,7 @@ platformdirs==4.9.6
     #   python-discovery
     #   tox
     #   virtualenv
-plotnine==0.15.4
+plotnine==0.15.7
     # via marginaleffects
 pluggy==1.6.0
     # via
