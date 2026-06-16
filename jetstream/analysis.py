@@ -1481,6 +1481,7 @@ class Analysis:
                     # create the full list of metrics to compute
                     # metrics = config_metrics
                     logger.debug(f"COMPUTING METRICS: {[m.name for m in config_metrics]}")
+                    counted_segments: set[str] = set()
                     for data_source, ds_metrics in metrics_by_ds.items():
                         metric_table = self.calculate_metric_for_ds(
                             exp,
@@ -1575,9 +1576,11 @@ class Analysis:
                                     period,
                                 ).model_dump(warnings=False)
 
-                            segment_results.root += self.counts(
-                                segment_data, segment, analysis_basis
-                            ).model_dump(warnings=False)
+                            if segment not in counted_segments:
+                                segment_results.root += self.counts(
+                                    segment_data, segment, analysis_basis
+                                ).model_dump(warnings=False)
+                                counted_segments.add(segment)
 
                     # metrics are done: now iterate over the depends_on metrics
                     for summary in summary_metrics:

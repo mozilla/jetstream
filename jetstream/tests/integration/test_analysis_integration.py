@@ -284,6 +284,12 @@ class TestAnalysisIntegration:
             from_expression=f"`{project_id}.test_data.clients_daily`",
         )
 
+        # use second DS to ensure we aren't duplicating counts
+        test_clients_last_seen = DataSource(
+            name="clients_last_seen",
+            from_expression=f"`{project_id}.test_data.clients_last_seen`",
+        )
+
         test_active_hours = Metric(
             name="active_hours",
             data_source=test_clients_daily,
@@ -293,7 +299,7 @@ class TestAnalysisIntegration:
 
         test_active_hours_doubled = Metric(
             name="active_hours_doubled",
-            data_source=test_clients_daily,
+            data_source=test_clients_last_seen,
             select_expression=f"{agg_sum('active_hours_sum')} * 2",
             analysis_bases=[AnalysisBasis.EXPOSURES, AnalysisBasis.ENROLLMENTS],
         )
