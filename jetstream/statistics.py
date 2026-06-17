@@ -476,6 +476,53 @@ class LinearModelMean(Statistic):
             )
             covariate_col_label = None
 
+        # Detect a zero reference-branch mean before it causes division-by-zero in
+        # compare_branches_lm's relative uplift, mirroring its pooled clipping.
+        threshold_quantile = 1 - self.drop_highest
+        if df is not None and isinstance(df, DataFrame) and "branch" in df and metric in df:
+            ref_values = df.loc[df["branch"] == reference_branch, metric].dropna()
+        else:
+            ref_values = None
+
+        if ref_values is not None and not ref_values.empty:
+            threshold = df[metric].dropna().quantile(threshold_quantile)
+            if np.issubdtype(df[metric].dtype, np.integer):
+                threshold = int(np.ceil(threshold))
+            post_trim = ref_values.clip(upper=threshold)
+
+            if (post_trim == 0).all():
+                n = len(ref_values)
+                if (ref_values == 0).all():
+                    reason = (
+                        f"reference branch '{reference_branch}' has {n} non-null "
+                        f"client(s) and all values for metric '{metric}' are zero"
+                    )
+                else:
+                    reason = (
+                        f"reference branch '{reference_branch}' has {n} non-null "
+                        f"client(s) but metric '{metric}' became all zeroes after "
+                        f"outlier trimming (pooled {threshold_quantile:.3f} quantile "
+                        f"threshold is {threshold})"
+                    )
+                msg = (
+                    f"Skipping computing statistic {self.name()} for metric "
+                    f"{metric}: {reason}. Cannot compute because the "
+                    "relative uplift (treatment/reference) is undefined "
+                    "when the reference mean is zero."
+                )
+                logger.exception(
+                    msg,
+                    exc_info=StatisticComputationException(msg),
+                    extra={
+                        "experiment": experiment.normandy_slug if experiment is not None else None,
+                        "metric": metric,
+                        "statistic": self.name(),
+                        "analysis_basis": analysis_basis.value,
+                        "segment": segment,
+                    },
+                )
+                return StatisticResultCollection.model_validate([])
+
         ma_result = mozanalysis.frequentist_stats.linear_models.compare_branches_lm(
             df,
             col_label=metric,

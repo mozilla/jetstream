@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -83,6 +84,39 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower
         assert treatment_result.upper
+
+    def test_linear_model_mean_all_zero_reference_branch(self, caplog):
+        """When the reference branch has no non-zero values, log a clear warning."""
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10,
+                "value": list(range(1, 11)) + [0] * 10,
+            }
+        )
+        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+            results = stat.transform(
+                test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        assert any("all values for metric 'value' are zero" in r.message for r in caplog.records)
+
+    def test_linear_model_mean_reference_branch_zeroed_by_trimming(self, caplog):
+        """When outlier clipping zeroes out the reference branch, log a clear warning."""
+        stat = LinearModelMean()
+        # The non-zero value in control branch is clipped by the outlier trimming
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 101 + ["control"] * 101,
+                "value": [0] * 101 + [0] * 100 + [1],
+            }
+        )
+        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+            results = stat.transform(
+                test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        assert any("after outlier trimming" in r.message for r in caplog.records)
 
     @pytest.mark.parametrize(
         "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
