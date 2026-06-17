@@ -492,7 +492,7 @@ class AnalysisExecutor:
                 for e in experiments.ended_after_or_live(ended_threshold)
                 .of_type(RECOGNIZED_EXPERIMENT_TYPES)
                 .experiments
-                if not e.is_rollout
+                if not e.is_rollout and not e.do_rerun
             ]
 
             launched_configs = self._experiments_to_configs(launched_experiments, config_getter)
