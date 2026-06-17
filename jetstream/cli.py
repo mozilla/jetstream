@@ -269,6 +269,15 @@ class SerialExecutorStrategy:
                 else:
                     dataset_id = self.dataset_id
 
+                # `do_rerun`` experiment should only run OVERALL
+                analysis_periods = self.analysis_periods
+                if config.experiment.do_rerun:
+                    analysis_periods = [AnalysisPeriod.OVERALL]
+                    logger.warning(
+                        "`do_rerun` experiment: skipping non-overall periods.",
+                        extra={"experiment": config.experiment.normandy_slug},
+                    )
+
                 # run the analysis
                 analysis = self.analysis_class(
                     self.project_id,
@@ -276,7 +285,7 @@ class SerialExecutorStrategy:
                     config,
                     self.log_config,
                     None,
-                    self.analysis_periods,
+                    analysis_periods,
                     self.sql_output_dir,
                 )
                 analysis.run(
