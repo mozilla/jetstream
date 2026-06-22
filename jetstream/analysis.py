@@ -831,6 +831,39 @@ class Analysis:
 
         return query
 
+    def _covariate_table_metric_name(
+        self,
+        during_metric: Metric,
+        covariate_metric_name: str,
+        covariate_period: AnalysisPeriod,
+        discrete_metrics: bool,
+    ) -> str | None:
+        """Resolves the ``metric`` argument for the preenrollment covariate table name.
+
+        Discrete metric tables are partitioned by data source (see calculate_metric_for_ds),
+        so the covariate table is named using the data source name of the covariate metric --
+        the table that actually contains the covariate metric's column. For non-discrete
+        analyses tables are not partitioned by data source, so no metric component is used.
+        """
+        if not discrete_metrics:
+            return None
+
+        # the covariate may be configured as a different metric than the during-experiment
+        # metric; look it up in the covariate period to use its own data source
+        if covariate_metric_name != during_metric.name:
+            covariate_metric = next(
+                (
+                    summary.metric
+                    for summary in self.config.metrics.get(covariate_period, [])
+                    if summary.metric.name == covariate_metric_name
+                ),
+                None,
+            )
+            if covariate_metric is not None:
+                return covariate_metric.data_source.name
+
+        return during_metric.data_source.name
+
     def _create_subset_metric_table_query_covariate(
         self,
         metric_table_name: str,
@@ -850,7 +883,9 @@ class Analysis:
                 "metrics with dependencies are not currently supported for covariate adjustment"
             )
 
-        metric_name = metric.name if discrete_metrics else None
+        metric_name = self._covariate_table_metric_name(
+            metric, covariate_metric_name, covariate_period, discrete_metrics
+        )
         covariate_table_name = self._table_name(
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS, metric=metric_name
         )
@@ -933,7 +968,10 @@ class Analysis:
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):  # type: ignore[attr-defined]
             covariate_period = AnalysisPeriod(covariate_params["period"])
             if covariate_period != period and period not in PREENROLLMENT_PERIODS:
-                metric_name = summary.metric.name if discrete_metrics else None
+                covariate_metric_name = covariate_params.get("metric", summary.metric.name)
+                metric_name = self._covariate_table_metric_name(
+                    summary.metric, covariate_metric_name, covariate_period, discrete_metrics
+                )
                 prereqs.add(
                     self._table_name(
                         covariate_period.value, 1, AnalysisBasis.ENROLLMENTS, metric=metric_name

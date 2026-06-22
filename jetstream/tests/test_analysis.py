@@ -1577,6 +1577,85 @@ def test_subset_metric_table_prerequisites_covariate(experiments):
     assert prereqs == {expected_covariate_table}
 
 
+def test_subset_metric_table_prerequisites_covariate_discrete_uses_data_source(experiments):
+    """For discrete metrics, the preenrollment covariate table is partitioned by data source,
+    so the prerequisite table name must use the data source name, not the metric name."""
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "metric_name", "period": "preenrollment_week"}
+    }
+    summary.metric = metric
+
+    analysis = _empty_analysis(experiments)
+    prereqs = analysis._subset_metric_table_prerequisites(
+        summary,
+        "normandy_test_slug_enrollments_test_data_source_week_1",
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+        True,
+    )
+
+    # table is named by data source, matching how calculate_metric_for_ds writes it
+    expected_covariate_table = analysis._table_name(
+        AnalysisPeriod.PREENROLLMENT_WEEK.value,
+        1,
+        AnalysisBasis.ENROLLMENTS,
+        metric="test_data_source",
+    )
+    assert prereqs == {expected_covariate_table}
+    # the (buggy) metric-name-based table should NOT be referenced
+    wrong_table = analysis._table_name(
+        AnalysisPeriod.PREENROLLMENT_WEEK.value,
+        1,
+        AnalysisBasis.ENROLLMENTS,
+        metric="metric_name",
+    )
+    assert wrong_table not in prereqs
+
+
+def test_covariate_table_metric_name_resolves_covariate_data_source(experiments):
+    """When the covariate is a different metric than the during-experiment metric, the table
+    name must use the covariate metric's own data source."""
+    from jetstream.statistics import Summary as JetstreamSummary
+
+    during_metric = Metric(
+        name="during_metric",
+        data_source=DataSource(name="during_ds", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    covariate_metric = Metric(
+        name="covariate_metric",
+        data_source=DataSource(name="covariate_ds", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    analysis = _empty_analysis(experiments)
+    analysis.config.metrics = {
+        AnalysisPeriod.PREENROLLMENT_WEEK: [JetstreamSummary(covariate_metric, MagicMock(), [])],
+    }
+
+    resolved = analysis._covariate_table_metric_name(
+        during_metric, "covariate_metric", AnalysisPeriod.PREENROLLMENT_WEEK, True
+    )
+    assert resolved == "covariate_ds"
+
+    # non-discrete analyses are not partitioned by data source -> no metric component
+    assert (
+        analysis._covariate_table_metric_name(
+            during_metric, "covariate_metric", AnalysisPeriod.PREENROLLMENT_WEEK, False
+        )
+        is None
+    )
+
+
 def test_subset_metric_table_prerequisites_covariate_skipped_for_preenrollment_period(experiments):
     """When the current period is a preenrollment period, covariate adjustment is not applied,
     so no extra prerequisite table should be returned."""
