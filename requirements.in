@@ -452,5 +452,5 @@ wrapt==2.1.2
     #   smart-open
 zict==3.0.0
     # via distributed
-zipp==3.23.1
+zipp==4.1.0
     # via importlib-metadata
