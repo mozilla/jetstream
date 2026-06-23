@@ -439,7 +439,7 @@ typing-inspection==0.4.2
     # via pydantic
 tzdata==2026.2
     # via pandas
-urllib3==2.6.3
+urllib3==2.7.0
     # via
     #   distributed
     #   requests
