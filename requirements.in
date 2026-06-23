@@ -403,7 +403,7 @@ toolz==1.1.0
     #   dask
     #   distributed
     #   partd
-tornado==6.5.5
+tornado==6.5.7
     # via distributed
 tox==4.53.1
     # via mozilla-jetstream
