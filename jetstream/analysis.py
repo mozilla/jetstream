@@ -1386,9 +1386,9 @@ class Analysis:
 
             segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
             analysis_length_dates = 1
-            if period.value == AnalysisPeriod.OVERALL:
+            if period == AnalysisPeriod.OVERALL:
                 analysis_length_dates = time_limits.analysis_length_dates
-            elif period.value == AnalysisPeriod.WEEK:
+            elif period == AnalysisPeriod.WEEK:
                 analysis_length_dates = 7
 
             for analysis_basis in analysis_bases:

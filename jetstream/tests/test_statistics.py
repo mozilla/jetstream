@@ -52,6 +52,35 @@ class SAME_DF:
 
 
 class TestStatistics:
+    def test_summary_from_config_injects_analysis_period_length(self):
+        """normalize_over_analysis_period must receive the experiment's analysis period length
+        on the resulting pre-treatment instance. Otherwise values are divided by the default
+        of 1 (a no-op) and weekly/overall metrics are not scaled down."""
+        from metric_config_parser.metric import Metric as ConfigMetric
+        from metric_config_parser.metric import Summary as ConfigSummary
+        from metric_config_parser.pre_treatment import PreTreatmentReference
+        from metric_config_parser.statistic import Statistic as ConfigStatistic
+
+        from jetstream.statistics import Summary
+
+        summary_config = ConfigSummary(
+            metric=ConfigMetric(
+                name="dau_per_1000_clients", data_source=None, select_expression="1"
+            ),
+            statistic=ConfigStatistic(name="bootstrap_mean", params={}),
+            pre_treatments=[PreTreatmentReference(name="normalize_over_analysis_period", args={})],
+        )
+
+        summary = Summary.from_config(summary_config, 7, AnalysisPeriod.WEEK)
+
+        (pre_treatment,) = summary.pre_treatments
+        assert pre_treatment.analysis_period_length == 7
+
+        # the pre-treatment actually scales values by the period length (7-day week)
+        df = pd.DataFrame({"dau_per_1000_clients": [1400.0, 7000.0]})
+        out = pre_treatment.apply(df, "dau_per_1000_clients")
+        assert list(out["dau_per_1000_clients"]) == [200.0, 1000.0]
+
     def test_bootstrap_means(self):
         stat = BootstrapMean(num_samples=10)
         test_data = pd.DataFrame(
