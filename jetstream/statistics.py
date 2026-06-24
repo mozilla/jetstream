@@ -16,6 +16,7 @@ import mozanalysis.frequentist_stats.bootstrap
 import mozanalysis.frequentist_stats.linear_models
 import mozanalysis.metrics
 import numpy as np
+import pandas as pd
 from google.cloud import bigquery
 from metric_config_parser import metric as parser_metric
 from metric_config_parser.experiment import Experiment
@@ -486,7 +487,9 @@ class LinearModelMean(Statistic):
 
         if ref_values is not None and not ref_values.empty:
             threshold = df[metric].dropna().quantile(threshold_quantile)
-            if np.issubdtype(df[metric].dtype, np.integer):
+            # use pandas' dtype check so nullable extension dtypes (e.g. Int64) from
+            # BigQuery are handled; np.issubdtype raises on pandas extension dtypes
+            if pd.api.types.is_integer_dtype(df[metric].dtype):
                 threshold = int(np.ceil(threshold))
             post_trim = ref_values.clip(upper=threshold)
 
