@@ -114,6 +114,25 @@ class TestStatistics:
         assert treatment_result.lower
         assert treatment_result.upper
 
+    def test_linear_model_mean_nullable_integer_dtype(self):
+        """Metrics read from BigQuery can have pandas nullable Int64 dtype; the integer-dtype
+        check in transform must not raise 'Cannot interpret Int64Dtype() as a data type'."""
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+        )
+        test_data["value"] = test_data["value"].astype("Int64")
+        assert pd.api.types.is_integer_dtype(test_data["value"].dtype)
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).root
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
+        assert treatment_result.point < control_result.point
+
     def test_linear_model_mean_all_zero_reference_branch(self, caplog):
         """When the reference branch has no non-zero values, log a clear warning."""
         stat = LinearModelMean()
