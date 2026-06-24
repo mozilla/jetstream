@@ -68,9 +68,7 @@ class TestStatistics:
                 name="dau_per_1000_clients", data_source=None, select_expression="1"
             ),
             statistic=ConfigStatistic(name="bootstrap_mean", params={}),
-            pre_treatments=[
-                PreTreatmentReference(name="normalize_over_analysis_period", args={})
-            ],
+            pre_treatments=[PreTreatmentReference(name="normalize_over_analysis_period", args={})],
         )
 
         summary = Summary.from_config(summary_config, 7, AnalysisPeriod.WEEK)
