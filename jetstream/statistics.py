@@ -78,10 +78,10 @@ class Summary:
                     continue
                 if pre_treatment.name() == pre_treatment_conf.name:
                     found = True
-                    # inject analysis_period_length from experiment
-                    pre_treatment.analysis_period_length = analysis_period_length or 1
+                    pre_treatment_instance = pre_treatment.from_dict(pre_treatment_conf.args)
+                    pre_treatment_instance.analysis_period_length = analysis_period_length or 1
 
-                    pre_treatments.append(pre_treatment.from_dict(pre_treatment_conf.args))
+                    pre_treatments.append(pre_treatment_instance)
 
             if not found:
                 raise ValueError(f"Could not find pre-treatment {pre_treatment_conf.name}.")
