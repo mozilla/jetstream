@@ -36,12 +36,7 @@ from jetstream.logging import LogConfiguration, LogPlugin
 from jetstream.metric import Metric
 from jetstream.platform import PLATFORM_CONFIGS
 from jetstream.segment import Segment
-from jetstream.statistics import (
-    Count,
-    StatisticResult,
-    StatisticResultCollection,
-    Summary,
-)
+from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
 
 from . import bq_normalize_name
 
