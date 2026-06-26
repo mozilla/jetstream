@@ -1380,11 +1380,13 @@ class Analysis:
                 continue
 
             segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
-            analysis_length_dates = 1
-            if period == AnalysisPeriod.OVERALL:
-                analysis_length_dates = time_limits.analysis_length_dates
-            elif period == AnalysisPeriod.WEEK:
-                analysis_length_dates = 7
+            # Derive the analysis window length (in days) from TimeLimits so that
+            # normalize_over_analysis_period scales correctly for every period (day=1, week=7,
+            # days28=28, overall=N, preenrollment_week=7, preenrollment_days28=28). All windows
+            # in a period share the same length; start/end are inclusive days since enrollment,
+            # so length = end - start + 1. (TimeLimits has no `analysis_length_dates` attribute.)
+            last_window = time_limits.analysis_windows[-1]
+            analysis_length_dates = last_window.end - last_window.start + 1
 
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame
