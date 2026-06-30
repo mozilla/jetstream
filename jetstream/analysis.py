@@ -1296,7 +1296,7 @@ class Analysis:
 
         if self.log_config:
             log_plugin = LogPlugin(self.log_config)
-            client.register_worker_plugin(log_plugin)
+            client.register_plugin(log_plugin)
 
             # add profiling plugins
             # resource_profiling_plugin = ResourceProfilingPlugin(
