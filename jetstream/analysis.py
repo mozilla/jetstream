@@ -885,10 +885,15 @@ class Analysis:
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS, metric=metric_name
         )
 
-        if not self.bigquery.table_exists(covariate_table_name):
+        if not self.bigquery.column_exists_in_table(covariate_table_name, covariate_metric_name):
             normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+            log_msg = (
+                f"Covariate adjustment table {covariate_table_name} does not exist "
+                f"(or `{covariate_metric_name}` not found in table), "
+                f"falling back to unadjusted inferences"
+            )
             logger.warning(
-                f"Covariate adjustment table {covariate_table_name} does not exist, falling back to unadjusted inferences",  # noqa:E501
+                log_msg,
                 extra={
                     "experiment": normalized_slug,
                     "metric": metric.name,
