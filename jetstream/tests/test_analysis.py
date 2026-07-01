@@ -450,9 +450,9 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
 
     # test that logging message was generated
     assert (
-        f"Covariate adjustment table table_pre does not exist "
-        f"(or {metric} not found in table), "
-        f"falling back to unadjusted inferences" in caplog.text
+        "Covariate adjustment table table_pre does not exist "
+        "(or `metric_name` not found in table), "
+        "falling back to unadjusted inferences" in caplog.text
     )
 
 
