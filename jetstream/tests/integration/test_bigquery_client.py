@@ -64,6 +64,18 @@ class TestBigQueryClient:
         client.client.create_table(f"{temporary_dataset}.dummy_table")
         assert client.table_exists("dummy_table") is True
 
+    def test_column_exists_in_table(self, client, temporary_dataset):
+        table = client.client.create_table(f"{temporary_dataset}.dummy_table")
+        assert client.column_exists_in_table("dummy_table", "dummy_column") is False
+        original_schema = table.schema
+        new_schema = original_schema[:]
+        new_schema.append(bigquery.SchemaField("dummy_column", "STRING"))
+
+        table.schema = new_schema
+        table = client.client.update_table(table, ["schema"])
+
+        assert client.column_exists_in_table("dummy_table", "dummy_column") is True
+
     def test_touch_tables(self, client, temporary_dataset):
         for table, experiment in {
             "enrollments_test_experiment": "test-experiment",

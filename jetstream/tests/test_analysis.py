@@ -347,7 +347,7 @@ def test_create_subset_metric_table_query_covariate_basic(randomization_unit, mo
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -416,7 +416,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=False),
     )
 
@@ -450,8 +450,9 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
 
     # test that logging message was generated
     assert (
-        "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"
-        in caplog.text
+        "Covariate adjustment table table_pre does not exist "
+        "(or `metric_name` not found in table), "
+        "falling back to unadjusted inferences" in caplog.text
     )
 
 
@@ -490,7 +491,7 @@ def test_create_subset_metric_table_query_covariate_segment(randomization_unit, 
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -587,7 +588,7 @@ def test_create_subset_metric_table_query_covariate_exposures(randomization_unit
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -781,7 +782,7 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
     experiments, monkeypatch
 ):
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
     metric = Metric(
@@ -843,7 +844,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -917,7 +918,7 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -1013,7 +1014,7 @@ def test_create_subset_metric_table_query_complete_covariate(randomization_unit,
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -1088,7 +1089,7 @@ def test_create_subset_metric_table_query_covariate_fallback(randomization_unit,
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
