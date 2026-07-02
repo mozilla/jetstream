@@ -658,9 +658,9 @@ google-api-core[grpc]==2.30.3 \
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth==2.50.0 \
-    --hash=sha256:04382175e28b94f49694977f0a792688b59a668def1499e9d8de996dc9ce5b15 \
-    --hash=sha256:f35eafb191195328e8ce10a7883970877e7aeb49c2bfaa54aa0e394316d353d0
+google-auth==2.54.0 \
+    --hash=sha256:130f6fd5e3f497fdad897a23ed9489973437edf561238c4b92a4d02c435f8af9 \
+    --hash=sha256:784e9837f92244141250470d47c893df50cbab485ce491aca5e9deb558ad2b48
     # via
     #   -r requirements.in
     #   google-api-core
