@@ -655,7 +655,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
         )
         error_str = (
-            "None of [Index(['non_existing', 'non_existing'], dtype='object')] are in the [columns]"
+            "None of [Index(['non_existing', 'non_existing'], dtype='str')] are in the [columns]"
         )
         with pytest.raises(Exception, match=re.escape(error_str)):
             stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
