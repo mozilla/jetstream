@@ -10,11 +10,7 @@ from metric_config_parser.outcome import OutcomeSpec
 
 from jetstream.config import ConfigLoader, _ConfigLoader, validate
 from jetstream.dryrun import DryRunFailedError
-from jetstream.platform import (
-    Platform,
-    PlatformConfigurationException,
-    _generate_platform_config,
-)
+from jetstream.platform import Platform, PlatformConfigurationException, _generate_platform_config
 
 
 class TestConfig:

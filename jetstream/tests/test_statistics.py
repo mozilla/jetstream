@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -51,6 +52,35 @@ class SAME_DF:
 
 
 class TestStatistics:
+    def test_summary_from_config_injects_analysis_period_length(self):
+        """normalize_over_analysis_period must receive the experiment's analysis period length
+        on the resulting pre-treatment instance. Otherwise values are divided by the default
+        of 1 (a no-op) and weekly/overall metrics are not scaled down."""
+        from metric_config_parser.metric import Metric as ConfigMetric
+        from metric_config_parser.metric import Summary as ConfigSummary
+        from metric_config_parser.pre_treatment import PreTreatmentReference
+        from metric_config_parser.statistic import Statistic as ConfigStatistic
+
+        from jetstream.statistics import Summary
+
+        summary_config = ConfigSummary(
+            metric=ConfigMetric(
+                name="dau_per_1000_clients", data_source=None, select_expression="1"
+            ),
+            statistic=ConfigStatistic(name="bootstrap_mean", params={}),
+            pre_treatments=[PreTreatmentReference(name="normalize_over_analysis_period", args={})],
+        )
+
+        summary = Summary.from_config(summary_config, 7, AnalysisPeriod.WEEK)
+
+        (pre_treatment,) = summary.pre_treatments
+        assert pre_treatment.analysis_period_length == 7
+
+        # the pre-treatment actually scales values by the period length (7-day week)
+        df = pd.DataFrame({"dau_per_1000_clients": [1400.0, 7000.0]})
+        out = pre_treatment.apply(df, "dau_per_1000_clients")
+        assert list(out["dau_per_1000_clients"]) == [200.0, 1000.0]
+
     def test_bootstrap_means(self):
         stat = BootstrapMean(num_samples=10)
         test_data = pd.DataFrame(
@@ -83,6 +113,58 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower
         assert treatment_result.upper
+
+    def test_linear_model_mean_nullable_integer_dtype(self):
+        """Metrics read from BigQuery can have pandas nullable Int64 dtype; the integer-dtype
+        check in transform must not raise 'Cannot interpret Int64Dtype() as a data type'."""
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {"branch": ["treatment"] * 10 + ["control"] * 10, "value": list(range(20))}
+        )
+        test_data["value"] = test_data["value"].astype("Int64")
+        assert pd.api.types.is_integer_dtype(test_data["value"].dtype)
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).root
+
+        branch_results = [r for r in results if r.comparison is None]
+        treatment_result = next(r for r in branch_results if r.branch == "treatment")
+        control_result = next(r for r in branch_results if r.branch == "control")
+        assert treatment_result.point < control_result.point
+
+    def test_linear_model_mean_all_zero_reference_branch(self, caplog):
+        """When the reference branch has no non-zero values, log a clear warning."""
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10,
+                "value": list(range(1, 11)) + [0] * 10,
+            }
+        )
+        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+            results = stat.transform(
+                test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        assert any("all values for metric 'value' are zero" in r.message for r in caplog.records)
+
+    def test_linear_model_mean_reference_branch_zeroed_by_trimming(self, caplog):
+        """When outlier clipping zeroes out the reference branch, log a clear warning."""
+        stat = LinearModelMean()
+        # The non-zero value in control branch is clipped by the outlier trimming
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 101 + ["control"] * 101,
+                "value": [0] * 101 + [0] * 100 + [1],
+            }
+        )
+        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+            results = stat.transform(
+                test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        assert any("after outlier trimming" in r.message for r in caplog.records)
 
     @pytest.mark.parametrize(
         "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
@@ -573,7 +655,7 @@ class TestStatistics:
             {"branch": ["treatment"] * 10 + ["control"] * 10, "ad_ratio": np.nan}
         )
         error_str = (
-            "None of [Index(['non_existing', 'non_existing'], dtype='object')] are in the [columns]"
+            "None of [Index(['non_existing', 'non_existing'], dtype='str')] are in the [columns]"
         )
         with pytest.raises(Exception, match=re.escape(error_str)):
             stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")

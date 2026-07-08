@@ -4,9 +4,7 @@ import mozanalysis
 import pytest
 import toml
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.exposure_signal import (
-    ExposureSignal as MetricConfigParserExposureSignal,
-)
+from metric_config_parser.exposure_signal import ExposureSignal as MetricConfigParserExposureSignal
 
 from jetstream.config import ConfigLoader
 from jetstream.exposure_signal import ExposureSignal

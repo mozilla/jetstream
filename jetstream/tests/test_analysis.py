@@ -347,7 +347,7 @@ def test_create_subset_metric_table_query_covariate_basic(randomization_unit, mo
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -416,7 +416,7 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=False),
     )
 
@@ -450,8 +450,9 @@ def test_create_subset_metric_table_query_covariate_missing_table_fallback(
 
     # test that logging message was generated
     assert (
-        "Covariate adjustment table table_pre does not exist, falling back to unadjusted inferences"
-        in caplog.text
+        "Covariate adjustment table table_pre does not exist "
+        "(or `metric_name` not found in table), "
+        "falling back to unadjusted inferences" in caplog.text
     )
 
 
@@ -490,7 +491,7 @@ def test_create_subset_metric_table_query_covariate_segment(randomization_unit, 
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -587,7 +588,7 @@ def test_create_subset_metric_table_query_covariate_exposures(randomization_unit
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -781,7 +782,7 @@ def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
     experiments, monkeypatch
 ):
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
     metric = Metric(
@@ -843,7 +844,7 @@ def test_create_subset_metric_table_query_use_covariate_explicit_metric(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -917,7 +918,7 @@ def test_create_subset_metric_table_query_use_covariate_implicit_metric(
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -1013,7 +1014,7 @@ def test_create_subset_metric_table_query_complete_covariate(randomization_unit,
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -1088,7 +1089,7 @@ def test_create_subset_metric_table_query_covariate_fallback(randomization_unit,
         "jetstream.analysis.Analysis._table_name", MagicMock(return_value="table_pre")
     )
     monkeypatch.setattr(
-        "jetstream.bigquery_client.BigQueryClient.table_exists",
+        "jetstream.bigquery_client.BigQueryClient.column_exists_in_table",
         MagicMock(return_value=True),
     )
 
@@ -1577,6 +1578,85 @@ def test_subset_metric_table_prerequisites_covariate(experiments):
     assert prereqs == {expected_covariate_table}
 
 
+def test_subset_metric_table_prerequisites_covariate_discrete_uses_data_source(experiments):
+    """For discrete metrics, the preenrollment covariate table is partitioned by data source,
+    so the prerequisite table name must use the data source name, not the metric name."""
+    metric = Metric(
+        name="metric_name",
+        data_source=DataSource(name="test_data_source", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    summary = MagicMock()
+    summary.statistic.params = {
+        "covariate_adjustment": {"metric": "metric_name", "period": "preenrollment_week"}
+    }
+    summary.metric = metric
+
+    analysis = _empty_analysis(experiments)
+    prereqs = analysis._subset_metric_table_prerequisites(
+        summary,
+        "normandy_test_slug_enrollments_test_data_source_week_1",
+        AnalysisBasis.ENROLLMENTS,
+        AnalysisPeriod.WEEK,
+        True,
+    )
+
+    # table is named by data source, matching how calculate_metric_for_ds writes it
+    expected_covariate_table = analysis._table_name(
+        AnalysisPeriod.PREENROLLMENT_WEEK.value,
+        1,
+        AnalysisBasis.ENROLLMENTS,
+        metric="test_data_source",
+    )
+    assert prereqs == {expected_covariate_table}
+    # the (buggy) metric-name-based table should NOT be referenced
+    wrong_table = analysis._table_name(
+        AnalysisPeriod.PREENROLLMENT_WEEK.value,
+        1,
+        AnalysisBasis.ENROLLMENTS,
+        metric="metric_name",
+    )
+    assert wrong_table not in prereqs
+
+
+def test_covariate_table_metric_name_resolves_covariate_data_source(experiments):
+    """When the covariate is a different metric than the during-experiment metric, the table
+    name must use the covariate metric's own data source."""
+    from jetstream.statistics import Summary as JetstreamSummary
+
+    during_metric = Metric(
+        name="during_metric",
+        data_source=DataSource(name="during_ds", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    covariate_metric = Metric(
+        name="covariate_metric",
+        data_source=DataSource(name="covariate_ds", from_expression="test.test"),
+        select_expression="test",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+
+    analysis = _empty_analysis(experiments)
+    analysis.config.metrics = {
+        AnalysisPeriod.PREENROLLMENT_WEEK: [JetstreamSummary(covariate_metric, MagicMock(), [])],
+    }
+
+    resolved = analysis._covariate_table_metric_name(
+        during_metric, "covariate_metric", AnalysisPeriod.PREENROLLMENT_WEEK, True
+    )
+    assert resolved == "covariate_ds"
+
+    # non-discrete analyses are not partitioned by data source -> no metric component
+    assert (
+        analysis._covariate_table_metric_name(
+            during_metric, "covariate_metric", AnalysisPeriod.PREENROLLMENT_WEEK, False
+        )
+        is None
+    )
+
+
 def test_subset_metric_table_prerequisites_covariate_skipped_for_preenrollment_period(experiments):
     """When the current period is a preenrollment period, covariate adjustment is not applied,
     so no extra prerequisite table should be returned."""
@@ -1712,3 +1792,86 @@ def test_run_covariate_bind_wires_cross_period_dep(experiments, monkeypatch):
         "Expected at least one subset_metric_table bind call with prerequisites, "
         "but all bind calls had empty deps. The covariate cross-period edge is missing."
     )
+
+
+@pytest.mark.parametrize(
+    ("period", "time_limits_factory_kwargs", "expected_length"),
+    [
+        # OVERALL: single window. TimeLimits has no `analysis_length_dates` attribute, so the
+        # original code raised AttributeError and killed the run entirely.
+        (
+            AnalysisPeriod.OVERALL,
+            {"single_window": True, "analysis_start_days": 0, "analysis_length_dates": 30},
+            30,
+        ),
+        # DAYS_28: time series. The original code fell through to the default of 1, so
+        # normalize_over_analysis_period silently divided by 1 instead of 28.
+        (
+            AnalysisPeriod.DAYS_28,
+            {"single_window": False, "time_series_period": "28_day"},
+            28,
+        ),
+    ],
+)
+def test_run_derives_analysis_length_dates(
+    experiments, monkeypatch, period, time_limits_factory_kwargs, expected_length
+):
+    """analysis_length_dates must be derived from the TimeLimits window for every period so that
+    normalize_over_analysis_period scales correctly. Regression test for both the OVERALL
+    AttributeError and the default-of-1 fall-through for non-WEEK/OVERALL periods."""
+    from mozanalysis.experiment import TimeLimits
+
+    from jetstream.statistics import Summary as JetstreamSummary
+
+    config = AnalysisSpec.default_for_experiment(experiments[0], ConfigLoader.configs).resolve(
+        experiments[0], ConfigLoader.configs
+    )
+
+    metric = Metric(
+        name="active_hours",
+        data_source=DataSource(name="clients_daily", from_expression="test.test"),
+        select_expression="SUM(ah)",
+        analysis_bases=[AnalysisBasis.ENROLLMENTS],
+    )
+    plain_statistic = MagicMock()
+    plain_statistic.params = {}
+    config.metrics = {period: [JetstreamSummary(metric, plain_statistic, [])]}
+
+    common = {"first_enrollment_date": "2024-01-01", "num_dates_enrollment": 8}
+    if time_limits_factory_kwargs.pop("single_window"):
+        time_limits = TimeLimits.for_single_analysis_window(
+            last_date_full_data="2024-04-01", **time_limits_factory_kwargs, **common
+        )
+    else:
+        time_limits = TimeLimits.for_ts(
+            last_date_full_data="2024-04-01", **time_limits_factory_kwargs, **common
+        )
+    assert not hasattr(time_limits, "analysis_length_dates")
+
+    stats_mock = MagicMock()
+    stats_mock.model_dump.return_value = []
+    calc_stats = MagicMock(return_value=stats_mock)
+
+    monkeypatch.setattr("jetstream.analysis.bind", lambda thing, deps: thing)
+    monkeypatch.setattr("jetstream.analysis.Analysis.ensure_enrollments", Mock())
+    monkeypatch.setattr(
+        "jetstream.analysis.Analysis._get_timelimits_if_ready",
+        MagicMock(return_value=time_limits),
+    )
+    monkeypatch.setattr("jetstream.analysis.Analysis.calculate_metrics", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Analysis.calculate_statistics", calc_stats)
+    monkeypatch.setattr("jetstream.analysis.Analysis.counts", MagicMock(return_value=stats_mock))
+    monkeypatch.setattr("jetstream.analysis.Analysis.save_statistics", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Analysis.publish_view", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.LocalCluster", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.Client", MagicMock())
+    monkeypatch.setattr("jetstream.analysis.as_completed", Mock(return_value=[]))
+
+    # must not raise AttributeError on time_limits.analysis_length_dates
+    Analysis("test", "test", config).run(current_date=dt.datetime(2020, 1, 1, tzinfo=pytz.utc))
+
+    assert calc_stats.called, f"calculate_statistics was never called for the {period} period"
+    # analysis_length_dates is the 5th positional arg and must be the derived window length,
+    # not the default of 1
+    analysis_length_dates_args = {call.args[4] for call in calc_stats.call_args_list}
+    assert analysis_length_dates_args == {expected_length}

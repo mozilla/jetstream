@@ -36,12 +36,7 @@ from jetstream.logging import LogConfiguration, LogPlugin
 from jetstream.metric import Metric
 from jetstream.platform import PLATFORM_CONFIGS
 from jetstream.segment import Segment
-from jetstream.statistics import (
-    Count,
-    StatisticResult,
-    StatisticResultCollection,
-    Summary,
-)
+from jetstream.statistics import Count, StatisticResult, StatisticResultCollection, Summary
 
 from . import bq_normalize_name
 
@@ -831,6 +826,39 @@ class Analysis:
 
         return query
 
+    def _covariate_table_metric_name(
+        self,
+        during_metric: Metric,
+        covariate_metric_name: str,
+        covariate_period: AnalysisPeriod,
+        discrete_metrics: bool,
+    ) -> str | None:
+        """Resolves the ``metric`` argument for the preenrollment covariate table name.
+
+        Discrete metric tables are partitioned by data source (see calculate_metric_for_ds),
+        so the covariate table is named using the data source name of the covariate metric --
+        the table that actually contains the covariate metric's column. For non-discrete
+        analyses tables are not partitioned by data source, so no metric component is used.
+        """
+        if not discrete_metrics:
+            return None
+
+        # the covariate may be configured as a different metric than the during-experiment
+        # metric; look it up in the covariate period to use its own data source
+        if covariate_metric_name != during_metric.name:
+            covariate_metric = next(
+                (
+                    summary.metric
+                    for summary in self.config.metrics.get(covariate_period, [])
+                    if summary.metric.name == covariate_metric_name
+                ),
+                None,
+            )
+            if covariate_metric is not None:
+                return covariate_metric.data_source.name
+
+        return during_metric.data_source.name
+
     def _create_subset_metric_table_query_covariate(
         self,
         metric_table_name: str,
@@ -850,14 +878,22 @@ class Analysis:
                 "metrics with dependencies are not currently supported for covariate adjustment"
             )
 
-        metric_name = metric.name if discrete_metrics else None
+        metric_name = self._covariate_table_metric_name(
+            metric, covariate_metric_name, covariate_period, discrete_metrics
+        )
         covariate_table_name = self._table_name(
             covariate_period.value, 1, analysis_basis=AnalysisBasis.ENROLLMENTS, metric=metric_name
         )
 
-        if not self.bigquery.table_exists(covariate_table_name):
+        if not self.bigquery.column_exists_in_table(covariate_table_name, covariate_metric_name):
+            normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+            log_msg = (
+                f"Covariate adjustment table {covariate_table_name} does not exist "
+                f"(or `{covariate_metric_name}` not found in table), "
+                f"falling back to unadjusted inferences"
+            )
             logger.warning(
-                f"Covariate adjustment table {covariate_table_name} does not exist, falling back to unadjusted inferences",  # noqa:E501
+                log_msg,
                 extra={
                     "experiment": self.config.experiment.normandy_slug,
                     "metric": metric.name,
@@ -932,7 +968,10 @@ class Analysis:
         if covariate_params := summary.statistic.params.get("covariate_adjustment", False):  # type: ignore[attr-defined]
             covariate_period = AnalysisPeriod(covariate_params["period"])
             if covariate_period != period and period not in PREENROLLMENT_PERIODS:
-                metric_name = summary.metric.name if discrete_metrics else None
+                covariate_metric_name = covariate_params.get("metric", summary.metric.name)
+                metric_name = self._covariate_table_metric_name(
+                    summary.metric, covariate_metric_name, covariate_period, discrete_metrics
+                )
                 prereqs.add(
                     self._table_name(
                         covariate_period.value, 1, AnalysisBasis.ENROLLMENTS, metric=metric_name
@@ -1262,7 +1301,7 @@ class Analysis:
 
         if self.log_config:
             log_plugin = LogPlugin(self.log_config)
-            client.register_worker_plugin(log_plugin)
+            client.register_plugin(log_plugin)
 
             # add profiling plugins
             # resource_profiling_plugin = ResourceProfilingPlugin(
@@ -1346,11 +1385,13 @@ class Analysis:
                 continue
 
             segment_labels = ["all"] + [s.name for s in self.config.experiment.segments]
-            analysis_length_dates = 1
-            if period.value == AnalysisPeriod.OVERALL:
-                analysis_length_dates = time_limits.analysis_length_dates
-            elif period.value == AnalysisPeriod.WEEK:
-                analysis_length_dates = 7
+            # Derive the analysis window length (in days) from TimeLimits so that
+            # normalize_over_analysis_period scales correctly for every period (day=1, week=7,
+            # days28=28, overall=N, preenrollment_week=7, preenrollment_days28=28). All windows
+            # in a period share the same length; start/end are inclusive days since enrollment,
+            # so length = end - start + 1. (TimeLimits has no `analysis_length_dates` attribute.)
+            last_window = time_limits.analysis_windows[-1]
+            analysis_length_dates = last_window.end - last_window.start + 1
 
             for analysis_basis in analysis_bases:
                 segment_data: DataFrame

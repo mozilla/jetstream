@@ -18,7 +18,7 @@ from metric_config_parser.segment import Segment, SegmentDataSource
 from metric_config_parser.statistic import Statistic
 from mozanalysis.metrics import agg_sum
 from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis, Statistics
 
 from jetstream.analysis import Analysis
 from jetstream.bigquery_client import BigQueryClient
@@ -229,14 +229,14 @@ class TestAnalysisIntegration:
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["branch1", "point"][0] == 1.0
-        assert count_by_branch.loc["branch2", "point"][0] == 1.0
+        assert count_by_branch.loc["branch1", "point"].iloc[0] == 1.0
+        assert count_by_branch.loc["branch2", "point"].iloc[0] == 1.0
 
-        if count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures":
-            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
+        if count_by_branch.loc["branch2", "analysis_basis"].iloc[0] == "exposures":
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[1] == "enrollments"
         else:
-            assert count_by_branch.loc["branch2", "analysis_basis"][0] == "enrollments"
-            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "exposures"
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[0] == "enrollments"
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[1] == "exposures"
 
         assert (
             client.client.get_table(
@@ -396,14 +396,14 @@ class TestAnalysisIntegration:
         assert len(stats[stats["metric"] == "active_hours_doubled"]) == 12
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["branch1", "point"][0] == 1.0
-        assert count_by_branch.loc["branch2", "point"][0] == 1.0
+        assert count_by_branch.loc["branch1", "point"].iloc[0] == 1.0
+        assert count_by_branch.loc["branch2", "point"].iloc[0] == 1.0
 
-        if count_by_branch.loc["branch2", "analysis_basis"][0] == "exposures":
-            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "enrollments"
+        if count_by_branch.loc["branch2", "analysis_basis"].iloc[0] == "exposures":
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[1] == "enrollments"
         else:
-            assert count_by_branch.loc["branch2", "analysis_basis"][0] == "enrollments"
-            assert count_by_branch.loc["branch2", "analysis_basis"][1] == "exposures"
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[0] == "enrollments"
+            assert count_by_branch.loc["branch2", "analysis_basis"].iloc[1] == "exposures"
 
     def test_metrics_preenrollment(
         self,
@@ -870,10 +870,10 @@ class TestAnalysisIntegration:
         ).to_dataframe()
 
         count_by_branch = stats.query("statistic == 'count'").set_index("branch")
-        assert count_by_branch.loc["a", "point"][0] == 0.0
-        assert count_by_branch.loc["a", "point"][1] == 0.0
-        assert count_by_branch.loc["b", "point"][0] == 0.0
-        assert count_by_branch.loc["b", "point"][1] == 0.0
+        assert count_by_branch.loc["a", "point"].iloc[0] == 0.0
+        assert count_by_branch.loc["a", "point"].iloc[1] == 0.0
+        assert count_by_branch.loc["b", "point"].iloc[0] == 0.0
+        assert count_by_branch.loc["b", "point"].iloc[1] == 0.0
         assert len(count_by_branch.loc["b", "analysis_basis"]) == 2
 
         assert (
@@ -1302,11 +1302,16 @@ class TestAnalysisIntegration:
         """
         )
 
-        statistics_export_data = query_job.to_dataframe().to_dict(orient="records")
+        # drop NaN before validation to match BQ NDJSON extract behavior
+        statistics_export_data = [
+            {k: v for k, v in record.items() if v == v}
+            for record in query_job.to_dataframe().to_dict(orient="records")
+        ]
         schema = json.loads(
             (Path(__file__).parent.parent / "data/Statistics_v1.0.json").read_text()
         )
         jsonschema.validate(statistics_export_data, schema)
+        Statistics.model_validate(statistics_export_data)
 
     def test_subset_metric_table(
         self,

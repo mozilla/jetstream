@@ -9,12 +9,7 @@ import pytest
 import pytz
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 
-from jetstream.experimenter import (
-    ExperimentCollection,
-    NimbusExperiment,
-    Outcome,
-    Segment,
-)
+from jetstream.experimenter import ExperimentCollection, NimbusExperiment, Outcome, Segment
 
 NIMBUS_EXPERIMENTER_FIXTURE = r"""
 [

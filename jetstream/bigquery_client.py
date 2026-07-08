@@ -81,6 +81,14 @@ class BigQueryClient:
         """Returns the current UTC timestamp as a valid BigQuery label."""
         return str(int(time.time()))
 
+    def column_exists_in_table(self, table_name: str, col_name: str) -> bool:
+        try:
+            table = self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
+            columns = [schema.name for schema in table.schema]
+            return col_name in columns
+        except NotFound:
+            return False
+
     def table_exists(self, table_name: str) -> bool:
         try:
             self.client.get_table(f"{self.project}.{self.dataset}.{table_name}")
