@@ -1401,6 +1401,16 @@ def rerun_config_changed(
     help="Threshold above which metrics query validation returns exit code 2.",
     default=MODERATE_DATA_THRESHOLD,
 )
+@click.option(
+    "--use-cloud-function/--no-use-cloud-function",
+    "use_cloud_function",
+    help=(
+        "Dry run queries via the dry run Cloud Function (default). "
+        "Use --no-use-cloud-function to dry run with your own user credentials "
+        "instead, e.g. to validate configs that reference tables only you can read."
+    ),
+    default=True,
+)
 def validate_config(
     path: Iterable[os.PathLike],
     config_repos,
@@ -1408,6 +1418,7 @@ def validate_config(
     is_private,
     high_data_threshold,
     moderate_data_threshold,
+    use_cloud_function,
 ):
     """Validate config files.
 
@@ -1448,6 +1459,7 @@ def validate_config(
             config_getter=ConfigLoader.with_configs_from(config_repos).with_configs_from(
                 private_config_repos, is_private=True
             ),
+            use_cloud_function=use_cloud_function,
         )
         if (
             isinstance(entity, Config)
@@ -1466,6 +1478,7 @@ def validate_config(
                     private_config_repos, is_private=True
                 ),
                 experiment=experiments[0],
+                use_cloud_function=use_cloud_function,
             )
         try:
             tb_processed = call()

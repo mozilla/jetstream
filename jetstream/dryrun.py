@@ -60,8 +60,17 @@ class DryRunFailedError(Exception):
         super().__init__(error)
 
 
-def dry_run_query(sql: str) -> int:
-    """Dry run the provided SQL query."""
+def dry_run_query(sql: str, use_cloud_function: bool = True) -> int:
+    """Dry run the provided SQL query.
+
+    If ``use_cloud_function`` is True (default), the query is dry run via the
+    dry run Cloud Function, which executes using its own service account.
+    If False, the query is dry run directly using the current user's
+    credentials.
+    """
+    if not use_cloud_function:
+        return _dry_run_with_user_credentials(sql)
+
     try:
         # look for token created by the GitHub Actions workflow
         id_token = os.environ.get("GOOGLE_GHA_ID_TOKEN")
@@ -126,3 +135,23 @@ def dry_run_query(sql: str) -> int:
         return int(response.get("bytesProcessed", -1))
 
     raise DryRunFailedError((error and error.get("message", None)) or response["errors"], sql=sql)
+
+
+def _dry_run_with_user_credentials(sql: str) -> int:
+    """Dry run a query directly using the current user's credentials.
+
+    Unlike the Cloud Function, this executes the dry run as the authenticated
+    user, so it can access tables the user has permission to read (e.g. personal
+    tables in the ``analysis`` dataset) that the dry run service account cannot.
+    """
+    from google.cloud import bigquery
+
+    try:
+        client = bigquery.Client()
+        job_config = bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
+        query_job = client.query(sql, job_config=job_config)
+    except Exception as e:
+        raise DryRunFailedError(e, sql) from e
+
+    logger.info("Dry run OK")
+    return int(query_job.total_bytes_processed or -1)
