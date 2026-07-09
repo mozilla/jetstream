@@ -886,7 +886,6 @@ class Analysis:
         )
 
         if not self.bigquery.column_exists_in_table(covariate_table_name, covariate_metric_name):
-            normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
             log_msg = (
                 f"Covariate adjustment table {covariate_table_name} does not exist "
                 f"(or `{covariate_metric_name}` not found in table), "
@@ -895,7 +894,7 @@ class Analysis:
             logger.warning(
                 log_msg,
                 extra={
-                    "experiment": normalized_slug,
+                    "experiment": self.config.experiment.normandy_slug,
                     "metric": metric.name,
                     "analysis_basis": analysis_basis.value,
                     "segment": segment,
