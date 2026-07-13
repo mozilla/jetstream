@@ -1328,7 +1328,7 @@ def rerun_config_changed(
 
     # get the experiments from Experimenter API that are explicitly marked for rerun
     # and are out of date
-    all_experiments = ExperimentCollection.from_experimenter()
+    all_experiments = ExperimentCollection.from_experimenter().experiments
     rerun_experiments = [exp for exp in all_experiments if exp.do_rerun]
     client = BigQueryClient(project_id, dataset_id)
     for exp in rerun_experiments:
