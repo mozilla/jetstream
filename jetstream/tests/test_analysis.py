@@ -237,7 +237,7 @@ def test_fenix_experiments_use_right_datasets(fenix_experiments, monkeypatch):
     for experiment in fenix_experiments:
         called = 0
 
-        def dry_run_query(query, exp=experiment):
+        def dry_run_query(query, exp=experiment, use_cloud_function=True):
             nonlocal called
             called = called + 1
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id)
@@ -257,7 +257,7 @@ def test_firefox_ios_experiments_use_right_datasets(firefox_ios_experiments, mon
     for experiment in firefox_ios_experiments:
         called = 0
 
-        def dry_run_query(query, exp=experiment):
+        def dry_run_query(query, exp=experiment, use_cloud_function=True):
             nonlocal called
             called = called + 1
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
@@ -277,7 +277,7 @@ def test_focus_android_experiments_use_right_datasets(focus_android_experiments,
     for experiment in focus_android_experiments:
         called = 0
 
-        def dry_run_query(query, exp=experiment):
+        def dry_run_query(query, exp=experiment, use_cloud_function=True):
             nonlocal called
             called = called + 1
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()
@@ -297,7 +297,7 @@ def test_klar_android_experiments_use_right_datasets(klar_android_experiments, m
     for experiment in klar_android_experiments:
         called = 0
 
-        def dry_run_query(query, exp=experiment):
+        def dry_run_query(query, exp=experiment, use_cloud_function=True):
             nonlocal called
             called = called + 1
             dataset = re.sub(r"[^A-Za-z0-9_]", "_", exp.app_id).lower()

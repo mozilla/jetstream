@@ -1030,7 +1030,12 @@ class Analysis:
     def _app_id_to_bigquery_dataset(self, app_id: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", app_id).lower()
 
-    def validate(self, use_glean_ids: bool = False, metric_slugs: list[str] | None = None) -> int:
+    def validate(
+        self,
+        use_glean_ids: bool = False,
+        metric_slugs: list[str] | None = None,
+        use_cloud_function: bool = True,
+    ) -> int:
         """Validates enrollments and metrics queries for an experiment.
 
         Returns (int) the amount of data to be processed by the metrics query.
@@ -1108,7 +1113,7 @@ class Analysis:
 
         self._write_sql_output(f"enrollments_{bq_normalize_name(experiment_slug)}", enrollments_sql)
 
-        bytes_processed = dry_run_query(enrollments_sql)
+        bytes_processed = dry_run_query(enrollments_sql, use_cloud_function=use_cloud_function)
         logger.info(f"Dry running enrollments query for {experiment_slug}:")
         logger.info(enrollments_sql)
         if bytes_processed and bytes_processed > 0:
@@ -1119,7 +1124,9 @@ class Analysis:
         if not metric_slugs:
             output_loc = f"metrics_{bq_normalize_name(experiment_slug)}"
             logger.info(f"Dry running metrics query for {experiment_slug}")
-            metrics_tb = self.validate_metric_query(exp, metrics, limits, output_loc, use_glean_ids)
+            metrics_tb = self.validate_metric_query(
+                exp, metrics, limits, output_loc, use_glean_ids, use_cloud_function
+            )
         else:
             selected_metrics = [m for m in metrics if m.name in metric_slugs]
             metrics_tb_async_list = []
@@ -1135,7 +1142,7 @@ class Analysis:
                     metrics_tb_async_list.append(
                         pool.apply_async(
                             self.validate_metric_query,
-                            (exp, [metric], limits, output_loc, use_glean_ids),
+                            (exp, [metric], limits, output_loc, use_glean_ids, use_cloud_function),
                         )
                     )
             # ensure we have all the async results, then get the max value
@@ -1153,6 +1160,7 @@ class Analysis:
         limits: TimeLimits,
         output_loc: str,
         use_glean_ids: bool = False,
+        use_cloud_function: bool = True,
     ) -> float:
         metrics_sql = experiment.build_metrics_query(
             metrics,
@@ -1189,7 +1197,7 @@ class Analysis:
 
         self._write_sql_output(output_loc, metrics_sql)
 
-        bytes_processed = dry_run_query(metrics_sql)
+        bytes_processed = dry_run_query(metrics_sql, use_cloud_function=use_cloud_function)
         logger.info(metrics_sql)
 
         if bytes_processed and bytes_processed > 0:

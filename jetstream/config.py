@@ -225,6 +225,7 @@ def validate(
     config: Outcome | Config | DefaultConfig | DefinitionConfig,
     experiment: Experiment | None = None,
     config_getter: _ConfigLoader = ConfigLoader,
+    use_cloud_function: bool = True,
 ) -> int:
     """Validate and dry run a config.
 
@@ -292,4 +293,6 @@ def validate(
     else:
         raise Exception(f"Unable to validate config: {config}")
 
-    return Analysis("no project", "no dataset", resolved_config).validate()
+    return Analysis("no project", "no dataset", resolved_config).validate(
+        use_cloud_function=use_cloud_function
+    )
