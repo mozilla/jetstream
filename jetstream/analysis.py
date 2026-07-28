@@ -679,6 +679,37 @@ class Analysis:
             return StatisticResultCollection.model_validate([])
 
     @dask.delayed
+    def population_subset_table(
+        self,
+        segment: str,
+        analysis_basis: AnalysisBasis,
+    ) -> DataFrame:
+        """Pulls the full enrolled population for this segment/analysis basis directly
+        from the enrollments table.
+
+        Unlike subset_metric_table, this doesn't filter out rows based on any
+        particular metric's null values, so it's safe to use for population counts.
+        """
+        query = self._create_population_subset_query(segment, analysis_basis)
+
+        logger.debug(f"population_subset_table: {segment}, {analysis_basis}\n{query}")
+
+        try:
+            results: DataFrame = self.bigquery.execute(query).to_dataframe()
+        except GoogleAPICallError as e:
+            logger.exception(
+                str(e),
+                extra={
+                    "experiment": self.config.experiment.normandy_slug,
+                    "analysis_basis": analysis_basis,
+                    "segment": segment,
+                },
+            )
+            return None
+
+        return results
+
+    @dask.delayed
     def subset_metric_table(
         self,
         metric_table_name: str,
@@ -805,6 +836,13 @@ class Analysis:
         """
         )
 
+        query += self._basis_and_segment_filter(segment, analysis_basis)
+
+        return query
+
+    def _basis_and_segment_filter(self, segment: str, analysis_basis: AnalysisBasis) -> str:
+        """Builds the analysis-basis and segment WHERE clauses shared by metric-table
+        and population-table subset queries."""
         if analysis_basis == AnalysisBasis.ENROLLMENTS:
             basis_filter = """enrollment_date IS NOT NULL"""
         elif analysis_basis == AnalysisBasis.EXPOSURES:
@@ -815,16 +853,35 @@ class Analysis:
                 + f"Allowed values are: {[AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]}"
             )
 
-        query += basis_filter
+        filter_clause = basis_filter
 
         if segment != "all":
-            segment_filter = dedent(
+            filter_clause += dedent(
                 f"""
             AND m.{segment} = TRUE"""
             )
-            query += segment_filter
 
-        return query
+        return filter_clause
+
+    def _create_population_subset_query(
+        self,
+        segment: str,
+        analysis_basis: AnalysisBasis,
+    ) -> str:
+        """Creates a SQL query string to pull the full enrolled population for a
+        segment/analysis basis directly from the enrollments table, independent of
+        any particular metric's null values."""
+        normalized_slug = bq_normalize_name(self.config.experiment.normandy_slug)
+        enrollments_table_name = f"{self.project}.{self.dataset}.enrollments_{normalized_slug}"
+
+        query = dedent(
+            f"""
+        SELECT branch
+        FROM `{enrollments_table_name}` m
+        WHERE """
+        )
+
+        return query + self._basis_and_segment_filter(segment, analysis_basis)
 
     def _covariate_table_metric_name(
         self,
@@ -1484,7 +1541,9 @@ class Analysis:
                             ).model_dump(warnings=False)
 
                         segment_results.root += self.counts(
-                            segment_data, segment, analysis_basis
+                            self.population_subset_table(segment, analysis_basis),
+                            segment,
+                            analysis_basis,
                         ).model_dump(warnings=False)
 
                     # done with analysis_basis: publish metrics view
@@ -1625,7 +1684,9 @@ class Analysis:
 
                             if segment not in counted_segments:
                                 segment_results.root += self.counts(
-                                    segment_data, segment, analysis_basis
+                                    self.population_subset_table(segment, analysis_basis),
+                                    segment,
+                                    analysis_basis,
                                 ).model_dump(warnings=False)
                                 counted_segments.add(segment)
 

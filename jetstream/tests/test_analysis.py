@@ -778,6 +778,52 @@ def test_create_subset_metric_table_query_univariate_unsupported_analysis_basis(
         )
 
 
+def test_create_population_subset_query_basic(experiments):
+    expected_query = dedent(
+        """
+    SELECT branch
+    FROM `spam.eggs.enrollments_normandy_test_slug` m
+    WHERE enrollment_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_population_subset_query(
+        "all", AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_population_subset_query_segment(experiments):
+    expected_query = dedent(
+        """
+    SELECT branch
+    FROM `spam.eggs.enrollments_normandy_test_slug` m
+    WHERE enrollment_date IS NOT NULL
+    AND m.mysegment = TRUE"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_population_subset_query(
+        "mysegment", AnalysisBasis.ENROLLMENTS
+    )
+
+    assert expected_query == actual_query
+
+
+def test_create_population_subset_query_exposures(experiments):
+    expected_query = dedent(
+        """
+    SELECT branch
+    FROM `spam.eggs.enrollments_normandy_test_slug` m
+    WHERE enrollment_date IS NOT NULL AND m.exposure_date IS NOT NULL"""
+    )
+
+    actual_query = _empty_analysis(experiments)._create_population_subset_query(
+        "all", AnalysisBasis.EXPOSURES
+    )
+
+    assert expected_query == actual_query
+
+
 def test_create_subset_metric_table_query_covariate_unsupported_analysis_basis(
     experiments, monkeypatch
 ):
@@ -1374,6 +1420,39 @@ def test_subset_metric_table_returns_none_on_google_api_error(experiments, monke
 
     assert result is None
     assert "simulated subset error" in caplog.text
+
+
+def test_population_subset_table_ignores_metric_null_values(experiments, monkeypatch):
+    """population_subset_table's query has no per-metric null filter, unlike
+    subset_metric_table, so its row count reflects the full enrolled population
+    regardless of which metric's data happens to be sparse."""
+    mock_bq = MagicMock()
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    _empty_analysis(experiments).population_subset_table("all", AnalysisBasis.ENROLLMENTS).compute(
+        scheduler="synchronous"
+    )
+
+    executed_query = mock_bq.execute.call_args[0][0]
+    assert "enrollments_normandy_test_slug" in executed_query
+    assert "IS NOT NULL AND" not in executed_query
+
+
+def test_population_subset_table_returns_none_on_google_api_error(experiments, monkeypatch, caplog):
+    """population_subset_table returns None (not raises) on GoogleAPICallError."""
+    mock_bq = MagicMock()
+    mock_bq.execute.side_effect = GoogleAPICallError("simulated population error")
+    monkeypatch.setattr("jetstream.analysis.BigQueryClient", Mock(return_value=mock_bq))
+
+    analysis = _empty_analysis(experiments)
+
+    with caplog.at_level(logging.ERROR):
+        result = analysis.population_subset_table("all", AnalysisBasis.ENROLLMENTS).compute(
+            scheduler="synchronous"
+        )
+
+    assert result is None
+    assert "simulated population error" in caplog.text
 
 
 def test_counts_returns_empty_for_none_segment_data(experiments):
