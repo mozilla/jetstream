@@ -473,6 +473,7 @@ class LinearModelMean(Statistic):
                     "statistic": self.name(),
                     "analysis_basis": analysis_basis.value,
                     "segment": segment,
+                    "analysis_period": self.period.value if self.period else None,
                 },
             )
             covariate_col_label = None
@@ -522,6 +523,7 @@ class LinearModelMean(Statistic):
                         "statistic": self.name(),
                         "analysis_basis": analysis_basis.value,
                         "segment": segment,
+                        "analysis_period": self.period.value if self.period else None,
                     },
                 )
                 return StatisticResultCollection.model_validate([])
@@ -893,6 +895,7 @@ class KernelDensityEstimate(Statistic):
                         "statistic": self.name(),
                         "analysis_basis": analysis_basis.value,
                         "segment": segment,
+                        "analysis_period": self.period.value if self.period else None,
                     },
                 )
             result = np.exp(kde.score_samples(grid.grid[:, np.newaxis]))
@@ -960,6 +963,7 @@ class EmpiricalCDF(Statistic):
                         "statistic": self.name(),
                         "analysis_basis": analysis_basis.value,
                         "segment": segment,
+                        "analysis_period": self.period.value if self.period else None,
                     },
                 )
             if group[metric].min() == 0 and grid.geometric:
