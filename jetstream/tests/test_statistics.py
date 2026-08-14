@@ -142,7 +142,7 @@ class TestStatistics:
                 "value": list(range(1, 11)) + [0] * 10,
             }
         )
-        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+        with caplog.at_level(logging.WARNING, logger="jetstream.statistics"):
             results = stat.transform(
                 test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
             )
@@ -159,7 +159,7 @@ class TestStatistics:
                 "value": [0] * 101 + [0] * 100 + [1],
             }
         )
-        with caplog.at_level(logging.ERROR, logger="jetstream.statistics"):
+        with caplog.at_level(logging.WARNING, logger="jetstream.statistics"):
             results = stat.transform(
                 test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
             )
