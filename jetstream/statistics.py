@@ -514,7 +514,9 @@ class LinearModelMean(Statistic):
                     "relative uplift (treatment/reference) is undefined "
                     "when the reference mean is zero."
                 )
-                logger.exception(
+                # this is not a failure but rather an issue with the data (or config)
+                # so we log at WARNING level
+                logger.warning(
                     msg,
                     exc_info=StatisticComputationException(msg),
                     extra={
