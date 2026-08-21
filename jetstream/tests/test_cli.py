@@ -331,14 +331,9 @@ class TestCli:
         monkeypatch.setattr("jetstream.cli.SerialExecutorStrategy", MockStrategy)
 
         result = runner.invoke(
-            cli.cli,
-            [
-                "rerun-config-changed",
-                "--project_id",
-                "test-project",
-                "--dataset_id",
-                "test_dataset",
-            ],
+            cli.rerun_config_changed,
+            ["--project_id", "test-project", "--dataset_id", "test_dataset"],
+            obj={"log_config": None},
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
