@@ -82,22 +82,20 @@ def submit_workflow(
                 workflow["metadata"]["namespace"], workflow["metadata"]["name"]
             )
 
-            if (
-                "status" in workflow
-                and workflow["status"]
-                and "finishedAt" in workflow["status"]
-                and workflow["status"]["finishedAt"] is not None
-            ):
+            status = workflow.get("status") or {}
+            if status.get("finishedAt") is not None:
                 finished = True
-                if workflow["status"]["phase"] == "Failed":
-                    raise Exception(f"Workflow execution failed: {workflow['status']}")
+                if status.get("phase") == "Failed":
+                    raise Exception(f"Workflow execution failed: {status}")
 
             # adjust wait time, too many requests might hit the request limit and raise
             # HTTPSConnectionPool(host='##.##.##.##', port=443): Max retries exceeded with url
             time.sleep(10)
 
     # check status of pods
-    if "status" in workflow and workflow["status"] and workflow["status"]["nodes"]:
+    pods_failed: list[str] = []
+    nodes = (workflow.get("status") or {}).get("nodes") or {}
+    if nodes:
         pods_succeeded = {
             # name contains the step name and all parameter values, e.g.
             # jetstream-zvbcs[0].ensure-enrollments-and-analyze(0:dates:[\"2021-03-25\"],
@@ -105,15 +103,16 @@ def submit_workflow(
             # [0].analyse-experiment(0)
             # the end of the name "(0)" indicates the retry number
             re.sub(r"\(\d\)", "", node["name"])  # remove retry number
-            for _, node in workflow["status"]["nodes"].items()
-            if node["type"] == "Pod" and node["phase"] == "Succeeded"
+            for node in nodes.values()
+            if node.get("type") == "Pod" and node.get("phase") == "Succeeded" and "name" in node
         }
 
         pods_failed = [
             node["name"]
-            for _, node in workflow["status"]["nodes"].items()
-            if node["type"] == "Pod"
-            and node["phase"] == "Failed"
+            for node in nodes.values()
+            if node.get("type") == "Pod"
+            and node.get("phase") == "Failed"
+            and "name" in node
             and re.sub(r"\(\d\)", "", node["name"]) not in pods_succeeded
         ]
 
