@@ -307,10 +307,13 @@ class TestCli:
             # after the mocked `experiment_table_first_updated`, so it's considered stale
             do_rerun_timestamp=dt.datetime(2024, 1, 1, tzinfo=UTC),
         )
+
         def experiment_getter(*a, **kw):
             return experimenter.ExperimentCollection([rerun_experiment])
 
-        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", experiment_getter)
+        monkeypatch.setattr(
+            "jetstream.cli.ExperimentCollection.from_experimenter", experiment_getter
+        )
         monkeypatch.setitem(
             cli.AnalysisExecutor.execute.__kwdefaults__, "experiment_getter", experiment_getter
         )
@@ -329,7 +332,13 @@ class TestCli:
 
         result = runner.invoke(
             cli.cli,
-            ["rerun-config-changed", "--project_id", "test-project", "--dataset_id", "test_dataset"],
+            [
+                "rerun-config-changed",
+                "--project_id",
+                "test-project",
+                "--dataset_id",
+                "test_dataset",
+            ],
             catch_exceptions=False,
         )
         assert result.exit_code == 0, result.output
