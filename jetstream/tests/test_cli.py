@@ -280,6 +280,69 @@ class TestCli:
 
             assert result.exit_code == 0
 
+    def test_rerun_config_changed_do_rerun_overall_only(self, runner, monkeypatch, bq_client_mock):
+        monkeypatch.setattr(ConfigLoader, "with_configs_from", lambda *a, **kw: ConfigLoader)
+        monkeypatch.setattr(ConfigLoader, "updated_configs", lambda *a, **kw: [])
+        monkeypatch.setattr(ConfigLoader, "updated_defaults", lambda *a, **kw: [])
+
+        bq_client_mock.return_value.reset_mock()
+        bq_client_mock.return_value.experiment_table_first_updated.return_value = dt.datetime(
+            2023, 1, 1, tzinfo=UTC
+        )
+
+        rerun_experiment = Experiment(
+            experimenter_slug=None,
+            normandy_slug="holdback_experiment",
+            type="v6",
+            status="Live",
+            branches=[Branch(slug="treatment", ratio=1), Branch(slug="control", ratio=1)],
+            start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
+            end_date=dt.datetime(2021, 2, 1, tzinfo=UTC),
+            proposed_enrollment=None,
+            reference_branch="control",
+            is_high_population=False,
+            app_name="firefox_desktop",
+            app_id="firefox-desktop",
+            do_rerun=True,
+            # after the mocked `experiment_table_first_updated`, so it's considered stale
+            do_rerun_timestamp=dt.datetime(2024, 1, 1, tzinfo=UTC),
+        )
+        def experiment_getter(*a, **kw):
+            return experimenter.ExperimentCollection([rerun_experiment])
+
+        monkeypatch.setattr("jetstream.cli.ExperimentCollection.from_experimenter", experiment_getter)
+        monkeypatch.setitem(
+            cli.AnalysisExecutor.execute.__kwdefaults__, "experiment_getter", experiment_getter
+        )
+
+        captured = {}
+
+        class MockStrategy:
+            def __init__(self, project_id, dataset_id, bucket=None, log_config=None, **kwargs):
+                captured["analysis_periods"] = kwargs.get("analysis_periods")
+
+            def execute(self, worklist, configuration_map=None):
+                captured["worklist"] = worklist
+                return True
+
+        monkeypatch.setattr("jetstream.cli.SerialExecutorStrategy", MockStrategy)
+
+        result = runner.invoke(
+            cli.cli,
+            ["rerun-config-changed", "--project_id", "test-project", "--dataset_id", "test_dataset"],
+            catch_exceptions=False,
+        )
+        assert result.exit_code == 0, result.output
+
+        # do_rerun experiments only rerun OVERALL and always recreate enrollments
+        bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
+            "holdback_experiment", [AnalysisPeriod.OVERALL], recreate_enrollments=True
+        )
+
+        # ensure holdback is in analysis list after deleting tables
+        analyzed_slugs = {config.experiment.normandy_slug for config, _ in captured["worklist"]}
+        assert "holdback_experiment" in analyzed_slugs
+
 
 @attr.s(auto_attribs=True)
 class DummyExecutorStrategy:
