@@ -492,9 +492,9 @@ class LinearModelMean(Statistic):
             # BigQuery are handled; np.issubdtype raises on pandas extension dtypes
             if pd.api.types.is_integer_dtype(df[metric].dtype):
                 threshold = int(np.ceil(threshold))
-            post_trim = ref_values.clip(upper=threshold)
+            post_clip = ref_values.clip(upper=threshold)
 
-            if (post_trim == 0).all():
+            if (post_clip == 0).all():
                 n = len(ref_values)
                 if (ref_values == 0).all():
                     reason = (
@@ -505,7 +505,7 @@ class LinearModelMean(Statistic):
                     reason = (
                         f"reference branch '{reference_branch}' has {n} non-null "
                         f"client(s) but metric '{metric}' became all zeroes after "
-                        f"outlier trimming (pooled {threshold_quantile:.3f} quantile "
+                        f"outlier clipping (pooled {threshold_quantile:.3f} quantile "
                         f"threshold is {threshold})"
                     )
                 msg = (

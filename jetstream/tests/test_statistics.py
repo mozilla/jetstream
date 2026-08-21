@@ -149,10 +149,10 @@ class TestStatistics:
         assert len(results.root) == 0
         assert any("all values for metric 'value' are zero" in r.message for r in caplog.records)
 
-    def test_linear_model_mean_reference_branch_zeroed_by_trimming(self, caplog):
+    def test_linear_model_mean_reference_branch_zeroed_by_clipping(self, caplog):
         """When outlier clipping zeroes out the reference branch, log a clear warning."""
         stat = LinearModelMean()
-        # The non-zero value in control branch is clipped by the outlier trimming
+        # The non-zero value in control branch is clipped by the outlier clipping
         test_data = pd.DataFrame(
             {
                 "branch": ["treatment"] * 101 + ["control"] * 101,
@@ -164,7 +164,7 @@ class TestStatistics:
                 test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
             )
         assert len(results.root) == 0
-        assert any("after outlier trimming" in r.message for r in caplog.records)
+        assert any("after outlier clipping" in r.message for r in caplog.records)
 
     @pytest.mark.parametrize(
         "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]
