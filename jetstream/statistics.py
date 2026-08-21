@@ -389,6 +389,8 @@ def flatten_simple_compare_branches_result(
 @attr.s(auto_attribs=True)
 class BootstrapMean(Statistic):
     num_samples: int = 10000
+    # drop_highest is the threshold above which values will be *clipped*
+    # 0.0 means no values will be clipped
     drop_highest: float = 0.005
     confidence_interval: float = 0.95
 
@@ -424,6 +426,8 @@ class BootstrapMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class LinearModelMean(Statistic):
+    # drop_highest is the threshold above which values will be *clipped*
+    # 0.0 means no values will be clipped
     drop_highest: float = attr.ib(default=0.005, validator=attr.validators.instance_of(float))
     # currently used keys are "metric" as the name of the metric
     # and "period" as the (preenrollment) period to pull from
@@ -551,6 +555,8 @@ class LinearModelMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class PerClientDAUImpact(LinearModelMean):
+    # drop_highest is the threshold above which values will be *clipped*
+    # 0.0 means no values will be clipped
     drop_highest: float = 0.0
 
     def transform(
@@ -1011,6 +1017,8 @@ class PopulationRatio(Statistic):
     numerator: str
     denominator: str
     confidence_interval: float = 0.95
+    # drop_highest is the threshold above which values will be *clipped*
+    # 0.0 means no values will be clipped
     drop_highest: float = 0.005
     num_samples: int = 10000
 
