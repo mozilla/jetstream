@@ -340,7 +340,7 @@ class TestCli:
 
         # do_rerun experiments only rerun OVERALL and always recreate enrollments
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
-            "holdback_experiment", [AnalysisPeriod.OVERALL], recreate_enrollments=True
+            "holdback_experiment", [AnalysisPeriod.OVERALL], delete_enrollments=True
         )
 
         # ensure holdback is in analysis list after deleting tables
