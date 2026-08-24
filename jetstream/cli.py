@@ -1349,7 +1349,7 @@ def rerun_config_changed(
     for slug in rerun_slugs:
         client.touch_tables(slug)
         # do_rerun experiments only do OVERALL and should always recreate enrollments
-        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], recreate_enrollments=True)
+        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], delete_enrollments=True)
         # add to full list so they get analyzed
         experiment_slugs.add(slug)
 
