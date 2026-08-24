@@ -53,6 +53,8 @@ class NimbusExperiment:
     enrollmentEndDate: dt.datetime | None = None
     isEnrollmentPaused: bool | None = None
     isRollout: bool = False
+    doRerun: bool = False
+    doRerunTimestamp: dt.datetime | None = None
 
     @property
     def appName(self) -> str:
@@ -84,6 +86,9 @@ class NimbusExperiment:
                 converter,
                 _appName=cattr.override(rename="appName"),
                 _appId=cattr.override(rename="appId"),
+                doRerunTimestamp=cattr.override(
+                    struct_hook=lambda num, _: dt.datetime.fromisoformat(num) if num else None
+                ),
             ),
         )
         return converter.structure(d, cls)
@@ -119,6 +124,8 @@ class NimbusExperiment:
             is_enrollment_paused=bool(self.isEnrollmentPaused),
             is_rollout=self.isRollout,
             bucket_config=self.bucketConfig,
+            do_rerun=self.doRerun,
+            do_rerun_timestamp=self.doRerunTimestamp,
         )
 
 

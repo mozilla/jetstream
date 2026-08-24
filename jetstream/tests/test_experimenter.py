@@ -46,7 +46,9 @@ NIMBUS_EXPERIMENTER_FIXTURE = r"""
   ],
   "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('86.0') >= 0",
-  "targeting":"[userId, \"bug-1629098-rapid-please-reject-me-beta-86\"]|bucketSample(0, 100, 10000) && localeLanguageCode == 'en' && region == 'US' && browserSettings.update.channel == 'beta'"
+  "targeting":"[userId, \"bug-1629098-rapid-please-reject-me-beta-86\"]|bucketSample(0, 100, 10000) && localeLanguageCode == 'en' && region == 'US' && browserSettings.update.channel == 'beta'",
+  "doRerun":true,
+  "doRerunTimestamp":"2026-08-21T03:00:00.009942Z"
 },
 {
   "schemaVersion": "1",
@@ -82,7 +84,9 @@ NIMBUS_EXPERIMENTER_FIXTURE = r"""
     }],
   "referenceBranch":"control",
   "filter_expression":"env.version|versionCompare('79.0') >= 0",
-  "targeting":""
+  "targeting":"",
+  "doRerun":false,
+  "doRerunTimestamp":"2026-08-21T03:00:00.009942Z"
 },
 {   
   "id":null,
@@ -332,6 +336,7 @@ def test_with_slug(experiment_collection):
     assert len(experiments.experiments) == 1
     assert experiments.experiments[0].experimenter_slug is None
     assert experiments.experiments[0].normandy_slug == "bug-1629098-rapid-please-reject-me-beta-86"
+    assert experiments.experiments[0].do_rerun is True
 
     experiments = experiment_collection.with_slug(
         "bug-1629000-rapid-testing-rapido-intake-1-release-79"
@@ -363,6 +368,7 @@ def test_convert_nimbus_experiment_to_experiment():
             count=5000,
             total=10000,
         ),
+        doRerun=True,
     )
 
     experiment = nimbus_experiment.to_experiment()
@@ -377,6 +383,7 @@ def test_convert_nimbus_experiment_to_experiment():
     assert experiment.outcomes == []
     assert experiment.segments == []
     assert experiment.is_enrollment_paused is True
+    assert experiment.do_rerun is True
 
 
 def test_fixture_validates():

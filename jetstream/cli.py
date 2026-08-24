@@ -1330,6 +1330,7 @@ def rerun_config_changed(
     # and are out of date
     all_experiments = ExperimentCollection.from_experimenter().experiments
     rerun_experiments = [exp for exp in all_experiments if exp.do_rerun]
+    rerun_slugs = set()
     client = BigQueryClient(project_id, dataset_id)
     for exp in rerun_experiments:
         first_updated = client.experiment_table_first_updated(exp.normandy_slug)
@@ -1337,7 +1338,7 @@ def rerun_config_changed(
         if first_updated is None or (
             exp.do_rerun_timestamp is not None and first_updated < exp.do_rerun_timestamp
         ):
-            experiment_slugs.add(exp.normandy_slug)
+            rerun_slugs.add(exp.normandy_slug)
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
     client = BigQueryClient(project_id, dataset_id)
@@ -1345,6 +1346,12 @@ def rerun_config_changed(
         client.touch_tables(slug)
         # delete existing tables
         client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
+    for slug in rerun_slugs:
+        client.touch_tables(slug)
+        # do_rerun experiments only do OVERALL and should always recreate enrollments
+        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], recreate_enrollments=True)
+        # add to full list so they get analyzed
+        experiment_slugs.add(slug)
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -1367,7 +1374,7 @@ def rerun_config_changed(
         dataset_id=dataset_id,
         bucket=bucket,
         date=All,
-        experiment_slugs=experiment_slugs,
+        experiment_slugs=list(experiment_slugs),
         recreate_enrollments=recreate_enrollments,
     ).execute(
         strategy=strategy,
