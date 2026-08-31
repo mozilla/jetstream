@@ -22,6 +22,7 @@ from jetstream.statistics import (
     EmpiricalCDF,
     KernelDensityEstimate,
     LinearModelMean,
+    LinearModelMeanNoClip,
     PerClientDAUImpact,
     PopulationRatio,
     StatisticResult,
@@ -113,6 +114,65 @@ class TestStatistics:
         assert treatment_result.point < control_result.point
         assert treatment_result.lower
         assert treatment_result.upper
+
+    def test_linear_model_mean_no_clip(self):
+        """Ensure that LinearModelMeanNoClip produces unclipped results
+        when LinearModelMean fails to produce results due to clipping."""
+        stat = LinearModelMeanNoClip()
+        assert stat.drop_highest == 0.0
+        clipped_stat = LinearModelMean()
+        assert clipped_stat.drop_highest == 0.005
+        # test_data contains all 0s except at the top 0.5%
+        test_data = pd.DataFrame(
+            {
+                "branch": ["control"] * 1000 + ["treatment"] * 1000,
+                "value": [0] * 996 + list(range(100, 104)) + [0] * 996 + list(range(100, 107, 2)),
+            }
+        )
+
+        results = stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).root
+        # clipped results should log a warning and return empty StatisticCollection
+        # because all the non-zero data is clipped to zero as outliers
+        clipped_results = clipped_stat.transform(
+            test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+        ).root
+
+        # ensure:
+        # - no-clip should have 4 results, and the values are as expected based on empirical testing
+        # - clipped should have empty results
+        assert len(results) == 4
+        assert len(clipped_results) == 0
+
+        # check the actual values for no-clip to avoid regressions
+        for r in results:
+            point = round(r.point, 3)
+            lower = round(r.lower, 6)
+            upper = round(r.upper, 6)
+            # absolute values
+            if r.comparison is None:
+                if r.branch == "treatment":
+                    assert point == 0.412
+                    assert lower == 0.008270
+                    assert upper == 0.815730
+                else:  # control
+                    assert point == 0.406
+                    assert lower == 0.008219
+                    assert upper == 0.803781
+
+            elif r.comparison == "difference":
+                assert point == 0.006
+                assert lower == -0.560426
+                assert upper == 0.572426
+
+            elif r.comparison == "relative_uplift":
+                assert point == 0.015
+                assert lower == -0.745768
+                assert upper == 3.050531
+
+            else:
+                pytest.fail("unexpected comparison!")
 
     def test_linear_model_mean_nullable_integer_dtype(self):
         """Metrics read from BigQuery can have pandas nullable Int64 dtype; the integer-dtype

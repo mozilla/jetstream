@@ -568,6 +568,18 @@ class LinearModelMean(Statistic):
 
 
 @attr.s(auto_attribs=True)
+class LinearModelMeanNoClip(LinearModelMean):
+    """Computes mean statistic using linear model. **No Clipping by default**
+
+    Parameters:
+    - drop_highest (float): Inherited and overridden from LinearModelMean. Default 0.0.
+    - covariate_adjustment (dict[str, str]): Inherited from LinearModelMean
+    """
+
+    drop_highest: float = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+
+
+@attr.s(auto_attribs=True)
 class PerClientDAUImpact(LinearModelMean):
     """Computes the per-client DAU impact using linear model mean.
     Only returns relative uplift, strips absolute data points intentionally
