@@ -116,6 +116,8 @@ class TestStatistics:
         assert treatment_result.upper
 
     def test_linear_model_mean_no_clip(self):
+        """Ensure that LinearModelMeanNoClip produces unclipped results
+        when LinearModelMean fails to produce results due to clipping."""
         stat = LinearModelMeanNoClip()
         assert stat.drop_highest == 0.0
         clipped_stat = LinearModelMean()
@@ -132,17 +134,18 @@ class TestStatistics:
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).root
         # clipped results should log a warning and return empty StatisticCollection
-        # because there all the non-zero data is clipped to zero as outliers
+        # because all the non-zero data is clipped to zero as outliers
         clipped_results = clipped_stat.transform(
             test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
         ).root
 
         # ensure:
-        # - no-clip should have results, and the values are deterministic
+        # - no-clip should have 4 results, and the values are as expected based on empirical testing
         # - clipped should have empty results
-        assert len(clipped_results) == 0
         assert len(results) == 4
+        assert len(clipped_results) == 0
 
+        # check the actual values for no-clip to avoid regressions
         for r in results:
             point = round(r.point, 3)
             lower = round(r.lower, 6)
