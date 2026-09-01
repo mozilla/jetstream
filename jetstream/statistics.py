@@ -440,12 +440,14 @@ class LinearModelMean(Statistic):
         0.0 means no values will be clipped. Default 0.005.
     - covariate_adjustment (dict[str, str]): currently used keys are "metric" as the
         name of the metric, and "period" as the (preenrollment) period to pull from
+    - statistic_name (str): name of the statistic used in the results
     """
 
     drop_highest: float = attr.ib(default=0.005, validator=attr.validators.instance_of(float))
     # currently used keys are "metric" as the name of the metric
     # and "period" as the (preenrollment) period to pull from
     covariate_adjustment: dict[str, str] | None = attr.ib(default=None)
+    statistic_name: str = "mean_lm"
 
     @covariate_adjustment.validator
     def check(self, attribute, value):
@@ -561,7 +563,7 @@ class LinearModelMean(Statistic):
         return flatten_simple_compare_branches_result(
             ma_result=ma_result,
             metric_name=metric,
-            statistic_name="mean_lm",
+            statistic_name=self.statistic_name,
             reference_branch=reference_branch,
             ci_width=0.95,
         )
@@ -577,6 +579,7 @@ class LinearModelMeanNoClip(LinearModelMean):
     """
 
     drop_highest: float = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
+    statistic_name: str = "mean_lm_noclip"
 
 
 @attr.s(auto_attribs=True)
