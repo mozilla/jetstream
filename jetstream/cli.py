@@ -73,7 +73,9 @@ MODERATE_DATA_THRESHOLD = 10
 DEFAULT_MEMORY_REQUEST_GB = 19
 
 # Date when discrete metrics was switched to default
-DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
+# DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
+# Date when bug was found with the logic handling the above date for rerun_config_changed
+DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 9, 2, tzinfo=pytz.utc)
 
 
 @attr.s
@@ -1286,6 +1288,7 @@ def export_experiment_logs_to_json(
 @analysis_periods_option()
 @image_option
 @image_version_option
+@discrete_metrics_option
 @memory_request_option
 @click.pass_context
 def rerun_config_changed(
@@ -1306,6 +1309,7 @@ def rerun_config_changed(
     analysis_periods,
     image,
     image_version,
+    discrete_metrics,
     memory_request,
 ):
     """Rerun all available analyses for experiments with new or updated config files."""
@@ -1313,7 +1317,12 @@ def rerun_config_changed(
     #       and which metrics to rerun (pending future functionality)
 
     strategy = SerialExecutorStrategy(
-        project_id, dataset_id, bucket, ctx.obj["log_config"], analysis_periods=analysis_periods
+        project_id,
+        dataset_id,
+        bucket,
+        ctx.obj["log_config"],
+        analysis_periods=analysis_periods,
+        discrete_metrics=discrete_metrics,
     )
 
     # get experiment-specific external configs
@@ -1367,6 +1376,7 @@ def rerun_config_changed(
             image=image,
             image_version=image_version,
             memory_request=memory_request,
+            discrete_metrics=discrete_metrics,
         )
 
     success = AnalysisExecutor(
