@@ -73,9 +73,7 @@ MODERATE_DATA_THRESHOLD = 10
 DEFAULT_MEMORY_REQUEST_GB = 19
 
 # Date when discrete metrics was switched to default
-# DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
-# Date when bug was found with the logic handling the above date for rerun_config_changed
-DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 9, 2, tzinfo=pytz.utc)
+DISCRETE_AS_DEFAULT_THRESHOLD = datetime(2026, 3, 31, tzinfo=pytz.utc)
 
 
 @attr.s
