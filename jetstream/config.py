@@ -22,7 +22,7 @@ import copy
 import datetime as dt
 
 from google.cloud import bigquery
-from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from metric_config_parser.config import (
     Config,
     ConfigCollection,
@@ -235,9 +235,13 @@ def validate(
     from jetstream.analysis import Analysis
     from jetstream.platform import PLATFORM_CONFIGS
 
+    metric_slugs = set()
     if isinstance(config, Config) and not isinstance(config, DefaultConfig | DefinitionConfig):
         config.validate(config_getter.configs, experiment)
         resolved_config = config.spec.resolve(experiment, config_getter.configs)
+        if isinstance(resolved_config, AnalysisConfiguration):
+            for _, summary_list in resolved_config.metrics.items():
+                metric_slugs.update([summary.metric.name for summary in summary_list])
     elif isinstance(config, Outcome):
         config.validate(config_getter.configs)
         app_id = PLATFORM_CONFIGS[config.platform].app_id
@@ -294,5 +298,5 @@ def validate(
         raise Exception(f"Unable to validate config: {config}")
 
     return Analysis("no project", "no dataset", resolved_config).validate(
-        use_cloud_function=use_cloud_function
+        metric_slugs=metric_slugs if metric_slugs else None, use_cloud_function=use_cloud_function
     )
