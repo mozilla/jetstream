@@ -271,7 +271,13 @@ class SerialExecutorStrategy:
 
                 # `do_rerun`` experiment should only run OVERALL
                 analysis_periods = self.analysis_periods
-                if config.experiment.do_rerun:
+                periods_source = click.get_current_context().get_parameter_source(
+                    "analysis_periods"
+                )
+                explicit_periods = periods_source == ParameterSource.COMMANDLINE
+                # if analysis periods are set explicitly use those, otherwise
+                # do_rerun experiments by default only compute OVERALL
+                if config.experiment.do_rerun and not explicit_periods:
                     analysis_periods = [AnalysisPeriod.OVERALL]
                     logger.warning(
                         "`do_rerun` experiment: skipping non-overall periods.",
@@ -381,9 +387,16 @@ class AnalysisExecutor:
                     end_date = config.experiment.end_date + timedelta(days=1)
 
                 end_date = min(end_date, today)
+
                 if config.experiment.do_rerun:
-                    # do_rerun experiment: only compute OVERALL date
-                    run_dates = [end_date]
+                    periods_source = click.get_current_context().get_parameter_source(
+                        "analysis_periods"
+                    )
+                    explicit_periods = periods_source == ParameterSource.COMMANDLINE
+                    # if analysis periods are set explicitly run all dates, otherwise only end date
+                    # because do_rerun experiments by default only compute OVERALL
+                    if not explicit_periods:
+                        run_dates = [end_date]
                 else:
                     run_dates = inclusive_date_range(config.experiment.start_date, end_date)
             else:
