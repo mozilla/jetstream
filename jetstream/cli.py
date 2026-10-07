@@ -375,6 +375,8 @@ class AnalysisExecutor:
 
                 end_date = min(end_date, today)
 
+                run_dates = inclusive_date_range(config.experiment.start_date, end_date)
+
                 if config.experiment.do_rerun:
                     periods_source = click.get_current_context().get_parameter_source(
                         "analysis_periods"
@@ -384,8 +386,6 @@ class AnalysisExecutor:
                     # because do_rerun experiments by default only compute OVERALL
                     if not explicit_periods:
                         run_dates = [end_date]
-                else:
-                    run_dates = inclusive_date_range(config.experiment.start_date, end_date)
             else:
                 run_dates = [self.date]
 
