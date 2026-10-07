@@ -280,7 +280,7 @@ class TestCli:
 
             assert result.exit_code == 0
 
-    def test_rerun_config_changed_do_rerun_overall_only(self, runner, monkeypatch, bq_client_mock):
+    def test_rerun_holdback_overall_only(self, runner, monkeypatch, bq_client_mock):
         monkeypatch.setattr(ConfigLoader, "with_configs_from", lambda *a, **kw: ConfigLoader)
         monkeypatch.setattr(ConfigLoader, "updated_configs", lambda *a, **kw: [])
         monkeypatch.setattr(ConfigLoader, "updated_defaults", lambda *a, **kw: [])
@@ -331,7 +331,7 @@ class TestCli:
         monkeypatch.setattr("jetstream.cli.SerialExecutorStrategy", MockStrategy)
 
         result = runner.invoke(
-            cli.rerun_config_changed,
+            cli.rerun_holdback,
             ["--project_id", "test-project", "--dataset_id", "test_dataset"],
             obj={"log_config": None},
             catch_exceptions=False,
@@ -342,6 +342,9 @@ class TestCli:
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
             "holdback_experiment", [AnalysisPeriod.OVERALL], delete_enrollments=True
         )
+
+        # periods default to OVERALL only when not set explicitly
+        assert captured["analysis_periods"] == [AnalysisPeriod.OVERALL]
 
         # ensure holdback is in analysis list after deleting tables
         analyzed_slugs = {config.experiment.normandy_slug for config, _ in captured["worklist"]}
