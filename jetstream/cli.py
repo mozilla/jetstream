@@ -381,7 +381,11 @@ class AnalysisExecutor:
                     end_date = config.experiment.end_date + timedelta(days=1)
 
                 end_date = min(end_date, today)
-                run_dates = inclusive_date_range(config.experiment.start_date, end_date)
+                if config.experiment.do_rerun:
+                    # do_rerun experiment: only compute OVERALL date
+                    run_dates = [end_date]
+                else:
+                    run_dates = inclusive_date_range(config.experiment.start_date, end_date)
             else:
                 run_dates = [self.date]
 
