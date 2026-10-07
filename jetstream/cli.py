@@ -269,20 +269,7 @@ class SerialExecutorStrategy:
                 else:
                     dataset_id = self.dataset_id
 
-                # `do_rerun`` experiment should only run OVERALL
                 analysis_periods = self.analysis_periods
-                periods_source = click.get_current_context().get_parameter_source(
-                    "analysis_periods"
-                )
-                explicit_periods = periods_source == ParameterSource.COMMANDLINE
-                # if analysis periods are set explicitly use those, otherwise
-                # do_rerun experiments by default only compute OVERALL
-                if config.experiment.do_rerun and not explicit_periods:
-                    analysis_periods = [AnalysisPeriod.OVERALL]
-                    logger.warning(
-                        "`do_rerun` experiment: skipping non-overall periods.",
-                        extra={"experiment": config.experiment.normandy_slug},
-                    )
 
                 # run the analysis
                 analysis = self.analysis_class(
@@ -1349,20 +1336,17 @@ def rerun_config_changed(
     experiment_slugs = set(
         experiments_with_updated_defaults + [conf.slug for conf in updated_configs]
     )
-
-    # get the experiments from Experimenter API that are explicitly marked for rerun
-    # and are out of date
+    # skip the rerun experiments, these will be handled by rerun_holdback
     all_experiments = ExperimentCollection.from_experimenter().experiments
     rerun_experiments = [exp for exp in all_experiments if exp.do_rerun]
-    rerun_slugs = set()
-    client = BigQueryClient(project_id, dataset_id)
     for exp in rerun_experiments:
-        first_updated = client.experiment_table_first_updated(exp.normandy_slug)
-        # if exp was never run (has no results tables) or was last run before new rerun trigger
-        if first_updated is None or (
-            exp.do_rerun_timestamp is not None and first_updated < exp.do_rerun_timestamp
-        ):
-            rerun_slugs.add(exp.normandy_slug)
+        if exp.normandy_slug in experiment_slugs:
+            experiment_slugs.remove(exp.normandy_slug)
+            logger.warning(
+                f"rerun_config_changed: Skipping `do_rerun` experiment {exp.normandy_slug}."
+                " This will be automatically picked up by rerun_holdback, or trigger a manual"
+                " run if needed."
+            )
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
     client = BigQueryClient(project_id, dataset_id)
@@ -1370,12 +1354,6 @@ def rerun_config_changed(
         client.touch_tables(slug)
         # delete existing tables
         client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
-    for slug in rerun_slugs:
-        client.touch_tables(slug)
-        # do_rerun experiments only do OVERALL and should always recreate enrollments
-        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], delete_enrollments=True)
-        # add to full list so they get analyzed
-        experiment_slugs.add(slug)
 
     if argo:
         strategy = ArgoExecutorStrategy(
@@ -1400,6 +1378,119 @@ def rerun_config_changed(
         bucket=bucket,
         date=All,
         experiment_slugs=list(experiment_slugs),
+        recreate_enrollments=recreate_enrollments,
+    ).execute(
+        strategy=strategy,
+        config_getter=ConfigLoader,
+    )
+
+    if return_status:
+        sys.exit(not success)
+
+
+@cli.command()
+@project_id_option()
+@dataset_id_option()
+@bucket_option
+@argo_option
+@zone_option
+@cluster_id_option
+@monitor_status_option
+@cluster_ip_option
+@cluster_cert_option
+@return_status_option
+@recreate_enrollments_option
+@analysis_periods_option()
+@image_option
+@image_version_option
+@discrete_metrics_option
+@memory_request_option
+@click.pass_context
+def rerun_holdback(
+    ctx,
+    project_id,
+    dataset_id,
+    bucket,
+    argo,
+    zone,
+    cluster_id,
+    monitor_status,
+    cluster_ip,
+    cluster_cert,
+    return_status,
+    recreate_enrollments,
+    analysis_periods,
+    image,
+    image_version,
+    discrete_metrics,
+    memory_request,
+):
+    """Rerun holdback experiments with do_rerun_timestamp out of date."""
+
+    # get the experiments from Experimenter API that are explicitly marked for rerun
+    # and are out of date
+    all_experiments = ExperimentCollection.from_experimenter().experiments
+    rerun_experiments = [exp for exp in all_experiments if exp.do_rerun]
+    rerun_slugs = set()
+    client = BigQueryClient(project_id, dataset_id)
+    for exp in rerun_experiments:
+        first_updated = client.experiment_table_first_updated(exp.normandy_slug)
+        # if exp is ended and ended before today,
+        # and either was never run (has no results tables),
+        # or was last run before the do rerun timestamp
+        if (
+            exp.end_date is not None
+            and exp.end_date < datetime.now(pytz.UTC)
+            and (
+                first_updated is None
+                or (exp.do_rerun_timestamp is not None and first_updated < exp.do_rerun_timestamp)
+            )
+        ):
+            rerun_slugs.add(exp.normandy_slug)
+
+    # update the table timestamps which indicate whether a experiment needs to be rerun
+    for slug in rerun_slugs:
+        client.touch_tables(slug)
+        # do_rerun experiments only do OVERALL and should always recreate enrollments
+        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], delete_enrollments=True)
+
+    periods_source = ctx.get_parameter_source("analysis_periods")
+    if periods_source != ParameterSource.COMMANDLINE:
+        # if analysis periods are set explicitly use those, otherwise
+        # do_rerun experiments by default only compute OVERALL
+        analysis_periods = [AnalysisPeriod.OVERALL]
+
+    strategy = SerialExecutorStrategy(
+        project_id,
+        dataset_id,
+        bucket,
+        ctx.obj["log_config"],
+        analysis_periods=analysis_periods,
+        discrete_metrics=discrete_metrics,
+    )
+    if argo:
+        strategy = ArgoExecutorStrategy(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            bucket=bucket,
+            zone=zone,
+            cluster_id=cluster_id,
+            monitor_status=monitor_status,
+            cluster_ip=cluster_ip,
+            cluster_cert=cluster_cert,
+            analysis_periods=analysis_periods,
+            image=image,
+            image_version=image_version,
+            memory_request=memory_request,
+            discrete_metrics=discrete_metrics,
+        )
+
+    success = AnalysisExecutor(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        bucket=bucket,
+        date=All,
+        experiment_slugs=list(rerun_slugs),
         recreate_enrollments=recreate_enrollments,
     ).execute(
         strategy=strategy,
