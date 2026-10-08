@@ -393,7 +393,12 @@ class AnalysisExecutor:
                     # if analysis periods are set explicitly run all dates, otherwise only end date
                     # because do_rerun experiments by default only compute OVERALL
                     if not explicit_periods:
-                        run_dates = [config.experiment.end_date]
+                        run_dates = (
+                            [config.experiment.end_date]
+                            if config.experiment.end_date and config.experiment.end_date <= today
+                            else []
+                        )
+                        run_dates.append(get_preenrollment_analysis_date(config))
             else:
                 run_dates = [self.date]
 
