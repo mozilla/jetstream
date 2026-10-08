@@ -32,7 +32,7 @@ from metric_config_parser.function import FunctionsSpec
 from metric_config_parser.metric import AnalysisPeriod
 
 from . import bq_normalize_name
-from .analysis import Analysis
+from .analysis import Analysis, get_preenrollment_analysis_date
 from .argo import submit_workflow
 from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
@@ -132,9 +132,16 @@ class ArgoExecutorStrategy:
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
-        experiments_config: dict[str, list[str]] = {}
+        experiments_config: dict[str, dict[str, list[str]]] = {}
         for config, date in worklist:
-            experiments_config.setdefault(config.experiment.normandy_slug, []).append(
+            # separate preenrollment analysis dates so we can run them first
+            # this way they are available for covariate adjustment when other periods run
+            analysis_dates = experiments_config.setdefault(
+                config.experiment.normandy_slug, {"other_dates": [], "preenrollment_dates": []}
+            )
+            preenrollment = get_preenrollment_analysis_date(config)
+            is_preenrollment = preenrollment is not None and preenrollment.date() == date.date()
+            analysis_dates["preenrollment_dates" if is_preenrollment else "other_dates"].append(
                 date.strftime("%Y-%m-%d")
             )
 
@@ -166,7 +173,8 @@ class ArgoExecutorStrategy:
         experiments_config_list = [
             {
                 "slug": slug,
-                "dates": dates,
+                "dates": analysis_dates["other_dates"],
+                "preenrollment_dates": analysis_dates["preenrollment_dates"],
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
@@ -178,7 +186,7 @@ class ArgoExecutorStrategy:
                 )
                 else discrete_metrics,
             }
-            for slug, dates in experiments_config.items()
+            for slug, analysis_dates in experiments_config.items()
         ]
 
         logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
@@ -1403,7 +1411,7 @@ def rerun_config_changed(
 @cluster_cert_option
 @return_status_option
 @recreate_enrollments_option(True)
-@analysis_periods_option([AnalysisPeriod.OVERALL])
+@analysis_periods_option([AnalysisPeriod.OVERALL, AnalysisPeriod.PREENROLLMENT_WEEK])
 @image_option
 @image_version_option
 @discrete_metrics_option
@@ -1432,7 +1440,7 @@ def rerun_holdback(
 
     Default behavior is slightly different from other run commands:
     - recreate enrollments: True
-    - analysis periods: only OVERALL
+    - analysis periods: OVERALL and PREENROLLMENT_WEEK
     """
 
     # get the experiments from Experimenter API that are explicitly marked for rerun

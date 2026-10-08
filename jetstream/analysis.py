@@ -54,6 +54,13 @@ PREENROLLMENT_PERIODS = [AnalysisPeriod.PREENROLLMENT_DAYS_28, AnalysisPeriod.PR
 _dask_cluster = None
 
 
+def get_preenrollment_analysis_date(config: AnalysisConfiguration) -> datetime | None:
+    """Returns the date on which preenrollment periods are computed for the experiment."""
+    if config.experiment.start_date is None:
+        return None
+    return config.experiment.start_date + timedelta(days=config.experiment.enrollment_period + 1)
+
+
 @dask.delayed
 def _successful_metrics_dict(
     metric_table_results: list[str],
@@ -152,9 +159,7 @@ class Analysis:
             return current_time_limits
 
         elif period in [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]:
-            enrollment_end_date = self.config.experiment.start_date + timedelta(
-                days=dates_enrollment
-            )
+            enrollment_end_date = get_preenrollment_analysis_date(self.config)
 
             if enrollment_end_date != current_date:
                 logger.info(

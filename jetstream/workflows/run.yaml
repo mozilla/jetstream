@@ -36,6 +36,8 @@ spec:
             value: "{{item.slug}}"
           - name: dates
             value: "{{item.dates}}"
+          - name: preenrollment_dates
+            value: "{{item.preenrollment_dates}}"
           - name: image_hash
             value: "{{item.image_hash}}"
           - name: discrete_metrics
@@ -50,6 +52,7 @@ spec:
         - name: image_hash
         - name: slug
         - name: dates
+        - name: preenrollment_dates
         - name: discrete_metrics
     steps:
       - - name: ensure-enrollments
@@ -60,6 +63,24 @@ spec:
                 value: "{{inputs.parameters.slug}}"
               - name: image_hash
                 value: "{{inputs.parameters.image_hash}}"
+      # preenrollment periods are computed on the first date after enrollment ends and are needed
+      # for covariate adjustment on other dates, so this date must complete before the others start
+      - - name: analyse-and-export-preenrollment
+          template: analyse-and-export
+          arguments:
+            parameters:
+              - name: slug
+                value: "{{inputs.parameters.slug}}"
+              - name: date
+                value: "{{item}}"
+              - name: image_hash
+                value: "{{inputs.parameters.image_hash}}"
+              - name: discrete_metrics
+                value: "{{inputs.parameters.discrete_metrics}}"
+          withParam: "{{inputs.parameters.preenrollment_dates}}"
+          continueOn:  # other dates must still run if the preenrollment date fails or errors
+            failed: true
+            error: true
       - - name: analyse-and-export
           template: analyse-and-export
           arguments:
@@ -121,7 +142,7 @@ spec:
             requests:
               memory: "{{workflow.parameters.memory_request}}"
             limits:
-              cpu: 4
+              cpu: 2
     retryStrategy:
       limit: 3  # execute a container max. 3x; sometimes a container run might fail due to limited resources
       retryPolicy: "Always"
