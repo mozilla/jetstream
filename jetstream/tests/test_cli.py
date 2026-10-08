@@ -280,15 +280,23 @@ class TestCli:
 
             assert result.exit_code == 0
 
-    def test_rerun_config_changed_do_rerun_overall_only(self, runner, monkeypatch, bq_client_mock):
+    def _setup_holdback(
+        self,
+        monkeypatch,
+        bq_client_mock,
+        end_date=dt.datetime(2021, 2, 1, tzinfo=UTC),
+        first_updated=dt.datetime(2023, 1, 1, tzinfo=UTC),
+    ):
+        """Mock out external dependencies for a single `do_rerun` experiment.
+
+        Returns a dict that captures the strategy's `analysis_periods` and `worklist`.
+        """
         monkeypatch.setattr(ConfigLoader, "with_configs_from", lambda *a, **kw: ConfigLoader)
         monkeypatch.setattr(ConfigLoader, "updated_configs", lambda *a, **kw: [])
         monkeypatch.setattr(ConfigLoader, "updated_defaults", lambda *a, **kw: [])
 
         bq_client_mock.return_value.reset_mock()
-        bq_client_mock.return_value.experiment_table_first_updated.return_value = dt.datetime(
-            2023, 1, 1, tzinfo=UTC
-        )
+        bq_client_mock.return_value.experiment_table_first_updated.return_value = first_updated
 
         rerun_experiment = Experiment(
             experimenter_slug=None,
@@ -297,7 +305,7 @@ class TestCli:
             status="Live",
             branches=[Branch(slug="treatment", ratio=1), Branch(slug="control", ratio=1)],
             start_date=dt.datetime(2020, 1, 1, tzinfo=UTC),
-            end_date=dt.datetime(2021, 2, 1, tzinfo=UTC),
+            end_date=end_date,
             proposed_enrollment=None,
             reference_branch="control",
             is_high_population=False,
@@ -325,27 +333,106 @@ class TestCli:
                 captured["analysis_periods"] = kwargs.get("analysis_periods")
 
             def execute(self, worklist, configuration_map=None):
-                captured["worklist"] = worklist
+                captured["worklist"] = list(worklist)
                 return True
 
         monkeypatch.setattr("jetstream.cli.SerialExecutorStrategy", MockStrategy)
+        return captured
 
-        result = runner.invoke(
-            cli.rerun_config_changed,
-            ["--project_id", "test-project", "--dataset_id", "test_dataset"],
+    def _invoke(self, runner, command, *args):
+        return runner.invoke(
+            command,
+            ["--project_id", "test-project", "--dataset_id", "test_dataset", *args],
             obj={"log_config": None},
             catch_exceptions=False,
         )
+
+    def test_rerun_holdback_overall_only(self, runner, monkeypatch, bq_client_mock):
+        captured = self._setup_holdback(monkeypatch, bq_client_mock)
+
+        result = self._invoke(runner, cli.rerun_holdback)
         assert result.exit_code == 0, result.output
 
         # do_rerun experiments only rerun OVERALL and always recreate enrollments
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
-            "holdback_experiment", [AnalysisPeriod.OVERALL], delete_enrollments=True
+            "holdback_experiment", (AnalysisPeriod.OVERALL,), delete_enrollments=True
         )
 
-        # ensure holdback is in analysis list after deleting tables
-        analyzed_slugs = {config.experiment.normandy_slug for config, _ in captured["worklist"]}
-        assert "holdback_experiment" in analyzed_slugs
+        # periods default to OVERALL only when not set explicitly
+        assert captured["analysis_periods"] == (AnalysisPeriod.OVERALL,)
+
+        # ensure holdback is in analysis list after deleting tables, and only for one date
+        assert [c.experiment.normandy_slug for c, _ in captured["worklist"]] == [
+            "holdback_experiment"
+        ]
+
+    def test_rerun_holdback_explicit_periods_run_all_dates(
+        self, runner, monkeypatch, bq_client_mock
+    ):
+        captured = self._setup_holdback(monkeypatch, bq_client_mock)
+
+        result = self._invoke(
+            runner, cli.rerun_holdback, "--analysis_periods", "day", "--analysis_periods", "week"
+        )
+        assert result.exit_code == 0, result.output
+
+        assert list(captured["analysis_periods"]) == [AnalysisPeriod.DAY, AnalysisPeriod.WEEK]
+
+        # explicit periods force a run for every date in the experiment
+        dates = [date for _, date in captured["worklist"]]
+        assert len(dates) > 1
+        assert dates[0].date() == dt.date(2020, 1, 1)
+
+    @pytest.mark.parametrize(
+        ("end_date", "first_updated"),
+        [
+            (None, None),
+            (None, dt.datetime(2020, 1, 1, tzinfo=UTC)),
+            (dt.datetime(2999, 1, 1, tzinfo=UTC), None),
+            (dt.datetime(2999, 1, 1, tzinfo=UTC), dt.datetime(2020, 1, 1, tzinfo=UTC)),
+        ],
+    )
+    def test_rerun_holdback_skips_experiments_not_ended(
+        self, runner, monkeypatch, bq_client_mock, end_date, first_updated
+    ):
+        captured = self._setup_holdback(
+            monkeypatch, bq_client_mock, end_date=end_date, first_updated=first_updated
+        )
+
+        result = self._invoke(runner, cli.rerun_holdback)
+        assert result.exit_code == 0, result.output
+
+        bq_client_mock.return_value.delete_experiment_tables.assert_not_called()
+        bq_client_mock.return_value.touch_tables.assert_not_called()
+        assert captured["worklist"] == []
+
+    def test_rerun_holdback_skips_up_to_date_experiments(self, runner, monkeypatch, bq_client_mock):
+        captured = self._setup_holdback(
+            monkeypatch,
+            bq_client_mock,
+            # newer than `do_rerun_timestamp`
+            first_updated=dt.datetime(2025, 1, 1, tzinfo=UTC),
+        )
+
+        result = self._invoke(runner, cli.rerun_holdback)
+        assert result.exit_code == 0, result.output
+
+        bq_client_mock.return_value.delete_experiment_tables.assert_not_called()
+        assert captured["worklist"] == []
+
+    def test_rerun_config_changed_skips_do_rerun(self, runner, monkeypatch, bq_client_mock):
+        captured = self._setup_holdback(monkeypatch, bq_client_mock)
+        monkeypatch.setattr(
+            ConfigLoader, "updated_defaults", lambda *a, **kw: ["holdback_experiment"]
+        )
+
+        result = self._invoke(runner, cli.rerun_config_changed)
+        assert result.exit_code == 0, result.output
+
+        # handled by `rerun_holdback` instead
+        bq_client_mock.return_value.delete_experiment_tables.assert_not_called()
+        bq_client_mock.return_value.touch_tables.assert_not_called()
+        assert captured["worklist"] == []
 
 
 @attr.s(auto_attribs=True)
