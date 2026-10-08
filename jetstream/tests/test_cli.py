@@ -356,16 +356,23 @@ class TestCli:
 
         # do_rerun experiments only rerun OVERALL and always recreate enrollments
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
-            "holdback_experiment", (AnalysisPeriod.OVERALL,), delete_enrollments=True
+            "holdback_experiment",
+            (AnalysisPeriod.OVERALL, AnalysisPeriod.PREENROLLMENT_WEEK),
+            delete_enrollments=True,
         )
 
         # periods default to OVERALL only when not set explicitly
-        assert captured["analysis_periods"] == (AnalysisPeriod.OVERALL,)
+        assert captured["analysis_periods"] == (
+            AnalysisPeriod.OVERALL,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+        )
 
-        # ensure holdback is in analysis list after deleting tables, and only for one date
+        # ensure holdback is in analysis list after deleting tables for two dates
         assert [c.experiment.normandy_slug for c, _ in captured["worklist"]] == [
-            "holdback_experiment"
+            "holdback_experiment",
+            "holdback_experiment",
         ]
+        assert [str(d.date()) for _, d in captured["worklist"]] == ["2021-02-01", "2020-01-02"]
 
     def test_rerun_holdback_explicit_periods_run_all_dates(
         self, runner, monkeypatch, bq_client_mock
@@ -382,6 +389,7 @@ class TestCli:
         # explicit periods force a run for every date in the experiment
         dates = [date for _, date in captured["worklist"]]
         assert len(dates) > 1
+        assert len(dates) == 399
         assert dates[0].date() == dt.date(2020, 1, 1)
 
     @pytest.mark.parametrize(
