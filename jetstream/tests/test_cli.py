@@ -355,11 +355,11 @@ class TestCli:
 
         # do_rerun experiments only rerun OVERALL and always recreate enrollments
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
-            "holdback_experiment", [AnalysisPeriod.OVERALL], delete_enrollments=True
+            "holdback_experiment", (AnalysisPeriod.OVERALL,), delete_enrollments=True
         )
 
         # periods default to OVERALL only when not set explicitly
-        assert captured["analysis_periods"] == [AnalysisPeriod.OVERALL]
+        assert captured["analysis_periods"] == (AnalysisPeriod.OVERALL,)
 
         # ensure holdback is in analysis list after deleting tables, and only for one date
         assert [c.experiment.normandy_slug for c, _ in captured["worklist"]] == [

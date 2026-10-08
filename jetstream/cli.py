@@ -778,13 +778,16 @@ cluster_cert_option = click.option(
     help="Kubernetes cluster certificate used for authenticating to the cluster",
 )
 
-recreate_enrollments_option = click.option(
-    "--recreate_enrollments",
-    "--recreate-enrollments",
-    help="Recreate the enrollments tables",
-    is_flag=True,
-    default=False,
-)
+
+def recreate_enrollments_option(default=False):
+    return click.option(
+        "--recreate_enrollments/--no_recreate_enrollments",
+        "--recreate-enrollments/--no-recreate-enrollments",
+        help="Recreate the enrollments tables",
+        is_flag=True,
+        default=default,
+    )
+
 
 date_option = click.option(
     "--date",
@@ -890,7 +893,7 @@ memory_request_option = click.option(
 @experiment_slug_option
 @bucket_option
 @config_file_option
-@recreate_enrollments_option
+@recreate_enrollments_option()
 @config_repos_option
 @private_config_repos_option
 @analysis_periods_option()
@@ -978,7 +981,7 @@ def run(
 @monitor_status_option
 @cluster_ip_option
 @cluster_cert_option
-@recreate_enrollments_option
+@recreate_enrollments_option()
 @config_repos_option
 @private_config_repos_option
 @image_option
@@ -1057,7 +1060,7 @@ def run_argo(
 @cluster_ip_option
 @cluster_cert_option
 @return_status_option
-@recreate_enrollments_option
+@recreate_enrollments_option()
 @config_repos_option
 @private_config_repos_option
 @image_option
@@ -1284,7 +1287,7 @@ def export_experiment_logs_to_json(
 @cluster_ip_option
 @cluster_cert_option
 @return_status_option
-@recreate_enrollments_option
+@recreate_enrollments_option()
 @config_repos_option
 @private_config_repos_option
 @analysis_periods_option()
@@ -1399,8 +1402,8 @@ def rerun_config_changed(
 @cluster_ip_option
 @cluster_cert_option
 @return_status_option
-@recreate_enrollments_option
-@analysis_periods_option()
+@recreate_enrollments_option(True)
+@analysis_periods_option([AnalysisPeriod.OVERALL])
 @image_option
 @image_version_option
 @discrete_metrics_option
@@ -1425,7 +1428,12 @@ def rerun_holdback(
     discrete_metrics,
     memory_request,
 ):
-    """Rerun holdback experiments with do_rerun_timestamp out of date."""
+    """Rerun holdback experiments with do_rerun_timestamp out of date.
+
+    Default behavior is slightly different from other run commands:
+    - recreate enrollments: True
+    - analysis periods: only OVERALL
+    """
 
     # get the experiments from Experimenter API that are explicitly marked for rerun
     # and are out of date
@@ -1452,13 +1460,9 @@ def rerun_holdback(
     for slug in rerun_slugs:
         client.touch_tables(slug)
         # do_rerun experiments only do OVERALL and should always recreate enrollments
-        client.delete_experiment_tables(slug, [AnalysisPeriod.OVERALL], delete_enrollments=True)
-
-    periods_source = ctx.get_parameter_source("analysis_periods")
-    if periods_source != ParameterSource.COMMANDLINE:
-        # if analysis periods are set explicitly use those, otherwise
-        # do_rerun experiments by default only compute OVERALL
-        analysis_periods = [AnalysisPeriod.OVERALL]
+        client.delete_experiment_tables(
+            slug, analysis_periods, delete_enrollments=recreate_enrollments
+        )
 
     strategy = SerialExecutorStrategy(
         project_id,
@@ -1632,7 +1636,7 @@ def validate_config(
 @bucket_option
 @experiment_slug_option
 @config_file_option
-@recreate_enrollments_option
+@recreate_enrollments_option()
 @config_repos_option
 @private_config_repos_option
 @use_glean_ids_option
