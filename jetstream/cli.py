@@ -390,15 +390,16 @@ class AnalysisExecutor:
                         "analysis_periods"
                     )
                     explicit_periods = periods_source == ParameterSource.COMMANDLINE
-                    # if analysis periods are set explicitly run all dates, otherwise only end date
-                    # because do_rerun experiments by default only compute OVERALL
+                    # if analysis periods are set explicitly run all dates, otherwise only run
+                    # for preenrollment and overall dates
                     if not explicit_periods:
-                        run_dates = (
-                            [config.experiment.end_date]
-                            if config.experiment.end_date and config.experiment.end_date <= today
-                            else []
-                        )
-                        run_dates.append(get_preenrollment_analysis_date(config))
+                        # dedupe (probably indicates an issue with experiment, but just in case)
+                        # and only add the end_date for overall if ended in the past
+                        run_dates = {get_preenrollment_analysis_date(config)}
+                        if config.experiment.end_date and config.experiment.end_date <= today:
+                            run_dates.add(config.experiment.end_date)
+                        run_dates = list(run_dates)
+
             else:
                 run_dates = [self.date]
 
