@@ -1358,10 +1358,10 @@ def rerun_config_changed(
     for exp in rerun_experiments:
         if exp.normandy_slug in experiment_slugs:
             experiment_slugs.remove(exp.normandy_slug)
-            logger.warning(
+            click.echo(
                 f"rerun_config_changed: Skipping `do_rerun` experiment {exp.normandy_slug}."
                 " This will be automatically picked up by rerun_holdback, or trigger a manual"
-                " run if needed."
+                " run if needed.",
             )
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
@@ -1468,6 +1468,11 @@ def rerun_holdback(
             )
         ):
             rerun_slugs.add(exp.normandy_slug)
+        elif exp.end_date is None or exp.end_date >= datetime.now(pytz.UTC):
+            logger.warning(
+                f"Skipping {exp.normandy_slug} because end_date {exp.end_date} is not in the past.",
+                extra={"experiment": exp.normandy_slug},
+            )
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
     for slug in rerun_slugs:
