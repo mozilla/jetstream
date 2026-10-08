@@ -385,7 +385,7 @@ class AnalysisExecutor:
                     # if analysis periods are set explicitly run all dates, otherwise only end date
                     # because do_rerun experiments by default only compute OVERALL
                     if not explicit_periods:
-                        run_dates = [end_date]
+                        run_dates = [config.experiment.end_date]
             else:
                 run_dates = [self.date]
 
