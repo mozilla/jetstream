@@ -32,7 +32,7 @@ from metric_config_parser.function import FunctionsSpec
 from metric_config_parser.metric import AnalysisPeriod
 
 from . import bq_normalize_name
-from .analysis import Analysis
+from .analysis import Analysis, get_preenrollment_analysis_date
 from .argo import submit_workflow
 from .artifacts import ArtifactManager
 from .bigquery_client import BigQueryClient
@@ -132,9 +132,16 @@ class ArgoExecutorStrategy:
         if configuration_map is not None:
             raise Exception("Custom configurations are not supported when running with Argo")
 
-        experiments_config: dict[str, list[str]] = {}
+        experiments_config: dict[str, dict[str, list[str]]] = {}
         for config, date in worklist:
-            experiments_config.setdefault(config.experiment.normandy_slug, []).append(
+            # separate preenrollment analysis dates so we can run them first
+            # this way they are available for covariate adjustment when other periods run
+            analysis_dates = experiments_config.setdefault(
+                config.experiment.normandy_slug, {"other_dates": [], "preenrollment_dates": []}
+            )
+            preenrollment = get_preenrollment_analysis_date(config)
+            is_preenrollment = preenrollment is not None and preenrollment.date() == date.date()
+            analysis_dates["preenrollment_dates" if is_preenrollment else "other_dates"].append(
                 date.strftime("%Y-%m-%d")
             )
 
@@ -166,7 +173,8 @@ class ArgoExecutorStrategy:
         experiments_config_list = [
             {
                 "slug": slug,
-                "dates": dates,
+                "dates": analysis_dates["other_dates"],
+                "preenrollment_dates": analysis_dates["preenrollment_dates"],
                 "image_hash": (
                     image_version if image_version else artifact_manager.image_for_slug(slug)
                 ),
@@ -178,7 +186,7 @@ class ArgoExecutorStrategy:
                 )
                 else discrete_metrics,
             }
-            for slug, dates in experiments_config.items()
+            for slug, analysis_dates in experiments_config.items()
         ]
 
         logger.info([{cfg["slug"]: cfg["image_hash"]} for cfg in experiments_config_list])
@@ -382,14 +390,16 @@ class AnalysisExecutor:
                         "analysis_periods"
                     )
                     explicit_periods = periods_source == ParameterSource.COMMANDLINE
-                    # if analysis periods are set explicitly run all dates, otherwise only end date
-                    # because do_rerun experiments by default only compute OVERALL
+                    # if analysis periods are set explicitly run all dates, otherwise only run
+                    # for preenrollment and overall dates
                     if not explicit_periods:
-                        run_dates = (
-                            [config.experiment.end_date]
-                            if config.experiment.end_date and config.experiment.end_date <= today
-                            else []
-                        )
+                        # dedupe (probably indicates an issue with experiment, but just in case)
+                        # and only add the end_date for overall if ended in the past
+                        run_dates = {get_preenrollment_analysis_date(config)}
+                        if config.experiment.end_date and config.experiment.end_date <= today:
+                            run_dates.add(config.experiment.end_date)
+                        run_dates = list(run_dates)
+
             else:
                 run_dates = [self.date]
 
@@ -1349,10 +1359,10 @@ def rerun_config_changed(
     for exp in rerun_experiments:
         if exp.normandy_slug in experiment_slugs:
             experiment_slugs.remove(exp.normandy_slug)
-            logger.warning(
+            click.echo(
                 f"rerun_config_changed: Skipping `do_rerun` experiment {exp.normandy_slug}."
                 " This will be automatically picked up by rerun_holdback, or trigger a manual"
-                " run if needed."
+                " run if needed.",
             )
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
@@ -1407,7 +1417,7 @@ def rerun_config_changed(
 @cluster_cert_option
 @return_status_option
 @recreate_enrollments_option(True)
-@analysis_periods_option([AnalysisPeriod.OVERALL])
+@analysis_periods_option([AnalysisPeriod.OVERALL, AnalysisPeriod.PREENROLLMENT_WEEK])
 @image_option
 @image_version_option
 @discrete_metrics_option
@@ -1436,7 +1446,7 @@ def rerun_holdback(
 
     Default behavior is slightly different from other run commands:
     - recreate enrollments: True
-    - analysis periods: only OVERALL
+    - analysis periods: OVERALL and PREENROLLMENT_WEEK
     """
 
     # get the experiments from Experimenter API that are explicitly marked for rerun
@@ -1459,6 +1469,11 @@ def rerun_holdback(
             )
         ):
             rerun_slugs.add(exp.normandy_slug)
+        elif exp.end_date is None or exp.end_date >= datetime.now(pytz.UTC):
+            logger.warning(
+                f"Skipping {exp.normandy_slug} because end_date {exp.end_date} is not in the past.",
+                extra={"experiment": exp.normandy_slug},
+            )
 
     # update the table timestamps which indicate whether a experiment needs to be rerun
     for slug in rerun_slugs:

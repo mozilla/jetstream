@@ -18,6 +18,7 @@ from metric_config_parser.metric import AnalysisPeriod
 from pytz import UTC
 
 from jetstream import cli, experimenter
+from jetstream.analysis import get_preenrollment_analysis_date
 from jetstream.artifacts import ArtifactManager
 from jetstream.config import ConfigLoader, _ConfigLoader
 
@@ -355,16 +356,23 @@ class TestCli:
 
         # do_rerun experiments only rerun OVERALL and always recreate enrollments
         bq_client_mock.return_value.delete_experiment_tables.assert_any_call(
-            "holdback_experiment", (AnalysisPeriod.OVERALL,), delete_enrollments=True
+            "holdback_experiment",
+            (AnalysisPeriod.OVERALL, AnalysisPeriod.PREENROLLMENT_WEEK),
+            delete_enrollments=True,
         )
 
         # periods default to OVERALL only when not set explicitly
-        assert captured["analysis_periods"] == (AnalysisPeriod.OVERALL,)
+        assert captured["analysis_periods"] == (
+            AnalysisPeriod.OVERALL,
+            AnalysisPeriod.PREENROLLMENT_WEEK,
+        )
 
-        # ensure holdback is in analysis list after deleting tables, and only for one date
+        # ensure holdback is in analysis list after deleting tables for two dates
         assert [c.experiment.normandy_slug for c, _ in captured["worklist"]] == [
-            "holdback_experiment"
+            "holdback_experiment",
+            "holdback_experiment",
         ]
+        assert [str(d.date()) for _, d in captured["worklist"]] == ["2020-01-02", "2021-02-01"]
 
     def test_rerun_holdback_explicit_periods_run_all_dates(
         self, runner, monkeypatch, bq_client_mock
@@ -381,6 +389,7 @@ class TestCli:
         # explicit periods force a run for every date in the experiment
         dates = [date for _, date in captured["worklist"]]
         assert len(dates) > 1
+        assert len(dates) == 399
         assert dates[0].date() == dt.date(2020, 1, 1)
 
     @pytest.mark.parametrize(
@@ -871,6 +880,7 @@ class TestArgoExecutorStrategy:
                         {
                             "slug": "my_cool_experiment",
                             "dates": ["2020-10-31"],
+                            "preenrollment_dates": [],
                             "image_hash": "xxxxx",
                             "discrete_metrics": discrete_flag,
                         }
@@ -959,6 +969,7 @@ class TestArgoExecutorStrategy:
                         {
                             "slug": "my_cool_experiment",
                             "dates": ["2020-10-31"],
+                            "preenrollment_dates": [],
                             "image_hash": "aaaaa",
                             "discrete_metrics": discrete_flag,
                         }
@@ -980,3 +991,40 @@ class TestArgoExecutorStrategy:
                 cluster_ip=None,
                 cluster_cert=None,
             )
+
+    def test_preenrollment_date_split(self, cli_experiments, monkeypatch, docker_images):
+        experiment = cli_experiments.experiments[0]
+        spec = AnalysisSpec.default_for_experiment(experiment, ConfigLoader.configs)
+        config = spec.resolve(experiment, ConfigLoader.configs)
+        mock_artifact_client = Mock()
+        mock_artifact_client.list_docker_images.return_value = docker_images
+        monkeypatch.setattr(ArtifactManager, "client", property(lambda _: mock_artifact_client))
+
+        ctx = MagicMock()
+        ctx.get_parameter_source.return_value = ParameterSource.COMMANDLINE
+        push_context(ctx)
+
+        pre_date = get_preenrollment_analysis_date(config)
+        worklist = [(config, pre_date + dt.timedelta(days=d)) for d in (-1, 0, 1, 2)]
+
+        with (
+            mock.patch("jetstream.cli.submit_workflow") as submit_workflow_mock,
+            mock.patch("jetstream.cli.BigQueryClient"),
+        ):
+            strategy = cli.ArgoExecutorStrategy(
+                project_id="spam",
+                dataset_id="eggs",
+                bucket="bucket",
+                zone="zone",
+                cluster_id="cluster_id",
+                monitor_status=False,
+                image_version="latest",
+                memory_request="1G",
+            )
+            strategy.execute(worklist)
+
+        experiment_params = submit_workflow_mock.call_args.kwargs["parameters"]["experiments"][0]
+        assert experiment_params["preenrollment_dates"] == [pre_date.strftime("%Y-%m-%d")]
+        assert experiment_params["dates"] == [
+            (pre_date + dt.timedelta(days=d)).strftime("%Y-%m-%d") for d in (-1, 1, 2)
+        ]
