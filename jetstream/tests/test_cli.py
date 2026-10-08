@@ -372,7 +372,7 @@ class TestCli:
             "holdback_experiment",
             "holdback_experiment",
         ]
-        assert [str(d.date()) for _, d in captured["worklist"]] == ["2021-02-01", "2020-01-02"]
+        assert [str(d.date()) for _, d in captured["worklist"]] == ["2020-01-02", "2021-02-01"]
 
     def test_rerun_holdback_explicit_periods_run_all_dates(
         self, runner, monkeypatch, bq_client_mock
