@@ -6,7 +6,7 @@
 #
 annotated-types==0.8.0
     # via pydantic
-ast-serialize==0.11.1
+ast-serialize==0.13.0
     # via mypy
 attrs==26.1.0
     # via
@@ -16,9 +16,9 @@ attrs==26.1.0
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==7.1.8
+cachetools==7.2.1
     # via tox
-cattrs==26.2.0
+cattrs==26.2.1
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
@@ -26,7 +26,7 @@ certifi==2026.7.22
     # via requests
 cffi==2.1.1
     # via cryptography
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 click==8.5.0
     # via
@@ -43,11 +43,11 @@ colorama==0.4.6
     # via tox
 contourpy==1.3.3
     # via matplotlib
-coverage[toml]==7.16.0
+coverage[toml]==7.16.2
     # via
     #   mozilla-jetstream
     #   pytest-cov
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   google-auth
     #   secretstorage
@@ -57,7 +57,7 @@ dask[distributed]==2026.8.0
     # via
     #   distributed
     #   mozilla-jetstream
-db-dtypes==1.7.1
+db-dtypes==1.7.2
     # via mozilla-jetstream
 distlib==0.4.3
     # via virtualenv
@@ -65,29 +65,29 @@ distributed==2026.8.0
     # via dask
 execnet==2.1.2
     # via pytest-xdist
-faker==40.38.0
+faker==40.43.0
     # via polyfactory
-filelock==3.32.6
+filelock==4.2.0
     # via
     #   python-discovery
     #   tox
     #   virtualenv
-fonttools==4.64.0
+fonttools==4.67.0
     # via matplotlib
 formulaic==1.2.2
     # via
     #   marginaleffects
     #   mozanalysis
     #   statsmodels
-fsspec==2026.7.0
+fsspec==2026.9.0
     # via dask
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.62
+gitpython==3.2.1
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-google-api-core[grpc]==2.36.0
+google-api-core[grpc]==2.42.0
     # via
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery
@@ -95,7 +95,7 @@ google-api-core[grpc]==2.36.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-auth[pyopenssl]==2.58.0
+google-auth[pyopenssl]==2.62.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
@@ -104,42 +104,42 @@ google-auth[pyopenssl]==2.58.0
     #   google-cloud-container
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-artifact-registry==1.22.0
+google-cloud-artifact-registry==1.23.0
     # via mozilla-jetstream
-google-cloud-bigquery==3.45.0
+google-cloud-bigquery==3.46.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.41.0
+google-cloud-bigquery-storage==2.42.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-container==2.66.0
+google-cloud-container==2.67.0
     # via mozilla-jetstream
-google-cloud-core==2.7.0
+google-cloud-core==2.8.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==3.14.1
+google-cloud-storage==3.17.0
     # via
     #   mozilla-jetstream
     #   smart-open
-google-crc32c==1.8.0
+google-crc32c==1.9.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-resumable-media==2.10.2
+google-resumable-media==2.11.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.75.3
+googleapis-common-protos[grpc]==1.75.5
     # via
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
 grpc-google-iam-v1==0.14.5
     # via google-cloud-artifact-registry
-grpcio==1.83.1
+grpcio==1.84.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
@@ -149,13 +149,13 @@ grpcio==1.83.1
     #   grpc-google-iam-v1
     #   grpcio-status
     #   mozilla-jetstream
-grpcio-status==1.83.1
+grpcio-status==1.84.0
     # via google-api-core
-idna==3.19
+idna==3.20
     # via requests
 importlib-metadata==9.0.1
     # via dask
-iniconfig==2.3.0
+iniconfig==2.3.1
     # via pytest
 interface-meta==2.0.1
     # via formulaic
@@ -176,7 +176,7 @@ jsonschema-specifications==2025.9.1
     # via jsonschema
 kiwisolver==1.5.1
     # via matplotlib
-librt==0.15.0
+librt==0.16.0
     # via mypy
 locket==1.0.0
     # via
@@ -184,31 +184,31 @@ locket==1.0.0
     #   partd
 marginaleffects==0.1.4
     # via mozanalysis
-markupsafe==3.0.3
+markupsafe==3.0.4
     # via jinja2
-matplotlib==3.11.1
+matplotlib==3.11.2
     # via
     #   mozanalysis
     #   plotnine
 mizani==0.14.6
     # via plotnine
-mozanalysis==2026.9.1
+mozanalysis==2026.10.1
     # via mozilla-jetstream
-mozilla-metric-config-parser==2026.9.2
+mozilla-metric-config-parser==2026.10.1
     # via
     #   mozanalysis
     #   mozilla-jetstream
-mozilla-nimbus-schemas==3005.0.0
+mozilla-nimbus-schemas==3005.2.0
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-msgpack==1.2.2
+msgpack==1.2.3
     # via distributed
-mypy==2.3.1
+mypy==2.4.0
     # via mozilla-jetstream
 mypy-extensions==1.1.0
     # via mypy
-narwhals==2.26.0
+narwhals==2.27.1
     # via
     #   formulaic
     #   marginaleffects
@@ -228,7 +228,7 @@ numpy==2.4.6
     #   scikit-learn
     #   scipy
     #   statsmodels
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.1
     # via google-api-core
 packaging==26.3
     # via
@@ -242,7 +242,8 @@ packaging==26.3
     #   pytest
     #   statsmodels
     #   tox
-pandas==3.0.5
+    #   virtualenv
+pandas==3.0.6
     # via
     #   db-dtypes
     #   formulaic
@@ -260,7 +261,7 @@ patsy==1.0.3
     #   statsmodels
 pillow==12.3.0
     # via matplotlib
-platformdirs==4.11.8
+platformdirs==4.13.0
     # via
     #   tox
     #   virtualenv
@@ -272,18 +273,20 @@ pluggy==1.6.0
     #   pytest-cov
     #   tox
 polars==1.44.2
-    # via marginaleffects
+    # via
+    #   marginaleffects
+    #   mozanalysis
 polars-runtime-32==1.44.2
     # via polars
 polyfactory==2.22.5
     # via mozilla-nimbus-schemas
-proto-plus==1.28.4
+proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
     #   google-cloud-bigquery-storage
     #   google-cloud-container
-protobuf==7.36.1
+protobuf==7.36.2
     # via
     #   google-api-core
     #   google-cloud-artifact-registry
@@ -295,7 +298,7 @@ protobuf==7.36.1
     #   proto-plus
 psutil==7.2.2
     # via distributed
-pyarrow==25.0.1
+pyarrow==26.0.0
     # via
     #   db-dtypes
     #   marginaleffects
@@ -305,19 +308,19 @@ pyasn1==0.6.4
     # via pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
-pycparser==3.0
+pycparser==3.11
     # via cffi
-pydantic==2.13.5
+pydantic==2.14.1
     # via
     #   marginaleffects
     #   mozilla-nimbus-schemas
-pydantic-core==2.46.5
+pydantic-core==2.50.1
     # via pydantic
 pygments==2.21.0
     # via pytest
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via matplotlib
-pyproject-api==1.11.0
+pyproject-api==1.11.6
     # via tox
 pytest==9.1.1
     # via
@@ -336,11 +339,11 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-discovery==1.6.0
+python-discovery==1.6.2
     # via
     #   tox
     #   virtualenv
-pytz==2026.3.post1
+pytz==2026.5
     # via
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
@@ -360,15 +363,15 @@ requests==2.34.2
     #   google-cloud-storage
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
-rpds-py==2026.6.3
+rpds-py==2026.9.1
     # via
     #   jsonschema
     #   referencing
-ruff==0.16.6
+ruff==0.17.0
     # via
     #   mozilla-jetstream
     #   pytest-ruff
-scikit-learn==1.9.0
+scikit-learn==1.9.1
     # via mozilla-jetstream
 scipy==1.17.1
     # via
@@ -383,7 +386,7 @@ secretstorage==3.5.0
     # via mozanalysis
 six==1.17.0
     # via python-dateutil
-smart-open[gcs]==8.0.1
+smart-open[gcs]==8.0.3
     # via mozilla-jetstream
 smmap==5.0.3
     # via gitdb
@@ -396,7 +399,7 @@ statsmodels==0.15.0
     #   plotnine
 tblib==3.2.2
     # via distributed
-threadpoolctl==3.6.0
+threadpoolctl==3.7.0
     # via scikit-learn
 toml==0.10.2
     # via
@@ -404,28 +407,28 @@ toml==0.10.2
     #   mozilla-metric-config-parser
 tomli-w==1.2.0
     # via tox
-toolz==1.1.0
+toolz==1.2.0
     # via
     #   dask
     #   distributed
     #   partd
-tornado==6.5.8
+tornado==6.5.10
     # via distributed
-tox==4.61.4
+tox==4.65.5
     # via mozilla-jetstream
 types-futures==3.3.8
     # via mozilla-jetstream
 types-protobuf==7.35.1.20260906
     # via mozilla-jetstream
-types-pytz==2026.3.1.20260727
+types-pytz==2026.5.0.20261006
     # via mozilla-jetstream
 types-pyyaml==6.0.12.20260906
     # via mozilla-jetstream
-types-requests==2.33.0.20260906
+types-requests==2.33.0.20261006
     # via mozilla-jetstream
-types-setuptools==84.0.0.20260812
+types-setuptools==84.0.0.20261006
     # via mozilla-jetstream
-types-six==1.17.0.20260724
+types-six==1.17.0.20261008
     # via mozilla-jetstream
 types-toml==0.10.8.20260518
     # via mozilla-jetstream
@@ -445,17 +448,17 @@ typing-extensions==4.16.0
     #   typing-inspection
 typing-inspection==0.4.4
     # via pydantic
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   requests
     #   types-requests
-virtualenv==21.7.9
+virtualenv==21.14.7
     # via tox
-wrapt==2.4.0
+wrapt==2.5.1
     # via
     #   formulaic
     #   smart-open
 zict==3.0.0
     # via distributed
-zipp==4.1.0
+zipp==4.1.1
     # via importlib-metadata
