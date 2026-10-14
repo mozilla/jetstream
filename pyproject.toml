@@ -6,18 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "mozilla-jetstream"
 # This project does not issue regular releases, only when there
 # are changes that would be meaningful to our (few) dependents.
-version = "2026.8.2"
+version = "2026.10.1"
 authors = [{ name = "Mozilla Corporation", email = "fx-data-dev@mozilla.org" }]
 description = "Runs a thing that analyzes experiments"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "Click",
+    "GitPython",
+    "PyYAML",
     "attrs",
     "cattrs",
-    "Click",
     "dask[distributed]",
     "db-dtypes",
-    "GitPython",
     "google-cloud-artifact-registry",
     "google-cloud-bigquery",
     "google-cloud-bigquery-storage",
@@ -30,7 +31,6 @@ dependencies = [
     "mozilla-nimbus-schemas",
     "pyarrow",
     "pytz",
-    "PyYAML",
     "requests",
     "scikit-learn",
     "smart_open[gcs]",
@@ -56,10 +56,10 @@ testing = [
     "pytest-xdist",
     "ruff",
     "tox",
+    "types-PyYAML",
     "types-futures",
     "types-protobuf",
     "types-pytz",
-    "types-PyYAML",
     "types-requests",
     "types-setuptools",
     "types-six",
