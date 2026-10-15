@@ -122,7 +122,7 @@ class NimbusExperiment:
                 pytz.utc.localize(self.enrollmentEndDate) if self.enrollmentEndDate else None
             ),
             is_enrollment_paused=bool(self.isEnrollmentPaused),
-            is_rollout=self.isRollout,
+            is_rollout=self.isRollout or len(self.branches) == 1,
             bucket_config=self.bucketConfig,
             do_rerun=self.doRerun,
             do_rerun_timestamp=self.doRerunTimestamp,

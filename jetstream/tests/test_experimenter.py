@@ -292,6 +292,47 @@ FOCUS_ANDROID_EXPERIMENT_FIXTURE = """
 }
 """
 
+SINGLE_BRANCH_EXPERIMENT_FIXTURE = """
+{
+   "schemaVersion":"1.4.0",
+   "slug":"focus-test",
+   "id":"focus-test",
+   "application":"org.mozilla.focus",
+   "appName":"focus_android",
+   "appId":"org.mozilla.focus",
+   "channel":"beta",
+   "userFacingName":"Focus test",
+   "userFacingDescription":"Is Nimbus working? This experiment tries to find out.",
+   "isEnrollmentPaused":true,
+   "bucketConfig":{
+      "randomizationUnit":"nimbus_id",
+      "namespace":"focus-test-1",
+      "start":0,
+      "count":8000,
+      "total":10000
+   },
+   "probeSets":[],
+   "outcomes":[],
+   "segments":[],
+   "branches":[
+      {
+         "slug":"a1",
+         "ratio":60
+      }
+   ],
+   "isRollout":false,
+   "targeting":"true",
+   "startDate":"2021-04-01",
+   "endDate":null,
+   "proposedDuration":28,
+   "proposedEnrollment":7,
+   "referenceBranch":"a1",
+   "featureIds":[
+      "nimbusValidation"
+   ]
+}
+"""
+
 
 @pytest.fixture
 def mock_session():
@@ -468,6 +509,13 @@ def test_focus_android_app_name():
     assert x.to_experiment().outcomes == []
     assert x.segments == []
     assert x.to_experiment().segments == []
+
+
+def test_single_branch_is_rollout():
+    x = NimbusExperiment.from_dict(json.loads(SINGLE_BRANCH_EXPERIMENT_FIXTURE))
+    assert x.isRollout is False
+    exp = x.to_experiment()
+    assert exp.is_rollout is True
 
 
 def test_ended_after_or_live(experiment_collection):
