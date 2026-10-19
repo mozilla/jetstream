@@ -528,6 +528,8 @@ class LinearModelMean(Statistic):
                 resolution = ""
                 if n < MIN_REFERENCE_BRANCH_CLIENTS:
                     prefix = "Not enough clients in cohort. "
+                    if not (ref_values == 0).all():
+                        reason += " after outlier clipping"
                     resolution = (
                         f"check configuration to ensure analysis basis '{analysis_basis.value}' "
                         f"and segment '{segment}' has at least "

@@ -229,6 +229,7 @@ class TestStatistics:
         records = [r for r in caplog.records if "Not enough clients" in r.message]
         assert len(records) == 1
         assert records[0].levelno == logging.WARNING
+        assert "after outlier clipping" not in records[0].message
 
     def test_linear_model_mean_reference_branch_zeroed_by_clipping(self, caplog):
         """When outlier clipping zeroes out the reference branch, log an error."""
