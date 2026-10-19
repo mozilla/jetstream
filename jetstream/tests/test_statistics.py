@@ -198,6 +198,25 @@ class TestStatistics:
         stat = LinearModelMean()
         test_data = pd.DataFrame(
             {
+                "branch": ["treatment"] * 100 + ["control"] * 100,
+                "value": list(range(1, 101)) + [0] * 100,
+            }
+        )
+        with caplog.at_level(logging.WARNING, logger="jetstream.statistics"):
+            results = stat.transform(
+                test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        records = [r for r in caplog.records if "all metric values are zero" in r.message]
+        assert len(records) == 1
+        assert records[0].levelno == logging.WARNING
+        assert "Not enough clients" not in records[0].message
+
+    def test_linear_model_mean_small_reference_branch(self, caplog):
+        """When the reference branch is all zero and small, log a not-enough-clients warning."""
+        stat = LinearModelMean()
+        test_data = pd.DataFrame(
+            {
                 "branch": ["treatment"] * 10 + ["control"] * 10,
                 "value": list(range(1, 11)) + [0] * 10,
             }
@@ -207,10 +226,12 @@ class TestStatistics:
                 test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
             )
         assert len(results.root) == 0
-        assert any("all values for metric 'value' are zero" in r.message for r in caplog.records)
+        records = [r for r in caplog.records if "Not enough clients" in r.message]
+        assert len(records) == 1
+        assert records[0].levelno == logging.WARNING
 
     def test_linear_model_mean_reference_branch_zeroed_by_clipping(self, caplog):
-        """When outlier clipping zeroes out the reference branch, log a clear warning."""
+        """When outlier clipping zeroes out the reference branch, log an error."""
         stat = LinearModelMean()
         # The non-zero value in control branch is clipped by the outlier clipping
         test_data = pd.DataFrame(
@@ -224,7 +245,9 @@ class TestStatistics:
                 test_data, "value", "control", None, AnalysisBasis.ENROLLMENTS, "all"
             )
         assert len(results.root) == 0
-        assert any("after outlier clipping" in r.message for r in caplog.records)
+        records = [r for r in caplog.records if "outlier clipping" in r.message]
+        assert len(records) == 1
+        assert records[0].levelno == logging.ERROR
 
     @pytest.mark.parametrize(
         "period", [AnalysisPeriod.PREENROLLMENT_WEEK, AnalysisPeriod.PREENROLLMENT_DAYS_28]

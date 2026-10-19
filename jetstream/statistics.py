@@ -34,6 +34,9 @@ from .pre_treatment import PreTreatment
 
 logger = logging.getLogger(__name__)
 
+# minimum reference branch size for a meaningful LinearModelMean comparison
+MIN_REFERENCE_BRANCH_CLIENTS = 100
+
 
 @attr.s(auto_attribs=True)
 class Summary:
@@ -516,27 +519,48 @@ class LinearModelMean(Statistic):
 
             if (post_clip == 0).all():
                 n = len(ref_values)
-                if (ref_values == 0).all():
-                    reason = (
-                        f"reference branch '{reference_branch}' has {n} non-null "
-                        f"client(s) and all values for metric '{metric}' are zero"
+                level = logging.WARNING
+                prefix = ""
+                reason = (
+                    f"reference branch '{reference_branch}' has {n} non-null "
+                    "client(s) and all metric values are zero"
+                )
+                resolution = ""
+                if n < MIN_REFERENCE_BRANCH_CLIENTS:
+                    prefix = "Not enough clients in cohort. "
+                    resolution = (
+                        f"check configuration to ensure analysis basis '{analysis_basis.value}' "
+                        f"and segment '{segment}' has at least "
+                        f"{MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures configured "
+                        "correctly? is the segment population as expected?)."
+                    )
+                elif (ref_values == 0).all():
+                    resolution = (
+                        "check metric configuration to ensure non-zero values are expected."
                     )
                 else:
+                    # Clipping is an error that can be fixed by changing the metric/stat config
                     reason = (
                         f"reference branch '{reference_branch}' has {n} non-null "
-                        f"client(s) but metric '{metric}' became all zeroes after "
-                        f"outlier clipping (pooled {threshold_quantile:.3f} quantile "
-                        f"threshold is {threshold})"
+                        "client(s) but outlier clipping results in all zeroes "
+                        f"(pooled {threshold_quantile:.3f} quantile threshold is {threshold})"
                     )
+                    resolution = (
+                        "check statistic configuration: clipping threshold is "
+                        f"'{self.drop_highest}' - should it be set to 0? "
+                        "would a binomial be more appropriate?"
+                    )
+                    level = logging.ERROR
+
                 msg = (
-                    f"Skipping computing statistic {self.name()} for metric "
+                    f"{prefix}Skipping computing statistic {self.name()} for metric "
                     f"{metric}: {reason}. Cannot compute because the "
                     "relative uplift (treatment/reference) is undefined "
-                    "when the reference mean is zero."
+                    f"when the reference mean is zero. FIX: {resolution}"
                 )
-                # this is not a failure but rather an issue with the data (or config)
-                # so we log at WARNING level
-                logger.warning(
+
+                logger.log(
+                    level,
                     msg,
                     exc_info=StatisticComputationException(msg),
                     extra={
