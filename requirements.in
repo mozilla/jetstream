@@ -6,7 +6,7 @@
 #
 annotated-types==0.8.0
     # via pydantic
-ast-serialize==0.13.0
+ast-serialize==0.13.1
     # via mypy
 attrs==26.1.0
     # via
@@ -16,7 +16,7 @@ attrs==26.1.0
     #   mozilla-jetstream
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==7.2.1
+cachetools==7.2.3
     # via tox
 cattrs==26.2.1
     # via
@@ -57,9 +57,9 @@ dask[distributed]==2026.8.0
     # via
     #   distributed
     #   mozilla-jetstream
-db-dtypes==1.7.2
+db-dtypes==1.8.0
     # via mozilla-jetstream
-distlib==0.4.3
+distlib==0.4.4
     # via virtualenv
 distributed==2026.8.0
     # via dask
@@ -67,7 +67,7 @@ execnet==2.1.2
     # via pytest-xdist
 faker==40.43.0
     # via polyfactory
-filelock==4.2.0
+filelock==4.2.1
     # via
     #   python-discovery
     #   tox
@@ -106,11 +106,11 @@ google-auth[pyopenssl]==2.62.0
     #   google-cloud-storage
 google-cloud-artifact-registry==1.23.0
     # via mozilla-jetstream
-google-cloud-bigquery==3.46.1
+google-cloud-bigquery==3.46.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
-google-cloud-bigquery-storage==2.42.0
+google-cloud-bigquery-storage==2.43.0
     # via
     #   mozanalysis
     #   mozilla-jetstream
@@ -120,7 +120,7 @@ google-cloud-core==2.8.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-storage==3.17.0
+google-cloud-storage==3.17.1
     # via
     #   mozilla-jetstream
     #   smart-open
@@ -261,13 +261,13 @@ patsy==1.0.3
     #   statsmodels
 pillow==12.3.0
     # via matplotlib
-platformdirs==4.13.0
+platformdirs==4.13.3
     # via
     #   tox
     #   virtualenv
 plotnine==0.15.8
     # via marginaleffects
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
@@ -320,7 +320,7 @@ pygments==2.21.0
     # via pytest
 pyparsing==3.3.3
     # via matplotlib
-pyproject-api==1.11.6
+pyproject-api==1.11.7
     # via tox
 pytest==9.1.1
     # via
@@ -339,7 +339,7 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-discovery==1.6.2
+python-discovery==1.6.3
     # via
     #   tox
     #   virtualenv
@@ -367,7 +367,7 @@ rpds-py==2026.9.1
     # via
     #   jsonschema
     #   referencing
-ruff==0.17.0
+ruff==0.17.1
     # via
     #   mozilla-jetstream
     #   pytest-ruff
@@ -414,7 +414,7 @@ toolz==1.2.0
     #   partd
 tornado==6.5.10
     # via distributed
-tox==4.65.5
+tox==4.66.0
     # via mozilla-jetstream
 types-futures==3.3.8
     # via mozilla-jetstream
@@ -452,7 +452,7 @@ urllib3==2.8.0
     # via
     #   requests
     #   types-requests
-virtualenv==21.14.7
+virtualenv==21.14.10
     # via tox
 wrapt==2.5.1
     # via
