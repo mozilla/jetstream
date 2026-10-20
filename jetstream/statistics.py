@@ -34,7 +34,7 @@ from .pre_treatment import PreTreatment
 
 logger = logging.getLogger(__name__)
 
-# minimum reference branch size for a meaningful LinearModelMean comparison
+# minimum reference branch size for a meaningful statistical comparison
 MIN_REFERENCE_BRANCH_CLIENTS = 100
 
 
@@ -239,6 +239,32 @@ class Statistic(ABC):
             branch_list = df.branch.unique()
 
             for ref_branch in branch_list:
+                # skip computation if client count < MIN
+                # (Count and Sum are not skipped: they override `apply`)
+                n = df.loc[df["branch"] == ref_branch, metric].count()
+                if n < MIN_REFERENCE_BRANCH_CLIENTS:
+                    msg = (
+                        f"Not enough clients in cohort. Skipping computing statistic "
+                        f"{self.name()} for metric {metric}: reference branch '{ref_branch}' "
+                        f"has {n} non-null client(s). FIX: check configuration to ensure "
+                        f"analysis basis '{analysis_basis.value}' and segment '{segment}' has "
+                        f"at least {MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures "
+                        "configured correctly? is the segment population as expected?)."
+                    )
+                    logger.warning(
+                        msg,
+                        exc_info=StatisticComputationException(msg),
+                        extra={
+                            "experiment": experiment.normandy_slug,
+                            "metric": metric,
+                            "statistic": self.name(),
+                            "analysis_basis": analysis_basis.value,
+                            "segment": segment,
+                            "analysis_period": self.period.value if self.period else None,
+                        },
+                    )
+                    continue
+
                 try:
                     for x in self.transform(
                         df,
@@ -520,23 +546,11 @@ class LinearModelMean(Statistic):
             if (post_clip == 0).all():
                 n = len(ref_values)
                 level = logging.WARNING
-                prefix = ""
                 reason = (
                     f"reference branch '{reference_branch}' has {n} non-null "
                     "client(s) and all metric values are zero"
                 )
-                resolution = ""
-                if n < MIN_REFERENCE_BRANCH_CLIENTS:
-                    prefix = "Not enough clients in cohort. "
-                    if not (ref_values == 0).all():
-                        reason += " after outlier clipping"
-                    resolution = (
-                        f"check configuration to ensure analysis basis '{analysis_basis.value}' "
-                        f"and segment '{segment}' has at least "
-                        f"{MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures configured "
-                        "correctly? is the segment population as expected?)."
-                    )
-                elif (ref_values == 0).all():
+                if (ref_values == 0).all():
                     resolution = (
                         "check metric configuration to ensure non-zero values are expected."
                     )
@@ -555,7 +569,7 @@ class LinearModelMean(Statistic):
                     level = logging.ERROR
 
                 msg = (
-                    f"{prefix}Skipping computing statistic {self.name()} for metric "
+                    f"Skipping computing statistic {self.name()} for metric "
                     f"{metric}: {reason}. Cannot compute because the "
                     "relative uplift (treatment/reference) is undefined "
                     f"when the reference mean is zero. FIX: {resolution}"
