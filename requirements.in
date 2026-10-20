@@ -414,7 +414,7 @@ toolz==1.2.0
     #   partd
 tornado==6.5.10
     # via distributed
-tox==4.65.5
+tox==4.66.0
     # via mozilla-jetstream
 types-futures==3.3.8
     # via mozilla-jetstream
