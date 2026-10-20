@@ -678,9 +678,9 @@ dask[distributed]==2026.8.0 \
     # via
     #   -r requirements.in
     #   distributed
-db-dtypes==1.7.2 \
-    --hash=sha256:0fb8794a29adb3d4e56c4347eecf9711ad35d847b6fb3d32e2c5a4de021f5afc \
-    --hash=sha256:3bf00b681afc270ae3b329b3f7e5b61fbea3f425226bb168ccfad2665ee8221b
+db-dtypes==1.8.0 \
+    --hash=sha256:8f6d6b9565532171b006f509fbe4faa0ae74dc9b60a54a92b041755d71d7c970 \
+    --hash=sha256:dee3e8075687bcfc8f5ae247257c267b4264bc7f4b26b0b1978baade1bbf4001
     # via -r requirements.in
 distlib==0.4.3 \
     --hash=sha256:4b0ce306c966eb73bc3a7b6abad017c556dadd92c44701562cd528ac7fde4d5b \
