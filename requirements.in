@@ -452,7 +452,7 @@ urllib3==2.8.0
     # via
     #   requests
     #   types-requests
-virtualenv==21.14.7
+virtualenv==21.14.10
     # via tox
 wrapt==2.5.1
     # via
