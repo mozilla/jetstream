@@ -339,7 +339,7 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-discovery==1.6.2
+python-discovery==1.6.3
     # via
     #   tox
     #   virtualenv
