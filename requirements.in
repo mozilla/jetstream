@@ -106,7 +106,7 @@ google-auth[pyopenssl]==2.62.0
     #   google-cloud-storage
 google-cloud-artifact-registry==1.23.0
     # via mozilla-jetstream
-google-cloud-bigquery==3.46.1
+google-cloud-bigquery==3.46.2
     # via
     #   mozanalysis
     #   mozilla-jetstream
