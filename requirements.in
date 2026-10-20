@@ -320,7 +320,7 @@ pygments==2.21.0
     # via pytest
 pyparsing==3.3.3
     # via matplotlib
-pyproject-api==1.11.6
+pyproject-api==1.11.7
     # via tox
 pytest==9.1.1
     # via

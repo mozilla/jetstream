@@ -2363,9 +2363,9 @@ pyparsing==3.3.3 \
     # via
     #   -r requirements.in
     #   matplotlib
-pyproject-api==1.11.6 \
-    --hash=sha256:7601f5f7b738b9007f02004347c7a831c579ba943dab18123f852c193766ecae \
-    --hash=sha256:c275cb4600f831ac5337d719b2bc547f0656173c05a923a66dce741d91f9e09d
+pyproject-api==1.11.7 \
+    --hash=sha256:408e31b80e054e70d26f11b0ae3f60210ae6d54cd050e904aac63462b56404e9 \
+    --hash=sha256:e90ddef94bd3027c652e11b04537d269788b6c5d75311c139ffb372e4fcb562c
     # via
     #   -r requirements.in
     #   tox
