@@ -81,9 +81,9 @@ attrs==26.1.0 \
     #   mozanalysis
     #   mozilla-metric-config-parser
     #   referencing
-cachetools==7.2.3 \
-    --hash=sha256:85ef9d2703918bedf7f88caa0b06bb3bb7a71360eb0b05c20796b89fede6e30c \
-    --hash=sha256:e6fafd06de4a5bd915ff7d247588ea497e28c9a568c62db8678d9a5f11515a9a
+cachetools==7.2.4 \
+    --hash=sha256:4cfbebf3eec4040d2073b19c460511ad47eef7b852dbf9a0d385099b4dafa31e \
+    --hash=sha256:e0203b04b75fe13e62098eeb5b2018c4eb1a14c04e2b5b450e70db3ee7e92ec5
     # via
     #   -r requirements.in
     #   tox
@@ -93,9 +93,9 @@ cattrs==26.2.1 \
     # via
     #   -r requirements.in
     #   mozilla-metric-config-parser
-certifi==2026.7.22 \
-    --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
-    --hash=sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
+certifi==2026.10.18 \
+    --hash=sha256:73191c47aaa79da394e8fee2dbc2ec827432cab56311122c9e47abf79e390f62 \
+    --hash=sha256:b9995d97b64d0431a5af837d8ca8cd6238104d1f319f04bd93ea43124d6c861e
     # via
     #   -r requirements.in
     #   requests
@@ -706,9 +706,9 @@ faker==40.43.0 \
     # via
     #   -r requirements.in
     #   polyfactory
-filelock==4.2.1 \
-    --hash=sha256:7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44 \
-    --hash=sha256:c4c937ccac2a813cee448e662a56366cfb374c0f8702e75f295c412cc1c5d5a3
+filelock==4.2.4 \
+    --hash=sha256:301241438c57936ef93f4243a94f2559022268bfcf9b375a9a72eb0f8db8358e \
+    --hash=sha256:c6d8663535e1650ee430507b4ffbac7b464dd64b7647ea0112a9f406499d163d
     # via
     #   -r requirements.in
     #   python-discovery
@@ -2029,9 +2029,9 @@ pillow==12.3.0 \
     # via
     #   -r requirements.in
     #   matplotlib
-platformdirs==4.13.3 \
-    --hash=sha256:5e567f664eb087ab8521c0179cd8d1bd60857d271136567a39719e28e2d383ce \
-    --hash=sha256:f6ad7f447f24f8a3b82cce5976387428bff894a0eca6c3488f4a17f153c130c4
+platformdirs==4.13.5 \
+    --hash=sha256:05831adf87d392760f4b5c3a0a95579ab5a10b18b9b9bd43680dcb47544788a0 \
+    --hash=sha256:53d3ec4280b815c1e0b02edad7f9ee8fda1ba9c0865dd9c2e6e63849ce82fc1e
     # via
     #   -r requirements.in
     #   tox
@@ -2363,9 +2363,9 @@ pyparsing==3.3.3 \
     # via
     #   -r requirements.in
     #   matplotlib
-pyproject-api==1.11.7 \
-    --hash=sha256:408e31b80e054e70d26f11b0ae3f60210ae6d54cd050e904aac63462b56404e9 \
-    --hash=sha256:e90ddef94bd3027c652e11b04537d269788b6c5d75311c139ffb372e4fcb562c
+pyproject-api==1.12.0 \
+    --hash=sha256:1d3cbf37ac4c3a40940e09cbd4374608d25cdd89e6019f7e06fc285afd3ab467 \
+    --hash=sha256:2e83226079dc446a8e2357def7622c01c733284e39afc8e332d9f722fe0c2beb
     # via
     #   -r requirements.in
     #   tox
@@ -2397,9 +2397,9 @@ python-dateutil==2.9.0.post0 \
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-discovery==1.6.3 \
-    --hash=sha256:a62b301d96cf5489cb96ab023b32e068421867fdd5df2e42eece877869047fa2 \
-    --hash=sha256:cb7654125e3dcb594269a6feb56ac693f1f13b7c654493a93eba72dc22d18034
+python-discovery==1.6.4 \
+    --hash=sha256:530179cc51a1816d512b15635b3dc931295ae12efb183783ad31190a5d425d2b \
+    --hash=sha256:bc70d31f0ec5de11eda13d4d64c16e24b3506a65984684f2b6c98cb83b2ea9df
     # via
     #   -r requirements.in
     #   tox
@@ -2787,9 +2787,9 @@ six==1.17.0 \
     # via
     #   -r requirements.in
     #   python-dateutil
-smart-open[gcs]==8.0.3 \
-    --hash=sha256:398eb1d6af1e887ccd30347af540793235369bd6602dc42f72c44f939ae9c80f \
-    --hash=sha256:c3f67795b1a2bdb62dd9aca9ba4d4018e8f11e4188700b3246ea5ae049f65887
+smart-open[gcs]==8.0.4 \
+    --hash=sha256:8a3a67679942fa40d1a93ed3aea37619b4b4ec5458f1d5a9228dfc301db11b4c \
+    --hash=sha256:8cff8321f0b0ae4bd9cb0cd0c507c135ad6aa980171248fca520b645fd6ff717
     # via -r requirements.in
 smmap==5.0.3 \
     --hash=sha256:4d9debb8b99007ae47165abc08670bd74cb74b5227dda7f643eccc4e9eb5642c \
@@ -2909,9 +2909,9 @@ tornado==6.5.10 \
     # via
     #   -r requirements.in
     #   distributed
-tox==4.66.0 \
-    --hash=sha256:f12458756246e8be78934f011024dc952c25631008c7a935683fe5843408add4 \
-    --hash=sha256:f9dc2cec9310a3ab5a560669cf860cf6ffad7d04733a0845c7ad7ac00d6b2808
+tox==4.67.1 \
+    --hash=sha256:23d614cb703e1f7bd39e00c046d4c261b63fb9986e185134c6be2f93531d9726 \
+    --hash=sha256:a68602f64421b199016127364ee47347b958391d19c2b2e53fe95673a8fe98e9
     # via -r requirements.in
 types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
@@ -2975,9 +2975,9 @@ urllib3==2.8.0 \
     #   -r requirements.in
     #   requests
     #   types-requests
-virtualenv==21.14.10 \
-    --hash=sha256:bf4a0f9671731d097e017e41280aa05e1e1adcd536b0e804fceb3179947ad50e \
-    --hash=sha256:f733501a49404c91b5bb1d34d107073b8f4b93a9a1ddb7e9a950eb8ce60f38ad
+virtualenv==21.14.11 \
+    --hash=sha256:593052d8477ea8c55a842387ce111bd08c72618f0c1133c302cafe335e570a57 \
+    --hash=sha256:b319f8590a84e5de5f8f2c803ecd2237e9bc0ffa7c1e875e3169c107cecb7454
     # via
     #   -r requirements.in
     #   tox
