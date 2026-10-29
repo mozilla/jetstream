@@ -770,6 +770,42 @@ class TestStatistics:
         with pytest.raises(Exception, match=re.escape(error_str)):
             stat.transform(test_data, "ad_ratio", "control", None, AnalysisBasis.ENROLLMENTS, "all")
 
+    def test_population_ratio_apply_ignores_placeholder_metric_column(self, experiments, caplog):
+        """The NULL placeholder column for `depends_on` metrics doesn't trigger the skip."""
+        stat = PopulationRatio(num_samples=10, numerator="ad_click", denominator="sap")
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 100 + ["control"] * 100,
+                "ad_click": list(range(100, 0, -1)) * 2,
+                "sap": [10 * x for x in range(100, 0, -1)] * 2,
+                "ad_ratio": np.nan,
+            }
+        )
+        with caplog.at_level(logging.WARNING, logger="jetstream.statistics"):
+            results = stat.apply(
+                test_data, "ad_ratio", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert {r.branch for r in results if r.comparison is None} == {"treatment", "control"}
+        assert not [r for r in caplog.records if "Not enough clients" in r.message]
+
+    def test_population_ratio_apply_skips_small_reference_branches(self, experiments, caplog):
+        stat = PopulationRatio(num_samples=10, numerator="ad_click", denominator="sap")
+        test_data = pd.DataFrame(
+            {
+                "branch": ["treatment"] * 10 + ["control"] * 10,
+                "ad_click": list(range(10, 0, -1)) * 2,
+                "sap": [10 * x for x in range(10, 0, -1)] * 2,
+                "ad_ratio": np.nan,
+            }
+        )
+        with caplog.at_level(logging.WARNING, logger="jetstream.statistics"):
+            results = stat.apply(
+                test_data, "ad_ratio", experiments[1], AnalysisBasis.ENROLLMENTS, "all"
+            )
+        assert len(results.root) == 0
+        records = [r for r in caplog.records if "Not enough clients" in r.message]
+        assert len(records) == 2
+
 
 class TestStatisticExport:
     def test_data_schema(self):

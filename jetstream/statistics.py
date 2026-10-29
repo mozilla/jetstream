@@ -239,14 +239,17 @@ class Statistic(ABC):
             branch_list = df.branch.unique()
 
             for ref_branch in branch_list:
-                # skip computation if client count < MIN
+                # skip computation if client count < MIN_REFERENCE_BRANCH_CLIENTS
                 # (Count and Sum are not skipped: they override `apply`)
-                n = df.loc[df["branch"] == ref_branch, metric].count()
+                # counts rows rather than non-null values: the metrics query already
+                # filters out NULLs for every column a statistic reads, and `depends_on`
+                # metrics (e.g. population_ratio) have an all-NULL placeholder metric column
+                n = (df["branch"] == ref_branch).sum()
                 if n < MIN_REFERENCE_BRANCH_CLIENTS:
                     msg = (
                         f"Not enough clients in cohort. Skipping computing statistic "
                         f"{self.name()} for metric {metric}: reference branch '{ref_branch}' "
-                        f"has {n} non-null client(s). FIX: check configuration to ensure "
+                        f"has {n} client(s). FIX: check configuration to ensure "
                         f"analysis basis '{analysis_basis.value}' and segment '{segment}' has "
                         f"at least {MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures "
                         "configured correctly? is the segment population as expected?)."
