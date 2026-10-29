@@ -103,8 +103,8 @@ class TestAnalysisIntegration:
             build_metrics_query_test_project,
         )
         monkeypatch.setattr(dask.distributed.LocalCluster, "__init__", mock_local_cluster)
-        # bypass the low-client filter for testing
-        monkeypatch.setattr("jetstream.statistics.MIN_REFERENCE_BRANCH_CLIENTS", 0)
+        # fixture data is small; keep the filter active (rejects all-null columns) but permissive
+        monkeypatch.setattr("jetstream.statistics.MIN_REFERENCE_BRANCH_CLIENTS", 1)
 
         analysis.ensure_enrollments(dt.datetime(2020, 4, 12, tzinfo=pytz.utc), use_glean_ids)
         analysis.run(
