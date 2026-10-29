@@ -239,18 +239,19 @@ class Statistic(ABC):
             branch_list = df.branch.unique()
 
             for ref_branch in branch_list:
-                # skip computation if client count < MIN
+                # skip computation if client count < MIN_REFERENCE_BRANCH_CLIENTS
                 # (Count and Sum are not skipped: they override `apply`)
-                # missing columns are ignored here so `transform` raises and logs the error
-                cols = [c for c in self.input_columns(metric) if c in df]
-                n = df.loc[df["branch"] == ref_branch, cols].notna().all(axis=1).sum()
+                # counts rows rather than non-null values: the metrics query already
+                # filters out NULLs for every column a statistic reads, and `depends_on`
+                # metrics (e.g. population_ratio) have an all-NULL placeholder metric column
+                n = (df["branch"] == ref_branch).sum()
                 if n < MIN_REFERENCE_BRANCH_CLIENTS:
                     msg = (
                         f"Not enough clients in cohort. Skipping computing statistic "
                         f"{self.name()} for metric {metric}: reference branch '{ref_branch}' "
-                        f"has {n} client(s) with non-null {cols}. FIX: check configuration to "
-                        f"ensure analysis basis '{analysis_basis.value}' and segment '{segment}' "
-                        f"has at least {MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures "
+                        f"has {n} client(s). FIX: check configuration to ensure "
+                        f"analysis basis '{analysis_basis.value}' and segment '{segment}' has "
+                        f"at least {MIN_REFERENCE_BRANCH_CLIENTS} clients (are exposures "
                         "configured correctly? is the segment population as expected?)."
                     )
                     logger.warning(
@@ -316,10 +317,6 @@ class Statistic(ABC):
         )
 
         return statistic_result_collection
-
-    def input_columns(self, metric: str) -> list[str]:
-        """Return the dataframe columns this statistic reads for the given metric."""
-        return [metric]
 
     @abstractmethod
     def transform(
@@ -1113,10 +1110,6 @@ class PopulationRatio(Statistic):
     drop_highest: float = 0.005
     num_samples: int = 10000
 
-    def input_columns(self, metric: str) -> list[str]:
-        # the metric column itself is a NULL placeholder for `depends_on` metrics
-        return [self.numerator, self.denominator]
-
     def transform(
         self,
         df: DataFrame,
@@ -1131,7 +1124,7 @@ class PopulationRatio(Statistic):
 
         ma_result = mozanalysis.frequentist_stats.bootstrap.compare_branches(
             df,
-            col_label=self.input_columns(metric),
+            col_label=[self.numerator, self.denominator],
             ref_branch_label=reference_branch,
             stat_fn=lambda data: {np.mean(data[:, 0]) / np.mean(data[:, 1])},
             num_samples=self.num_samples,
