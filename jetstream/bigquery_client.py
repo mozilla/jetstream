@@ -210,9 +210,17 @@ class BigQueryClient:
         self.client.delete_table(table_id, not_found_ok=True)
 
     def delete_experiment_tables(
-        self, slug: str, analysis_periods: list[AnalysisPeriod], delete_enrollments: bool = False
+        self,
+        slug: str,
+        analysis_periods: list[AnalysisPeriod],
+        delete_enrollments: bool = False,
+        statistics_only: bool = False,
     ):
-        """Delete all tables associated with the specified experiment slug."""
+        """Delete all tables associated with the specified experiment slug.
+
+        If `statistics_only` is set, only statistics tables are deleted; enrollments and
+        metrics tables are kept so that statistics can be recomputed from them.
+        """
         analysis_periods_re = "|".join([p.value for p in analysis_periods])
         analysis_periods_pattern = re.compile(f"_({analysis_periods_re}).*$")
 
@@ -220,6 +228,8 @@ class BigQueryClient:
 
         tables = self.tables_matching_description(slug)
         for table in tables:
+            if statistics_only and not table.startswith(f"statistics_{bq_normalize_name(slug)}_"):
+                continue
             if (
                 delete_enrollments and table == enrollments_table
             ) or analysis_periods_pattern.search(table) is not None:
