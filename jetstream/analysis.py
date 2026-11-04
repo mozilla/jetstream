@@ -1719,21 +1719,22 @@ class Analysis:
 
                     # metrics are done: now iterate over the depends_on metrics
                     for summary in summary_metrics:
-                        if not summary.metric.depends_on:
+                        if not summary.metric.depends_on or dry_run:
                             continue
 
                         # base the subset query on a dependency's own metrics table rather than
                         # whichever data source the loop above happened to visit last
-                        base_table_name = self._depends_on_table_names(
+                        dependency_tables = self._depends_on_table_names(
                             summary.metric,
                             period,
                             len(time_limits.analysis_windows),
                             analysis_basis,
-                        )[0]
-                        if base_table_name in missing_metric_tables:
+                        )
+                        base_table_name = dependency_tables[0]
+                        if missing := missing_metric_tables.intersection(dependency_tables):
                             logger.warning(
                                 f"Cannot compute only statistics for period {period.value}; "
-                                f"metrics table {base_table_name} does not exist "
+                                f"metrics table(s) {sorted(missing)} do not exist "
                                 f"for dependency of {summary.metric.name}!",
                                 extra={
                                     "experiment": self.config.experiment.normandy_slug,
