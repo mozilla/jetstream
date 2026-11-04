@@ -14,6 +14,7 @@ from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.experiment import Branch, BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod, Summary
+from metric_config_parser.statistic import Statistic
 from mozanalysis.experiment import TimeLimits
 from mozilla_nimbus_schemas.experimenter_apis.experiments import RandomizationUnit
 from mozilla_nimbus_schemas.jetstream import AnalysisBasis
@@ -708,6 +709,60 @@ def test_create_subset_metric_table_query_univariate_depends_on(experiments, mon
     assert "enrollment_date IS NOT NULL" in actual_query
 
     assert "LEFT JOIN `dep_table_a_1`" not in actual_query
+
+
+def test_depends_on_table_names_follow_dependency_order(experiments):
+    """The subset query for a depends_on metric must read from its dependencies' metrics
+    tables (first as base, rest joined), not from whichever data source the metrics loop
+    visited last."""
+    upstream_1 = Summary(
+        Metric(
+            name="upstream_1",
+            data_source=DataSource(name="data_source_a", from_expression="test.test"),
+            select_expression="test",
+            analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        ),
+        None,
+        None,
+    )
+    upstream_2 = Summary(
+        Metric(
+            name="upstream_2",
+            data_source=DataSource(name="data_source_b", from_expression="test.test"),
+            select_expression="test",
+            analysis_bases=[AnalysisBasis.ENROLLMENTS],
+        ),
+        None,
+        None,
+    )
+    ratio = Summary(
+        Metric(
+            name="ratio_metric",
+            data_source=DataSource(name="unrelated_data_source", from_expression="test.test"),
+            select_expression=None,
+            analysis_bases=[AnalysisBasis.ENROLLMENTS],
+            depends_on=[upstream_1, upstream_2],
+        ),
+        Statistic("population_ratio", {"numerator": "upstream_1", "denominator": "upstream_2"}),
+        None,
+    )
+
+    analysis = _empty_analysis(experiments)
+    tables = analysis._depends_on_table_names(
+        ratio.metric, AnalysisPeriod.WEEK, 3, AnalysisBasis.ENROLLMENTS
+    )
+
+    assert tables == [
+        analysis._table_name("week", 3, AnalysisBasis.ENROLLMENTS, "data_source_a"),
+        analysis._table_name("week", 3, AnalysisBasis.ENROLLMENTS, "data_source_b"),
+    ]
+    assert not any("unrelated_data_source" in t for t in tables)
+    base = tables[0]
+    # the base table is excluded from the prerequisite joins; the other dependency is included
+    prereqs = analysis._subset_metric_table_prerequisites(
+        ratio, base, AnalysisBasis.ENROLLMENTS, AnalysisPeriod.WEEK, True
+    )
+    assert prereqs == {analysis._table_name("week", 3, AnalysisBasis.ENROLLMENTS, "data_source_b")}
 
 
 def test_create_subset_metric_table_query_covariate_depends_on(experiments, monkeypatch):
