@@ -803,15 +803,15 @@ class Analysis:
         dependency_metric_tables = set()
         if metric.depends_on:
             empty_metric_names.append(f"NULL AS {metric.name}")
-            window = int(metric_table_name.split("_")[-1])
             for dependency in metric.depends_on:
                 metric_names.add(dependency.metric.name)
-                if discrete_metrics:
-                    dependency_metric_table = self._table_name(
-                        period.value, window, analysis_basis, dependency.metric.data_source.name
-                    )
-                    if dependency_metric_table != metric_table_name:
-                        dependency_metric_tables.add(dependency_metric_table)
+            if discrete_metrics:
+                window = int(metric_table_name.split("_")[-1])
+                dependency_metric_tables = {
+                    t
+                    for t in self._depends_on_table_names(metric, period, window, analysis_basis)
+                    if t != metric_table_name
+                }
         else:
             metric_names.add(metric.name)
 
@@ -1010,6 +1010,23 @@ class Analysis:
 
         return query
 
+    def _depends_on_table_names(
+        self,
+        metric: Metric,
+        period: AnalysisPeriod,
+        window_index: int,
+        analysis_basis: AnalysisBasis,
+    ) -> list[str]:
+        """Returns the metrics tables of a `depends_on` metric's dependencies, in dependency
+        order, for discrete-metrics mode. The subset metrics query uses the first table and
+        LEFT JOINs the second table."""
+        return [
+            self._table_name(
+                period.value, window_index, analysis_basis, dependency.metric.data_source.name
+            )
+            for dependency in metric.depends_on
+        ]
+
     def _subset_metric_table_prerequisites(
         self,
         summary: Summary,
@@ -1041,12 +1058,13 @@ class Analysis:
 
         if discrete_metrics and summary.metric.depends_on:
             window = int(metric_table_name.split("_")[-1])
-            for dependency in summary.metric.depends_on:
-                dep_table = self._table_name(
-                    period.value, window, analysis_basis, dependency.metric.data_source.name
+            prereqs.update(
+                t
+                for t in self._depends_on_table_names(
+                    summary.metric, period, window, analysis_basis
                 )
-                if dep_table != metric_table_name:
-                    prereqs.add(dep_table)
+                if t != metric_table_name
+            )
 
         return prereqs
 
@@ -1367,6 +1385,9 @@ class Analysis:
 
         results = []
         metric_table_writers: dict[str, Delayed] = {}
+        # track missing metrics tables for statistics-only so depends_on metrics can skip
+        # without a second existence check
+        missing_metric_tables: set[str] = set()
 
         if self.log_config:
             log_plugin = LogPlugin(self.log_config)
@@ -1635,6 +1656,7 @@ class Analysis:
                             continue
 
                         if statistics_only and not self.bigquery.table_exists(metric_table_name):
+                            missing_metric_tables.add(metric_table_name)
                             for metric in ds_metrics:
                                 logger.warning(
                                     f"Cannot compute only statistics for period {period.value};"
@@ -1697,11 +1719,34 @@ class Analysis:
 
                     # metrics are done: now iterate over the depends_on metrics
                     for summary in summary_metrics:
-                        if not summary.metric.depends_on:
+                        if not summary.metric.depends_on or dry_run:
+                            continue
+
+                        # base the subset query on a dependency's own metrics table rather than
+                        # whichever data source the loop above happened to visit last
+                        dependency_tables = self._depends_on_table_names(
+                            summary.metric,
+                            period,
+                            len(time_limits.analysis_windows),
+                            analysis_basis,
+                        )
+                        base_table_name = dependency_tables[0]
+                        if missing := missing_metric_tables.intersection(dependency_tables):
+                            logger.warning(
+                                f"Cannot compute only statistics for period {period.value}; "
+                                f"metrics table(s) {sorted(missing)} do not exist "
+                                f"for dependency of {summary.metric.name}!",
+                                extra={
+                                    "experiment": self.config.experiment.normandy_slug,
+                                    "metric": summary.metric.name,
+                                    "analysis_basis": analysis_basis.value,
+                                    "analysis_period": period.value,
+                                },
+                            )
                             continue
 
                         prereq_tables = self._subset_metric_table_prerequisites(
-                            summary, metric_table_name, analysis_basis, period, True
+                            summary, base_table_name, analysis_basis, period, True
                         )
                         prereqs = [
                             metric_table_writers[t]
@@ -1710,7 +1755,7 @@ class Analysis:
                         ]
                         for segment in segment_labels:
                             subset_delayed = self.subset_metric_table(
-                                metric_table,
+                                metric_table_writers.get(base_table_name, base_table_name),
                                 segment,
                                 summary,
                                 analysis_basis,
