@@ -1117,12 +1117,21 @@ def rerun(
             "Trigger separate reruns for experiments with custom configs"
         )
 
+    if statistics_only and recreate_enrollments:
+        raise ValueError(
+            "--statistics-only cannot be combined with --recreate-enrollments: "
+            "statistics are computed from existing metrics tables, "
+            "which depend on the existing enrollments"
+        )
+
     # update table timestamps which indicate whether an experiment needs to be rerun
     client = BigQueryClient(project_id, dataset_id)
     for slug in experiment_slug:
         client.touch_tables(slug)
-        # delete existing tables
-        client.delete_experiment_tables(slug, analysis_periods, recreate_enrollments)
+        # delete existing tables; keep metrics/enrollments if only recomputing statistics
+        client.delete_experiment_tables(
+            slug, analysis_periods, recreate_enrollments, statistics_only=statistics_only
+        )
 
     strategy = SerialExecutorStrategy(
         project_id,
