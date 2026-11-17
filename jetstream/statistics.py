@@ -425,12 +425,12 @@ class BootstrapMean(Statistic):
     Parameters:
     - num_samples (int): Default 10000.
     - drop_highest (float): threshold above which values will be *clipped*
-        0.0 means no values will be clipped. Default 0.005.
+        0.0 means no values will be clipped. Default 0.0.
     - confidence_interval (float): Default 0.95.
     """
 
     num_samples: int = 10000
-    drop_highest: float = 0.005
+    drop_highest: float = 0.0
     confidence_interval: float = 0.95
 
     def transform(
@@ -469,13 +469,13 @@ class LinearModelMean(Statistic):
 
     Parameters:
     - drop_highest (float): threshold above which values will be *clipped*
-        0.0 means no values will be clipped. Default 0.005.
+        0.0 means no values will be clipped. Default 0.0.
     - covariate_adjustment (dict[str, str]): currently used keys are "metric" as the
         name of the metric, and "period" as the (preenrollment) period to pull from
     - statistic_name (str): name of the statistic used in the results
     """
 
-    drop_highest: float = attr.ib(default=0.005, validator=attr.validators.instance_of(float))
+    drop_highest: float = attr.ib(default=0.0, validator=attr.validators.instance_of(float))
     # currently used keys are "metric" as the name of the metric
     # and "period" as the (preenrollment) period to pull from
     covariate_adjustment: dict[str, str] | None = attr.ib(default=None)
@@ -614,7 +614,7 @@ class LinearModelMean(Statistic):
 
 @attr.s(auto_attribs=True)
 class LinearModelMeanNoClip(LinearModelMean):
-    """Computes mean statistic using linear model. **No Clipping by default**
+    """Computes mean statistic using linear model. **DEPRECATED**
 
     Parameters:
     - drop_highest (float): Inherited and overridden from LinearModelMean. Default 0.0.
@@ -1100,14 +1100,14 @@ class PopulationRatio(Statistic):
     - denominator (str): column label (metric name) from dataframe
     - confidence_interval (float): Default 0.95.
     - drop_highest (float): threshold above which values will be *clipped*
-        0.0 means no values will be clipped. Default 0.005.
+        0.0 means no values will be clipped. Default 0.0.
     - num_samples (int): Default 10000.
     """
 
     numerator: str
     denominator: str
     confidence_interval: float = 0.95
-    drop_highest: float = 0.005
+    drop_highest: float = 0.0
     num_samples: int = 10000
 
     def transform(
