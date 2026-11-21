@@ -228,7 +228,7 @@ numpy==2.4.6
     #   scikit-learn
     #   scipy
     #   statsmodels
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
     # via google-api-core
 packaging==26.3
     # via
