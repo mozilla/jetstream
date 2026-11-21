@@ -153,7 +153,7 @@ grpcio-status==1.84.0
     # via google-api-core
 idna==3.20
     # via requests
-importlib-metadata==9.0.1
+importlib-metadata==10.0.0
     # via dask
 iniconfig==2.3.1
     # via pytest
