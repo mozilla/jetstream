@@ -120,6 +120,7 @@ class ArgoExecutorStrategy:
     statistics_only: bool = False
     discrete_metrics: bool = False
     metric_slugs: list[str] | None = None
+    log_source: LOG_SOURCE = LOG_SOURCE.JETSTREAM
 
     WORKFLOW_DIR = Path(__file__).parent / "workflows"
     RUN_WORKFLOW = WORKFLOW_DIR / "run.yaml"
@@ -238,6 +239,7 @@ class ArgoExecutorStrategy:
                 "image": self.image,
                 "memory_request": self.memory_request,
                 "statistics_only": self.statistics_only,
+                "log_source": self.log_source.value,
             },
             monitor_status=self.monitor_status,
             cluster_ip=self.cluster_ip,
@@ -1005,7 +1007,9 @@ def run(
 @metric_slugs_option
 @memory_request_option
 @analysis_periods_option()
+@click.pass_context
 def run_argo(
+    ctx,
     project_id,
     dataset_id,
     date,
@@ -1044,6 +1048,7 @@ def run_argo(
         discrete_metrics=discrete_metrics,
         metric_slugs=list(metric_slug) if metric_slug else None,
         memory_request=memory_request,
+        log_source=ctx.obj["log_config"].log_source,
     )
 
     AnalysisExecutor(
@@ -1163,6 +1168,7 @@ def rerun(
             discrete_metrics=discrete_metrics,
             metric_slugs=list(metric_slug) if metric_slug else None,
             memory_request=memory_request,
+            log_source=ctx.obj["log_config"].log_source,
         )
 
     success = AnalysisExecutor(
@@ -1395,6 +1401,7 @@ def rerun_config_changed(
             image=image,
             image_version=image_version,
             memory_request=memory_request,
+            log_source=ctx.obj["log_config"].log_source,
             discrete_metrics=discrete_metrics,
         )
 
@@ -1514,6 +1521,7 @@ def rerun_holdback(
             image=image,
             image_version=image_version,
             memory_request=memory_request,
+            log_source=ctx.obj["log_config"].log_source,
             discrete_metrics=discrete_metrics,
         )
 

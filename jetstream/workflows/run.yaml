@@ -21,6 +21,8 @@ spec:
     - name: analysis_periods_preenrollment_days28
     - name: image
     - name: memory_request
+    - name: log_source
+      value: jetstream
   templates:
   - name: jetstream
     parallelism: 5  # run up to 5 containers in parallel at the same time
@@ -103,7 +105,7 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@sha256:{{inputs.parameters.image_hash}}
       command: [
-        jetstream, --log_to_bigquery, ensure-enrollments, 
+        jetstream, --log_to_bigquery, "--log_source={{workflow.parameters.log_source}}", ensure-enrollments, 
         "--experiment_slug={{inputs.parameters.slug}}", 
         "--dataset_id={{workflow.parameters.dataset_id}}", 
         "--project_id={{workflow.parameters.project_id}}"
@@ -119,7 +121,7 @@ spec:
     container:
       image: gcr.io/moz-fx-data-experiments/{{workflow.parameters.image}}@sha256:{{inputs.parameters.image_hash}}
       command: [
-        jetstream, --log_to_bigquery, run,
+        jetstream, --log_to_bigquery, "--log_source={{workflow.parameters.log_source}}", run,
         "--date={{inputs.parameters.date}}",
         "--experiment_slug={{inputs.parameters.slug}}",
         "--dataset_id={{workflow.parameters.dataset_id}}", 

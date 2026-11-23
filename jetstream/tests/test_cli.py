@@ -21,6 +21,7 @@ from jetstream import cli, experimenter
 from jetstream.analysis import get_preenrollment_analysis_date
 from jetstream.artifacts import ArtifactManager
 from jetstream.config import ConfigLoader, _ConfigLoader
+from jetstream.logging import LOG_SOURCE
 
 
 @pytest.fixture(name="cli_experiments")
@@ -897,6 +898,7 @@ class TestArgoExecutorStrategy:
                     "image": "jetstream",
                     "memory_request": "1G",
                     "statistics_only": False,
+                    "log_source": "jetstream",
                 },
                 monitor_status=False,
                 cluster_ip=None,
@@ -949,6 +951,7 @@ class TestArgoExecutorStrategy:
                 image_version="latest",
                 memory_request="12G",
                 discrete_metrics=discrete_metrics,
+                log_source=LOG_SOURCE.TESTING,
             )
             run_date = dt.datetime(2020, 10, 31, tzinfo=UTC)
             strategy.execute([(config, run_date)])
@@ -986,6 +989,7 @@ class TestArgoExecutorStrategy:
                     "image": "unrelated",
                     "memory_request": "12G",
                     "statistics_only": False,
+                    "log_source": "jetstream-testing",
                 },
                 monitor_status=False,
                 cluster_ip=None,
